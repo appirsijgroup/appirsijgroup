@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserIcon, LockClosedIcon, MosqueIcon } from './Icons';
+import { UserIcon, LockClosedIcon } from './Icons';
 import PasswordInput from './PasswordInput';
 import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
@@ -134,8 +134,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
 
                 <div className="text-center mb-10">
-                    <div className="inline-block p-4 bg-teal-500 rounded-full mb-5">
-                        <MosqueIcon className="h-9 w-9 text-white" />
+                    <div className="flex justify-center mb-5">
+                        <img
+                            src="/logorsijsp.png"
+                            alt="Logo RSI Jakarta Group"
+                            className="h-20 w-auto"
+                        />
                     </div>
                     <h1 className="text-4xl font-bold tracking-wider text-white">
                         APPI

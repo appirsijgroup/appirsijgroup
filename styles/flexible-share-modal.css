@@ -1,0 +1,85 @@
+/* Custom styling for the flexible share modal */
+.flexible-share-modal .modal-dialog {
+  max-width: 90%;
+  margin: 1.75rem auto;
+  /* Sesuaikan tinggi modal dengan konten */
+  height: auto;
+}
+
+.flexible-share-modal .modal-content {
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  /* Biarkan tinggi menyesuaikan konten */
+  height: auto;
+}
+
+.flexible-share-modal .modal-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.flexible-share-modal .modal-title {
+  font-weight: 600;
+  color: #333;
+}
+
+.flexible-share-modal .modal-body {
+  background-color: #fff;
+  /* Biarkan body menyesuaikan tinggi konten */
+  display: flex;
+  flex-direction: column;
+}
+
+.content-container {
+  background-color: #f8f9fa;
+  /* Hapus batas maksimum tinggi agar menyesuaikan konten */
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-content {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.share-content.loaded {
+  opacity: 1;
+}
+
+.action-buttons {
+  background-color: #f8f9fa;
+  flex-shrink: 0; /* Tombol aksi tidak ikut mengembang */
+}
+
+.social-share-buttons .btn {
+  min-width: 80px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .flexible-share-modal .modal-dialog {
+    margin: 1rem;
+    max-width: 100%;
+    /* Untuk layar kecil, tetap batasi tinggi maksimal */
+    max-height: 90vh;
+  }
+  
+  .content-container {
+    max-height: 60vh;
+    overflow: auto;
+  }
+}

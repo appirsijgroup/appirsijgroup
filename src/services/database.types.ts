@@ -1,0 +1,447 @@
+// This file represents the database schema types for Supabase
+// It should match your actual Supabase database schema
+
+export interface Database {
+  public: {
+    Tables: {
+      employees: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          password: string;
+          role: string;
+          is_active: boolean;
+          notification_enabled: boolean;
+          profile_picture: string | null;
+          monthly_activities: Record<string, any> | null;
+          activated_months: string[] | null;
+          last_visit_date: string | null;
+          ka_unit_id: string | null;
+          supervisor_id: string | null;
+          mentor_id: string | null;
+          dirut_id: string | null;
+          can_be_mentor: boolean | null;
+          can_be_supervisor: boolean | null;
+          can_be_ka_unit: boolean | null;
+          can_be_dirut: boolean | null;
+          functional_roles: string[] | null;
+          manager_scope: string | null;
+          location_id: string | null;
+          location_name: string | null;
+          reading_history: any[] | null;
+          quran_reading_history: any[] | null;
+          todo_list: any[] | null;
+          signature: string | null;
+          last_announcement_read_timestamp: number | null;
+          managed_hospital_ids: string[] | null;
+          achievements: any[] | null;
+          must_change_password: boolean | null;
+          hospital_id: string | null;
+          unit: string | null;
+          bagian: string | null;
+          profession_category: string | null;
+          profession: string | null;
+          gender: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          password: string;
+          role: string;
+          is_active?: boolean;
+          notification_enabled?: boolean;
+          profile_picture?: string | null;
+          monthly_activities?: Record<string, any> | null;
+          activated_months?: string[] | null;
+          last_visit_date?: string | null;
+          ka_unit_id?: string | null;
+          supervisor_id?: string | null;
+          mentor_id?: string | null;
+          dirut_id?: string | null;
+          can_be_mentor?: boolean | null;
+          can_be_supervisor?: boolean | null;
+          can_be_ka_unit?: boolean | null;
+          can_be_dirut?: boolean | null;
+          functional_roles?: string[] | null;
+          manager_scope?: string | null;
+          location_id?: string | null;
+          location_name?: string | null;
+          reading_history?: any[] | null;
+          quran_reading_history?: any[] | null;
+          todo_list?: any[] | null;
+          signature?: string | null;
+          last_announcement_read_timestamp?: number | null;
+          managed_hospital_ids?: string[] | null;
+          achievements?: any[] | null;
+          must_change_password?: boolean | null;
+          hospital_id?: string | null;
+          unit?: string | null;
+          bagian?: string | null;
+          profession_category?: string | null;
+          profession?: string | null;
+          gender?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          password?: string;
+          role?: string;
+          is_active?: boolean;
+          notification_enabled?: boolean;
+          profile_picture?: string | null;
+          monthly_activities?: Record<string, any> | null;
+          activated_months?: string[] | null;
+          last_visit_date?: string | null;
+          ka_unit_id?: string | null;
+          supervisor_id?: string | null;
+          mentor_id?: string | null;
+          dirut_id?: string | null;
+          can_be_mentor?: boolean | null;
+          can_be_supervisor?: boolean | null;
+          can_be_ka_unit?: boolean | null;
+          can_be_dirut?: boolean | null;
+          functional_roles?: string[] | null;
+          manager_scope?: string | null;
+          location_id?: string | null;
+          location_name?: string | null;
+          reading_history?: any[] | null;
+          quran_reading_history?: any[] | null;
+          todo_list?: any[] | null;
+          signature?: string | null;
+          last_announcement_read_timestamp?: number | null;
+          managed_hospital_ids?: string[] | null;
+          achievements?: any[] | null;
+          must_change_password?: boolean | null;
+          hospital_id?: string | null;
+          unit?: string | null;
+          bagian?: string | null;
+          profession_category?: string | null;
+          profession?: string | null;
+          gender?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      attendance_records: {
+        Row: {
+          id: string;
+          employee_id: string;
+          entity_id: string;
+          status: 'hadir' | 'tidak-hadir';
+          reason: string | null;
+          timestamp: string;
+          is_late_entry: boolean;
+          location: unknown | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          employee_id: string;
+          entity_id: string;
+          status: 'hadir' | 'tidak-hadir';
+          reason?: string | null;
+          timestamp?: string;
+          is_late_entry?: boolean;
+          location?: unknown | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          employee_id?: string;
+          entity_id?: string;
+          status?: 'hadir' | 'tidak-hadir';
+          reason?: string | null;
+          timestamp?: string;
+          is_late_entry?: boolean;
+          location?: unknown | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          surah_number: number;
+          surah_name: string;
+          ayah_number: number;
+          notes: string | null;
+          ayah_text: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          surah_number: number;
+          surah_name: string;
+          ayah_number: number;
+          notes?: string | null;
+          ayah_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          surah_number?: number;
+          surah_name?: string;
+          ayah_number?: number;
+          notes?: string | null;
+          ayah_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      quran_readings: {
+        Row: {
+          id: string;
+          user_id: string;
+          surah_name: string;
+          surah_number: number;
+          start_ayah: number;
+          end_ayah: number;
+          date: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          surah_name: string;
+          surah_number: number;
+          start_ayah: number;
+          end_ayah: number;
+          date: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          surah_name?: string;
+          surah_number?: number;
+          start_ayah?: number;
+          end_ayah?: number;
+          date?: string;
+          created_at?: string;
+        };
+      };
+      reading_histories: {
+        Row: {
+          id: string;
+          user_id: string;
+          book_title: string;
+          pages_read: string;
+          date_completed: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          book_title: string;
+          pages_read: string;
+          date_completed: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          book_title?: string;
+          pages_read?: string;
+          date_completed?: string;
+          created_at?: string;
+        };
+      };
+      team_attendance_sessions: {
+        Row: {
+          id: string;
+          creator_id: string;
+          creator_name: string;
+          type: 'KIE' | 'Doa Bersama';
+          date: string;
+          start_time: string;
+          end_time: string;
+          audience_type: 'rules' | 'manual';
+          audience_rules: any;
+          manual_participant_ids: string[] | null;
+          present_user_ids: string[];
+          created_at: string;
+          attendance_mode: 'leader' | 'self' | null;
+          zoom_url: string | null;
+          youtube_url: string | null;
+        };
+        Insert: {
+          id?: string;
+          creator_id: string;
+          creator_name: string;
+          type: 'KIE' | 'Doa Bersama';
+          date: string;
+          start_time: string;
+          end_time: string;
+          audience_type: 'rules' | 'manual';
+          audience_rules?: any;
+          manual_participant_ids?: string[] | null;
+          present_user_ids?: string[];
+          created_at?: string;
+          attendance_mode?: 'leader' | 'self' | null;
+          zoom_url?: string | null;
+          youtube_url?: string | null;
+        };
+        Update: {
+          id?: string;
+          creator_id?: string;
+          creator_name?: string;
+          type?: 'KIE' | 'Doa Bersama';
+          date?: string;
+          start_time?: string;
+          end_time?: string;
+          audience_type?: 'rules' | 'manual';
+          audience_rules?: any;
+          manual_participant_ids?: string[] | null;
+          present_user_ids?: string[];
+          created_at?: string;
+          attendance_mode?: 'leader' | 'self' | null;
+          zoom_url?: string | null;
+          youtube_url?: string | null;
+        };
+      };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          author_id: string;
+          author_name: string;
+          timestamp: number;
+          scope: 'global' | 'mentor';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          author_id: string;
+          author_name: string;
+          timestamp: number;
+          scope?: 'global' | 'mentor';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          author_id?: string;
+          author_name?: string;
+          timestamp?: number;
+          scope?: 'global' | 'mentor';
+          created_at?: string;
+        };
+      };
+      hospitals: {
+        Row: {
+          id: string;
+          name: string;
+          brand: string;
+          address: string;
+          logo: string | null;
+          is_active: boolean;
+          code: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          brand: string;
+          address: string;
+          logo?: string | null;
+          is_active?: boolean;
+          code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          brand?: string;
+          address?: string;
+          logo?: string | null;
+          is_active?: boolean;
+          code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      weekly_report_submissions: {
+        Row: {
+          id: string;
+          mentee_id: string;
+          mentee_name: string;
+          month_key: string;
+          week_index: number;
+          submitted_at: number;
+          status: string;
+          mentor_id: string;
+          supervisor_id: string | null;
+          ka_unit_id: string | null;
+          mentor_reviewed_at: number | null;
+          mentor_notes: string | null;
+          supervisor_reviewed_at: number | null;
+          supervisor_notes: string | null;
+          ka_unit_reviewed_at: number | null;
+          ka_unit_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          mentee_id: string;
+          mentee_name: string;
+          month_key: string;
+          week_index: number;
+          submitted_at: number;
+          status: string;
+          mentor_id: string;
+          supervisor_id?: string | null;
+          ka_unit_id?: string | null;
+          mentor_reviewed_at?: number | null;
+          mentor_notes?: string | null;
+          supervisor_reviewed_at?: number | null;
+          supervisor_notes?: string | null;
+          ka_unit_reviewed_at?: number | null;
+          ka_unit_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          mentee_id?: string;
+          mentee_name?: string;
+          month_key?: string;
+          week_index?: number;
+          submitted_at?: number;
+          status?: string;
+          mentor_id?: string;
+          supervisor_id?: string | null;
+          ka_unit_id?: string | null;
+          mentor_reviewed_at?: number | null;
+          mentor_notes?: string | null;
+          supervisor_reviewed_at?: number | null;
+          supervisor_notes?: string | null;
+          ka_unit_reviewed_at?: number | null;
+          ka_unit_notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+    };
+  };
+}

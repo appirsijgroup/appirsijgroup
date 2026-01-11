@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* Add common variables that might be expected */
+  --border: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --border: #262626;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* --- Legacy Animations from index.html --- */
+@keyframes fadeInView {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-view-change {
+  animation: fadeInView 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-pop-in {
+  animation: pop-in 0.4s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-toast-in {
+  animation: toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+.animate-toast-out {
+  animation: toast-out 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+/* --- Date Range Picker Styles --- */
+.date-cell {
+  transition: all 0.2s ease;
+}
+.date-cell.is-selected-start,
+.date-cell.is-selected-end.is-single-day {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+.date-cell.is-selected-end,
+.date-cell.is-selected-start.is-single-day {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+.date-cell.is-in-range:not(.is-selected-start):not(.is-selected-end) {
+  border-radius: 0;
+}
+.date-cell.is-hover-preview:not(.is-selected-start) {
+  background-color: #5eead4 !important; /* teal-300 */
+  color: #134e4a !important; /* teal-900 */
+  opacity: 0.6;
+}

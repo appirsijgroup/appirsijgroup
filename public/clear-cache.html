@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bersihkan Cache Aplikasi</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .details {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Bersihkan Cache Aplikasi</h1>
+        <p>Gunakan tool ini untuk membersihkan data cache dan memastikan aplikasi menggunakan data terbaru dari Supabase.</p>
+
+        <div id="status"></div>
+
+        <button onclick="clearAllCache()">🗑️ Bersihkan Semua Cache</button>
+        <button onclick="clearLocalStorage()">💾 Hapus localStorage Saja</button>
+        <button onclick="clearSessionStorage()">🔄 Hapus sessionStorage Saja</button>
+        <button onclick="checkData()">🔍 Cek Data Saat Ini</button>
+
+        <div class="details" id="details"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function clearAllCache() {
+            showStatus('Membersihkan semua cache...', 'info');
+
+            try {
+                // Clear localStorage
+                const localStorageItems = Object.keys(localStorage);
+                localStorage.clear();
+
+                // Clear sessionStorage
+                sessionStorage.clear();
+
+                // Clear all caches
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                        });
+                    });
+                }
+
+                showStatus(`✅ Berhasil membersihkan ${localStorageItems.length} item dari localStorage, sessionStorage, dan semua caches!`, 'success');
+
+                // Show details
+                setTimeout(() => {
+                    if (localStorageItems.length > 0) {
+                        document.getElementById('details').innerHTML = `
+                            <h3>Data yang dihapus:</h3>
+                            <ul>
+                                ${localStorageItems.map(item => `<li><code>${item}</code></li>`).join('')}
+                            </ul>
+                            <p style="margin-top: 10px;"><strong>Silakan refresh halaman aplikasi untuk memuat data terbaru.</strong></p>
+                        `;
+                    } else {
+                        document.getElementById('details').innerHTML = '<p>Tidak ada data cache yang ditemukan.</p>';
+                    }
+                }, 500);
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLocalStorage() {
+            showStatus('Membersihkan localStorage...', 'info');
+
+            try {
+                const items = Object.keys(localStorage);
+                localStorage.clear();
+                showStatus(`✅ Berhasil menghapus ${items.length} item dari localStorage!`, 'success');
+
+                setTimeout(() => {
+                    document.getElementById('details').innerHTML = `
+                        <h3>Data localStorage yang dihapus:</h3>
+                        <ul>
+                            ${items.map(item => `<li><code>${item}</code></li>`).join('')}
+                        </ul>
+                    `;
+                }, 500);
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function clearSessionStorage() {
+            showStatus('Membersihkan sessionStorage...', 'info');
+
+            try {
+                const items = Object.keys(sessionStorage);
+                sessionStorage.clear();
+                showStatus(`✅ Berhasil menghapus ${items.length} item dari sessionStorage!`, 'success');
+
+                setTimeout(() => {
+                    document.getElementById('details').innerHTML = `
+                        <h3>Data sessionStorage yang dihapus:</h3>
+                        <ul>
+                            ${items.map(item => `<li><code>${item}</code></li>`).join('')}
+                        </ul>
+                    `;
+                }, 500);
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function checkData() {
+            const localStorageItems = Object.keys(localStorage);
+            const sessionStorageItems = Object.keys(sessionStorage);
+
+            let details = `
+                <h3>📊 Data Saat Ini</h3>
+                <p><strong>localStorage:</strong> ${localStorageItems.length} item</p>
+                <p><strong>sessionStorage:</strong> ${sessionStorageItems.length} item</p>
+            `;
+
+            if (localStorageItems.length > 0) {
+                details += `
+                    <h4 style="margin-top: 15px;">Isi localStorage:</h4>
+                    <ul>
+                        ${localStorageItems.map(item => {
+                            const value = localStorage.getItem(item);
+                            const size = new Blob([value]).size;
+                            return `<li><code>${item}</code> - ${size} bytes</li>`;
+                        }).join('')}
+                    </ul>
+                `;
+            }
+
+            if (sessionStorageItems.length > 0) {
+                details += `
+                    <h4 style="margin-top: 15px;">Isi sessionStorage:</h4>
+                    <ul>
+                        ${sessionStorageItems.map(item => `<li><code>${item}</code></li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            if (localStorageItems.length === 0 && sessionStorageItems.length === 0) {
+                details += '<p style="margin-top: 10px; color: green;">✅ Tidak ada data cache. Aplikasi bersih!</p>';
+            }
+
+            document.getElementById('details').innerHTML = details;
+        }
+
+        // Check data on load
+        window.onload = function() {
+            checkData();
+        };
+    </script>
+</body>
+</html>

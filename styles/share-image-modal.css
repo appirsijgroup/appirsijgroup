@@ -1,0 +1,101 @@
+/* Custom styling for the share image modal */
+.share-image-modal .modal-dialog {
+  max-width: 90%;
+  margin: 1.75rem auto;
+  /* Sesuaikan tinggi modal dengan konten gambar */
+  height: auto;
+}
+
+.share-image-modal .modal-content {
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  /* Biarkan tinggi menyesuaikan konten */
+  height: auto;
+}
+
+/* Hilangkan header modal */
+.share-image-modal .modal-header {
+  display: none;
+}
+
+.share-image-modal .modal-body {
+  background-color: #fff;
+  /* Biarkan body menyesuaikan tinggi konten */
+  display: flex;
+  flex-direction: column;
+}
+
+.image-container {
+  background-color: #f8f9fa;
+  /* Hapus batas maksimum tinggi agar menyesuaikan gambar */
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.share-image {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.share-image.loaded {
+  opacity: 1;
+}
+
+.action-icons {
+  background-color: #f8f9fa;
+  flex-shrink: 0; /* Ikon aksi tidak ikut mengembang */
+  border-top: 1px solid #dee2e6;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.icon-button:hover {
+  transform: scale(1.2);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Pastikan backdrop bisa diklik untuk menutup modal */
+.modal-backdrop.show {
+  opacity: 0.5;
+  z-index: 1040;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .share-image-modal .modal-dialog {
+    margin: 1rem;
+    max-width: 100%;
+    /* Untuk layar kecil, tetap batasi tinggi maksimal */
+    max-height: 90vh;
+  }
+
+  .image-container {
+    max-height: 60vh;
+    overflow: auto;
+  }
+
+  .action-icons {
+    padding: 1rem;
+  }
+
+  .icon-button {
+    font-size: 1.2rem !important;
+  }
+}

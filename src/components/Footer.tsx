@@ -5,7 +5,8 @@ const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
   return (
     <footer className="w-full text-center py-4 mt-8 border-t border-white/10 text-sm text-gray-400">
-        <p>&copy; {currentYear} RS Islam Jakarta Sukapura | Dikembangkan oleh Edi Heryanto</p>
+        <p>&copy; 2026 APPI RSIJ GROUP</p>
+        <p className="mt-1">Developed by Edi Heryanto</p>
     </footer>
   );
 };

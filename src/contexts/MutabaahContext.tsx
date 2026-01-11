@@ -125,7 +125,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
           try {
             const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
             await updateMonthlyProgress(emp.id, currentMonth, updatedActivities[currentMonth]);
-            console.log(`✅ Synced ${syncedCount} attendance records to monthly progress and Supabase`);
 
             // CRITICAL: Update employee in parent store with synced monthlyActivities
             if (onUpdateEmployee) {

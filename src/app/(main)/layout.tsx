@@ -9,7 +9,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const { loggedInEmployee, setAllUsersData, setLoggedInEmployee } = useAppDataStore();
 
     const handleUpdateEmployee = (updatedEmployee: Employee) => {
-        console.log('handleUpdateEmployee called with:', updatedEmployee);
         // Update the main store
         setAllUsersData(prev => ({
             ...prev,

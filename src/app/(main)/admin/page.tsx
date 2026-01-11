@@ -170,8 +170,6 @@ export default function AdminPage() {
                 }
                 return newData;
             });
-
-            console.log(`✅ Role updated successfully for user ${userId} to ${newRole}`);
         } catch (err: unknown) {
             console.error('Error setting role:', err);
             alert('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'));

@@ -50,16 +50,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
 
         try {
-            console.log('🔄 Loading employee data from Supabase for user:', userId);
             const employee = await getEmployeeById(userId);
 
             if (employee) {
-                console.log('✅ Employee data loaded from Supabase:', employee.name);
-                console.log('📊 Functional roles:', employee.functionalRoles);
-                console.log('📊 Can be mentor:', employee.canBeMentor);
-                console.log('📊 Can be supervisor:', employee.canBeSupervisor);
-                console.log('📊 Can be KA Unit:', employee.canBeKaUnit);
-
                 set({
                     loggedInEmployee: employee,
                     allUsersData: {

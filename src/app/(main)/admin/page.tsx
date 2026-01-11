@@ -37,6 +37,34 @@ export default function AdminPage() {
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
+    // Handler untuk update mutabaah locking mode dengan konfirmasi
+    const handleUpdateMutabaahLockingMode = async (mode: MutabaahLockingMode) => {
+        // Cek apakah user adalah super-admin
+        if (loggedInEmployee?.role !== 'super-admin') {
+            alert('❌ Hanya Super Admin yang dapat mengubah pengaturan global ini!');
+            return;
+        }
+
+        // Konfirmasi perubahan
+        const modeText = mode === 'weekly' ? 'Perpekan (Dikunci per pekan)' : 'Perbulanan (Bebas mengisi selama bulan berjalan)';
+        const confirmed = confirm(
+            `⚠️ KONFIRMASI PERUBAHAN PENGATURAN GLOBAL\n\n` +
+            `Anda akan mengubah mode penguncian Lembar Mutaba'ah menjadi:\n\n` +
+            `📌 ${modeText}\n\n` +
+            `⚠️ Perubahan ini akan BERLAKU KE SELURUH USER di sistem!\n` +
+            `Semua user akan terpengaruh oleh pengaturan baru ini.\n\n` +
+            `Lanjutkan?`
+        );
+
+        if (!confirmed) {
+            return; // User membatalkan
+        }
+
+        // Simpan ke Supabase (dengan isSuperAdmin=true)
+        await setMutabaahLockingMode(mode, true);
+        alert('✅ Pengaturan berhasil disimpan ke Supabase dan berlaku untuk seluruh user!');
+    };
+
     // Load employees and hospitals from Supabase
     useEffect(() => {
         const loadData = async () => {
@@ -694,7 +722,7 @@ export default function AdminPage() {
             onDeleteHospital={handleDeleteHospital}
             onToggleHospitalStatus={handleToggleHospitalStatus}
             mutabaahLockingMode={mutabaahLockingMode}
-            onUpdateMutabaahLockingMode={setMutabaahLockingMode}
+            onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
         />
     );
 }

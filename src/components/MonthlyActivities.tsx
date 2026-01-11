@@ -343,7 +343,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                         disabled={isPastMonth}
                         className="bg-teal-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-teal-400 transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
-                        {isPastMonth ? "Bulan Telah Lewat" : "Aktifkan Lembar Mutaba&apos;ah"}
+                        {isPastMonth ? "Bulan Telah Lewat" : "Aktifkan Lembar Mutaba'ah"}
                     </button>
                      {isPastMonth && <p className="text-xs text-yellow-300 mt-3">Anda tidak dapat mengaktifkan lembar untuk bulan yang telah berlalu.</p>}
                 </div>

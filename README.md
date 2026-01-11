@@ -75,3 +75,13 @@ Contoh implementasi:
 ```
 
 Modal ini dirancang untuk menyesuaikan ukuran gambar agar tetap estetik, terutama untuk ayat-ayat kecil yang tidak akan terlihat terlalu tinggi saat ditampilkan.
+
+## Kontribusi
+
+Kami menyambut kontribusi dari siapa saja. Silakan ikuti langkah-langkah berikut untuk berkontribusi:
+
+1. Fork repository ini
+2. Buat branch fitur Anda (`git checkout -b fitur/AwesomeFeature`)
+3. Commit perubahan Anda (`git commit -m 'Menambahkan fitur AwesomeFeature'`)
+4. Push ke branch Anda (`git push origin fitur/AwesomeFeature`)
+5. Buka Pull Request

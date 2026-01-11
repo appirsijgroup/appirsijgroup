@@ -42,18 +42,18 @@ const SettingsSection: React.FC<{
         <div className="bg-black/20 rounded-2xl border border-white/10 overflow-hidden">
             <button
                 onClick={onToggle}
-                className="w-full flex justify-between items-center p-5 hover:bg-white/5 text-left"
+                className="w-full flex justify-between items-center p-3 sm:p-4 md:p-5 hover:bg-white/5 text-left gap-2"
                 aria-expanded={isOpen}
             >
-                <div className="flex items-center gap-3">
-                    <Icon className="w-6 h-6 text-teal-300" />
-                    <span className="font-semibold text-lg text-white">{title}</span>
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300 flex-shrink-0" />
+                    <span className="font-semibold text-base sm:text-lg text-white truncate">{title}</span>
                 </div>
-                <ChevronDownIcon className={`w-6 h-6 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDownIcon className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
-                    <div className="p-5 border-t border-white/10">
+                    <div className="p-3 sm:p-4 md:p-5 border-t border-white/10">
                         {children}
                     </div>
                 </div>
@@ -400,20 +400,20 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center justify-center gap-2 mt-5">
-                        <h2 className="text-3xl font-bold text-white truncate" title={employee.name}>{employee.name}</h2>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-5 px-4">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center truncate max-w-full" title={employee.name}>{employee.name}</h2>
                         {shouldShowVerifiedBadge && (
                             // FIX: Wrapped CheckBadgeIcon in a span with a title attribute to fix a prop type error.
-                            <span title="Lencana Terverifikasi">
-                                <CheckBadgeIcon className="w-7 h-7 text-teal-400 flex-shrink-0" />
+                            <span title="Lencana Terverifikasi" className="flex-shrink-0">
+                                <CheckBadgeIcon className="w-5 h-5 sm:w-6 sm:h-7 text-teal-400" />
                             </span>
                         )}
                     </div>
-                    <p className="text-teal-300 font-medium text-lg">{employee.profession}</p>
-                    <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-left text-sm">
-                        <p><strong className="text-blue-200 w-20 inline-block">NIP</strong>: <span className="font-mono">{employee.id}</span></p>
-                        <p><strong className="text-blue-200 w-20 inline-block">Unit</strong>: {employee.unit}</p>
-                        <p><strong className="text-blue-200 w-20 inline-block">Bagian</strong>: {employee.bagian}</p>
+                    <p className="text-teal-300 font-medium text-base sm:text-lg text-center px-4">{employee.profession}</p>
+                    <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-left text-sm px-4">
+                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">NIP</strong>: <span className="font-mono break-all">{employee.id}</span></p>
+                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">Unit</strong>: <span className="break-all">{employee.unit}</span></p>
+                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">Bagian</strong>: <span className="break-all">{employee.bagian}</span></p>
                     </div>
                     
                     {(functionalRolesToDisplay.length > 0 || systemRolesToDisplay.length > 0) && (
@@ -476,7 +476,11 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 </div>
                             )}
                         </div>
-                        <div className="text-right pt-2"><button type="submit" className="bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-500 transition-all duration-300">Simpan Perubahan</button></div>
+                        <div className="text-left sm:text-right pt-2">
+                            <button type="submit" className="w-full sm:w-auto bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-500 transition-all duration-300 text-sm sm:text-base">
+                                Simpan Perubahan
+                            </button>
+                        </div>
                     </form>
                 </SettingsSection>
 
@@ -508,14 +512,18 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 />
                             </div>
                             <PasswordStrengthIndicator validationResult={passwordValidation} />
-                            
-                            <div className="text-right pt-2"><button type="submit" className="bg-teal-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-teal-400 transition-all duration-300">Ubah Password</button></div>
+
+                            <div className="text-left sm:text-right pt-2">
+                                <button type="submit" className="w-full sm:w-auto bg-teal-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-teal-400 transition-all duration-300 text-sm sm:text-base">
+                                    Ubah Password
+                                </button>
+                            </div>
                         </form>
                         <div className="space-y-4 pt-6 border-t border-white/10">
-                            <h3 className="text-lg font-semibold text-teal-300">Tanda Tangan Digital</h3>
-                            <div className="bg-black/20 p-4 rounded-lg border border-white/10 flex items-center justify-between">
-                                <div>{employee.signature ? <img src={employee.signature} alt="Tanda Tangan" className="h-16 bg-white rounded-md p-2" /> : <p className="text-gray-400">Belum ada tanda tangan.</p>}</div>
-                                <button onClick={() => setIsSignatureModalOpen(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg">{employee.signature ? 'Ubah' : 'Tambah'} Tanda Tangan</button>
+                            <h3 className="text-base sm:text-lg font-semibold text-teal-300">Tanda Tangan Digital</h3>
+                            <div className="bg-black/20 p-3 sm:p-4 rounded-lg border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <div className="flex items-center justify-center">{employee.signature ? <img src={employee.signature} alt="Tanda Tangan" className="h-12 sm:h-16 bg-white rounded-md p-2" /> : <p className="text-gray-400 text-sm">Belum ada tanda tangan.</p>}</div>
+                                <button onClick={() => setIsSignatureModalOpen(true)} className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm">{employee.signature ? 'Ubah' : 'Tambah'} Tanda Tangan</button>
                             </div>
                         </div>
                     </div>

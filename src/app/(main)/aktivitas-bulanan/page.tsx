@@ -10,9 +10,22 @@ import { getAllEmployees } from '@/services/employeeService';
 export default function AktivitasBulananPage() {
     const { loggedInEmployee, allUsersData, setAllUsersData } = useAppDataStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
-    const { mutabaahLockingMode } = useMutabaahStore();
+    const { mutabaahLockingMode, loadFromSupabase } = useMutabaahStore();
     const [date, setDate] = useState<Date>(new Date());
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+
+    // 🔥 FIX: Load mutabaah locking mode from Supabase on mount
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                await loadFromSupabase();
+                console.log('✅ Loaded mutabaah locking mode from Supabase');
+            } catch (error) {
+                console.error('❌ Error loading mutabaah locking mode:', error);
+            }
+        };
+        loadSettings();
+    }, [loadFromSupabase]);
 
     // ⚡ FIX: Load employees if allUsersData is empty
     useEffect(() => {

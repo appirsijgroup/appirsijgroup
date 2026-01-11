@@ -6,7 +6,7 @@ import Header from './Header';
 import Navigation, { NavItem } from './Navigation';
 import Footer from './Footer';
 import ShareImageModal from './ShareImageModal';
-import { useUIStore, useNotificationStore, useAppDataStore } from '@/store/store';
+import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useMutabaah } from '@/contexts/MutabaahContext';
 import {
@@ -51,6 +51,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, addToast, shareModalState } = useUIStore();
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
+    const { loadFromSupabase } = useMutabaahStore();
 
     // ⚡ OPTIMIZATION: Defer non-critical counts to prevent blocking initial render
     const [deferredUnreadAnnouncements, setDeferredUnreadAnnouncements] = useState(0);
@@ -92,6 +93,16 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             router.push('/login');
         }
     }, [loggedInEmployee, isHydrated, router]);
+
+    // --- Load Mutabaah Settings from Supabase ---
+    useEffect(() => {
+        // Load settings after user is logged in
+        if (isHydrated && loggedInEmployee) {
+            loadFromSupabase().catch(error => {
+                console.error('❌ Error loading mutabaah settings:', error);
+            });
+        }
+    }, [isHydrated, loggedInEmployee, loadFromSupabase]);
 
     // ⚡ OPTIMIZATION: Defer unread counts calculation using startTransition
     useEffect(() => {

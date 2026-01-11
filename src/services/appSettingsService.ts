@@ -64,18 +64,24 @@ export const getAllSettings = async (): Promise<Record<string, string>> => {
  */
 export const updateAppSetting = async (
     key: AppSettingsKey,
-    value: string
+    value: string,
+    userId?: string
 ): Promise<{ success: boolean; error?: string }> => {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
+        // If userId not provided, try to get from Supabase Auth (fallback)
+        let effectiveUserId = userId;
 
-        if (!user) {
-            return { success: false, error: 'User not authenticated' };
+        if (!effectiveUserId) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                return { success: false, error: 'User not authenticated' };
+            }
+            effectiveUserId = user.id;
         }
 
         const { error } = await (supabase
             .from('app_settings') as any)
-            .update({ value, updated_at: new Date().toISOString(), updated_by: user.id })
+            .update({ value, updated_at: new Date().toISOString(), updated_by: effectiveUserId })
             .eq('key', key);
 
         if (error) {

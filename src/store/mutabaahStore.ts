@@ -5,7 +5,7 @@ import { getAppSetting, updateAppSetting } from '@/services/appSettingsService';
 
 export interface MutabaahState {
     mutabaahLockingMode: MutabaahLockingMode;
-    setMutabaahLockingMode: (mode: MutabaahLockingMode, isSuperAdmin?: boolean) => Promise<void>;
+    setMutabaahLockingMode: (mode: MutabaahLockingMode, isSuperAdmin?: boolean, userId?: string) => Promise<void>;
     loadFromSupabase: () => Promise<void>;
 }
 
@@ -28,14 +28,14 @@ export const useMutabaahStore = create<MutabaahState>()(
             },
 
             // Update mode (save to Supabase if isSuperAdmin=true)
-            setMutabaahLockingMode: async (mode, isSuperAdmin = false) => {
+            setMutabaahLockingMode: async (mode, isSuperAdmin = false, userId) => {
                 // Update local state immediately
                 set({ mutabaahLockingMode: mode });
 
                 // If super admin, also update in Supabase
                 if (isSuperAdmin) {
                     try {
-                        const result = await updateAppSetting('mutabaah_locking_mode', mode);
+                        const result = await updateAppSetting('mutabaah_locking_mode', mode, userId);
                         if (result.success) {
                             console.log('✅ Mutabaah locking mode saved to Supabase:', mode);
                         } else {

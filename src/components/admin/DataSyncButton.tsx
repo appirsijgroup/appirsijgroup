@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { syncAllEmployeesToSupabase } from '@/services/employeeService';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 /**
  * Admin component to sync localStorage data to Supabase
@@ -10,6 +11,7 @@ import { useAppDataStore } from '@/store/store';
  */
 export default function DataSyncButton() {
     const { allUsersData } = useAppDataStore();
+    const { addToast } = useUIStore();
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{
         success: number;
@@ -17,12 +19,14 @@ export default function DataSyncButton() {
         errors: string[];
     } | null>(null);
     const [showDetails, setShowDetails] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const handleSync = async () => {
-        if (!confirm('Apakah Anda yakin ingin melakukan sinkronisasi data ke Supabase?')) {
-            return;
-        }
+        setShowConfirmModal(true);
+    };
 
+    const handleConfirmSync = async () => {
+        setShowConfirmModal(false);
         setIsSyncing(true);
         setSyncResult(null);
 
@@ -34,21 +38,22 @@ export default function DataSyncButton() {
             setSyncResult(result);
 
             if (result.failed === 0) {
-                alert(`✅ Sinkronisasi berhasil!\n\n${result.success} karyawan berhasil disinkronkan ke Supabase.`);
+                addToast(`✅ Sinkronisasi berhasil! ${result.success} karyawan berhasil disinkronkan ke Supabase.`, 'success');
             } else {
-                alert(`⚠️ Sinkronisasi selesai dengan beberapa error.\n\nSukses: ${result.success}\nGagal: ${result.failed}\n\nLihat detail di console.`);
+                addToast(`⚠️ Selesai dengan error. Sukses: ${result.success}, Gagal: ${result.failed}`, 'error');
             }
         } catch (error) {
             console.error('❌ Sync failed:', error);
-            alert('❌ Sinkronisasi gagal. Silakan cek console untuk detail error.');
+            addToast('❌ Sinkronisasi gagal. Silakan cek console untuk detail error.', 'error');
         } finally {
             setIsSyncing(false);
         }
     };
 
     return (
-        <div className="fixed bottom-4 right-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-4 max-w-md">
+        <>
+            <div className="fixed bottom-4 right-4 z-50">
+                <div className="bg-white rounded-lg shadow-xl p-4 max-w-md">
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-gray-900">
                         ⚙️ Sinkronisasi Data
@@ -116,6 +121,23 @@ export default function DataSyncButton() {
                     <p>📊 Total data di localStorage: <strong>{Object.keys(allUsersData).length}</strong> karyawan</p>
                 </div>
             </div>
-        </div>
+            </div>
+            <ConfirmationModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={handleConfirmSync}
+                title="Konfirmasi Sinkronisasi Data"
+                message={
+                    <div className="space-y-2">
+                        <p>Apakah Anda yakin ingin melakukan sinkronisasi data ke Supabase?</p>
+                        <p className="text-sm text-gray-300">
+                            📊 Total data yang akan disinkronkan: <strong>{Object.keys(allUsersData).length}</strong> karyawan
+                        </p>
+                    </div>
+                }
+                confirmText="Ya, Sinkronkan"
+                confirmColorClass="bg-blue-600 hover:bg-blue-500"
+            />
+        </>
     );
 }

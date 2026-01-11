@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppDataStore, useUIStore, useActivityStore, useSunnahIbadahStore, useDailyActivitiesStore, useJobStructureStore, useAuditLogStore, useAnnouncementStore, useHospitalStore, useMutabaahStore } from '@/store/store';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 // 🔥 FIX: Dynamic import untuk AdminDashboard - 200KB akan di-load LAZY!
 const AdminDashboard = dynamic(() => import('@/components/AdminDashboard').then(mod => ({ default: mod.AdminDashboard })), {
@@ -36,33 +37,37 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
+    const [mutabaahConfirmModal, setMutabaahConfirmModal] = useState<{
+        isOpen: boolean;
+        mode: MutabaahLockingMode | null;
+    }>({ isOpen: false, mode: null });
 
     // Handler untuk update mutabaah locking mode dengan konfirmasi
     const handleUpdateMutabaahLockingMode = async (mode: MutabaahLockingMode) => {
         // Cek apakah user adalah super-admin
         if (loggedInEmployee?.role !== 'super-admin') {
-            alert('❌ Hanya Super Admin yang dapat mengubah pengaturan global ini!');
+            addToast('❌ Hanya Super Admin yang dapat mengubah pengaturan global ini!', 'error');
             return;
         }
 
-        // Konfirmasi perubahan
-        const modeText = mode === 'weekly' ? 'Perpekan (Dikunci per pekan)' : 'Perbulanan (Bebas mengisi selama bulan berjalan)';
-        const confirmed = confirm(
-            `⚠️ KONFIRMASI PERUBAHAN PENGATURAN GLOBAL\n\n` +
-            `Anda akan mengubah mode penguncian Lembar Mutaba'ah menjadi:\n\n` +
-            `📌 ${modeText}\n\n` +
-            `⚠️ Perubahan ini akan BERLAKU KE SELURUH USER di sistem!\n` +
-            `Semua user akan terpengaruh oleh pengaturan baru ini.\n\n` +
-            `Lanjutkan?`
-        );
+        // Buka modal konfirmasi
+        setMutabaahConfirmModal({ isOpen: true, mode });
+    };
 
-        if (!confirmed) {
-            return; // User membatalkan
-        }
+    const handleConfirmMutabaahChange = async () => {
+        const { mode } = mutabaahConfirmModal;
+        if (!mode) return;
 
-        // Simpan ke Supabase (dengan isSuperAdmin=true)
-        await setMutabaahLockingMode(mode, true);
-        alert('✅ Pengaturan berhasil disimpan ke Supabase dan berlaku untuk seluruh user!');
+        // Simpan ke Supabase (dengan isSuperAdmin=true dan userId)
+        await setMutabaahLockingMode(mode, true, loggedInEmployee?.id);
+        addToast('✅ Pengaturan berhasil disimpan!', 'success');
+
+        // Tutup modal
+        setMutabaahConfirmModal({ isOpen: false, mode: null });
+    };
+
+    const handleCloseMutabaahModal = () => {
+        setMutabaahConfirmModal({ isOpen: false, mode: null });
     };
 
     // Load employees and hospitals from Supabase
@@ -172,7 +177,7 @@ export default function AdminPage() {
             });
         } catch (err: unknown) {
             console.error('Error toggling status:', err);
-            alert('Gagal mengupdate status: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            addToast('Gagal mengupdate status: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
 
@@ -200,7 +205,7 @@ export default function AdminPage() {
             });
         } catch (err: unknown) {
             console.error('Error setting role:', err);
-            alert('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            addToast('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
 
@@ -321,7 +326,7 @@ export default function AdminPage() {
             });
         } catch (err: unknown) {
             console.error('Error deleting user:', err);
-            alert('Gagal menghapus user: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            addToast('Gagal menghapus user: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
 
@@ -469,7 +474,7 @@ export default function AdminPage() {
             return true;
         } catch (error) {
             console.error('Error updating attendance:', error);
-            alert('Gagal mengupdate kehadiran: ' + (error instanceof Error ? error.message : 'Unknown error'));
+            addToast('Gagal mengupdate kehadiran: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             return false;
         }
     };
@@ -581,7 +586,7 @@ export default function AdminPage() {
             setHospitals(hospitalsData);
         } catch (err: unknown) {
             console.error('Error toggling hospital status:', err);
-            alert('Gagal mengupdate status RS: ' + (err instanceof Error ? err.message : 'Unknown error'));
+            addToast('Gagal mengupdate status RS: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
 
@@ -687,42 +692,64 @@ export default function AdminPage() {
     }
 
     return (
-        <AdminDashboard
-            allUsersData={allUsersData}
-            loggedInEmployee={loggedInEmployee}
-            onToggleStatus={handleToggleStatus}
-            onSetRole={handleSetRole}
-            onAddUser={handleAddUser}
-            onUpdateUser={handleUpdateUser}
-            onDeleteUser={handleDeleteUser}
-            onBulkUpdateUsers={handleBulkUpdateUsers}
-            activities={activities}
-            onAddActivity={handleAddActivity}
-            onUpdateActivity={updateActivity}
-            onDeleteActivity={deleteActivity}
-            onAdminUpdateAttendance={handleAdminUpdateAttendance}
-            onUpdateProfile={handleUpdateProfile}
-            sunnahIbadahList={sunnahIbadahList}
-            onAddSunnahIbadah={handleAddSunnahIbadah}
-            onUpdateSunnahIbadah={updateSunnahIbadah}
-            onDeleteSunnahIbadah={deleteSunnahIbadah}
-            dailyActivitiesConfig={dailyActivitiesConfig}
-            onUpdateDailyActivitiesConfig={updateDailyActivitiesConfig}
-            jobStructure={jobStructure}
-            onUpdateJobStructure={updateJobStructure}
-            auditLog={auditLog}
-            onLogAudit={logAudit}
-            announcements={announcements}
-            onCreateAnnouncement={handleCreateAnnouncement}
-            onDeleteAnnouncement={deleteAnnouncement}
-            onMarkAsRead={markAnnouncementAsRead}
-            hospitals={hospitals}
-            onAddHospital={handleAddHospital}
-            onUpdateHospital={handleUpdateHospital}
-            onDeleteHospital={handleDeleteHospital}
-            onToggleHospitalStatus={handleToggleHospitalStatus}
-            mutabaahLockingMode={mutabaahLockingMode}
-            onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
-        />
+        <>
+            <AdminDashboard
+                allUsersData={allUsersData}
+                loggedInEmployee={loggedInEmployee}
+                onToggleStatus={handleToggleStatus}
+                onSetRole={handleSetRole}
+                onAddUser={handleAddUser}
+                onUpdateUser={handleUpdateUser}
+                onDeleteUser={handleDeleteUser}
+                onBulkUpdateUsers={handleBulkUpdateUsers}
+                activities={activities}
+                onAddActivity={handleAddActivity}
+                onUpdateActivity={updateActivity}
+                onDeleteActivity={deleteActivity}
+                onAdminUpdateAttendance={handleAdminUpdateAttendance}
+                onUpdateProfile={handleUpdateProfile}
+                sunnahIbadahList={sunnahIbadahList}
+                onAddSunnahIbadah={handleAddSunnahIbadah}
+                onUpdateSunnahIbadah={updateSunnahIbadah}
+                onDeleteSunnahIbadah={deleteSunnahIbadah}
+                dailyActivitiesConfig={dailyActivitiesConfig}
+                onUpdateDailyActivitiesConfig={updateDailyActivitiesConfig}
+                jobStructure={jobStructure}
+                onUpdateJobStructure={updateJobStructure}
+                auditLog={auditLog}
+                onLogAudit={logAudit}
+                announcements={announcements}
+                onCreateAnnouncement={handleCreateAnnouncement}
+                onDeleteAnnouncement={deleteAnnouncement}
+                onMarkAsRead={markAnnouncementAsRead}
+                hospitals={hospitals}
+                onAddHospital={handleAddHospital}
+                onUpdateHospital={handleUpdateHospital}
+                onDeleteHospital={handleDeleteHospital}
+                onToggleHospitalStatus={handleToggleHospitalStatus}
+                mutabaahLockingMode={mutabaahLockingMode}
+                onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
+            />
+            <ConfirmationModal
+                isOpen={mutabaahConfirmModal.isOpen}
+                onClose={handleCloseMutabaahModal}
+                onConfirm={handleConfirmMutabaahChange}
+                title="Ubah Mode Penguncian Mutaba'ah?"
+                message={
+                    <div className="space-y-2">
+                        <p>Mode: <span className="font-bold text-yellow-300">
+                            {mutabaahConfirmModal.mode === 'weekly'
+                                ? '📌 Perpekan'
+                                : '📌 Perbulanan'}
+                        </span></p>
+                        <p className="text-red-300 text-sm">
+                            ⚠️ Berlaku untuk SEMUA user
+                        </p>
+                    </div>
+                }
+                confirmText="Ya, Ubah"
+                confirmColorClass="bg-red-600 hover:bg-red-500"
+            />
+        </>
     );
 }

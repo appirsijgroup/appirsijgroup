@@ -50,7 +50,7 @@ const ToggleSwitch: React.FC<{
 };
 
 
-const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers, onUpdateProfile }) => {
+const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
@@ -59,39 +59,44 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers, onUpd
         onConfirm: () => void;
     } | null>(null);
 
-    const userMap = useMemo(() => new Map(allUsers.map(u => [u.id, u.name])), [allUsers]);
-    const potentialMentors = useMemo(() => allUsers.filter(u => u.canBeMentor), [allUsers]);
-    const potentialSupervisors = useMemo(() => allUsers.filter(u => u.canBeSupervisor), [allUsers]);
-    const potentialKaUnits = useMemo(() => allUsers.filter(u => u.canBeKaUnit), [allUsers]);
-    const designatedDirut = useMemo(() => allUsers.find(u => u.canBeDirut), [allUsers]);
+    // Defensive check: ensure allUsers is an array
+    const safeAllUsers = Array.isArray(allUsers) ? allUsers : [];
+
+    const userMap = useMemo(() => new Map(safeAllUsers.map(u => [u.id, u.name])), [safeAllUsers]);
+    const potentialMentors = useMemo(() => safeAllUsers.filter(u => u.canBeMentor === true), [safeAllUsers]);
+    const potentialSupervisors = useMemo(() => safeAllUsers.filter(u => u.canBeSupervisor === true), [safeAllUsers]);
+    const potentialKaUnits = useMemo(() => safeAllUsers.filter(u => u.canBeKaUnit === true), [safeAllUsers]);
+    const designatedDirut = useMemo(() => safeAllUsers.find(u => u.canBeDirut === true), [safeAllUsers]);
 
     // Effect to auto-assign DIRUT to all employees when the designated DIRUT changes
     useEffect(() => {
-        if (allUsers.length === 0) return;
+        if (safeAllUsers.length === 0) return;
 
         const dirutId = designatedDirut ? designatedDirut.id : undefined;
 
         // Find all users who need an update (their dirutId is different from the new one)
         // Also exclude the DIRUT himself from being updated
-        const usersToUpdate = allUsers.filter(u => u.dirutId !== dirutId && (!dirutId || u.id !== dirutId));
+        const usersToUpdate = safeAllUsers.filter(u => u.dirutId !== dirutId && (!dirutId || u.id !== dirutId));
 
         if (usersToUpdate.length > 0) {
             const updatePromises = usersToUpdate.map(user =>
                 onUpdateProfile(user.id, { dirutId: dirutId })
             );
-            Promise.all(updatePromises);
+            Promise.all(updatePromises).catch(err => {
+                console.error('Error auto-updating dirut:', err);
+            });
         }
-    }, [designatedDirut, allUsers, onUpdateProfile]);
+    }, [designatedDirut, safeAllUsers, onUpdateProfile]);
 
 
     const filteredUsers = useMemo(() => {
-        if (!searchTerm) return allUsers;
+        if (!searchTerm) return safeAllUsers;
         const lowerSearchTerm = searchTerm.toLowerCase();
-        return allUsers.filter(user =>
+        return safeAllUsers.filter(user =>
             user.name.toLowerCase().includes(lowerSearchTerm) ||
             user.id.toLowerCase().includes(lowerSearchTerm)
         );
-    }, [allUsers, searchTerm]);
+    }, [safeAllUsers, searchTerm]);
 
     // Sort users by name for consistent display
     const sortedUsers = useMemo(() => {
@@ -117,6 +122,12 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers, onUpd
         field: 'mentorId' | 'supervisorId' | 'kaUnitId', // dirutId is now automated
         newId: string | undefined
     ) => {
+        // Defensive check
+        if (!userToUpdate || !userToUpdate.id) {
+            console.error('Invalid user in handleRelationChange:', userToUpdate);
+            return;
+        }
+
         if (newId === undefined && userToUpdate[field]) {
             const fieldNameMap = {
                 mentorId: 'Mentor',

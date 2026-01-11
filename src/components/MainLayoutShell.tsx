@@ -56,7 +56,6 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         const userId = localStorage.getItem('loggedInUserId');
 
         if (!userId && !isHydrated) {
-            console.log('🔒 No user session in localStorage - redirecting to login immediately');
             setHydrated(true);
             router.push('/login');
             return;
@@ -68,7 +67,6 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         if (!isHydrated && loggedInEmployee === null) {
             const userId = localStorage.getItem('loggedInUserId');
             if (userId) {
-                console.log('🔄 App starting, loading employee data from Supabase...');
                 loadLoggedInEmployee();
             } else {
                 // No user session - mark as hydrated immediately to prevent loading
@@ -85,10 +83,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         // Check if user is authenticated
         const userId = localStorage.getItem('loggedInUserId');
         if (!userId || !loggedInEmployee) {
-            console.log('🔒 No valid session found, redirecting to login');
             router.push('/login');
-        } else {
-            console.log('✅ User is authenticated:', loggedInEmployee.name);
         }
     }, [loggedInEmployee, isHydrated, router]);
 

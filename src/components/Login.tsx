@@ -134,20 +134,17 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
 
                 <div className="text-center mb-10">
-                    <div className="flex justify-center mb-5">
+                    <div className="flex justify-center mb-6">
                         <img
                             src="/logorsijsp.png"
                             alt="Logo RSI Jakarta Group"
-                            className="h-20 w-auto"
+                            className="h-32 w-auto"
                         />
                     </div>
-                    <h1 className="text-4xl font-bold tracking-wider text-white">
-                        APPI
+                    <h1 className="text-2xl font-bold tracking-wide text-white leading-tight">
+                        APLIKASI PERILAKU PELAYANAN ISLAMI
                     </h1>
-                    <p className="text-md text-slate-300 mt-2">
-                        Aplikasi Perilaku Pelayanan Islami
-                    </p>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <p className="text-sm text-slate-300 mt-3">
                         Rumah Sakit Islam Jakarta Group
                     </p>
                 </div>

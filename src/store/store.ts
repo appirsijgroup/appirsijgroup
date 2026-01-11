@@ -86,8 +86,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     // Logout function to clear session
     logoutEmployee: async () => {
-        console.log('🚪 Logging out user...');
-
         // Call logout API to clear server session if needed
         try {
             await fetch('/api/auth/logout', {
@@ -95,17 +93,23 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 credentials: 'include',
             });
         } catch (error) {
-            console.error('Logout API error:', error);
+            // Ignore logout API errors - proceed with client-side logout
         }
 
         // Clear client-side storage
         localStorage.removeItem('loggedInUserId');
         document.cookie = 'loggedInUserId=; path=/; max-age=0; SameSite=Lax';
 
+        // Clear state but keep hydrated to prevent loading flash
         set({
             loggedInEmployee: null,
-            isHydrated: false
+            isHydrated: true  // Keep hydrated to prevent loading screen
         });
+
+        // Redirect to login page immediately
+        if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+        }
     },
 
     markAnnouncementAsRead: () => {

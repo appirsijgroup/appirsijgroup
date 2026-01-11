@@ -41,7 +41,7 @@ const allNavItemsRaw = [
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const { loggedInEmployee, loadLoggedInEmployee, isHydrated, logoutEmployee, setHydrated } = useAppDataStore();
+    const { loggedInEmployee, loadLoggedInEmployee, isHydrated, logoutEmployee, setHydrated, isLoggingOut } = useAppDataStore();
     const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, addToast, shareModalState } = useUIStore();
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
@@ -150,7 +150,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [isMenuOpen, setIsMenuOpen]);
 
     // 🔥 OPTIMIZATION: Only check loggedInEmployee, defer all non-critical loading
-    if (!loggedInEmployee) {
+    // Don't show loading spinner if we're logging out
+    if (!loggedInEmployee && !isLoggingOut) {
         return (
             <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
@@ -173,7 +174,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 <Header
                     isMenuOpen={isMenuOpen}
                     toggleMenu={handleToggleMenu}
-                    employee={loggedInEmployee}
+                    employee={loggedInEmployee!}
                     title={activeTitle}
                     unreadNotificationsCount={deferredUnreadNotifications}
                     onToggleNotifications={handleToggleNotifications}

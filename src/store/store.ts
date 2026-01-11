@@ -17,6 +17,7 @@ export interface AppDataState {
     allUsersData: Record<string, UserData>;
     loggedInEmployee: Employee | null;
     isHydrated: boolean;
+    isLoggingOut: boolean; // Flag to prevent loading flash during logout
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
@@ -30,6 +31,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     allUsersData: {},
     loggedInEmployee: null,
     isHydrated: false,
+    isLoggingOut: false, // Start not logging out
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
     setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
@@ -86,6 +88,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     // Logout function to clear session
     logoutEmployee: async () => {
+        // Set flag to prevent loading flash
+        set({ isLoggingOut: true });
+
         // Call logout API to clear server session if needed
         try {
             await fetch('/api/auth/logout', {
@@ -103,7 +108,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         // Clear state but keep hydrated to prevent loading flash
         set({
             loggedInEmployee: null,
-            isHydrated: true  // Keep hydrated to prevent loading screen
+            isHydrated: true,  // Keep hydrated to prevent loading screen
+            isLoggingOut: false // Reset flag after clearing
         });
 
         // Redirect to login page immediately

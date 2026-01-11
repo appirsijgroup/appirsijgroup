@@ -14,7 +14,15 @@
       "Bash(sed:*)",
       "Read(//c/tmp/**)",
       "Bash(npm run dev)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(for:*)",
+      "Bash(do base=\"$f%.backup\")",
+      "Bash(if:*)",
+      "Bash(then echo \"✅ $base EXISTS\")",
+      "Bash(else echo \"❌ $base MISSING\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

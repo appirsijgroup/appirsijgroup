@@ -18,7 +18,6 @@ import {
     BookOpenIcon,
     BookmarkIcon,
     UserIcon,
-    ShieldCheckIcon,
     AdminIcon,
     HomeIcon,
     TrendingUpIcon,
@@ -42,7 +41,6 @@ const allNavItemsRaw = [
     { id: 'bookmarks', label: 'Bookmark', icon: DocumentDuplicateIcon, href: '/bookmarks' },
     { id: 'panduan-doa', label: 'Panduan & Doa', icon: PrayerBeadIcon, href: '/panduan-doa' },
     { id: 'profile', label: 'Profil', icon: IdentificationIcon, href: '/profile' },
-    { id: 'dashboard-binroh', label: 'Binroh Dashboard', icon: ShieldCheckIcon, href: '/binroh' },
     { id: 'admin', label: 'Admin Dashboard', icon: AdminIcon, href: '/admin' },
 ];
 
@@ -128,11 +126,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
         return allNavItemsRaw.filter(item => {
             const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
-            const isBinroh = loggedInEmployee.functionalRoles?.includes('BINROH');
             const hasAnalyticsAccess = isAdmin || (loggedInEmployee.functionalRoles && loggedInEmployee.functionalRoles.length > 0);
 
             if (item.id === 'admin' && !isAdmin) return false;
-            if (item.id === 'dashboard-binroh' && !isBinroh) return false;
             if (item.id === 'analytics' && !hasAnalyticsAccess) return false;
             return true;
         });

@@ -183,7 +183,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     const shouldShowVerifiedBadge = useMemo(() => {
         if (!employee) return false;
         const isAdmin = employee.role === 'admin' || employee.role === 'super-admin';
-        const hasHighFunctionalRole = employee.functionalRoles?.some(role => ['BINROH', 'BPH', 'DIREKSI'].includes(role));
+        const hasHighFunctionalRole = employee.functionalRoles?.some(role => ['BPH', 'DIREKSI'].includes(role));
         const isGuidanceLeader = employee.canBeMentor || employee.canBeSupervisor || employee.canBeKaUnit;
         return isAdmin || hasHighFunctionalRole || isGuidanceLeader;
     }, [employee]);
@@ -197,7 +197,6 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             'MANAJER': { label: 'Manajer', icon: UserGroupIcon, colorClasses: 'bg-blue-500/20 text-blue-300' },
             'KEPALA URUSAN': { label: 'Kepala Urusan', icon: TagIcon, colorClasses: 'bg-green-500/20 text-green-300' },
             'KEPALA RUANGAN': { label: 'Kepala Ruangan', icon: TagIcon, colorClasses: 'bg-green-500/20 text-green-300' },
-            'BINROH': { label: 'Binroh', icon: SparklesIcon, colorClasses: 'bg-teal-500/20 text-teal-300' },
         };
 
         const functionalRoles = (employee.functionalRoles || [])

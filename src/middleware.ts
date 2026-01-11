@@ -14,7 +14,6 @@ const protectedRoutes = [
   '/bookmarks',
   '/panduan-doa',
   '/profile',
-  '/binroh',
 ];
 
 // Routes yang boleh diakses tanpa login

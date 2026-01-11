@@ -129,7 +129,7 @@ const AssignmentLetter: React.FC<AssignmentLetterProps> = ({ recipient, roleName
                                 <p>{today}</p>
                                 <p className="mb-16">Hormat kami,</p>
                                 <p className="font-bold underline">Manajemen RSIJ Group</p>
-                                <p className="text-xs">Bagian SDM & Binroh</p>
+                                <p className="text-xs">Bagian SDM</p>
                             </div>
                         </div>
                     </div>

@@ -77,7 +77,7 @@ export interface RawEmployee {
 }
 
 export type Role = 'super-admin' | 'admin' | 'user';
-export type FunctionalRole = 'BPH' | 'DIREKSI' | 'MANAJER' | 'KEPALA URUSAN' | 'KEPALA RUANGAN' | 'BINROH';
+export type FunctionalRole = 'BPH' | 'DIREKSI' | 'MANAJER' | 'KEPALA URUSAN' | 'KEPALA RUANGAN';
 
 // Common types for bulk operations and API responses
 export interface FailedOperationRecord {

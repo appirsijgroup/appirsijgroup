@@ -1056,20 +1056,20 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-blue-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                    <div className="text-sm text-blue-200 text-center sm:text-left">
                         Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredAndSortedUsers.length)} dari {filteredAndSortedUsers.length} pengguna
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                             disabled={currentPage === 1}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-2 sm:px-3 py-1.5 rounded-md font-semibold text-xs sm:text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Sebelumnya
                         </button>
 
-                        <div className="flex items-center space-x-1 mx-2">
+                        <div className="flex items-center space-x-1 mx-1 sm:mx-2">
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                 let pageNum;
                                 if (totalPages <= 5) {
@@ -1090,7 +1090,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
+                                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-semibold ${
                                             currentPage === pageNum
                                                 ? 'bg-teal-500 text-white'
                                                 : 'bg-gray-600 hover:bg-gray-500 text-white'
@@ -1103,10 +1103,10 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
 
                             {totalPages > 5 && currentPage < totalPages - 2 && (
                                 <>
-                                    <span className="mx-1 text-gray-400">...</span>
+                                    <span className="mx-1 text-gray-400 text-xs">...</span>
                                     <button
                                         onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
+                                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-semibold ${
                                             currentPage === totalPages
                                                 ? 'bg-teal-500 text-white'
                                                 : 'bg-gray-600 hover:bg-gray-500 text-white'
@@ -1121,7 +1121,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-2 sm:px-3 py-1.5 rounded-md font-semibold text-xs sm:text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Berikutnya
                         </button>
@@ -2273,7 +2273,7 @@ const AuditLogView: React.FC<{ log: AuditLogEntry[] }> = ({ log }) => {
     );
 };
 
-const FUNCTIONAL_ROLES: FunctionalRole[] = ['BPH', 'DIREKSI', 'MANAJER', 'KEPALA URUSAN', 'KEPALA RUANGAN', 'BINROH'];
+const FUNCTIONAL_ROLES: FunctionalRole[] = ['BPH', 'DIREKSI', 'MANAJER', 'KEPALA URUSAN', 'KEPALA RUANGAN'];
 
 // A simple reusable toggle switch component
 const ToggleSwitch: React.FC<{
@@ -2323,7 +2323,6 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
         'MANAJER': 'Manajer',
         'KEPALA URUSAN': 'Ka. Urusan',
         'KEPALA RUANGAN': 'Ka. Ruangan',
-        'BINROH': 'Binroh',
     };
 
     const filteredUsers = useMemo(() => {

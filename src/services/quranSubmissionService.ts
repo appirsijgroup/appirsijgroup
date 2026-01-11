@@ -113,7 +113,7 @@ export const submitQuranReading = async (
   submissionDate: string
 ): Promise<QuranReadingSubmission | null> => {
   try {
-    console.log('📖 Submitting Quran reading:', { userId, surahNumber, surahName, startAyah, endAyah, submissionDate });
+    console.log("📖 Submitting Quran reading");
 
     const tableExists = await checkTableExists();
 

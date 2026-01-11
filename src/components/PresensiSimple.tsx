@@ -29,7 +29,7 @@ const PresensiComponent: React.FC = () => {
       if (!loggedInEmployee?.id) return;
 
       try {
-        console.log('📋 Loading attendance from Supabase for:', loggedInEmployee.id);
+        console.log("📋 Loading attendance from Supabase");
         const attendanceData = await getEmployeeAttendance(loggedInEmployee.id);
 
         // Update store with fresh attendance data

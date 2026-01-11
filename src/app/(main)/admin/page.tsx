@@ -448,7 +448,7 @@ export default function AdminPage() {
 
     const handleUpdateProfile = async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>> | { functionalRoles: FunctionalRole[] }) => {
         try {
-            console.log('🔄 Updating profile for user:', userId, 'with updates:', updates);
+            console.log("🔄 Updating profile for user");
 
             // Update in Supabase
             await updateEmployeeSupabase(userId, updates);
@@ -465,7 +465,7 @@ export default function AdminPage() {
                 return newData;
             });
 
-            console.log('✅ Profile updated successfully for user:', userId);
+            console.log("✅ Profile updated successfully");
             return true;
         } catch (error) {
             console.error('Error updating profile:', error);

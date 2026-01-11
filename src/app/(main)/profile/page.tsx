@@ -35,11 +35,7 @@ export default function ProfilePage() {
     const handleUpdateProfile = async (userId: string, updates: any) => {
         try {
             // Update to Supabase database using employee service
-            console.log('💾 Updating profile in database:', userId, updates);
-
             const updatedEmployee = await updateEmployee(userId, updates);
-
-            console.log('✅ Profile updated in database:', updatedEmployee);
 
             // Update local state
             setAllUsersData((prev) => {
@@ -62,20 +58,15 @@ export default function ProfilePage() {
 
     const handleChangePassword = async (id: string, newPass: string) => {
         try {
-            console.log('🔐 Changing password for user:', id);
-
             // 1. Hash the new password with bcrypt
             const saltRounds = 10;
             const hashedPassword = bcrypt.hashSync(newPass, saltRounds);
-            console.log('🔒 Password hashed successfully');
 
             // 2. Update to Supabase using employee service
             await updateEmployee(id, {
                 password: hashedPassword,
                 mustChangePassword: false // Clear flag after password change
             });
-
-            console.log('✅ Password updated in database');
 
             // 3. Update local state with plain text password (for current session)
             // In production, you might want to keep only the hashed version

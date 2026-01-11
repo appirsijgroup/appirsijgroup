@@ -99,7 +99,7 @@ export default function AktivitasBulananPage() {
     };
 
     const handleActivateMonth = async (userId: string, monthKey: string) => {
-        console.log('handleActivateMonth called with:', { userId, monthKey });
+        console.log("handleActivateMonth called");
         // Activate via Supabase using context
         // userId parameter is provided by the component but not used since context has access to employee
         const success = await activateMonth(monthKey);

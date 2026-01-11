@@ -71,15 +71,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             const employee: Employee = employeeData;
             const dbIsActive = (employee as any).is_active;
             const isActive = dbIsActive !== false && employee.isActive !== false;
-            console.log('✅ Employee found:', { id: employee.id, name: employee.name, isActive });
-
-            // Password check
-            console.log('🔐 Password check:', {
-                hasPassword: !!employee.password,
-                passwordLength: employee.password?.length,
-                inputLength: password.length,
-                isActive: isActive
-            });
 
             let isMatch = false;
 
@@ -87,24 +78,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             const isHashed = employee.password && (employee.password.startsWith('$2a$') || employee.password.startsWith('$2b$') || employee.password.startsWith('$2y$'));
 
             if (isHashed) {
-                console.log('🔒 Using hashed password comparison');
                 try {
                     isMatch = bcrypt.compareSync(password, employee.password);
-                    console.log('🔑 Hash comparison result:', isMatch);
                 } catch (err) {
                     console.error('❌ Bcrypt error:', err);
                 }
             } else {
-                // Legacy plain text fallback
-                console.log('⚠️ Using plain text password comparison');
                 if (employee.password === password || employee.password === `hashed_${password}`) {
                     isMatch = true;
-                    console.log(`✅ Plain text match for user ${employee.id}`);
                 }
             }
 
             if (!isMatch) {
-                console.error('❌ Password mismatch for user:', employee.id);
+                console.error('❌ Password mismatch');
                 setError('Password salah. Silakan coba lagi.');
                 return;
             }

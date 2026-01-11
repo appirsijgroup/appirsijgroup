@@ -50,11 +50,6 @@ const DashboardContainer: React.FC = () => {
         const oldUser = allUsersData[userId]?.employee;
         if (!oldUser) return false;
 
-        console.log('🔄 Updating profile for user:', userId, 'with updates:', {
-            ...updates,
-            monthlyActivities: updates.monthlyActivities ? 'present' : 'not present'
-        });
-
         setAllUsersData(prevData => {
             const allDataCopy: typeof prevData = JSON.parse(JSON.stringify(prevData));
             const userToUpdateData = allDataCopy[userId];
@@ -70,17 +65,8 @@ const DashboardContainer: React.FC = () => {
 
             // CRITICAL FIX: Also update loggedInEmployee if it's the same user
             if (loggedInEmployee && loggedInEmployee.id === userId) {
-                console.log('🔄 Updating logged in employee with:', {
-                    id: updatedEmployee.id,
-                    monthlyActivities: updatedEmployee.monthlyActivities ? 'present' : 'not present'
-                });
                 setLoggedInEmployee(updatedEmployee);
             }
-
-            console.log('🔄 Updated employee data in store:', {
-                id: updatedEmployee.id,
-                monthlyActivitiesCount: Object.keys(updatedEmployee.monthlyActivities || {}).length
-            });
 
             return allDataCopy;
         });
@@ -160,14 +146,14 @@ const DashboardContainer: React.FC = () => {
         // handleUpdateProfile(userId, { activatedMonths: ... })
         // For now simplified:
         if (loggedInEmployee) {
-            console.log('🔄 Activating month for user:', userId, 'month:', monthKey);
+            console.log("🔄 Activating month for user");
             const newMonths = [...(loggedInEmployee.activatedMonths || []), monthKey];
             handleUpdateProfile(userId, { activatedMonths: newMonths });
         }
     };
 
     const handleUpdateMonthlyActivities = (userId: string, monthKey: string, monthProgress: any) => {
-        console.log('🔄 Updating monthly activities for user:', userId, 'month:', monthKey);
+        console.log("🔄 Updating monthly activities for user");
         const existing = loggedInEmployee?.monthlyActivities || {};
         const newActivity = { ...existing, [monthKey]: monthProgress };
         handleUpdateProfile(userId, { monthlyActivities: newActivity });
@@ -344,7 +330,7 @@ const DashboardContainer: React.FC = () => {
                 readingHistory: updatedHistory,
                 monthlyActivities: newMonthlyActivities
             });
-            console.log('✅ Book reading saved to Supabase:', { userId: loggedInEmployee.id, bookTitle, pagesRead });
+            console.log("✅ Book reading saved to Supabase");
 
             if (activityIdToUpdate && isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
                 addToast('Laporan membaca buku berhasil disimpan!', 'success');
@@ -407,7 +393,7 @@ const DashboardContainer: React.FC = () => {
         if (!loggedInEmployee) return;
 
         try {
-            console.log('📝 Updating todo list for user:', userId);
+            console.log("📝 Updating todo list");
             console.log('📋 New todo list:', todoList);
 
             // Update local state FIRST to provide immediate feedback
@@ -415,7 +401,7 @@ const DashboardContainer: React.FC = () => {
 
             // Save to Supabase
             await updateEmployee(userId, { todoList });
-            console.log('✅ Todo list saved to Supabase:', { userId, itemCount: todoList?.length || 0 });
+            console.log("✅ Todo list saved to Supabase");
 
             addToast('To-Do List berhasil diperbarui!', 'success');
 
@@ -488,7 +474,7 @@ const DashboardContainer: React.FC = () => {
 
                 // 🔥 FIX: Simpan ke Supabase database
                 await updateEmployee(loggedInEmployee.id, { readingHistory: updatedHistory });
-                console.log('✅ Book reading history deleted from Supabase:', { userId: loggedInEmployee.id, id });
+                console.log("✅ Book reading history deleted");
 
                 addToast('Riwayat bacaan buku berhasil dihapus', 'success');
 
@@ -528,7 +514,7 @@ const DashboardContainer: React.FC = () => {
 
                 // 🔥 FIX: Simpan ke Supabase database
                 await updateEmployee(loggedInEmployee.id, { quranReadingHistory: updatedHistory });
-                console.log('✅ Quran reading history deleted from Supabase:', { userId: loggedInEmployee.id, id });
+                console.log("✅ Quran reading history deleted");
 
                 addToast('Riwayat bacaan Quran berhasil dihapus', 'success');
 

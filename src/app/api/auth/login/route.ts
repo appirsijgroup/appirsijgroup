@@ -141,7 +141,6 @@ export async function POST(request: NextRequest) {
       // Legacy plain text fallback
       if (employee.password === password || employee.password === `hashed_${password}`) {
         isMatch = true;
-        console.log('⚠️ Using plain text password for user:', employee.id);
       }
     }
 

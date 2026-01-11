@@ -56,15 +56,17 @@ export function useToggleBookmark() {
             surahNumber,
             surahName,
             ayahNumber,
+            ayahText,
             notes
         }: {
             userId: string;
             surahNumber: number;
             surahName: string;
             ayahNumber: number;
+            ayahText?: string;
             notes?: string | null;
         }) => {
-            return toggleBookmarkService(userId, surahNumber, surahName, ayahNumber, notes);
+            return toggleBookmarkService(userId, surahNumber, surahName, ayahNumber, ayahText, notes);
         },
         onSuccess: (result, variables) => {
             // Invalidate and refetch bookmarks

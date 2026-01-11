@@ -4,7 +4,7 @@ import { BookmarkSolidIcon, TrashIcon, SearchIcon, CalendarDaysIcon, XIcon } fro
 
 interface BookmarksProps {
     bookmarks: Bookmark[];
-    toggleBookmark: (surahNumber: number, surahName: string, ayahNumber: number, notes?: string | null) => void;
+    toggleBookmark: (surahNumber: number, surahName: string, ayahNumber: number, ayahText?: string, notes?: string | null) => void;
     deleteBookmark: (bookmarkId: string) => void;
     navigateToAyah: (surahNumber: number, ayahNumber: number) => void;
 }
@@ -141,7 +141,7 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                             </button>
                             <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
                                 <button
-                                    onClick={() => toggleBookmark(bookmark.surahNumber, bookmark.surahName, bookmark.ayahNumber, bookmark.notes)}
+                                    onClick={() => toggleBookmark(bookmark.surahNumber, bookmark.surahName, bookmark.ayahNumber, bookmark.ayahText, bookmark.notes)}
                                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-full transition-colors"
                                     aria-label="Hapus bookmark"
                                 >

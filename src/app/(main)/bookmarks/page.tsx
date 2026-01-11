@@ -35,6 +35,7 @@ export default function BookmarksPage() {
         surahNumber: number,
         surahName: string,
         ayahNumber: number,
+        ayahText?: string,
         notes?: string | null
     ) => {
         if (!loggedInEmployee) return;
@@ -45,6 +46,7 @@ export default function BookmarksPage() {
                 surahNumber,
                 surahName,
                 ayahNumber,
+                ayahText,
                 notes,
             });
         } catch (error) {

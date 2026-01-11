@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Alquran } from '@/components/Alquran';
 import { useAppDataStore } from '@/store/store';
 import { useBookmarks, useToggleBookmark } from '@/store/bookmarkStore';
@@ -21,6 +22,7 @@ import { useMutabaah } from '@/contexts/MutabaahContext';
  * TODO: Pindahkan weeklyReportSubmissions ke React Query hook
  */
 export default function AlquranPage() {
+    const searchParams = useSearchParams();
     const { loggedInEmployee } = useAppDataStore();
     const { monthlyProgressData, updateMonthlyProgress } = useMutabaah();
     const [goToAyah, setGoToAyah] = useState<{ surah: number; ayah: number } | null>(null);
@@ -30,6 +32,24 @@ export default function AlquranPage() {
     // React Query untuk bookmarks (otomatis caching, loading, error handling)
     const { data: bookmarks = [], isLoading: bookmarksLoading } = useBookmarks(loggedInEmployee?.id);
     const toggleBookmarkMutation = useToggleBookmark();
+
+    // Parse URL search params for navigation from bookmarks
+    useEffect(() => {
+        const surahParam = searchParams.get('surah');
+        const ayahParam = searchParams.get('ayah');
+
+        if (surahParam && ayahParam) {
+            const surahNumber = parseInt(surahParam, 10);
+            const ayahNumber = parseInt(ayahParam, 10);
+
+            if (!isNaN(surahNumber) && !isNaN(ayahNumber)) {
+                setGoToAyah({ surah: surahNumber, ayah: ayahNumber });
+
+                // Clear URL params after setting goToAyah to prevent re-navigation
+                window.history.replaceState({}, '', '/alquran');
+            }
+        }
+    }, [searchParams]);
 
     // Load weekly reports on mount (TODO: pindahkan ke React Query)
     useEffect(() => {
@@ -60,6 +80,7 @@ export default function AlquranPage() {
                 surahNumber: bookmark.surahNumber,
                 surahName: bookmark.surahName || `Surah ${bookmark.surahNumber}`,
                 ayahNumber: bookmark.ayahNumber,
+                ayahText: bookmark.ayahText,
                 notes: bookmark.notes,
             });
         } catch (error) {

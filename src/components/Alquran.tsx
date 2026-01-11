@@ -219,6 +219,8 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
     const [targetEndAyah, setTargetEndAyah] = useState<number | null>(null);
     const [jumpToSurah, setJumpToSurah] = useState('');
     const [jumpToAyah, setJumpToAyah] = useState('');
+    const [pendingBookmark, setPendingBookmark] = useState<{ surahNumber: number; ayahNumber: number; surahName: string; ayahText: string; timestamp: number } | null>(null);
+    const [isBookmarkConfirmOpen, setIsBookmarkConfirmOpen] = useState(false);
     const { openShareModal } = useUIStore();
 
     const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -310,6 +312,24 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         setGoToAyah({ surah: surahNum, ayah: ayahNum });
     };
 
+    const handleBookmarkClick = (bookmark: { surahNumber: number; ayahNumber: number; surahName: string; ayahText: string; timestamp: number }) => {
+        setPendingBookmark(bookmark);
+        setIsBookmarkConfirmOpen(true);
+    };
+
+    const handleConfirmBookmark = () => {
+        if (pendingBookmark) {
+            toggleBookmark(pendingBookmark);
+            setPendingBookmark(null);
+            setIsBookmarkConfirmOpen(false);
+        }
+    };
+
+    const handleCancelBookmark = () => {
+        setPendingBookmark(null);
+        setIsBookmarkConfirmOpen(false);
+    };
+
     const filteredSurahs = useMemo(() => {
         if (!searchQuery) return surahs;
         const lowerQuery = searchQuery.toLowerCase();
@@ -369,7 +389,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     <ShareIcon className="w-6 h-6"/>
                                                 </button>
                                                 <button
-                                                    onClick={() => toggleBookmark({ surahNumber: selectedSurah.nomor, ayahNumber: ayah.nomorAyat, surahName: selectedSurah.namaLatin, ayahText: ayah.teksIndonesia, timestamp: Date.now() })}
+                                                    onClick={() => handleBookmarkClick({ surahNumber: selectedSurah.nomor, ayahNumber: ayah.nomorAyat, surahName: selectedSurah.namaLatin, ayahText: ayah.teksIndonesia, timestamp: Date.now() })}
                                                     className="p-2 text-gray-400 hover:text-white"
                                                     aria-label="Bookmark ayat ini"
                                                 >
@@ -411,11 +431,50 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                         />
                     </>
                 )}
+
+                {/* Bookmark Confirmation Modal for Detail View */}
+                {isBookmarkConfirmOpen && createPortal(
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                        <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
+                            <div className="mb-4">
+                                <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">
+                                {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                    ? 'Hapus Bookmark?'
+                                    : 'Simpan Bookmark?'}
+                            </h3>
+                            <p className="text-blue-200 mb-6">
+                                {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                    ? `Anda yakin ingin menghapus bookmark untuk ${pendingBookmark.surahName} ayat ${pendingBookmark.ayahNumber}?`
+                                    : `Simpan bookmark untuk ${pendingBookmark?.surahName} ayat ${pendingBookmark?.ayahNumber}?`}
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleCancelBookmark}
+                                    className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleConfirmBookmark}
+                                    className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl transition-colors"
+                                >
+                                    {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                        ? 'Hapus'
+                                        : 'Simpan'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
             </div>
         );
     }
 
     return (
+        <>
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
             <h2 className="text-3xl font-bold text-white mb-4 text-center">Al-Qur'an Digital</h2>
 
@@ -483,5 +542,44 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 </div>
             )}
         </div>
+
+        {/* Bookmark Confirmation Modal */}
+        {isBookmarkConfirmOpen && createPortal(
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
+                    <div className="mb-4">
+                        <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                        {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                            ? 'Hapus Bookmark?'
+                            : 'Simpan Bookmark?'}
+                    </h3>
+                    <p className="text-blue-200 mb-6">
+                        {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                            ? `Anda yakin ingin menghapus bookmark untuk ${pendingBookmark.surahName} ayat ${pendingBookmark.ayahNumber}?`
+                            : `Simpan bookmark untuk ${pendingBookmark?.surahName} ayat ${pendingBookmark?.ayahNumber}?`}
+                    </p>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleCancelBookmark}
+                            className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleConfirmBookmark}
+                            className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl transition-colors"
+                        >
+                            {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                ? 'Hapus'
+                                : 'Simpan'}
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+        </>
     );
 };

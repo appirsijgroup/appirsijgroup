@@ -6,6 +6,7 @@ import Header from './Header';
 import Navigation, { NavItem } from './Navigation';
 import Footer from './Footer';
 import ShareImageModal from './ShareImageModal';
+import NotificationPanel from './NotificationPanel';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useMutabaah } from '@/contexts/MutabaahContext';
@@ -28,7 +29,7 @@ import {
     IdentificationIcon,
     UsersIcon
 } from './Icons';
-import type { View } from '@/types';
+import type { View, Notification } from '@/types';
 
 const allNavItemsRaw = [
     { id: 'dashboard-saya', label: 'Dashboard Saya', icon: HomeIcon, href: '/dashboard' },
@@ -160,6 +161,29 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsNotificationPanelOpen(true);
     }, [setIsNotificationPanelOpen]);
 
+    const handleCloseNotifications = useCallback(() => {
+        setIsNotificationPanelOpen(false);
+    }, [setIsNotificationPanelOpen]);
+
+    const handleNotificationNavigate = useCallback((link: Notification['linkTo']) => {
+        if (link) {
+            setIsNotificationPanelOpen(false);
+
+            // Build the URL based on the link structure
+            const basePath = `/${link.view}`;
+            const queryString = link.params
+                ? '?' + new URLSearchParams(
+                    Object.entries(link.params).map(([key, value]) => [key, String(value)])
+                  ).toString()
+                : '';
+
+            const tabSuffix = link.tab ? `/${link.tab}` : '';
+            const fullPath = `${basePath}${tabSuffix}${queryString}`;
+
+            router.push(fullPath);
+        }
+    }, [router, setIsNotificationPanelOpen]);
+
     const handleToggleMenu = useCallback(() => {
         setIsMenuOpen(!isMenuOpen);
     }, [isMenuOpen, setIsMenuOpen]);
@@ -230,6 +254,14 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 }}
                 type={shareModalState.type}
                 content={shareModalState.content}
+            />
+
+            {/* Notification Panel */}
+            <NotificationPanel
+                isOpen={isNotificationPanelOpen}
+                onClose={handleCloseNotifications}
+                onNavigate={handleNotificationNavigate}
+                loggedInUserId={loggedInEmployee?.id || ''}
             />
 
         </div>

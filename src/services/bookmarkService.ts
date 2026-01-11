@@ -147,6 +147,7 @@ export const toggleBookmark = async (
   surahNumber: number,
   surahName: string,
   ayahNumber: number,
+  ayahText?: string,
   notes?: string | null
 ): Promise<{ action: 'added' | 'removed'; bookmark?: Bookmark }> => {
   const isBookmarked = await isAyahBookmarked(userId, surahNumber, ayahNumber);
@@ -160,6 +161,7 @@ export const toggleBookmark = async (
       surahNumber,
       surahName,
       ayahNumber,
+      ayahText,
       notes
     });
     return { action: 'added', bookmark: bookmark || undefined };

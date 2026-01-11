@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { useAppDataStore, useUIStore, useActivityStore, useSunnahIbadahStore, useDailyActivitiesStore, useJobStructureStore, useAuditLogStore, useAnnouncementStore, useHospitalStore, useMutabaahStore } from '@/store/store';
+import { useAppDataStore, useUIStore, useActivityStore, useSunnahIbadahStore, useDailyActivitiesStore, useJobStructureStore, useAuditLogStore, useAnnouncementStore, useHospitalStore, useMutabaahStore, useNotificationStore } from '@/store/store';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 // 🔥 FIX: Dynamic import untuk AdminDashboard - 200KB akan di-load LAZY!
@@ -32,6 +32,7 @@ export default function AdminPage() {
     const { auditLog, logAudit } = useAuditLogStore();
     const { announcements, addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { mutabaahLockingMode, setMutabaahLockingMode } = useMutabaahStore();
+    const { createNotification } = useNotificationStore();
     // const { hospitals: localHospitals, addHospital, updateHospital, deleteHospital, toggleHospitalStatus } = useHospitalStore(); // Unused - using hospitals state instead
 
     const [isLoading, setIsLoading] = useState(true);
@@ -183,6 +184,13 @@ export default function AdminPage() {
 
     const handleSetRole = async (userId: string, newRole: 'super-admin' | 'admin' | 'user') => {
         try {
+            // Get the user data before updating
+            const userToUpdate = allUsersData[userId];
+            if (!userToUpdate) {
+                throw new Error('User not found');
+            }
+            const oldRole = userToUpdate.employee.role;
+
             // Update in Supabase
             await updateEmployeeSupabase(userId, { role: newRole });
 
@@ -202,6 +210,24 @@ export default function AdminPage() {
                     });
                 }
                 return newData;
+            });
+
+            // 🔥 FIX: Create notification for the user whose role was changed
+            const roleLabels: Record<string, string> = {
+                'super-admin': 'Super Admin',
+                'admin': 'Admin',
+                'user': 'User'
+            };
+
+            createNotification({
+                userId: userId,
+                type: 'account_role_changed',
+                title: 'Peran Akun Anda Telah Diubah',
+                message: `Peran akun Anda telah diubah dari ${roleLabels[oldRole]} menjadi ${roleLabels[newRole]}. Silakan periksa dashboard Anda.`,
+                linkTo: {
+                    view: 'admin',
+                },
+                dismissOnClick: false,
             });
         } catch (err: unknown) {
             console.error('Error setting role:', err);
@@ -483,6 +509,11 @@ export default function AdminPage() {
         try {
             console.log("🔄 Updating profile for user");
 
+            // Get old user data before updating
+            const oldUserData = allUsersData[userId];
+            const oldFunctionalRoles = oldUserData?.employee.functionalRoles || [];
+            const userMap = new Map(Object.values(allUsersData).map(u => [u.employee.id, u.employee.name]));
+
             // Update in Supabase
             await updateEmployeeSupabase(userId, updates);
 
@@ -497,6 +528,67 @@ export default function AdminPage() {
                 }
                 return newData;
             });
+
+            // 🔥 FIX: Create notification if functional roles changed
+            if ('functionalRoles' in updates && updates.functionalRoles) {
+                const newRoles = updates.functionalRoles;
+                const addedRoles = newRoles.filter(role => !oldFunctionalRoles.includes(role));
+                const removedRoles = oldFunctionalRoles.filter(role => !newRoles.includes(role));
+
+                if (addedRoles.length > 0 || removedRoles.length > 0) {
+                    const messages: string[] = [];
+                    if (addedRoles.length > 0) {
+                        messages.push(`Peran baru ditambahkan: ${addedRoles.join(', ')}`);
+                    }
+                    if (removedRoles.length > 0) {
+                        messages.push(`Peran dicabut: ${removedRoles.join(', ')}`);
+                    }
+
+                    createNotification({
+                        userId: userId,
+                        type: 'account_role_changed',
+                        title: 'Peran Fungsional Anda Telah Diperbarui',
+                        message: messages.join('. ') + '. Anda sekarang memiliki akses ke fitur Analytics.',
+                        linkTo: {
+                            view: 'analytics',
+                        },
+                        dismissOnClick: false,
+                    });
+                }
+            }
+
+            // 🔥 FIX: Create notification for relation changes (mentor, supervisor, kaUnit, dirut)
+            const relationFields: Array<keyof Employee> = ['mentorId', 'supervisorId', 'kaUnitId', 'dirutId'];
+            const relationLabels: Record<string, string> = {
+                mentorId: 'Mentor',
+                supervisorId: 'Supervisor',
+                kaUnitId: 'Ka. Unit Kerja',
+                dirutId: 'Dirut'
+            };
+
+            for (const field of relationFields) {
+                if (field in updates) {
+                    const newValue = (updates as any)[field] as string | undefined;
+                    const oldValue = (oldUserData?.employee as any)[field] as string | undefined;
+
+                    if (newValue !== oldValue) {
+                        const message = newValue
+                            ? `${relationLabels[field]} Anda telah diubah menjadi ${userMap.get(newValue as string) || newValue}.`
+                            : `${relationLabels[field]} Anda telah dihapus.`;
+
+                        createNotification({
+                            userId: userId,
+                            type: 'account_role_changed',
+                            title: 'Hubungan Kerja Anda Telah Diperbarui',
+                            message: message,
+                            linkTo: {
+                                view: 'profile',
+                            },
+                            dismissOnClick: false,
+                        });
+                    }
+                }
+            }
 
             console.log("✅ Profile updated successfully");
             return true;

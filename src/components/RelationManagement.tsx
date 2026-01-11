@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { type Employee } from '../types';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 import { SearchIcon } from './Icons';
@@ -59,6 +59,9 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
         onConfirm: () => void;
     } | null>(null);
 
+    // 🔥 FIX: Use ref to prevent infinite loop
+    const lastDirutIdRef = useRef<string | undefined>(undefined);
+
     // Defensive check: ensure allUsers is an array
     const safeAllUsers = Array.isArray(allUsers) ? allUsers : [];
 
@@ -74,11 +77,17 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
 
         const dirutId = designatedDirut ? designatedDirut.id : undefined;
 
+        // 🔥 FIX: Skip if DIRUT hasn't actually changed (prevent infinite loop)
+        if (dirutId === lastDirutIdRef.current) return;
+
         // Find all users who need an update (their dirutId is different from the new one)
         // Also exclude the DIRUT himself from being updated
         const usersToUpdate = safeAllUsers.filter(u => u.dirutId !== dirutId && (!dirutId || u.id !== dirutId));
 
         if (usersToUpdate.length > 0) {
+            // Update the ref BEFORE making async calls to prevent race conditions
+            lastDirutIdRef.current = dirutId;
+
             const updatePromises = usersToUpdate.map(user =>
                 onUpdateProfile(user.id, { dirutId: dirutId })
             );
@@ -86,7 +95,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                 console.error('Error auto-updating dirut:', err);
             });
         }
-    }, [designatedDirut, safeAllUsers, onUpdateProfile]);
+    }, [designatedDirut?.id, safeAllUsers, onUpdateProfile]);
 
 
     const filteredUsers = useMemo(() => {

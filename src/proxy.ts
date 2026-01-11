@@ -27,7 +27,7 @@ const publicRoutes = [
 // Test routes - HANYA di development
 const testRoutes = ['/test', '/test-supabase', '/migrate-employees'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes

@@ -5,10 +5,14 @@
 
 import type { Metadata } from 'next';
 
+// Get the base URL from environment variable or use the Vercel deployment URL
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://appirsijgroup.vercel.app';
+
 /**
  * Base metadata for the entire application
  */
 export const baseMetadata: Metadata = {
+  metadataBase: new URL(APP_URL),
   title: {
     template: '%s | Aplikasi APPI',
     default: 'Aplikasi APPI - RSI Group',
@@ -32,7 +36,7 @@ export const baseMetadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'id_ID',
-    url: 'https://appi.rsi-group.com',
+    url: APP_URL,
     siteName: 'Aplikasi APPI',
     title: 'Aplikasi APPI - RSI Group',
     description:
@@ -71,19 +75,6 @@ export const baseMetadata: Metadata = {
 
   // Manifest
   manifest: '/manifest.json',
-
-  // Viewport
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
-
-  // Theme Color
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#111827' },
-  ],
 };
 
 /**

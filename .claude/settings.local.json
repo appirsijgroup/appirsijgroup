@@ -22,7 +22,8 @@
       "Bash(then echo \"✅ $base EXISTS\")",
       "Bash(else echo \"❌ $base MISSING\")",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

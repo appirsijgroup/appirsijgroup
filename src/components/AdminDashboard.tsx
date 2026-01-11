@@ -1056,76 +1056,67 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-                    <div className="text-sm text-blue-200 text-center sm:text-left">
-                        Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredAndSortedUsers.length)} dari {filteredAndSortedUsers.length} pengguna
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === pageNum
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <>
+                                <span className="text-gray-400 px-2">...</span>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-2 sm:px-3 py-1.5 rounded-md font-semibold text-xs sm:text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Sebelumnya
-                        </button>
 
-                        <div className="flex items-center space-x-1 mx-1 sm:mx-2">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 5) {
-                                    // Show all pages if total pages <= 5
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 3) {
-                                    // Near the beginning
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    // Near the end
-                                    pageNum = totalPages - 4 + i;
-                                } else {
-                                    // Somewhere in the middle
-                                    pageNum = currentPage - 2 + i;
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-semibold ${
-                                            currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            {totalPages > 5 && currentPage < totalPages - 2 && (
-                                <>
-                                    <span className="mx-1 text-gray-400 text-xs">...</span>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs sm:text-sm font-semibold ${
-                                            currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-2 sm:px-3 py-1.5 rounded-md font-semibold text-xs sm:text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Berikutnya
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
                 </div>
             )}
 
@@ -1258,83 +1249,67 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-blue-200">
-                        Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredUsers.length)} dari {filteredUsers.length} pengguna
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === pageNum
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <>
+                                <span className="text-gray-400 px-2">...</span>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Sebelumnya
-                        </button>
 
-                        <div className="flex items-center space-x-1 mx-2">
-                            {/* Display only 2 page numbers at a time */}
-                            {Array.from({ length: Math.min(2, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 2) {
-                                    // Show all pages if total pages <= 2
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 2) {
-                                    // Near the beginning
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 1) {
-                                    // Near the end
-                                    pageNum = totalPages - 1 + i;
-                                } else {
-                                    // Somewhere in the middle
-                                    pageNum = currentPage - 1 + i;
-                                }
-
-                                // Ensure page numbers don't exceed total pages
-                                if (pageNum > totalPages) {
-                                    pageNum = totalPages - (1 - i);
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            {/* Show ellipsis and last page if needed */}
-                            {totalPages > 2 && currentPage < totalPages - 1 && (
-                                <>
-                                    <span className="mx-1 text-gray-400">...</span>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Berikutnya
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
                 </div>
             )}
         </div>
@@ -1840,83 +1815,67 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-blue-200">
-                        Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredData.length)} dari {filteredData.length} catatan
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === pageNum
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <>
+                                <span className="text-gray-400 px-2">...</span>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Sebelumnya
-                        </button>
 
-                        <div className="flex items-center space-x-1 mx-2">
-                            {/* Display only 2 page numbers at a time */}
-                            {Array.from({ length: Math.min(2, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 2) {
-                                    // Show all pages if total pages <= 2
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 2) {
-                                    // Near the beginning
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 1) {
-                                    // Near the end
-                                    pageNum = totalPages - 1 + i;
-                                } else {
-                                    // Somewhere in the middle
-                                    pageNum = currentPage - 1 + i;
-                                }
-
-                                // Ensure page numbers don't exceed total pages
-                                if (pageNum > totalPages) {
-                                    pageNum = totalPages - (1 - i);
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            {/* Show ellipsis and last page if needed */}
-                            {totalPages > 2 && currentPage < totalPages - 1 && (
-                                <>
-                                    <span className="mx-1 text-gray-400">...</span>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Berikutnya
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
                 </div>
             )}
         </div>
@@ -2446,83 +2405,67 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-blue-200">
-                        Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, sortedUsers.length)} dari {sortedUsers.length} karyawan
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === pageNum
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <>
+                                <span className="text-gray-400 px-2">...</span>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Sebelumnya
-                        </button>
 
-                        <div className="flex items-center space-x-1 mx-2">
-                            {/* Display only 2 page numbers at a time */}
-                            {Array.from({ length: Math.min(2, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 2) {
-                                    // Show all pages if total pages <= 2
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 2) {
-                                    // Near the beginning
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 1) {
-                                    // Near the end
-                                    pageNum = totalPages - 1 + i;
-                                } else {
-                                    // Somewhere in the middle
-                                    pageNum = currentPage - 1 + i;
-                                }
-
-                                // Ensure page numbers don't exceed total pages
-                                if (pageNum > totalPages) {
-                                    pageNum = totalPages - (1 - i);
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            {/* Show ellipsis and last page if needed */}
-                            {totalPages > 2 && currentPage < totalPages - 1 && (
-                                <>
-                                    <span className="mx-1 text-gray-400">...</span>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Berikutnya
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
                 </div>
             )}
 
@@ -2902,83 +2845,67 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-blue-200">
-                        Menampilkan {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredAndSortedUsers.length)} dari {filteredAndSortedUsers.length} pengguna
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                                pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                                pageNum = totalPages - 4 + i;
+                            } else {
+                                pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === pageNum
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                            <>
+                                <span className="text-gray-400 px-2">...</span>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                                        currentPage === totalPages
+                                            ? 'bg-teal-500 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                    }`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Sebelumnya
-                        </button>
 
-                        <div className="flex items-center space-x-1 mx-2">
-                            {/* Display only 2 page numbers at a time */}
-                            {Array.from({ length: Math.min(2, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 2) {
-                                    // Show all pages if total pages <= 2
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 2) {
-                                    // Near the beginning
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 1) {
-                                    // Near the end
-                                    pageNum = totalPages - 1 + i;
-                                } else {
-                                    // Somewhere in the middle
-                                    pageNum = currentPage - 1 + i;
-                                }
-
-                                // Ensure page numbers don't exceed total pages
-                                if (pageNum > totalPages) {
-                                    pageNum = totalPages - (1 - i);
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            {/* Show ellipsis and last page if needed */}
-                            {totalPages > 2 && currentPage < totalPages - 1 && (
-                                <>
-                                    <span className="mx-1 text-gray-400">...</span>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className={`w-8 h-8 rounded-full text-sm font-semibold ${
-                                            currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-600 hover:bg-gray-500 text-white'
-                                        }`}
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1.5 rounded-md font-semibold text-sm bg-gray-600 hover:bg-gray-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Berikutnya
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
                 </div>
             )}
         </div>

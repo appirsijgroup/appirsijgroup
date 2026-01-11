@@ -29,7 +29,14 @@ TO authenticated
 USING (
     EXISTS (
         SELECT 1 FROM employees
-        WHERE employees.id = auth.uid()
+        WHERE employees.id = auth.uid()::text
+        AND employees.role = 'super-admin'
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM employees
+        WHERE employees.id = auth.uid()::text
         AND employees.role = 'super-admin'
     )
 );
@@ -42,7 +49,7 @@ TO authenticated
 WITH CHECK (
     EXISTS (
         SELECT 1 FROM employees
-        WHERE employees.id = auth.uid()
+        WHERE employees.id = auth.uid()::text
         AND employees.role = 'super-admin'
     )
 );
@@ -57,6 +64,7 @@ CREATE OR REPLACE FUNCTION update_app_settings_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
+    NEW.updated_by = auth.uid();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

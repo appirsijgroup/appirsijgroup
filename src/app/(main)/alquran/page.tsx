@@ -95,13 +95,14 @@ export default function AlquranPage() {
             if (result) {
                 alert('✅ Bacaan Al-Qur\'an berhasil disimpan!');
 
-                // Update Mutabaah
+                // 🔥 CRITICAL FIX: Update Mutabaah with the CORRECT activity field
                 const monthKey = details.date.substring(0, 7); // "YYYY-MM"
                 const dayKey = details.date.substring(8, 10); // "DD"
 
                 const currentMonthProgress = monthlyProgressData[monthKey] || {};
                 const currentDayProgress = currentMonthProgress[dayKey] || {};
 
+                // ✅ Use the same field as the activity ID: 'baca_alquran_buku'
                 const updatedDayProgress = {
                     ...currentDayProgress,
                     'baca_alquran_buku': true,
@@ -112,7 +113,25 @@ export default function AlquranPage() {
                     [dayKey]: updatedDayProgress,
                 };
 
+                console.log('📊 Updating monthly progress:', {
+                    monthKey,
+                    dayKey,
+                    field: 'baca_alquran_buku',
+                    value: true
+                });
+
                 await updateMonthlyProgress(monthKey, updatedMonthProgress);
+
+                console.log('✅ Monthly progress updated successfully');
+
+                // 🔥 CRITICAL: Reload employee data to refresh quranReadingHistory
+                // This ensures Dashboard shows the updated reading history
+                const { getEmployeeById } = await import('@/services/employeeService');
+                const updatedEmployee = await getEmployeeById(loggedInEmployee.id);
+                if (updatedEmployee) {
+                    useAppDataStore.setState({ loggedInEmployee: updatedEmployee });
+                    console.log('✅ Employee data refreshed with new Quran history');
+                }
 
                 // Reload data to refresh UI
                 await loadWeeklyReports();

@@ -94,8 +94,8 @@ export const submitWeeklyReport = async (
   reportData: any
 ): Promise<WeeklyReportSubmission | null> => {
   try {
-    const { data, error } = await supabase
-      .from('weekly_report_submissions')
+    const { data, error } = await (supabase
+      .from('weekly_report_submissions') as any)
       .insert({
         mentee_id: userId,
         month_key: monthKey,
@@ -131,8 +131,8 @@ export const updateWeeklyReport = async (
   reportData: any
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('weekly_report_submissions')
+    const { error } = await (supabase
+      .from('weekly_report_submissions') as any)
       .update({
         report_data: reportData,
         updated_at: new Date().toISOString()

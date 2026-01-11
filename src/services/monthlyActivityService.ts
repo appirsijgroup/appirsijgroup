@@ -19,7 +19,7 @@ export const getMonthlyActivities = async (employeeId: string): Promise<Record<s
         throw error;
     }
 
-    return data?.monthly_activities || {};
+    return (data as any)?.monthly_activities || {};
 };
 
 // Update monthly activities for an employee
@@ -27,8 +27,8 @@ export const updateMonthlyActivities = async (
     employeeId: string,
     monthlyActivities: Record<string, MonthlyActivityProgress>
 ): Promise<void> => {
-    const { error } = await supabase
-        .from('employees')
+    const { error } = await (supabase
+        .from('employees') as any)
         .update({
             monthly_activities: monthlyActivities,
             updated_at: new Date().toISOString()
@@ -57,7 +57,7 @@ export const getActivatedMonths = async (employeeId: string): Promise<string[]> 
         throw error;
     }
 
-    return data?.activated_months || [];
+    return (data as any)?.activated_months || [];
 };
 
 // Update activated months for an employee
@@ -66,12 +66,14 @@ export const updateActivatedMonths = async (
     activatedMonths: string[]
 ): Promise<void> => {
     console.log('updateActivatedMonths called with:', { employeeId, activatedMonths });
-    const { error, data } = await supabase
-        .from('employees')
-        .update({
-            activated_months: activatedMonths,
-            updated_at: new Date().toISOString()
-        })
+    const updateData: any = {
+        activated_months: activatedMonths,
+        updated_at: new Date().toISOString()
+    };
+
+    const { error, data } = await (supabase
+        .from('employees') as any)
+        .update(updateData)
         .eq('id', employeeId)
         .select();
 
@@ -160,7 +162,7 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
     }
 
     return {
-        monthlyActivities: data?.monthly_activities || {},
-        activatedMonths: data?.activated_months || []
+        monthlyActivities: (data as any)?.monthly_activities || {},
+        activatedMonths: (data as any)?.activated_months || []
     };
 };

@@ -55,8 +55,8 @@ export const createSunnahIbadah = async (
     // 🔥 CRITICAL: Generate unique ID
     const newId = `${ibadah.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
 
-    const { data, error } = await supabase
-      .from(SUNNAH_IBADAH_TABLE)
+    const { data, error } = await (supabase
+      .from(SUNNAH_IBADAH_TABLE) as any)
       .insert({
         id: newId, // ✅ Include generated ID
         name: ibadah.name,
@@ -104,8 +104,8 @@ export const updateSunnahIbadahInDb = async (
     if (updates.daysOfWeek !== undefined) updateData.days_of_week = updates.daysOfWeek;
     if (updates.date !== undefined) updateData.date = updates.date;
 
-    const { error } = await supabase
-      .from(SUNNAH_IBADAH_TABLE)
+    const { error } = await (supabase
+      .from(SUNNAH_IBADAH_TABLE) as any)
       .update(updateData)
       .eq('id', id);
 

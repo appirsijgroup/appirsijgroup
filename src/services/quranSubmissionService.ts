@@ -25,7 +25,7 @@ export const getQuranSubmissions = async (userId: string): Promise<QuranReadingS
 
     if (error) throw error;
 
-    return data.map(item => ({
+    return (data as any).map((item: any) => ({
       id: item.id,
       userId: item.user_id,
       surahNumber: item.surah_number,
@@ -53,8 +53,8 @@ export const submitQuranReading = async (
   submissionDate: string
 ): Promise<QuranReadingSubmission | null> => {
   try {
-    const { data, error } = await supabase
-      .from('quran_reading_submissions')
+    const { data, error } = await (supabase
+      .from('quran_reading_submissions') as any)
       .insert({
         user_id: userId,
         surah_number: surahNumber,
@@ -123,7 +123,7 @@ export const getQuranSubmissionsByDateRange = async (
 
     if (error) throw error;
 
-    return data.map(item => ({
+    return (data as any).map((item: any) => ({
       id: item.id,
       userId: item.user_id,
       surahNumber: item.surah_number,

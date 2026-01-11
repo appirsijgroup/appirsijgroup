@@ -4,6 +4,18 @@ import { useState } from 'react';
 import { migrateEmployeesToSupabase, validateEmployeeCSV } from '@/lib/migrateEmployees';
 
 export default function MigrateEmployeesPage() {
+    // Block access in production
+    if (process.env.NODE_ENV === 'production') {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-red-400 mb-4">🚫 Akses Ditolak</h1>
+                    <p>Halaman ini hanya tersedia di development mode.</p>
+                </div>
+            </div>
+        );
+    }
+
     const [csvText, setCsvText] = useState('');
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

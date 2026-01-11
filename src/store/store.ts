@@ -85,9 +85,23 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     },
 
     // Logout function to clear session
-    logoutEmployee: () => {
+    logoutEmployee: async () => {
         console.log('🚪 Logging out user...');
+
+        // Call logout API to clear server session if needed
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include',
+            });
+        } catch (error) {
+            console.error('Logout API error:', error);
+        }
+
+        // Clear client-side storage
         localStorage.removeItem('loggedInUserId');
+        document.cookie = 'loggedInUserId=; path=/; max-age=0; SameSite=Lax';
+
         set({
             loggedInEmployee: null,
             isHydrated: false

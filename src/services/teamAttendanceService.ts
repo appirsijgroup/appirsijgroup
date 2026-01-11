@@ -119,9 +119,9 @@ export const createTeamAttendanceSession = async (
 
         const { data, error } = await supabase
             .from('team_attendance_sessions')
-            .insert(dbSession)
+            .insert(dbSession as any)
             .select()
-            .single();
+            .single() as any;
 
         if (error) {
             console.error('❌ Supabase error details:', {
@@ -175,8 +175,8 @@ export const updateTeamAttendanceSession = async (
         dbUpdates.present_user_ids = updates.presentUserIds;
     }
 
-    const { error } = await supabase
-        .from('team_attendance_sessions')
+    const { error } = await (supabase
+        .from('team_attendance_sessions') as any)
         .update(dbUpdates)
         .eq('id', sessionId);
 

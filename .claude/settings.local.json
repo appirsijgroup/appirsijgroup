@@ -13,7 +13,8 @@
       "Bash(node:*)",
       "Bash(sed:*)",
       "Read(//c/tmp/**)",
-      "Bash(npm run dev)"
+      "Bash(npm run dev)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

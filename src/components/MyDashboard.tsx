@@ -1187,15 +1187,6 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
         functionalRoles.includes('KEPALA URUSAN') ||
         functionalRoles.includes('KEPALA RUANGAN');
 
-    console.log('📊 MyDashboard tabs computed:', {
-        hasMentorRole,
-        hasApprovalRole,
-        canDoTeamAttendance,
-        functionalRoles,
-        canBeMentor_camel: employee.canBeMentor,
-        canBeMentor_snake: (employee as any).can_be_mentor
-    });
-
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
 

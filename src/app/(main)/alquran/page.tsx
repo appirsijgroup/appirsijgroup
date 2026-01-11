@@ -75,9 +75,14 @@ export default function AlquranPage() {
         endAyah: number;
         date: string;
     }) => {
-        if (!loggedInEmployee) return;
+        if (!loggedInEmployee) {
+            alert('Anda harus login untuk melaporkan bacaan.');
+            return;
+        }
 
         try {
+            console.log('📖 Submitting Quran reading:', details);
+
             const result = await submitQuranReading(
                 loggedInEmployee.id,
                 details.surahNumber,
@@ -88,8 +93,8 @@ export default function AlquranPage() {
             );
 
             if (result) {
-                alert('Bacaan Al-Qur\'an berhasil disimpan!');
-                
+                alert('✅ Bacaan Al-Qur\'an berhasil disimpan!');
+
                 // Update Mutabaah
                 const monthKey = details.date.substring(0, 7); // "YYYY-MM"
                 const dayKey = details.date.substring(8, 10); // "DD"
@@ -109,14 +114,14 @@ export default function AlquranPage() {
 
                 await updateMonthlyProgress(monthKey, updatedMonthProgress);
 
-                // Optionally reload data
+                // Reload data to refresh UI
                 await loadWeeklyReports();
             } else {
-                alert('Gagal menyimpan bacaan. Silakan coba lagi.');
+                alert('❌ Gagal menyimpan bacaan. Silakan coba lagi.');
             }
         } catch (error) {
-            console.error('Error submitting Quran reading:', error);
-            alert('Terjadi kesalahan saat menyimpan bacaan.');
+            console.error('❌ Error submitting Quran reading:', error);
+            alert(`❌ Terjadi kesalahan saat menyimpan bacaan: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 

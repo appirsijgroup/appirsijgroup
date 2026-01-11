@@ -53,6 +53,8 @@ export const submitQuranReading = async (
   submissionDate: string
 ): Promise<QuranReadingSubmission | null> => {
   try {
+    console.log('📖 Submitting Quran reading:', { userId, surahNumber, surahName, startAyah, endAyah, submissionDate });
+
     const { data, error } = await (supabase
       .from('quran_reading_submissions') as any)
       .insert({
@@ -66,7 +68,59 @@ export const submitQuranReading = async (
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase error submitting Quran reading:', error);
+      throw error;
+    }
+
+    console.log('✅ Quran reading submission successful:', data);
+
+    // Also update quranReadingHistory in employee record
+    try {
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('quran_reading_history')
+        .eq('id', userId)
+        .single();
+
+      if (employeeData) {
+        const currentHistory = (employeeData as any).quran_reading_history || [];
+
+        // Check if this submission already exists in history
+        const exists = currentHistory.some((h: any) =>
+          h.surahNumber === surahNumber &&
+          h.startAyah === startAyah &&
+          h.endAyah === endAyah &&
+          h.date === submissionDate
+        );
+
+        if (!exists) {
+          const newEntry = {
+            surahNumber,
+            surahName,
+            startAyah,
+            endAyah,
+            date: submissionDate,
+            timestamp: new Date().toISOString()
+          };
+
+          const updatedHistory = [newEntry, ...currentHistory];
+
+          await (supabase
+            .from('employees') as any)
+            .update({
+              quran_reading_history: updatedHistory,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+          console.log('✅ Quran reading history updated');
+        }
+      }
+    } catch (historyError) {
+      console.error('⚠️ Error updating quran_reading_history (submission still saved):', historyError);
+      // Don't throw - the main submission was successful
+    }
 
     return {
       id: data.id,
@@ -79,8 +133,8 @@ export const submitQuranReading = async (
       createdAt: data.created_at
     };
   } catch (error) {
-    console.error('Error submitting Quran reading:', error);
-    return null;
+    console.error('❌ Error submitting Quran reading:', error);
+    throw error; // Re-throw to let caller handle the error
   }
 };
 

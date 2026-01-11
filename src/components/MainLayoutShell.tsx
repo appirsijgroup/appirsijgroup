@@ -19,21 +19,29 @@ import {
     BookmarkIcon,
     UserIcon,
     ShieldCheckIcon,
-    AdminIcon
+    AdminIcon,
+    HomeIcon,
+    TrendingUpIcon,
+    QuranIcon,
+    PrayerBeadIcon,
+    ClipboardDocumentIcon,
+    DocumentDuplicateIcon,
+    IdentificationIcon,
+    UsersIcon
 } from './Icons';
 import type { View } from '@/types';
 
 const allNavItemsRaw = [
-    { id: 'dashboard-saya', label: 'Dashboard Saya', icon: ChartBarIcon, href: '/dashboard' },
-    { id: 'analytics', label: 'Analytics', icon: ChartBarIcon, href: '/analytics' },
+    { id: 'dashboard-saya', label: 'Dashboard Saya', icon: HomeIcon, href: '/dashboard' },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUpIcon, href: '/analytics' },
     { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDaysIcon, href: '/aktivitas-bulanan' },
-    { id: 'presensi', label: 'Presensi Harian', icon: PresensiIcon, href: '/presensi' },
+    { id: 'presensi', label: 'Presensi Harian', icon: ClipboardDocumentIcon, href: '/presensi' },
     { id: 'pengumuman', label: 'Pengumuman', icon: MegaphoneIcon, href: '/pengumuman' },
-    { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: GroupIcon, href: '/kegiatan' },
-    { id: 'alquran', label: 'Al-Qur\'an', icon: BookOpenIcon, href: '/alquran' },
-    { id: 'bookmarks', label: 'Bookmark', icon: BookmarkIcon, href: '/bookmarks' },
-    { id: 'panduan-doa', label: 'Panduan & Doa', icon: BookOpenIcon, href: '/panduan-doa' },
-    { id: 'profile', label: 'Profil', icon: UserIcon, href: '/profile' },
+    { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: UsersIcon, href: '/kegiatan' },
+    { id: 'alquran', label: 'Al-Qur\'an', icon: QuranIcon, href: '/alquran' },
+    { id: 'bookmarks', label: 'Bookmark', icon: DocumentDuplicateIcon, href: '/bookmarks' },
+    { id: 'panduan-doa', label: 'Panduan & Doa', icon: PrayerBeadIcon, href: '/panduan-doa' },
+    { id: 'profile', label: 'Profil', icon: IdentificationIcon, href: '/profile' },
     { id: 'dashboard-binroh', label: 'Binroh Dashboard', icon: ShieldCheckIcon, href: '/binroh' },
     { id: 'admin', label: 'Admin Dashboard', icon: AdminIcon, href: '/admin' },
 ];

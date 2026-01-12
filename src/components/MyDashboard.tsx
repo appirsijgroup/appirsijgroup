@@ -69,15 +69,15 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 
 const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyActivity[] }> = ({ employee, dailyActivitiesConfig }) => {
     const { performanceData, monthlyStats } = useMemo(() => {
-        console.log('🔄 KinerjaView useMemo running!');
-        console.log('📊 Employee monthlyActivities:', employee.monthlyActivities);
+        console.info('🔄 KinerjaView useMemo running!');
+        console.info('📊 Employee monthlyActivities:', employee.monthlyActivities);
 
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
 
-        console.log('📅 Current month:', currentMonthKey);
-        console.log('📋 Month progress:', monthProgress);
+        console.info('📅 Current month:', currentMonthKey);
+        console.info('📋 Month progress:', monthProgress);
 
         const categories: Record<string, { name: string; details: { id: string; title: string; target: number; achieved: number; percentage: number }[] }> = {
             'SIDIQ (Integritas)': { name: 'SIDIQ (Integritas)', details: [] },
@@ -88,12 +88,12 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
 
         dailyActivitiesConfig.forEach(activity => {
             if (categories[activity.category]) {
-                const achieved = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: any) => {
+                const achieved = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: Record<string, boolean>) => {
                     return dayCount + (dailyProgress[activity.id] ? 1 : 0);
                 }, 0);
                 const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((achieved / activity.monthlyTarget) * 100)) : 0;
 
-                console.log(`  ✨ ${activity.title}: achieved=${achieved}, target=${activity.monthlyTarget}, percentage=${percentage}%`);
+                console.info(`  ✨ ${activity.title}: achieved=${achieved}, target=${activity.monthlyTarget}, percentage=${percentage}%`);
 
                 categories[activity.category].details.push({
                     id: activity.id,
@@ -106,7 +106,7 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         });
 
         const categoryResults = Object.values(categories).map(cat => {
-            const totalPercentage = cat.details.reduce((sum: number, detail: any) => sum + detail.percentage, 0);
+            const totalPercentage = cat.details.reduce((sum: number, detail: { id: string; title: string; target: number; achieved: number; percentage: number }) => sum + detail.percentage, 0);
             const averageScore = cat.details.length > 0 ? Math.round(totalPercentage / cat.details.length) : 0;
             return { name: cat.name, Persentase: averageScore };
         });
@@ -116,8 +116,8 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
             return acc;
         }, {} as Record<string, { title: string; achieved: number; target: number }[]>);
 
-        console.log('📈 Final performance data:', categoryResults);
-        console.log('📊 Final monthly stats:', statsForCards);
+        console.info('📈 Final performance data:', categoryResults);
+        console.info('📊 Final monthly stats:', statsForCards);
 
         return { performanceData: categoryResults, monthlyStats: statsForCards };
     }, [employee.monthlyActivities, dailyActivitiesConfig]);
@@ -140,7 +140,7 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
                                 formatter={(value: number | undefined) => [`${value || 0}%`, 'Rata-rata Capaian']}
                             />
                             <Bar dataKey="Persentase">
-                                <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: any) => typeof value === 'number' ? `${value}%` : ''} />
+                                <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value) => typeof value === 'number' ? `${value}%` : ''} />
                                 {performanceData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
@@ -179,6 +179,14 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         </div>
     );
 };
+
+// Wrap with React.memo to prevent unnecessary re-renders
+const MemoizedKinerjaView = React.memo(KinerjaView, (prevProps, nextProps) => {
+    return (
+        prevProps.employee.monthlyActivities === nextProps.employee.monthlyActivities &&
+        prevProps.dailyActivitiesConfig === nextProps.dailyActivitiesConfig
+    );
+});
 
 const ReadingActivityCard: React.FC<{
     employee: Employee;
@@ -1181,10 +1189,11 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     // 🔥 FIX: Safe role calculations with defaults - NO loading check!
     // Use nullish coalescing to handle undefined/null gracefully
     // Also check for snake_case fallback for initial load before camelCase conversion
-    const hasMentorRole = employee.canBeMentor === true || (employee as any).can_be_mentor === true;
+    const hasMentorRole = employee.canBeMentor === true || (employee as Employee & { can_be_mentor?: boolean }).can_be_mentor === true;
     const hasApprovalRole = employee.canBeSupervisor === true || employee.canBeKaUnit === true ||
-                            (employee as any).can_be_supervisor === true || (employee as any).can_be_ka_unit === true;
-    const functionalRoles = employee.functionalRoles || (employee as any).functional_roles || [];
+                            (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_supervisor === true ||
+                            (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_ka_unit === true;
+    const functionalRoles = employee.functionalRoles || (employee as Employee & { functional_roles?: string[] }).functional_roles || [];
     const canDoTeamAttendance = hasMentorRole || hasApprovalRole ||
         functionalRoles.includes('MANAJER') ||
         functionalRoles.includes('KEPALA URUSAN') ||
@@ -1206,17 +1215,17 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             .map(data => data.employee);
     }, [props.allUsersData, employee.id, hasMentorRole]);
 
+    // Initialize targetMenteeId when mentees become available
+    // Use a ref to ensure we only set it once to avoid cascading renders
+    const initializedRef = useRef(false);
     useEffect(() => {
-        if (menteesOfMentor.length > 0 && !targetMenteeId) {
-            setTargetMenteeId(prevId => {
-                // Only update if the ID has actually changed
-                if (!prevId && menteesOfMentor.length > 0) {
-                    return menteesOfMentor[0].id;
-                }
-                return prevId;
-            });
+        if (menteesOfMentor.length > 0 && !targetMenteeId && !initializedRef.current) {
+            initializedRef.current = true;
+            // Safe because ref prevents re-execution - only runs once on first load
+            setTargetMenteeId(menteesOfMentor[0].id);
         }
-    }, [menteesOfMentor, targetMenteeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Including menteesOfMentor would cause re-runs, but ref prevents that
+    }, [menteesOfMentor.length, targetMenteeId]);
 
     const handleCreateTarget = (e: React.FormEvent) => {
         e.preventDefault();
@@ -1252,7 +1261,7 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     const renderContent = () => {
         switch (activeTab) {
             case 'kinerja':
-                return <KinerjaView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} />;
+                return <MemoizedKinerjaView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} />;
             case 'analytics':
                 return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
             case 'rapot':
@@ -1316,6 +1325,7 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                 return <Persetujuan
                     loggedInEmployee={employee}
                     weeklyReportSubmissions={props.weeklyReportSubmissions}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Persetujuan component uses a simpler signature
                     onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
                     allUsersData={props.allUsersData}
                 />

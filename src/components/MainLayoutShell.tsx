@@ -3,23 +3,17 @@
 import React, { useMemo, useEffect, useCallback, startTransition, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Header from './Header';
-import Navigation, { NavItem } from './Navigation';
+import Navigation from './Navigation';
 import Footer from './Footer';
 import ShareImageModal from './ShareImageModal';
 import NotificationPanel from './NotificationPanel';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { useAnnouncementStore } from '@/store/announcementStore';
-import { useMutabaah } from '@/contexts/MutabaahContext';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 import {
-    ChartBarIcon,
     CalendarDaysIcon,
-    PresensiIcon,
     MegaphoneIcon,
-    GroupIcon,
-    BookOpenIcon,
-    BookmarkIcon,
-    UserIcon,
     AdminIcon,
     HomeIcon,
     QuranIcon,
@@ -30,7 +24,7 @@ import {
     UsersIcon,
     ClockIcon
 } from './Icons';
-import type { View, Notification } from '@/types';
+import type { Notification } from '@/types';
 
 const allNavItemsRaw = [
     { id: 'dashboard-saya', label: 'Dashboard', icon: HomeIcon, href: '/dashboard' },
@@ -50,7 +44,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const router = useRouter();
     const pathname = usePathname();
     const { loggedInEmployee, loadLoggedInEmployee, isHydrated, logoutEmployee, setHydrated, isLoggingOut } = useAppDataStore();
-    const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, addToast, shareModalState } = useUIStore();
+    const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, shareModalState } = useUIStore();
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
     const { loadFromSupabase } = useMutabaahStore();
@@ -235,7 +229,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                     onToggleNotifications={handleToggleNotifications}
                 />
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" id="main-content-area">
-                    {children}
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
                 </main>
                 <Footer />
             </div>

@@ -7,7 +7,6 @@ import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
 import { useActivityStore } from '@/store/activityStore';
 import { useCities } from '@/store/locationStore';
 import { useRouter } from 'next/navigation';
-import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
 import { updateEmployee } from '@/services/employeeService';
 
@@ -56,27 +55,35 @@ export default function ProfilePage() {
         }
     };
 
-    const handleChangePassword = async (id: string, newPass: string) => {
+    const handleChangePassword = async (id: string, oldPass: string, newPass: string) => {
         try {
-            // 1. Hash the new password with bcrypt
-            const saltRounds = 10;
-            const hashedPassword = bcrypt.hashSync(newPass, saltRounds);
-
-            // 2. Update to Supabase using employee service
-            await updateEmployee(id, {
-                password: hashedPassword,
-                mustChangePassword: false // Clear flag after password change
+            // Call server-side API to change password
+            const response = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: id,
+                    oldPassword: oldPass,
+                    newPassword: newPass
+                }),
             });
 
-            // 3. Update local state with plain text password (for current session)
-            // In production, you might want to keep only the hashed version
-            await handleUpdateProfile(id, { password: newPass, mustChangePassword: false });
+            const data = await response.json();
 
-            return true;
+            if (!response.ok) {
+                console.error('❌ Change password API error:', data.error);
+                return { success: false, error: data.error || 'Gagal mengubah password' };
+            }
+
+            // Update local state to clear mustChangePassword flag
+            await handleUpdateProfile(id, { mustChangePassword: false });
+
+            return { success: true };
         } catch (err) {
             console.error('❌ Error changing password:', err);
-            addToast('Terjadi kesalahan saat mengubah password', 'error');
-            return false;
+            return { success: false, error: 'Terjadi kesalahan saat mengubah password' };
         }
     };
 

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import bcrypt from 'bcryptjs';
 import type { Employee, Attendance, SunnahIbadah, Activity, City, FunctionalRole } from '../types';
 import { UserIcon, CameraIcon, UserGroupIcon, ShieldCheckIcon, TrashIcon, SparklesIcon, UploadIcon, ChevronDownIcon, CheckIcon, XIcon, BuildingOfficeIcon, TagIcon, AcademicCapIcon, EyeIcon, CheckBadgeIcon, InformationCircleIcon } from './Icons';
 import SignaturePad, { type SignaturePadRef } from './SignaturePad';
@@ -10,6 +9,7 @@ import { validatePassword, isPasswordValid, type PasswordValidationResult } from
 import PasswordInput from './PasswordInput';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { uploadSignature, deleteSignature } from '@/services/signatureService';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 
 
 interface ProfileProps {
@@ -18,7 +18,7 @@ interface ProfileProps {
     sunnahIbadahList: SunnahIbadah[];
     activities: Activity[];
     onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
-    onChangePassword: (id: string, newPass: string) => Promise<boolean>;
+    onChangePassword: (id: string, oldPass: string, newPass: string) => Promise<{ success: boolean; error?: string }>;
     cities: City[];
     addToast: (message: string, type: 'success' | 'error') => void;
 }
@@ -182,7 +182,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     // Logic for verified badge
     const shouldShowVerifiedBadge = useMemo(() => {
         if (!employee) return false;
-        const isAdmin = employee.role === 'admin' || employee.role === 'super-admin';
+        const isAdmin = isAnyAdmin(employee); // 🔥 NOW INCLUDES OWNER!
         const hasHighFunctionalRole = employee.functionalRoles?.some(role => ['BPH', 'DIREKSI'].includes(role));
         const isGuidanceLeader = employee.canBeMentor || employee.canBeSupervisor || employee.canBeKaUnit;
         return isAdmin || hasHighFunctionalRole || isGuidanceLeader;
@@ -202,7 +202,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
         const functionalRoles = (employee.functionalRoles || [])
             .map(role => functionalRoleMap[role])
             .filter(Boolean);
-        
+
         const systemRoles: DisplayConfig[] = [];
         if (employee.role === 'super-admin') {
             systemRoles.push({ label: 'Super Admin', icon: ShieldCheckIcon, colorClasses: 'bg-purple-500/20 text-purple-300' });
@@ -289,24 +289,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        let isOldPasswordValid = false;
-        const storedPassword = employee.password;
-        
-        if (storedPassword.startsWith('$2')) {
-            try {
-                isOldPasswordValid = bcrypt.compareSync(oldPassword, storedPassword);
-            } catch (e) {
-                isOldPasswordValid = false;
-            }
-        } else {
-            isOldPasswordValid = (oldPassword === storedPassword);
-        }
-
-        if (!isOldPasswordValid) {
-            addToast('Password lama salah.', 'error');
-            return;
-        }
-
+        // Validate new password format
         const validation = validatePassword(newPassword);
         if (!isPasswordValid(validation)) {
             addToast('Password baru tidak memenuhi semua syarat keamanan.', 'error');
@@ -317,13 +300,16 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             addToast('Password baru dan konfirmasi tidak cocok.', 'error');
             return;
         }
+
         if (oldPassword === newPassword) {
             addToast('Password baru tidak boleh sama dengan password lama.', 'error');
             return;
         }
 
-        const isSuccess = await onChangePassword(employee.id, newPassword);
-        if (isSuccess) {
+        // Call server-side API to change password
+        const result = await onChangePassword(employee.id, oldPassword, newPassword);
+
+        if (result.success) {
             if (employee.mustChangePassword) {
                 onUpdateProfile(employee.id, { mustChangePassword: false });
             }
@@ -333,7 +319,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             setConfirmPassword('');
             setPasswordValidation(null);
         } else {
-            addToast('Gagal memperbarui password. Silakan coba lagi.', 'error');
+            addToast(result.error || 'Gagal memperbarui password. Silakan coba lagi.', 'error');
         }
     };
     

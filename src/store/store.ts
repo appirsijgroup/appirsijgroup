@@ -4,10 +4,11 @@
 
 import { create } from 'zustand';
 import React from 'react';
-import { type View, type Toast, type Notification, Ayah, SurahDetail, DailyPrayer, Employee, Attendance } from '@/types';
+import { type View, type Toast, type Notification, Ayah, SurahDetail, DailyPrayer, Employee, Attendance, Hospital } from '@/types';
 import { CheckIcon, XIcon } from '@/components/Icons';
 import { type PrayerTimesData } from '@/services/prayerTimeService';
 import { getEmployeeById } from '@/services/employeeService';
+import { getAllHospitals } from '@/services/hospitalService';
 
 // --- AppDataStore ---
 
@@ -16,25 +17,30 @@ type UserData = { employee: Employee; attendance: Attendance; history: Record<st
 export interface AppDataState {
     allUsersData: Record<string, UserData>;
     loggedInEmployee: Employee | null;
+    hospitalsData: Record<string, Hospital>;
     isHydrated: boolean;
     isLoggingOut: boolean; // Flag to prevent loading flash during logout
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
+    setHospitalsData: (hospitals: Record<string, Hospital>) => void;
     setHydrated: (isHydrated: boolean) => void;
     markAnnouncementAsRead: () => void;
     loadLoggedInEmployee: () => Promise<void>;
+    loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
     allUsersData: {},
     loggedInEmployee: null,
+    hospitalsData: {},
     isHydrated: false,
     isLoggingOut: false, // Start not logging out
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
     setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
+    setHospitalsData: (hospitals) => set({ hospitalsData: hospitals }),
     setHydrated: (isHydrated) => set({ isHydrated }),
 
     // 🔥 NEW: Load logged-in employee from Supabase
@@ -108,6 +114,24 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         // Redirect to login page immediately
         if (typeof window !== 'undefined') {
             window.location.href = '/login';
+        }
+    },
+
+    // Load hospitals from Supabase
+    loadHospitals: async () => {
+        try {
+            const hospitals = await getAllHospitals();
+
+            // Convert array to record
+            const hospitalsRecord: Record<string, Hospital> = {};
+            hospitals.forEach(hospital => {
+                hospitalsRecord[hospital.id] = hospital;
+            });
+
+            set({ hospitalsData: hospitalsRecord });
+            console.log(`✅ Loaded ${hospitals.length} hospitals`);
+        } catch (error) {
+            console.error('❌ Error loading hospitals:', error);
         }
     },
 

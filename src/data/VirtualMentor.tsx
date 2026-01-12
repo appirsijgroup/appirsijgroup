@@ -3,6 +3,7 @@ import { type ChatMessage, type AICommand, type Employee, type Activity, type Me
 import { getAiResponseStream } from '../services/geminiService';
 import { UserIcon, AcademicCapIcon, SendIcon, TrashIcon, XIcon, MicrophoneIcon } from '../components/Icons';
 import { DAILY_ACTIVITIES } from './monthlyActivities';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 
 
 interface MessageRendererProps {
@@ -181,7 +182,7 @@ const VirtualMentor: React.FC<VirtualMentorProps> = ({ employee, upcomingActivit
             .join('\n');
 
         let roleContext = 'Anda adalah seorang Karyawan.';
-        if (employee.role === 'admin' || employee.role === 'super-admin') {
+        if (isAnyAdmin(employee)) { // 🔥 NOW INCLUDES OWNER!
             roleContext = 'Anda adalah seorang Admin. Saat membuat jadwal, Anda dapat berasumsi itu untuk publik kecuali ditentukan lain.';
         } else if (employee.canBeMentor) {
             roleContext = 'Anda adalah seorang Mentor. Saat membuat jadwal, Anda dapat menawarkannya sebagai sesi bimbingan atau untuk publik.';

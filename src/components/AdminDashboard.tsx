@@ -8,6 +8,7 @@ import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon,
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
 import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
+import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin } from '@/lib/rolePermissions';
 
 // Lazy load heavy components that are only rendered conditionally
 const RelationManagement = lazy(() => import('./RelationManagement'));
@@ -2738,11 +2739,14 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
         'user': { label: 'User', className: 'bg-gray-500/20 text-gray-300' },
     };
 
-    const getRoleLabel = (role: Role) => (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleConfig[role].className}`}>
-            {roleConfig[role].label}
-        </span>
-    );
+    const getRoleLabel = (role: Role) => {
+        const roleDisplay = getRoleDisplay(role);
+        return (
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleDisplay.bgColor} ${roleDisplay.color}`}>
+                {roleDisplay.label}
+            </span>
+        );
+    };
 
     return (
         <div>
@@ -2772,7 +2776,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                     <tbody>
                         {paginatedUsers.map((user) => {
                             const isSelf = user.id === loggedInEmployee.id;
-                            const loggedInUserIsScopedSuperAdmin = loggedInEmployee.role === 'super-admin' && Array.isArray(loggedInEmployee.managedHospitalIds) && loggedInEmployee.managedHospitalIds.length > 0;
+                            const loggedInUserIsScopedSuperAdmin = isSuperAdmin(loggedInEmployee) && Array.isArray(loggedInEmployee.managedHospitalIds) && loggedInEmployee.managedHospitalIds.length > 0;
                             const hideManageButtonForSelf = isSelf && loggedInUserIsScopedSuperAdmin;
 
                             return (
@@ -2787,10 +2791,10 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                     </td>
                                     <td className="px-4 py-3">{getRoleLabel(user.role)}</td>
                                     <td className="px-4 py-3">
-                                        {(user.role === 'admin' || user.role === 'super-admin') ? (
+                                        {isAnyAdmin({ ...user, role: user.role } as any) ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="grow">
-                                                    {user.role === 'super-admin' && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
+                                                    {(user.role === 'super-admin' ) && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
                                                         <span className="font-semibold text-purple-300">Global (Semua RS)</span>
                                                     ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
                                                         <div className="flex flex-wrap gap-1">
@@ -2816,14 +2820,39 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                                 <span className="text-xs text-gray-400 italic">Tidak dapat mengubah peran diri sendiri</span>
                                             ) : (
                                                 <>
-                                                    {user.role !== 'super-admin' && (
-                                                        <button onClick={() => onInitiateSetRole(user, 'super-admin')} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-purple-600 hover:bg-purple-500 text-white">Jadikan Super Admin</button>
-                                                    )}
-                                                    {user.role !== 'admin' && (
-                                                        <button onClick={() => onInitiateSetRole(user, 'admin')} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white">Jadikan Admin</button>
-                                                    )}
-                                                    {user.role !== 'user' && (
-                                                        <button onClick={() => onInitiateSetRole(user, 'user')} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-gray-600 hover:bg-gray-500 text-white">Jadikan User</button>
+                                                    {/* 🔥 NEW: Use permission-based role assignment */}
+                                                    {getAssignableRoles(loggedInEmployee).map((role) => {
+                                                        if (user.role === role) return null; // Don't show button for current role
+
+                                                        // Validate if this role change is allowed
+                                                        const validationError = validateRoleChange(loggedInEmployee, user, role);
+                                                        if (validationError) return null; // Skip if not allowed
+
+                                                        // Button styling based on role
+                                                        const buttonStyles = {
+                                                            'super-admin': 'bg-purple-600 hover:bg-purple-500 text-white',
+                                                            'admin': 'bg-blue-600 hover:bg-blue-500 text-white',
+                                                            'user': 'bg-gray-600 hover:bg-gray-500 text-white'
+                                                        };
+
+                                                        const labels = {
+                                                            'super-admin': 'Jadikan Super Admin',
+                                                            'admin': 'Jadikan Admin',
+                                                            'user': 'Jadikan User'
+                                                        };
+
+                                                        return (
+                                                            <button
+                                                                key={role}
+                                                                onClick={() => onInitiateSetRole(user, role)}
+                                                                className={`px-3 py-1.5 rounded-md font-semibold text-xs ${buttonStyles[role]} transition-colors`}
+                                                            >
+                                                                {labels[role]}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    {getAssignableRoles(loggedInEmployee).filter(r => r !== user.role && !validateRoleChange(loggedInEmployee, user, r)).length === 0 && (
+                                                        <span className="text-xs text-gray-400 italic">Tidak dapat mengubah peran user ini</span>
                                                     )}
                                                 </>
                                             )}
@@ -3220,11 +3249,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     /* eslint-enable */
 
     const [activeView, setActiveView] = useState<AdminView>(
-        loggedInEmployee.role === 'super-admin' ? 'manajemen-pengguna' : 'manajemen-konten'
+        isSuperAdmin(loggedInEmployee) ? 'manajemen-pengguna' : 'manajemen-konten'
     );
 
     useEffect(() => {
-        if (loggedInEmployee.role !== 'super-admin') {
+        if (!isSuperAdmin(loggedInEmployee)) {
             if (['manajemen-pengguna', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(activeView)) {
                 setActiveView('manajemen-konten');
             }
@@ -3444,20 +3473,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div>
             <div className="mb-6">
                 <nav className="flex items-center gap-2 -mb-px flex-wrap border-b border-white/20">
-                    {loggedInEmployee.role === 'super-admin' && (
+                    {isSuperAdmin(loggedInEmployee) && (
                         <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
                     )}
                     <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
                     <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
                     <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
-                    {loggedInEmployee.role === 'super-admin' && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
-                    {loggedInEmployee.role === 'super-admin' && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
-                    {loggedInEmployee.role === 'super-admin' && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
+                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
+                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
+                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
                 </nav>
             </div>
 
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-                {activeView === 'manajemen-pengguna' && loggedInEmployee.role === 'super-admin' && (
+                {activeView === 'manajemen-pengguna' && isSuperAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start flex-wrap">
                             <SubTabButton active={userManagementSubView === 'database'} onClick={() => setUserManagementSubView('database')}>Database</SubTabButton>
@@ -3531,9 +3560,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         onMarkAsRead={onMarkAsRead}
                     />
                 )}
-                {activeView === 'audit-log' && loggedInEmployee.role === 'super-admin' && <AuditLogView log={auditLog} />}
-                {activeView === 'manajemen-admin' && loggedInEmployee.role === 'super-admin' && <AdminManagement allUsers={allUsers} loggedInEmployee={loggedInEmployee} onInitiateSetRole={handleInitiateSetRole} onManageAccess={setManagingAccessFor} hospitals={hospitals} />}
-                {activeView === 'manajemen-rs' && loggedInEmployee.role === 'super-admin' && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
+                {activeView === 'audit-log' && isSuperAdmin(loggedInEmployee) && <AuditLogView log={auditLog} />}
+                {activeView === 'manajemen-admin' && isSuperAdmin(loggedInEmployee) && <AdminManagement allUsers={allUsers} loggedInEmployee={loggedInEmployee} onInitiateSetRole={handleInitiateSetRole} onManageAccess={setManagingAccessFor} hospitals={hospitals} />}
+                {activeView === 'manajemen-rs' && isSuperAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
             </div>
 
             <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={handleSaveUser} existingUser={editingUser} hospitals={hospitals} />

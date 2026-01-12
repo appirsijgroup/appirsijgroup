@@ -1,13 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Announcement, type Employee } from '../types';
+import { type Announcement, type Employee, type Hospital } from '../types';
 import { MegaphoneIcon, PlusCircleIcon, TrashIcon, UserGroupIcon, GlobeAltIcon, ChevronDownIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
+import { isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 
 interface AnnouncementsProps {
     announcements: Announcement[];
     loggedInEmployee: Employee | null;
     allUsers: Employee[];
+    hospitals?: Hospital[];
     onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
     onDelete: (announcementId: string) => void;
     onMarkAsRead: () => void;
@@ -18,10 +20,12 @@ const AnnouncementModal: React.FC<{
     onClose: () => void;
     onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
     loggedInEmployee: Employee | null;
-}> = ({ isOpen, onClose, onCreate, loggedInEmployee }) => {
+    hospitals: Hospital[];
+}> = ({ isOpen, onClose, onCreate, loggedInEmployee, hospitals }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [scope, setScope] = useState<'global' | 'mentor'>('global');
+    const [scope, setScope] = useState<'alliansi' | 'mentor'>('alliansi');
+    const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
 
     if (!isOpen || !loggedInEmployee) return null;
 
@@ -30,14 +34,29 @@ const AnnouncementModal: React.FC<{
             alert("Judul dan isi pengumuman tidak boleh kosong.");
             return;
         }
-        onCreate({ title, content, scope });
+
+        // For 'alliansi' scope, check if hospitals are selected
+        const selectedHospitals = hospitals.filter(h => selectedHospitalIds.includes(h.id));
+        if (scope === 'alliansi' && selectedHospitalIds.length > 0) {
+            onCreate({
+                title,
+                content,
+                scope,
+                targetHospitalIds: selectedHospitalIds,
+                targetHospitalNames: selectedHospitals.map(h => h.name || h.brand || '')
+            });
+        } else {
+            onCreate({ title, content, scope });
+        }
+
         onClose();
         setTitle('');
         setContent('');
-        setScope('global');
+        setScope('alliansi');
+        setSelectedHospitalIds([]);
     };
 
-    const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
+    const isAdmin = isAnyAdmin(loggedInEmployee);
 
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
@@ -52,16 +71,69 @@ const AnnouncementModal: React.FC<{
                         <label className="text-sm font-medium text-blue-100 block mb-2">Target Pengumuman</label>
                         <div className="flex items-center gap-4">
                             {isAdmin && (
-                                <button onClick={() => setScope('global')} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'global' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
-                                    <GlobeAltIcon className="w-5 h-5" /> Global
+                                <button onClick={() => { setScope('alliansi'); setSelectedHospitalIds([]); }} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'alliansi' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
+                                    <GlobeAltIcon className="w-5 h-5" /> Aliansi
                                 </button>
                             )}
                             {loggedInEmployee.canBeMentor && (
-                                <button onClick={() => setScope('mentor')} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'mentor' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
+                                <button onClick={() => { setScope('mentor'); setSelectedHospitalIds([]); }} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'mentor' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
                                     <UserGroupIcon className="w-5 h-5" /> Untuk Mentee
                                 </button>
                             )}
                         </div>
+
+                        {/* Hospital/BRAND selector - only show for Admin when Aliansi is selected */}
+                        {isAdmin && scope === 'alliansi' && (
+                            <div className="mt-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-medium text-blue-100">
+                                        Pilih RS/BRAND (Opsional)
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedHospitalIds(selectedHospitalIds.length === hospitals.length ? [] : hospitals.map(h => h.id))}
+                                        className="text-xs text-teal-400 hover:text-teal-300 underline"
+                                    >
+                                        {selectedHospitalIds.length === hospitals.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                    </button>
+                                </div>
+
+                                <div className="bg-white/5 border border-white/20 rounded-lg p-3 max-h-48 overflow-y-auto">
+                                    {hospitals.length === 0 ? (
+                                        <p className="text-sm text-gray-400 text-center py-4">Belum ada data RS</p>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {hospitals.map(hospital => (
+                                                <label key={hospital.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedHospitalIds.includes(hospital.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedHospitalIds([...selectedHospitalIds, hospital.id]);
+                                                            } else {
+                                                                setSelectedHospitalIds(selectedHospitalIds.filter(id => id !== hospital.id));
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 rounded border-gray-400 text-teal-500 focus:ring-teal-400 focus:ring-offset-gray-800"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="text-sm text-white font-medium">{hospital.brand}</div>
+                                                        <div className="text-xs text-gray-400">{hospital.name}</div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <p className="text-xs text-gray-400 mt-2">
+                                    {selectedHospitalIds.length === 0
+                                        ? 'Semua user di Aliansi dapat melihat pengumuman ini'
+                                        : `Hanya user dari ${selectedHospitalIds.length} RS terpilih yang dapat melihat pengumuman ini`}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
@@ -77,24 +149,38 @@ const AnnouncementModal: React.FC<{
 };
 
 
-const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onDelete, onMarkAsRead }) => {
+const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onDelete, onMarkAsRead, hospitals = [] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<Announcement | null>(null);
     const [openAnnouncementId, setOpenAnnouncementId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5; // Jumlah item per halaman
 
-    const canCreate = loggedInEmployee && (loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin' || loggedInEmployee.canBeMentor);
+    const canCreate = loggedInEmployee && (isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor);
 
     const filteredAnnouncements = useMemo(() => {
         if (!loggedInEmployee) return announcements.sort((a, b) => b.timestamp - a.timestamp);
 
         return announcements
             .filter(a => {
-                if (a.scope === 'global') return true;
-                if (loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') return true;
-                if (loggedInEmployee.canBeMentor) return true;
-                if (loggedInEmployee.mentorId && loggedInEmployee.mentorId === a.authorId) return true;
+                // 'alliansi' scope without targetHospitalIds - everyone can see
+                if (a.scope === 'alliansi' && (!a.targetHospitalIds || a.targetHospitalIds.length === 0)) return true;
+
+                // 'alliansi' scope with targetHospitalIds - only users from those hospitals can see
+                if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
+                    // Admins can see all targeted announcements
+                    if (isAnyAdmin(loggedInEmployee)) return true;
+                    // Users can see if they belong to one of the target hospitals
+                    return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
+                }
+
+                // 'mentor' scope - mentors and their mentees can see
+                if (a.scope === 'mentor') {
+                    if (isAnyAdmin(loggedInEmployee)) return true;
+                    if (loggedInEmployee.canBeMentor) return true;
+                    if (loggedInEmployee.mentorId && loggedInEmployee.mentorId === a.authorId) return true;
+                }
+
                 return false;
             })
             .sort((a, b) => b.timestamp - a.timestamp);
@@ -168,9 +254,13 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${ann.scope === 'global' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
-                                            {ann.scope === 'global' ? <GlobeAltIcon className="w-4 h-4" /> : <UserGroupIcon className="w-4 h-4" />}
-                                            {ann.scope === 'global' ? 'Global' : 'Mentor'}
+                                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${ann.scope === 'alliansi' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
+                                            {ann.scope === 'alliansi' ? <GlobeAltIcon className="w-4 h-4" /> : <UserGroupIcon className="w-4 h-4" />}
+                                            {ann.scope === 'alliansi' ? (
+                                                ann.targetHospitalIds && ann.targetHospitalIds.length > 0
+                                                    ? `${ann.targetHospitalNames?.[0] || 'RS'}${ann.targetHospitalIds.length > 1 ? ` +${ann.targetHospitalIds.length - 1}` : ''}`
+                                                    : 'Aliansi'
+                                            ) : 'Mentor'}
                                         </span>
                                         <ChevronDownIcon className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                                     </div>
@@ -178,7 +268,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                 <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1000px]' : 'max-h-0'}`}>
                                     <div className="px-4 pb-4 pt-2 border-t border-white/10">
                                         <p className="text-white whitespace-pre-wrap">{ann.content}</p>
-                                        {loggedInEmployee && (loggedInEmployee.role === 'super-admin' || loggedInEmployee.id === ann.authorId) && (
+                                        {loggedInEmployee && (isSuperAdmin(loggedInEmployee) || loggedInEmployee.id === ann.authorId) && (
                                             <div className="mt-4 text-right">
                                                 <button onClick={() => setConfirmDelete(ann)} className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white rounded-md">
                                                     <TrashIcon className="w-4 h-4"/>
@@ -270,6 +360,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     onClose={() => setIsModalOpen(false)}
                     onCreate={onCreate}
                     loggedInEmployee={loggedInEmployee}
+                    hospitals={hospitals}
                 />
             )}
             

@@ -4,31 +4,40 @@ import React, { useEffect, useState } from 'react';
 import Announcements from '@/components/Announcements';
 import { useAppDataStore, useAnnouncementStore, useUIStore } from '@/store/store';
 import type { Announcement } from '@/types';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export default function PengumumanPage() {
-    const { loggedInEmployee, allUsersData, markAnnouncementAsRead } = useAppDataStore();
+    const { loggedInEmployee, allUsersData, markAnnouncementAsRead, hospitalsData, loadHospitals } = useAppDataStore();
     const { announcements, addAnnouncement, removeAnnouncement, loadAnnouncements, isLoading } = useAnnouncementStore();
     const { addToast } = useUIStore();
     const [initLoaded, setInitLoaded] = useState(false);
+
+    // Get hospitals from hospitalsData
+    const hospitalsList = React.useMemo(() => {
+        return Object.values(hospitalsData || {});
+    }, [hospitalsData]);
 
     // Get all users from allUsersData
     const allUsersList = React.useMemo(() => {
         return Object.values(allUsersData || {}).map(data => data.employee);
     }, [allUsersData]);
 
-    // Load announcements from Supabase on mount
+    // Load announcements and hospitals from Supabase on mount
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                await loadAnnouncements();
+                await Promise.all([
+                    loadAnnouncements(),
+                    loadHospitals()
+                ]);
             } catch (error) {
-                console.error('Error loading announcements:', error);
+                console.error('Error loading initial data:', error);
             } finally {
                 setInitLoaded(true);
             }
         };
         loadInitialData();
-    }, [loadAnnouncements]);
+    }, [loadAnnouncements, loadHospitals]);
 
     // Handler to create announcement with proper structure and save to Supabase
     const handleCreateAnnouncement = async (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>) => {
@@ -46,9 +55,7 @@ export default function PengumumanPage() {
         });
 
         // Check if user has permission to create announcement
-        const canCreate = (loggedInEmployee.role === 'admin' ||
-                          loggedInEmployee.role === 'super-admin' ||
-                          loggedInEmployee.canBeMentor === true);
+        const canCreate = isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor === true;
 
         if (!canCreate) {
             addToast('Anda tidak memiliki izin untuk membuat pengumuman', 'error');
@@ -96,6 +103,7 @@ export default function PengumumanPage() {
             announcements={announcements}
             loggedInEmployee={loggedInEmployee || null}
             allUsers={allUsersList}
+            hospitals={hospitalsList}
             onCreate={handleCreateAnnouncement}
             onDelete={handleDeleteAnnouncement}
             onMarkAsRead={markAnnouncementAsRead}

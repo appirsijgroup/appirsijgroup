@@ -10,6 +10,7 @@ import NotificationPanel from './NotificationPanel';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useMutabaah } from '@/contexts/MutabaahContext';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 import {
     ChartBarIcon,
     CalendarDaysIcon,
@@ -114,8 +115,25 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             const lastRead = loggedInEmployee.lastAnnouncementReadTimestamp || 0;
             const announcementCount = announcements.filter(a => {
                 if (a.timestamp <= lastRead) return false;
-                if (a.scope === 'global') return true;
-                if (a.scope === 'mentor' && loggedInEmployee.mentorId === a.authorId) return true;
+
+                // Alliansi scope without hospital targeting - everyone can see
+                if (a.scope === 'alliansi' && (!a.targetHospitalIds || a.targetHospitalIds.length === 0)) return true;
+
+                // Alliansi scope with hospital targeting - only users from those hospitals can see
+                if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
+                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin' ;
+                    if (isAdmin) return true;
+                    return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
+                }
+
+                // Mentor scope - mentors and their mentees can see
+                if (a.scope === 'mentor') {
+                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin' ;
+                    if (isAdmin) return true;
+                    if (loggedInEmployee.canBeMentor) return true;
+                    if (loggedInEmployee.mentorId === a.authorId) return true;
+                }
+
                 return false;
             }).length;
 
@@ -137,7 +155,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         if (!loggedInEmployee) return [];
 
         return allNavItemsRaw.filter(item => {
-            const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
+            const isAdmin = isAnyAdmin(loggedInEmployee); // 🔥 NOW INCLUDES OWNER!
             const hasAnalyticsAccess = isAdmin || (loggedInEmployee.functionalRoles && loggedInEmployee.functionalRoles.length > 0);
 
             if (item.id === 'admin' && !isAdmin) return false;

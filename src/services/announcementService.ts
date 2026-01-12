@@ -32,12 +32,12 @@ export const getAnnouncementById = async (id: string): Promise<Announcement | nu
     return data;
 };
 
-// Get global announcements
+// Get global/alliansi announcements
 export const getGlobalAnnouncements = async (): Promise<Announcement[]> => {
     const { data, error } = await supabase
         .from('announcements')
         .select('*')
-        .eq('scope', 'global')
+        .eq('scope', 'alliansi')
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
@@ -130,12 +130,32 @@ export const updateAnnouncement = async (
 
 // Delete announcement
 export const deleteAnnouncement = async (id: string): Promise<void> => {
-    const { error } = await supabase
+    console.log('🗑️ Deleting announcement:', id);
+
+    const { data, error, count } = await supabase
         .from('announcements')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-    if (error) throw error;
+    console.log('Delete response:', { data, error, count });
+
+    if (error) {
+        console.error('❌ Error deleting announcement:', error);
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+        });
+        throw error;
+    }
+
+    if (count === 0) {
+        console.warn('⚠️ No announcement was deleted. ID may not exist:', id);
+    } else {
+        console.log('✅ Successfully deleted announcement:', id);
+    }
 };
 
 // Get recent announcements

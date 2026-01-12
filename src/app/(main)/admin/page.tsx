@@ -17,9 +17,10 @@ const AdminDashboard = dynamic(() => import('@/components/AdminDashboard').then(
     ),
     ssr: false // Disable SSR untuk component ini
 });
-import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode } from '@/types';
+import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
 import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmployee as deleteEmployeeSupabase, createEmployee as createEmployeeSupabase } from '@/services/employeeService';
 import { getAllHospitals, createHospital as createHospitalSupabase, updateHospital as updateHospitalSupabase, deleteHospital as deleteHospitalSupabase, toggleHospitalStatus as toggleHospitalStatusSupabase } from '@/services/hospitalService';
+import { validateRoleChange, getAssignableRoles, getRoleDisplay } from '@/lib/rolePermissions';
 // import { supabase } from '@/lib/supabase'; // Unused import
 
 export default function AdminPage() {
@@ -45,7 +46,7 @@ export default function AdminPage() {
 
     // Handler untuk update mutabaah locking mode dengan konfirmasi
     const handleUpdateMutabaahLockingMode = async (mode: MutabaahLockingMode) => {
-        // Cek apakah user adalah super-admin
+        // 🔥 NEW: Allow owner and super-admin to change this setting
         if (loggedInEmployee?.role !== 'super-admin') {
             addToast('❌ Hanya Super Admin yang dapat mengubah pengaturan global ini!', 'error');
             return;
@@ -182,7 +183,7 @@ export default function AdminPage() {
         }
     };
 
-    const handleSetRole = async (userId: string, newRole: 'super-admin' | 'admin' | 'user') => {
+    const handleSetRole = async (userId: string, newRole: Role) => {
         try {
             // Get the user data before updating
             const userToUpdate = allUsersData[userId];
@@ -190,6 +191,14 @@ export default function AdminPage() {
                 throw new Error('User not found');
             }
             const oldRole = userToUpdate.employee.role;
+
+            // 🔥 NEW: Validate role change using permission system
+            const validationError = validateRoleChange(loggedInEmployee, userToUpdate.employee, newRole);
+            if (validationError) {
+                addToast(`❌ ${validationError}`, 'error');
+                return;
+            }
+
 
             // Update in Supabase
             await updateEmployeeSupabase(userId, { role: newRole });
@@ -206,7 +215,7 @@ export default function AdminPage() {
                         adminName: loggedInEmployee.name,
                         action: 'Role Change',
                         target: `User: ${newData[userId].employee.name} (${userId})`,
-                        reason: `Changed role to ${newRole}`
+                        reason: `Changed role from ${oldRole} to ${newRole}`
                     });
                 }
                 return newData;
@@ -214,6 +223,7 @@ export default function AdminPage() {
 
             // 🔥 FIX: Create notification for the user whose role was changed
             const roleLabels: Record<string, string> = {
+                'owner': 'Owner',
                 'super-admin': 'Super Admin',
                 'admin': 'Admin',
                 'user': 'User'

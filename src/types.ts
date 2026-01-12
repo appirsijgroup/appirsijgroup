@@ -76,7 +76,19 @@ export interface RawEmployee {
   gender: 'Laki-laki' | 'Perempuan';
 }
 
+// Role hierarchy (from highest to lowest):
+// - super-admin: Can manage admins and users, full system access
+// - admin: Can manage regular users and content
+// - user: Regular employee
 export type Role = 'super-admin' | 'admin' | 'user';
+
+// Role hierarchy level for permission checks
+export const ROLE_LEVELS: Record<Role, number> = {
+  'super-admin': 100,
+  'admin': 50,
+  'user': 1
+};
+
 export type FunctionalRole = 'BPH' | 'DIREKSI' | 'MANAJER' | 'KEPALA URUSAN' | 'KEPALA RUANGAN';
 
 // Common types for bulk operations and API responses
@@ -578,7 +590,9 @@ export interface Announcement {
   authorId: string;
   authorName: string;
   timestamp: number;
-  scope: 'global' | 'mentor';
+  scope: 'alliansi' | 'mentor';
+  targetHospitalIds?: string[]; // Optional: if set, only users with these hospitalIds can see
+  targetHospitalNames?: string[]; // For display purposes
 }
 
 export interface Notification {

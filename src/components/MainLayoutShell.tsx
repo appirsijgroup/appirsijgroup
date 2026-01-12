@@ -33,7 +33,7 @@ import {
 import type { View, Notification } from '@/types';
 
 const allNavItemsRaw = [
-    { id: 'dashboard-saya', label: 'Dashboard Saya', icon: HomeIcon, href: '/dashboard' },
+    { id: 'dashboard-saya', label: 'Dashboard', icon: HomeIcon, href: '/dashboard' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUpIcon, href: '/analytics' },
     { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDaysIcon, href: '/aktivitas-bulanan' },
     { id: 'presensi', label: 'Presensi Harian', icon: ClipboardDocumentIcon, href: '/presensi' },

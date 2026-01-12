@@ -132,13 +132,13 @@ export const updateAnnouncement = async (
 export const deleteAnnouncement = async (id: string): Promise<void> => {
     console.log('🗑️ Deleting announcement:', id);
 
-    const { data, error, count } = await supabase
+    const { data, error, count, status, statusText } = await supabase
         .from('announcements')
         .delete()
         .eq('id', id)
         .select();
 
-    console.log('Delete response:', { data, error, count });
+    console.log('Delete response:', { data, error, count, status, statusText });
 
     if (error) {
         console.error('❌ Error deleting announcement:', error);
@@ -146,15 +146,18 @@ export const deleteAnnouncement = async (id: string): Promise<void> => {
             message: error.message,
             code: error.code,
             details: error.details,
-            hint: error.hint
+            hint: error.hint,
+            status: status,
+            statusText: statusText
         });
-        throw error;
+        throw new Error(`Gagal menghapus pengumuman: ${error.message} (${error.code})`);
     }
 
     if (count === 0) {
-        console.warn('⚠️ No announcement was deleted. ID may not exist:', id);
+        console.warn('⚠️ No announcement was deleted. ID may not exist or permission denied:', id);
+        throw new Error('Pengumuman tidak ditemukan atau Anda tidak memiliki izin untuk menghapusnya');
     } else {
-        console.log('✅ Successfully deleted announcement:', id);
+        console.log('✅ Successfully deleted announcement:', id, `Count: ${count}`);
     }
 };
 

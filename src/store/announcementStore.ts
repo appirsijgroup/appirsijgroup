@@ -94,6 +94,8 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
             });
             // Reload data to restore state after error
             await get().loadAnnouncements(false);
+            // 🔥 FIX: Throw error back to caller so they can handle it
+            throw error;
         }
     },
     refreshAnnouncements: async () => {

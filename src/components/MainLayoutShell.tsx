@@ -22,19 +22,19 @@ import {
     UserIcon,
     AdminIcon,
     HomeIcon,
-    TrendingUpIcon,
     QuranIcon,
     PrayerBeadIcon,
     ClipboardDocumentIcon,
     DocumentDuplicateIcon,
     IdentificationIcon,
-    UsersIcon
+    UsersIcon,
+    ClockIcon
 } from './Icons';
 import type { View, Notification } from '@/types';
 
 const allNavItemsRaw = [
     { id: 'dashboard-saya', label: 'Dashboard', icon: HomeIcon, href: '/dashboard' },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUpIcon, href: '/analytics' },
+    { id: 'aktifitas-saya', label: 'Aktifitas Saya', icon: ClockIcon, href: '/aktifitas-saya' },
     { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDaysIcon, href: '/aktivitas-bulanan' },
     { id: 'presensi', label: 'Presensi Harian', icon: ClipboardDocumentIcon, href: '/presensi' },
     { id: 'pengumuman', label: 'Pengumuman', icon: MegaphoneIcon, href: '/pengumuman' },
@@ -156,10 +156,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
         return allNavItemsRaw.filter(item => {
             const isAdmin = isAnyAdmin(loggedInEmployee); // 🔥 NOW INCLUDES OWNER!
-            const hasAnalyticsAccess = isAdmin || (loggedInEmployee.functionalRoles && loggedInEmployee.functionalRoles.length > 0);
 
             if (item.id === 'admin' && !isAdmin) return false;
-            if (item.id === 'analytics' && !hasAnalyticsAccess) return false;
             return true;
         });
     }, [loggedInEmployee]);

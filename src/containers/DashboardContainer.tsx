@@ -27,8 +27,11 @@ import type {
 // Helper imported from utils
 
 
+interface DashboardContainerProps {
+    initialTab?: string;
+}
 
-const DashboardContainer: React.FC = () => {
+const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) => {
     const router = useRouter();
     const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee } = useAppDataStore();
     const { addToast } = useUIStore();
@@ -691,7 +694,7 @@ const DashboardContainer: React.FC = () => {
             attendance={allUsersData[loggedInEmployee.id]?.attendance}
             sunnahIbadahList={sunnahIbadahList}
             hospitals={hospitals}
-            initialTab={undefined}
+            initialTab={initialTab}
             onTabChange={() => { }}
             menteeTargets={menteeTargets}
             onCreateMenteeTarget={(data) => addMenteeTarget({ ...data, id: Date.now().toString(), createdAt: Date.now(), status: 'in-progress', completedAt: null })}

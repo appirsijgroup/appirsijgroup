@@ -1,40 +1,12 @@
+'use client';
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmission, MenteeTarget, ToDoItem, DailyActivity } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ChartBarIcon, DocumentTextIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, CheckIcon, TrashIcon, CheckSquareIcon, UserGroupIcon, ShieldCheckIcon, PencilIcon, LockClosedIcon, PlusCircleIcon, ListBulletIcon, EyeIcon, ArrowUturnLeftIcon, CheckCircleIcon, InformationCircleIcon, TrendingUpIcon } from './Icons';
-import MenteeGuidanceView from './MenteeGuidanceView';
-import { MentorDashboard, type MentorDashboardView } from './MentorDashboard';
+import { type Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmission, ToDoItem, DailyActivity } from '../types';
+import { CalendarDaysIcon, ClockIcon, CheckIcon, TrashIcon, CheckSquareIcon, PencilIcon, LockClosedIcon, PlusCircleIcon, ListBulletIcon, EyeIcon, ArrowUturnLeftIcon, CheckCircleIcon, InformationCircleIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
-import RapotView from './RapotView';
-import Persetujuan from './Persetujuan';
 import { createPortal } from 'react-dom';
-import { TeamAttendanceView } from './TeamAttendanceView';
-import Analytics from './Analytics';
 
-
-const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b', '#10b981', '#0ea5e9'];
-
-const TabButton: React.FC<{
-    label: string;
-    icon: React.FC<{ className: string }>;
-    active: boolean;
-    onClick: () => void;
-}> = ({ label, icon: Icon, active, onClick }) => (
-    <button
-        onClick={onClick}
-        className={`flex-grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
-          ${active
-            ? 'border-teal-400 text-teal-300'
-            : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
-          }`}
-    >
-        <Icon className="w-5 h-5" />
-        <span>{label}</span>
-    </button>
-);
-
-// Helper function to calculate balanced weeks, replicated from MonthlyActivities
-// FIXED: Changed to Sunday-based week calculation (0 = Sunday) to match MonthlyActivities.tsx
+// Helper function to calculate balanced weeks
 const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -46,19 +18,17 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
     for (let day = 1; day <= daysInMonth; day++) {
         currentWeek.push(day);
         const currentDate = new Date(year, month, day);
-        if (currentDate.getDay() === 0 || day === daysInMonth) { // End of week on Sunday or end of month
+        if (currentDate.getDay() === 0 || day === daysInMonth) {
             weeks.push(currentWeek);
             currentWeek = [];
         }
     }
 
-    // Merge short first week (<= 2 days)
     if (weeks.length > 1 && weeks[0].length <= 2) {
         const firstWeek = weeks.shift()!;
         weeks[0] = [...firstWeek, ...weeks[0]];
     }
 
-    // Merge short last week (<= 2 days)
     if (weeks.length > 1 && weeks[weeks.length - 1].length <= 2) {
         const lastWeek = weeks.pop()!;
         weeks[weeks.length - 1] = [...weeks[weeks.length - 1], ...lastWeek];
@@ -66,120 +36,6 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 
     return weeks.map((days, index) => ({ weekIndex: index, days }));
 };
-
-const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyActivity[] }> = ({ employee, dailyActivitiesConfig }) => {
-    const { performanceData, monthlyStats } = useMemo(() => {
-        console.log('🔄 KinerjaView useMemo running!');
-        console.log('📊 Employee monthlyActivities:', employee.monthlyActivities);
-
-        const now = new Date();
-        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
-
-        console.log('📅 Current month:', currentMonthKey);
-        console.log('📋 Month progress:', monthProgress);
-
-        const categories: Record<string, { name: string; details: { id: string; title: string; target: number; achieved: number; percentage: number }[] }> = {
-            'SIDIQ (Integritas)': { name: 'SIDIQ (Integritas)', details: [] },
-            'TABLIGH (Teamwork)': { name: 'TABLIGH (Teamwork)', details: [] },
-            'AMANAH (Disiplin)': { name: 'AMANAH (Disiplin)', details: [] },
-            'FATONAH (Belajar)': { name: 'FATONAH (Belajar)', details: [] },
-        };
-
-        dailyActivitiesConfig.forEach(activity => {
-            if (categories[activity.category]) {
-                const achieved = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: any) => {
-                    return dayCount + (dailyProgress[activity.id] ? 1 : 0);
-                }, 0);
-                const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((achieved / activity.monthlyTarget) * 100)) : 0;
-
-                console.log(`  ✨ ${activity.title}: achieved=${achieved}, target=${activity.monthlyTarget}, percentage=${percentage}%`);
-
-                categories[activity.category].details.push({
-                    id: activity.id,
-                    title: activity.title,
-                    target: activity.monthlyTarget,
-                    achieved,
-                    percentage,
-                });
-            }
-        });
-
-        const categoryResults = Object.values(categories).map(cat => {
-            const totalPercentage = cat.details.reduce((sum: number, detail: any) => sum + detail.percentage, 0);
-            const averageScore = cat.details.length > 0 ? Math.round(totalPercentage / cat.details.length) : 0;
-            return { name: cat.name, Persentase: averageScore };
-        });
-
-        const statsForCards = Object.entries(categories).reduce((acc, [key, value]) => {
-            acc[key] = value.details.map(d => ({ title: d.title, achieved: d.achieved, target: d.target }));
-            return acc;
-        }, {} as Record<string, { title: string; achieved: number; target: number }[]>);
-
-        console.log('📈 Final performance data:', categoryResults);
-        console.log('📊 Final monthly stats:', statsForCards);
-
-        return { performanceData: categoryResults, monthlyStats: statsForCards };
-    }, [employee.monthlyActivities, dailyActivitiesConfig]);
-
-    return (
-        <div className="space-y-8">
-            <div className="bg-black/20 p-6 rounded-2xl shadow-lg border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4 text-center">Progres Bulan Ini: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3>
-                <div className="w-full h-80">
-                    <ResponsiveContainer>
-                        <BarChart data={performanceData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
-                            <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                            <Tooltip
-                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem' }}
-                                itemStyle={{ color: '#ffffff' }}
-                                labelStyle={{ color: '#cbd5e1', fontWeight: 'bold' }}
-                                formatter={(value: number | undefined) => [`${value || 0}%`, 'Rata-rata Capaian']}
-                            />
-                            <Bar dataKey="Persentase">
-                                <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: any) => typeof value === 'number' ? `${value}%` : ''} />
-                                {performanceData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(monthlyStats).map(([category, activities]) => (
-                    <div key={category} className="bg-black/20 p-6 rounded-2xl shadow-lg border border-white/10">
-                        <h4 className="font-bold text-lg text-teal-300 mb-4">{category}</h4>
-                        <div className="space-y-4">
-                            {activities.map(activity => {
-                                const percentage = activity.target > 0 ? Math.min(100, (activity.achieved / activity.target) * 100) : 0;
-                                return (
-                                    <div key={activity.title}>
-                                        <div className="flex justify-between items-center mb-1 text-sm">
-                                            <span className="font-medium text-white">{activity.title}</span>
-                                            <span className="font-semibold text-blue-200">{activity.achieved} / {activity.target}</span>
-                                        </div>
-                                        <div className="w-full bg-black/30 rounded-full h-2">
-                                            <div
-                                                className="bg-teal-500 h-2 rounded-full transition-all duration-500"
-                                                style={{ width: `${percentage}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-
 const ReadingActivityCard: React.FC<{
     employee: Employee;
     onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
@@ -1049,11 +905,6 @@ const ToDoListView: React.FC<{
 };
 
 
-interface AktivitasPribadiViewProps extends Pick<MyDashboardViewProps, 'dailyActivitiesConfig' | 'onLogBookReading' | 'onLogManualActivity' | 'onDeleteReadingHistory' | 'onUpdateTodoList'> {
-    submissions: WeeklyReportSubmission[];
-    employee: Employee;
-}
-
 // Define SubTabButton component outside AktivitasPribadiView to avoid creating during render
 const SubTabButton: React.FC<{
     label: string;
@@ -1143,233 +994,14 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
 };
 
 
-export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
-    /* eslint-disable */
-    const {
-        employee,
-        initialTab,
-        onTabChange,
-        dailyActivitiesConfig,
-        menteeTargets,
-        onCreateMenteeTarget,
-        allUsersData,
-        teamAttendanceSessions,
-        onCreateTeamAttendanceSessions,
-        onAddActivity,
-        onUpdateTeamAttendance,
-        onDeleteTeamAttendanceSession,
-        addToast,
-    } = props;
-    /* eslint-enable */
+export interface AktivitasPribadiViewProps {
+    employee: Employee;
+    dailyActivitiesConfig: DailyActivity[];
+    onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
+    onLogManualActivity: (activityId: string, date: string) => void;
+    onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
+    onUpdateTodoList: (userId: string, todoList: ToDoItem[]) => void;
+    submissions: WeeklyReportSubmission[];
+}
 
-    type DashboardTab = 'kinerja' | 'analytics' | 'rapot' | 'aktivitas-pribadi' | 'bimbingan' | 'panel-mentor' | 'persetujuan' | 'presensi-tim';
-
-    const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab as DashboardTab || 'kinerja');
-    const isInitializedRef = useRef(false);
-
-    useEffect(() => {
-        if (!isInitializedRef.current && initialTab) {
-            const newTab = initialTab as DashboardTab;
-            setActiveTab(newTab);
-            isInitializedRef.current = true;
-            if (onTabChange) {
-                onTabChange();
-            }
-        }
-    }, [initialTab, onTabChange]);
-
-    // 🔥 FIX: Safe role calculations with defaults - NO loading check!
-    // Use nullish coalescing to handle undefined/null gracefully
-    // Also check for snake_case fallback for initial load before camelCase conversion
-    const hasMentorRole = employee.canBeMentor === true || (employee as any).can_be_mentor === true;
-    const hasApprovalRole = employee.canBeSupervisor === true || employee.canBeKaUnit === true ||
-                            (employee as any).can_be_supervisor === true || (employee as any).can_be_ka_unit === true;
-    const functionalRoles = employee.functionalRoles || (employee as any).functional_roles || [];
-    const canDoTeamAttendance = hasMentorRole || hasApprovalRole ||
-        functionalRoles.includes('MANAJER') ||
-        functionalRoles.includes('KEPALA URUSAN') ||
-        functionalRoles.includes('KEPALA RUANGAN');
-
-    // State for MentorDashboard subview
-    const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
-
-    // State for MentorDashboard target creation form
-    const [targetMenteeId, setTargetMenteeId] = useState('');
-    const [targetTitle, setTargetTitle] = useState('');
-    const [targetDescription, setTargetDescription] = useState('');
-    const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<MenteeTarget | null>(null);
-
-    const menteesOfMentor = useMemo(() => {
-        if (!hasMentorRole) return [];
-        return Object.values(props.allUsersData)
-            .filter(data => data.employee.mentorId === employee.id)
-            .map(data => data.employee);
-    }, [props.allUsersData, employee.id, hasMentorRole]);
-
-    useEffect(() => {
-        if (menteesOfMentor.length > 0 && !targetMenteeId) {
-            setTargetMenteeId(prevId => {
-                // Only update if the ID has actually changed
-                if (!prevId && menteesOfMentor.length > 0) {
-                    return menteesOfMentor[0].id;
-                }
-                return prevId;
-            });
-        }
-    }, [menteesOfMentor, targetMenteeId]);
-
-    const handleCreateTarget = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!targetMenteeId || !targetTitle.trim()) {
-            props.addToast('Harap pilih anggota dan isi judul target.', 'error');
-            return;
-        }
-        const monthKey = new Date().toISOString().slice(0, 7);
-        props.onCreateMenteeTarget({
-            mentorId: employee.id,
-            menteeId: targetMenteeId,
-            title: targetTitle,
-            description: targetDescription,
-            monthKey: monthKey,
-        });
-        setTargetTitle('');
-        setTargetDescription('');
-        props.addToast('Target baru berhasil ditetapkan!', 'success');
-    };
-
-    const handleDeleteTarget = () => {
-        if (confirmDeleteTarget) {
-            props.onDeleteMenteeTarget(confirmDeleteTarget.id);
-            setConfirmDeleteTarget(null);
-        }
-    };
-
-    // 🔥 FIX: Wrapper function untuk delete mentee target
-    const handleDeleteMenteeTarget = (targetId: string) => {
-        props.onDeleteMenteeTarget(targetId);
-    };
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'kinerja':
-                return <KinerjaView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} />;
-            case 'analytics':
-                return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
-            case 'rapot':
-                return <RapotView employee={employee} dailyActivitiesConfig={props.dailyActivitiesConfig} allUsersData={props.allUsersData} hospitals={props.hospitals} />;
-            case 'aktivitas-pribadi':
-                return <AktivitasPribadiView
-                    employee={employee}
-                    dailyActivitiesConfig={props.dailyActivitiesConfig}
-                    onLogBookReading={props.onLogBookReading}
-                    onLogManualActivity={props.onLogManualActivity}
-                    onDeleteReadingHistory={props.onDeleteReadingHistory}
-                    onUpdateTodoList={props.onUpdateTodoList}
-                    submissions={props.weeklyReportSubmissions}
-                />;
-            case 'bimbingan':
-                return <MenteeGuidanceView
-                    employee={employee}
-                    submissions={props.submissions}
-                    onNavigateToReport={props.onNavigateToReport}
-                    tadarusRequests={props.menteeTadarusRequests}
-                    onTadarusRequest={props.onTadarusRequest}
-                    tadarusSessions={props.tadarusSessions}
-                    onMenteeAttendSession={props.onMenteeAttendSession}
-                    missedPrayerRequests={props.menteeMissedPrayerRequests}
-                    onCreateMissedPrayerRequest={props.onCreateMissedPrayerRequest}
-                />;
-            case 'panel-mentor':
-                if (!hasMentorRole) return null;
-                return <MentorDashboard
-                    employee={employee}
-                    allUsersData={props.allUsersData}
-                    onUpdateProfile={props.onUpdateProfile}
-                    weeklyReportSubmissions={props.weeklyReportSubmissions}
-                    onReviewReport={props.onReviewReport}
-                    tadarusSessions={props.tadarusSessions}
-                    tadarusRequests={props.tadarusRequests}
-                    onCreateTadarusSession={props.onCreateTadarusSession}
-                    onUpdateTadarusSession={props.onUpdateTadarusSession}
-                    onDeleteTadarusSession={props.onDeleteTadarusSession}
-                    onReviewTadarusRequest={props.onReviewTadarusRequest}
-                    missedPrayerRequests={props.missedPrayerRequests}
-                    onReviewMissedPrayerRequest={props.onReviewMissedPrayerRequest}
-                    onMentorAttendOwnSession={props.onMentorAttendOwnSession}
-                    onLogAudit={props.onLogAudit}
-                    onDeleteMenteeTarget={handleDeleteMenteeTarget}
-                    mentorSubView={mentorSubView}
-                    setMentorSubView={setMentorSubView}
-                    menteesOfMentor={menteesOfMentor}
-                    targetMenteeId={targetMenteeId}
-                    setTargetMenteeId={setTargetMenteeId}
-                    targetTitle={targetTitle}
-                    setTargetTitle={setTargetTitle}
-                    targetDescription={targetDescription}
-                    setTargetDescription={setTargetDescription}
-                    handleCreateTarget={handleCreateTarget}
-                    setConfirmDeleteTarget={setConfirmDeleteTarget}
-                    menteeTargets={menteeTargets.filter(t => t.mentorId === employee.id)}
-                />;
-            case 'persetujuan':
-                if (!hasApprovalRole) return null;
-                return <Persetujuan
-                    loggedInEmployee={employee}
-                    weeklyReportSubmissions={props.weeklyReportSubmissions}
-                    onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
-                    allUsersData={props.allUsersData}
-                />
-            case 'presensi-tim':
-                if (!canDoTeamAttendance) return null;
-                return <TeamAttendanceView
-                    loggedInEmployee={employee}
-                    allUsersData={allUsersData}
-                    teamAttendanceSessions={teamAttendanceSessions}
-                    onCreateSessions={onCreateTeamAttendanceSessions}
-                    onAddActivity={onAddActivity}
-                    onUpdateAttendance={onUpdateTeamAttendance}
-                    onDeleteSession={(session) => onDeleteTeamAttendanceSession(session.id)}
-                    addToast={addToast}
-                />
-            default:
-                return null;
-        }
-    };
-
-    return (
-        <div>
-            <nav className="border-b border-white/20">
-                <div className="flex items-center gap-2 -mb-px flex-wrap">
-                    {initialTab === 'aktivitas-pribadi' ? (
-                        <>
-                            <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                            <TabButton label="Aktivitas Pribadi" icon={PencilIcon} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                            <TabButton label="Bimbingan Saya" icon={AcademicCapIcon} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
-                            {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheckIcon} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
-                            {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquareIcon} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
-                            {canDoTeamAttendance && <TabButton label="Presensi Tim" icon={UserGroupIcon} active={activeTab === 'presensi-tim'} onClick={() => setActiveTab('presensi-tim')} />}
-                        </>
-                    ) : (
-                        <>
-                            <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                            <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-                            <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                        </>
-                    )}
-                </div>
-            </nav>
-            <div className="mt-6">
-                {renderContent()}
-            </div>
-             <ConfirmationModal
-                isOpen={!!confirmDeleteTarget}
-                onClose={() => setConfirmDeleteTarget(null)}
-                onConfirm={handleDeleteTarget}
-                title="Hapus Target"
-                message={<>Apakah Anda yakin ingin menghapus target &quot;<strong>{confirmDeleteTarget?.title}</strong>&quot;?</>}
-                confirmText="Ya, Hapus"
-                confirmColorClass="bg-red-600 hover:bg-red-500"
-            />
-        </div>
-    );
-};
+export { AktivitasPribadiView };

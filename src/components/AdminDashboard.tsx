@@ -504,22 +504,22 @@ const ActivityManagement: React.FC<{
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">Nama Kegiatan</th>
-                            <th scope="col" className="px-4 py-3">Tanggal</th>
-                            <th scope="col" className="px-4 py-3">Peserta</th>
-                            <th scope="col" className="px-4 py-3">Dibuat Oleh</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama Kegiatan</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Peserta</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Dibuat Oleh</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sortedActivities.map(activity => (
                             <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-semibold">{activity.name}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{activity.name}</td>
                                 <td className="px-4 py-3">{new Date(activity.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}<br /><span className="text-xs text-gray-400">{activity.startTime} - {activity.endTime}</span></td>
                                 <td className="px-4 py-3">
                                     {getAudienceSummary(activity)}
                                 </td>
-                                <td className="px-4 py-3 text-blue-200">{activity.createdByName}</td>
+                                <td className="px-4 py-3 text-blue-200 whitespace-nowrap">{activity.createdByName}</td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-center gap-2">
                                         <button onClick={() => onOpenModal(activity)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">Edit</button>
@@ -840,8 +840,7 @@ const UserModal: React.FC<{
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Karyawan Berhasil Ditambahkan!</h3>
-                        <p className="text-blue-200 mb-6">Data karyawan baru telah disimpan. Berikut informasi untuk login:</p>
+                        <h3 className="text-xl font-bold text-white mb-4">Karyawan Berhasil Ditambahkan!</h3>
 
                         <div className="bg-black/30 rounded-lg p-4 mb-6 text-left space-y-3">
                             <div>
@@ -1145,26 +1144,26 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">RS ID / BRAND</th>
-                            <th scope="col" className="px-4 py-3">NIP / NOPEG</th>
-                            <th scope="col" className="px-4 py-3">NAMA</th>
-                            <th scope="col" className="px-4 py-3">Unit</th>
-                            <th scope="col" className="px-4 py-3">Bagian</th>
-                            <th scope="col" className="px-4 py-3">Kategori Profesi</th>
-                            <th scope="col" className="px-4 py-3">Profesi</th>
-                            <th scope="col" className="px-4 py-3">Jenis Kelamin</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">NIP / NOPEG</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">NAMA</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Bagian</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Kategori Profesi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Jenis Kelamin</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginatedUsers.map((user) => (
                             <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-semibold">
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">
                                     {/* 🔥 hospital_id langsung berisi RS ID/BRAND (misal: "RSIJSP", "RSAB") */}
                                     {user.hospitalId || '-'}
                                 </td>
-                                <td className="px-4 py-3 font-mono">{user.id}</td>
-                                <td className="px-4 py-3 font-semibold">{user.name}</td>
+                                <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
                                 <td className="px-4 py-3">{user.unit}</td>
                                 <td className="px-4 py-3">{user.bagian}</td>
                                 <td className="px-4 py-3">
@@ -1335,17 +1334,17 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">NIP / NOPEG</th>
-                            <th scope="col" className="px-4 py-3">Nama</th>
-                            <th scope="col" className="px-4 py-3">Status Akun</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">NIP / NOPEG</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Status Akun</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginatedUsers.map((user) => (
                             <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-mono">{user.id}</td>
-                                <td className="px-4 py-3 font-semibold">{user.name}</td>
+                                <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                                         {user.isActive ? 'Aktif' : 'Nonaktif'}
@@ -1906,24 +1905,24 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">Tanggal</th>
-                            <th scope="col" className="px-4 py-3">Nama</th>
-                            <th scope="col" className="px-4 py-3">Unit</th>
-                            <th scope="col" className="px-4 py-3">Profesi</th>
-                            <th scope="col" className="px-4 py-3">Kegiatan</th>
-                            <th scope="col" className="px-4 py-3">Status</th>
-                            <th scope="col" className="px-4 py-3">Keterangan</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Kegiatan</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Keterangan</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginatedData.map((record, index) => (
                             <tr key={`${record.employeeId}-${record.date}-${record.entityId}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(record.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                <td className="px-4 py-3 font-semibold">{record.employeeName}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.employeeName}</td>
                                 <td className="px-4 py-3">{record.unit}</td>
                                 <td className="px-4 py-3">{record.profession}</td>
-                                <td className="px-4 py-3 font-semibold">{record.prayerName}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.prayerName}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status === 'Hadir' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                                         {record.status}
@@ -2338,21 +2337,21 @@ const AuditLogView: React.FC<{ log: AuditLogEntry[] }> = ({ log }) => {
             <table className="min-w-full text-sm text-left text-white">
                 <thead className="bg-white/10 text-xs uppercase text-blue-200">
                     <tr>
-                        <th className="px-4 py-3">Waktu</th>
-                        <th className="px-4 py-3">Admin</th>
-                        <th className="px-4 py-3">Aksi</th>
-                        <th className="px-4 py-3">Target</th>
-                        <th className="px-4 py-3">Alasan</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Waktu</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Admin</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Aksi</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Target</th>
+                        <th className="px-4 py-3 whitespace-nowrap">Alasan</th>
                     </tr>
                 </thead>
                 <tbody>
                     {log.map(entry => (
                         <tr key={entry.id} className="border-b border-gray-700 hover:bg-white/5">
                             <td className="px-4 py-3 whitespace-nowrap">{new Date(entry.timestamp).toLocaleString('id-ID')}</td>
-                            <td className="px-4 py-3 font-semibold">{entry.adminName}</td>
+                            <td className="px-4 py-3 font-semibold whitespace-nowrap">{entry.adminName}</td>
                             <td className="px-4 py-3">{entry.action}</td>
-                            <td className="px-4 py-3 text-blue-200">{entry.target}</td>
-                            <td className="px-4 py-3 italic">"{entry.reason}"</td>
+                            <td className="px-4 py-3 text-blue-200 whitespace-nowrap">{entry.target}</td>
+                            <td className="px-4 py-3 italic whitespace-nowrap">"{entry.reason}"</td>
                         </tr>
                     ))}
                     {log.length === 0 && (
@@ -2483,8 +2482,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
 
     return (
         <div>
-            <h3 className="text-xl font-bold text-white mb-2">Kelola Peran Fungsional</h3>
-            <p className="text-blue-200 mb-4 text-sm">Berikan peran fungsional kepada karyawan untuk memberikan akses ke Laporan Analytics.</p>
+            <h3 className="text-xl font-bold text-white mb-4">Kelola Peran Fungsional</h3>
             <div className="mb-4 relative max-w-md">
                 <input
                     type="text"
@@ -2499,9 +2497,9 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th className="px-4 py-3">Nama Karyawan</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
                             {FUNCTIONAL_ROLES.map(role => (
-                                <th key={role} className="px-4 py-3 text-center">{FUNCTIONAL_ROLE_LABELS[role]}</th>
+                                <th key={role} className="px-4 py-3 text-center whitespace-nowrap">{FUNCTIONAL_ROLE_LABELS[role]}</th>
                             ))}
                         </tr>
                     </thead>
@@ -2652,7 +2650,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string;
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
     </button>
 );
@@ -2882,8 +2880,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 
     return (
         <div>
-            <h3 className="text-xl font-bold text-white mb-2">Manajemen Peran & Akses Admin</h3>
-            <p className="text-blue-200 mb-4 text-sm">Tetapkan pengguna mana yang memiliki hak akses sebagai Admin atau Super Admin, dan kelola rumah sakit yang dapat mereka akses.</p>
+            <h3 className="text-xl font-bold text-white mb-4">Manajemen Peran & Akses Admin</h3>
             <div className="mb-4 relative max-w-md">
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -2898,11 +2895,11 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">Nama</th>
-                            <th scope="col" className="px-4 py-3">RS ID / BRAND</th>
-                            <th scope="col" className="px-4 py-3">Peran Saat Ini</th>
-                            <th scope="col" className="px-4 py-3">Akses Rumah Sakit</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi Perubahan Peran</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Peran Saat Ini</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Akses Rumah Sakit</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi Perubahan Peran</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2913,11 +2910,11 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 
                             return (
                                 <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
-                                    <td className="px-4 py-3 font-semibold">
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
                                         {user.name}
                                         <span className="block font-mono text-xs text-gray-400">{user.id}</span>
                                     </td>
-                                    <td className="px-4 py-3 font-semibold">
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
                                         {/* 🔥 hospital_id langsung berisi RS ID/BRAND */}
                                         {user.hospitalId || '-'}
                                     </td>
@@ -3229,51 +3226,60 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h3 className="text-xl font-bold text-white">Manajemen Rumah Sakit</h3>
-                    <p className="text-sm text-blue-200">Kelola daftar rumah sakit dalam grup.</p>
-                </div>
+            {/* Mobile scroll indicator */}
+            <div className="sm:hidden text-center text-xs text-blue-200 mb-2 animate-pulse">
+                <span>← Geser untuk melihat kolom →</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <h3 className="text-xl font-bold text-white">Manajemen Rumah Sakit</h3>
                 <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
                     <PlusCircleIcon className="w-5 h-5" />
                     Tambah RS Baru
                 </button>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-white/20">
-                <table className="min-w-full text-sm text-left text-white">
-                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+            <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
+                <table className="min-w-[900px] w-full text-sm text-left text-white">
+                    <thead className="bg-white/10 text-xs uppercase text-blue-200 sticky top-0">
                         <tr>
-                            <th className="px-4 py-3">Logo</th>
-                            <th className="px-4 py-3">Brand (ID)</th>
-                            <th className="px-4 py-3">Nama Lengkap</th>
-                            <th className="px-4 py-3">Alamat</th>
-                            <th className="px-4 py-3 text-center">Status</th>
-                            <th className="px-4 py-3 text-center">Aksi</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[80px]">Logo</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[120px]">Brand (ID)</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[200px]">Nama Lengkap</th>
+                            <th className="px-4 py-3 min-w-[250px]">Alamat</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap min-w-[100px]">Status</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap min-w-[150px]">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sortedHospitals.map(hospital => (
                             <tr key={hospital.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 whitespace-nowrap">
                                     {hospital.logo ? (
                                         <img src={hospital.logo} alt={`${hospital.brand} logo`} className="h-10 w-10 object-contain rounded-md bg-white p-0.5" />
                                     ) : (
                                         <div className="h-10 w-10 flex items-center justify-center bg-gray-700 rounded-md text-gray-500 text-xs">No Logo</div>
                                     )}
                                 </td>
-                                <td className="px-4 py-3 font-semibold font-mono">{hospital.id}</td>
-                                <td className="px-4 py-3">{hospital.name}</td>
-                                <td className="px-4 py-3 max-w-xs truncate">{hospital.address}</td>
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-4 py-3 font-semibold font-mono whitespace-nowrap">{hospital.id}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{hospital.name}</td>
+                                <td className="px-4 py-3 align-top">
+                                    <div
+                                        className="text-sm leading-relaxed line-clamp-2"
+                                        title={hospital.address}
+                                    >
+                                        {hospital.address}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${hospital.isActive ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                                         {hospital.isActive ? 'Aktif' : 'Nonaktif'}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <div className="flex items-center justify-center gap-2">
                                         <button onClick={() => handleOpenModal(hospital)} className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-md">Edit</button>
-                                        <button onClick={() => onToggleStatus(hospital)} className={`px-3 py-1.5 text-xs font-semibold rounded-md ${hospital.isActive ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-green-600 hover:bg-green-500'}`}>
+                                        <button onClick={() => onToggleStatus(hospital)} className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap ${hospital.isActive ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-green-600 hover:bg-green-500'}`}>
                                             {hospital.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                                         </button>
                                         <button onClick={() => onDelete(hospital)} className="px-3 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 rounded-md">Hapus</button>

@@ -70,24 +70,30 @@ const EmployeeSearchableInput: React.FC<EmployeeSearchableInputProps> = ({ allUs
                     autoComplete="off"
                 />
                 {searchQuery && (
-                    <button type="button" onClick={() => handleSelect(undefined)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1">
-                        <XIcon className="h-5 w-5 text-gray-400 hover:text-white" />
+                    <button
+                        type="button"
+                        onClick={() => handleSelect(undefined)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-white transition-colors"
+                        title="Hapus"
+                    >
+                        <XIcon className="h-5 w-5" />
                     </button>
                 )}
             </div>
             {isDropdownOpen && (
-                <div className="absolute z-20 w-full mt-1 bg-gray-700 border border-white/20 rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full min-w-[250px] mt-1 bg-gray-800 border border-white/30 rounded-lg shadow-xl max-h-60 overflow-auto">
                     <ul className="py-1">
                         {filteredUsers.length > 0 ? filteredUsers.map(user => (
                             <li
                                 key={user.id}
                                 onClick={() => handleSelect(user.id)}
-                                className="px-4 py-2 text-sm text-white hover:bg-teal-600 cursor-pointer"
+                                className="px-4 py-2.5 text-sm text-white hover:bg-teal-600 cursor-pointer transition-colors"
                             >
-                                {user.name} <span className="text-xs text-gray-400">({user.id})</span>
+                                <p className="font-medium truncate">{user.name}</p>
+                                <p className="text-xs text-gray-400 truncate">{user.id}</p>
                             </li>
                         )) : (
-                            <li className="px-4 py-2 text-sm text-gray-400">Karyawan tidak ditemukan.</li>
+                            <li className="px-4 py-2 text-sm text-gray-400">Tidak ditemukan</li>
                         )}
                     </ul>
                 </div>

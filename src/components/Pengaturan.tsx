@@ -434,8 +434,8 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                     <div className="p-4 bg-yellow-500/20 border-l-4 border-yellow-400 text-yellow-200 rounded-r-lg shadow-lg animate-pulse flex items-start gap-3">
                         <InformationCircleIcon className="w-6 h-6 flex-shrink-0 text-yellow-300 mt-0.5" />
                         <div>
-                            <p className="font-bold">Perbarui Password Anda</p>
-                            <p className="text-sm mt-1">Untuk meningkatkan keamanan akun, Anda diwajibkan untuk mengubah password default Anda. Silakan lakukan pembaruan di bagian "Keamanan Akun" di bawah ini.</p>
+                            <p className="font-bold">Perbarui Password Default</p>
+                            <p className="text-sm mt-1">Wajib ganti password di bagian "Keamanan Akun"</p>
                         </div>
                     </div>
                 )}

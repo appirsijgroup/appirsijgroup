@@ -28,7 +28,7 @@ const TabButton: React.FC<{
             : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
           }`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
     </button>
 );
@@ -126,27 +126,29 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         <div className="space-y-8">
             <div className="bg-black/20 p-6 rounded-2xl shadow-lg border border-white/10">
                 <h3 className="text-xl font-bold text-white mb-4 text-center">Progres Bulan Ini: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3>
-                <div className="w-full h-80">
-                    <ResponsiveContainer>
-                        <BarChart data={performanceData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
-                            <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                            <Tooltip
-                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem' }}
-                                itemStyle={{ color: '#ffffff' }}
-                                labelStyle={{ color: '#cbd5e1', fontWeight: 'bold' }}
-                                formatter={(value: number | undefined) => [`${value || 0}%`, 'Rata-rata Capaian']}
-                            />
-                            <Bar dataKey="Persentase">
-                                <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value) => typeof value === 'number' ? `${value}%` : ''} />
-                                {performanceData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+
+                {/* Mobile scroll indicator */}
+                <div className="md:hidden text-center text-xs text-blue-200 mb-2 flex items-center justify-center gap-2">
+                    <span>← Geser kiri/kanan untuk melihat grafik →</span>
+                </div>
+
+                {/* Scrollable container for mobile */}
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
+                    <div className="min-w-[700px] md:min-w-0 h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={performanceData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
+                                <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                <Bar dataKey="Persentase">
+                                    <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value) => typeof value === 'number' ? `${value}%` : ''} />
+                                    {performanceData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
@@ -159,9 +161,9 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
                                 const percentage = activity.target > 0 ? Math.min(100, (activity.achieved / activity.target) * 100) : 0;
                                 return (
                                     <div key={activity.title}>
-                                        <div className="flex justify-between items-center mb-1 text-sm">
-                                            <span className="font-medium text-white">{activity.title}</span>
-                                            <span className="font-semibold text-blue-200">{activity.achieved} / {activity.target}</span>
+                                        <div className="flex justify-between items-center mb-1 text-sm gap-2">
+                                            <span className="font-medium text-white text-sm leading-tight break-words flex-shrink">{activity.title}</span>
+                                            <span className="font-semibold text-blue-200 text-xs flex-shrink-0">{activity.achieved} / {activity.target}</span>
                                         </div>
                                         <div className="w-full bg-black/30 rounded-full h-2">
                                             <div
@@ -264,27 +266,27 @@ const ReadingActivityCard: React.FC<{
     }, [dateCompleted, submissions]);
 
     return (
-        <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-4">
-            <h4 className="text-lg font-bold text-white">Membaca Al-Quran dan buku</h4>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-3 sm:gap-4">
+            <h4 className="text-base sm:text-lg font-bold text-white">Membaca Al-Quran dan buku</h4>
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 <div>
-                    <label className="text-sm font-medium text-blue-200 block mb-1">Judul Buku</label>
-                    <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"/>
+                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Judul Buku</label>
+                    <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm"/>
                 </div>
                  <div>
-                    <label className="text-sm font-medium text-blue-200 block mb-1">Halaman Dibaca</label>
-                    <input type="text" value={pagesRead} onChange={e => setPagesRead(e.target.value)} placeholder="Contoh: 1-15, 20" className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"/>
+                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Halaman Dibaca</label>
+                    <input type="text" value={pagesRead} onChange={e => setPagesRead(e.target.value)} placeholder="Contoh: 1-15, 20" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm"/>
                 </div>
                  <div>
-                    <label className="text-sm font-medium text-blue-200 block mb-1">Tanggal Selesai</label>
-                    <input type="date" value={dateCompleted} onChange={e => setDateCompleted(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{colorScheme: 'dark'}}/>
+                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Tanggal Selesai</label>
+                    <input type="date" value={dateCompleted} onChange={e => setDateCompleted(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{colorScheme: 'dark'}}/>
                 </div>
                  {isLocked ? (
-                    <div className="w-full font-semibold py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
-                        <LockClosedIcon className="w-5 h-5"/> {lockReason}
+                    <div className="w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed text-sm sm:text-base">
+                        <LockClosedIcon className="w-5 h-5"/> <span className="truncate">{lockReason}</span>
                     </div>
                 ) : (
-                    <button type="submit" className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition-colors">
+                    <button type="submit" className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors text-base sm:text-sm">
                         Laporkan
                     </button>
                 )}
@@ -375,17 +377,17 @@ const SimpleActivityCard: React.FC<{
     };
 
     return (
-        <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-4">
-            <h4 className="text-lg font-bold text-white">{activity.title}</h4>
-            <div className="space-y-4">
+        <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-3 sm:gap-4">
+            <h4 className="text-base sm:text-lg font-bold text-white leading-tight">{activity.title}</h4>
+            <div className="space-y-3 sm:space-y-4">
                  <div>
-                    <label className="text-sm font-medium text-blue-200 block mb-1">Pilih Tanggal</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{colorScheme: 'dark'}}/>
+                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Pilih Tanggal</label>
+                    <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{colorScheme: 'dark'}}/>
                 </div>
                  <button
                     onClick={handleSubmit}
                     disabled={isDone || isLocked}
-                    className={`w-full font-semibold py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 ${
+                    className={`w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
                         isLocked
                         ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
                         : isDone
@@ -395,7 +397,7 @@ const SimpleActivityCard: React.FC<{
                 >
                     {isLocked ? (
                        <>
-                         <LockClosedIcon className="w-5 h-5"/> {lockReason}
+                         <LockClosedIcon className="w-5 h-5"/> <span className="truncate">{lockReason}</span>
                        </>
                     ) : isDone ? (
                         <>
@@ -463,49 +465,49 @@ const RiwayatBacaan: React.FC<{
 
 
     return (
-        <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Riwayat Bacaan</h3>
-                <div className="flex items-center justify-between bg-black/20 p-1 rounded-full">
-                    <button onClick={() => navigateMonth('prev')} className="px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors">
+        <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <h3 className="text-lg sm:text-xl font-bold text-white">Riwayat Bacaan</h3>
+                <div className="flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto">
+                    <button onClick={() => navigateMonth('prev')} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-white/10 transition-colors text-sm sm:text-base">
                         &larr;
                     </button>
-                    <span className="font-semibold text-sm text-teal-300 px-4 w-40 text-center">
-                        {currentDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                    <span className="font-semibold text-xs sm:text-sm text-teal-300 px-2 sm:px-4 text-center flex-grow">
+                        {currentDate.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                     </span>
-                    <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">
+                    <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 text-sm sm:text-base">
                         &rarr;
                     </button>
                 </div>
             </div>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-left text-white">
-                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+            <div className="overflow-x-auto rounded-lg border border-white/10 -mx-2 sm:mx-0">
+                <table className="min-w-full text-xs sm:text-sm text-left text-white">
+                    <thead className="bg-white/10 text-[10px] sm:text-xs uppercase text-blue-200 sticky top-0">
                         <tr>
-                            <th scope="col" className="px-4 py-3">Tanggal</th>
-                            <th scope="col" className="px-4 py-3">Jenis</th>
-                            <th scope="col" className="px-4 py-3">Detail</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Jenis</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Detail</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredHistory.length > 0 ? filteredHistory.map((item, index) => (
                             <tr key={item.id || `reading-${item.type}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 whitespace-nowrap">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-[11px] sm:text-sm">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                                    <span className={`px-1.5 sm:px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
                                         {item.type}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3">{item.detail}</td>
-                                <td className="px-4 py-3 text-center">
-                                    <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
-                                        <TrashIcon className="w-4 h-4" />
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-[11px] sm:text-sm whitespace-nowrap">{item.detail}</td>
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
+                                    <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 sm:p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
+                                        <TrashIcon className="w-4 h-4 sm:w-4 sm:h-4" />
                                     </button>
                                 </td>
                             </tr>
                         )) : (
-                            <tr key="empty-state"><td colSpan={4} className="text-center p-8 text-blue-200">Tidak ada riwayat bacaan pada bulan ini.</td></tr>
+                            <tr key="empty-state"><td colSpan={4} className="text-center p-6 sm:p-8 text-blue-200 text-xs sm:text-sm">Tidak ada riwayat bacaan pada bulan ini.</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -908,7 +910,7 @@ const ToDoListView: React.FC<{
                                 <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
                             </div>
                         </div>
-                    )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif yang cocok dengan filter.</p>
+                    )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif</p>
                 ) : (
                     completedTasks.length > 0 ? completedTasks.map(task => (
                          <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
@@ -923,7 +925,7 @@ const ToDoListView: React.FC<{
                                 <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
                             </div>
                         </div>
-                    )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai yang cocok dengan filter.</p>
+                    )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai</p>
                 )}
             </div>
 
@@ -1071,7 +1073,7 @@ const SubTabButton: React.FC<{
 }> = ({ label, tab, isActive, onClick }) => (
     <button
         onClick={() => onClick(tab)}
-        className={`py-3 px-5 font-semibold transition-colors duration-200 border-b-2 ${
+        className={`py-3 px-4 sm:px-5 font-semibold transition-colors duration-200 border-b-2 whitespace-nowrap text-sm sm:text-base ${
             isActive ? 'border-teal-400 text-teal-300' : 'border-transparent text-gray-400 hover:text-white'
         }`}
     >
@@ -1091,8 +1093,15 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
 
     return (
         <div>
-            <div className="flex items-center gap-2 mb-6 border-b border-white/10">
-                <SubTabButton
+            {/* Mobile scroll indicator for sub-tabs */}
+            <div className="sm:hidden text-center text-xs text-blue-200 mb-2 flex items-center justify-center gap-2 animate-pulse">
+                <span>← Geser untuk melihat menu →</span>
+            </div>
+
+            {/* Scrollable sub-tab navigation */}
+            <div className="overflow-x-auto pb-2 mb-4 -mx-2 px-2 sm:overflow-x-visible sm:mx-0 sm:px-0 border-b border-white/10">
+                <div className="flex items-center gap-2 min-w-max sm:min-w-0">
+                    <SubTabButton
                     label="Laporan Manual"
                     tab="laporan"
                     isActive={activeSubTab === 'laporan'}
@@ -1110,11 +1119,12 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                     isActive={activeSubTab === 'todolist'}
                     onClick={setActiveSubTab}
                 />
+                </div>
             </div>
 
             {activeSubTab === 'laporan' && (
                 <div className="animate-view-change">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                         <ReadingActivityCard
                             employee={employee}
                             onLogBookReading={onLogBookReading}

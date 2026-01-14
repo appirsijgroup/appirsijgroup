@@ -229,10 +229,10 @@ const MenteeDetailProgressView: React.FC<{
                         <table className="min-w-full text-sm text-left text-white border-collapse">
                             <thead className="sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900">Aktivitas</th>
-                                    <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900">Progres</th>
+                                    <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
+                                    <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900 whitespace-nowrap">Progres</th>
                                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                                        <th key={day} scope="col" className="px-2 py-3 font-bold text-center w-12 min-w-[48px] bg-gray-800">
+                                        <th key={day} scope="col" className="px-2 py-3 font-bold text-center w-12 min-w-[48px] bg-gray-800 whitespace-nowrap">
                                             {day}
                                         </th>
                                     ))}
@@ -248,8 +248,8 @@ const MenteeDetailProgressView: React.FC<{
                                         </tr>
                                         {activities.map(activity => (
                                             <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
-                                                <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10">{activity.title}</td>
-                                                <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10">
+                                                <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10 whitespace-nowrap">{activity.title}</td>
+                                                <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10 whitespace-nowrap">
                                                     {activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}
                                                 </td>
                                                 {Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0')).map(day => {
@@ -277,40 +277,42 @@ const MenteeDetailProgressView: React.FC<{
                         <h4 className="text-xl font-semibold text-white mb-4 text-center">
                             Grafik Rangkuman Capaian Bulanan
                         </h4>
-                        <div style={{ width: '100%', height: 500 }}>
-                           <ResponsiveContainer>
-                                <BarChart
-                                    layout="vertical"
-                                    data={chartSummaryData}
-                                    margin={{ top: 5, right: 40, left: 20, bottom: 20 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                    <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                    <YAxis dataKey="name" type="category" stroke="#94a3b8" width={150} tick={{ fontSize: 11 }} interval={0} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem' }}
-                                        itemStyle={{ color: '#ffffff' }}
-                                        labelStyle={{ color: '#cbd5e1', fontWeight: 'bold' }}
-                                        formatter={(value: number | undefined) => [`${value || 0}%`, 'Capaian']}
-                                    />
-                                    <Bar dataKey="percentage" name="Capaian" isAnimationActive={false} barSize={20}>
-                                        <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => {
-                                            const numValue = typeof value === 'number' ? value : typeof value === 'string' ? parseInt(value) : 0;
-                                            return (typeof numValue === 'number' && numValue > 0) ? `${numValue}%` : '';
-                                        }} />
-                                        {chartSummaryData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={PREMIUM_COLORS[index % PREMIUM_COLORS.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+
+                        {/* Mobile scroll indicator */}
+                        <div className="md:hidden text-center text-xs text-blue-200 mb-2 flex items-center justify-center gap-2">
+                            <span>← Geser kiri/kanan untuk melihat grafik →</span>
+                        </div>
+
+                        {/* Scrollable container for mobile */}
+                        <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
+                            <div className="min-w-[700px] md:min-w-0" style={{ height: 500 }}>
+                               <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        layout="vertical"
+                                        data={chartSummaryData}
+                                        margin={{ top: 5, right: 40, left: 20, bottom: 20 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                        <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                        <YAxis dataKey="name" type="category" stroke="#94a3b8" width={150} tick={{ fontSize: 11 }} interval={0} />
+                                        <Bar dataKey="percentage" name="Capaian" isAnimationActive={false} barSize={20}>
+                                            <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => {
+                                                const numValue = typeof value === 'number' ? value : typeof value === 'string' ? parseInt(value) : 0;
+                                                return (typeof numValue === 'number' && numValue > 0) ? `${numValue}%` : '';
+                                            }} />
+                                            {chartSummaryData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={PREMIUM_COLORS[index % PREMIUM_COLORS.length]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
                 </>
             ) : (
                 <div className="text-center py-10 bg-black/20 rounded-lg">
-                    <p className="text-lg text-blue-200">Pilih anggota bimbingan untuk melihat detail capaian.</p>
+                    <p className="text-lg text-blue-200">Pilih anggota bimbingan</p>
                 </div>
             )}
         </div>
@@ -588,16 +590,16 @@ const MenteeManagement: React.FC<{
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th className="px-4 py-3">Nama Anggota</th>
-                            <th className="px-4 py-3">Unit Kerja</th>
-                            <th className="px-4 py-3">Profesi</th>
-                            <th className="px-4 py-3 text-center">Aksi</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Nama Anggota</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Unit Kerja</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Profesi</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {mentees.map(mentee => (
                             <tr key={mentee.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-semibold">{mentee.name}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{mentee.name}</td>
                                 <td className="px-4 py-3">{mentee.unit}</td>
                                 <td className="px-4 py-3">{mentee.profession}</td>
                                 <td className="px-4 py-3 text-center">
@@ -740,17 +742,17 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th className="px-4 py-3">Tanggal</th>
-                            <th className="px-4 py-3">Nama Anggota</th>
-                            <th className="px-4 py-3">Jenis Bacaan</th>
-                            <th className="px-4 py-3">Detail</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Nama Anggota</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Jenis Bacaan</th>
+                            <th className="px-4 py-3 whitespace-nowrap">Detail</th>
                         </tr>
                     </thead>
                     <tbody>
                         {allReadings.map((reading, index) => (
                             <tr key={index} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3 font-semibold">{reading.menteeName}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{reading.menteeName}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${reading.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
                                         {reading.type}
@@ -926,7 +928,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
             <div>
                 <h3 className="text-xl font-bold text-white mb-4">Menunggu Tinjauan Anda</h3>
                 {!hasPending ? (
-                     <div className="text-center py-10 bg-black/20 rounded-lg"><p className="text-blue-200">Tidak ada pengajuan yang menunggu persetujuan Anda saat ini.</p></div>
+                     <div className="text-center py-10 bg-black/20 rounded-lg"><p className="text-blue-200 text-sm">Tidak ada pengajuan</p></div>
                 ) : (
                     <div className="space-y-4">
                         {/* Render pending requests */}
@@ -994,16 +996,16 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                      <table className="min-w-full text-sm text-left text-white">
                          <thead className="bg-white/10 text-xs uppercase text-blue-200">
                              <tr>
-                                <th className="px-4 py-3">Nama Karyawan</th>
-                                <th className="px-4 py-3">Periode Laporan</th>
-                                <th className="px-4 py-3">Tanggal Pengajuan</th>
-                                <th className="px-4 py-3 text-center">Aksi</th>
+                                <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
+                                <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
+                                <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
+                                <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
                          <tbody>
                             {filteredSubmissions.map(sub => (
                                 <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
-                                    <td className="px-4 py-3 font-semibold">{sub.menteeName}</td>
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
                                     <td className="px-4 py-3">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
                                     <td className="px-4 py-3">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
                                     <td className="px-4 py-3 text-center">
@@ -1079,7 +1081,7 @@ const SesiBimbingan: React.FC<SesiBimbinganProps> = ({
                 </div>
             ) : (
                  <div className="text-center py-16 bg-black/20 rounded-lg">
-                    <p className="text-lg text-blue-200">Anda belum menjadwalkan sesi bimbingan.</p>
+                    <p className="text-lg text-blue-200">Belum ada sesi bimbingan</p>
                 </div>
             )}
         </div>
@@ -1101,7 +1103,7 @@ const SubTabButton: React.FC<{
             : 'bg-white/10 text-blue-200 hover:bg-white/20'
           }`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 hidden sm:block" />
         {label}
         {count !== undefined && count > 0 && (
             <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">

@@ -91,10 +91,10 @@ const MenteeReportDetailView: React.FC<{
                  <table className="min-w-full text-sm text-left text-white border-collapse">
                     <thead className="sticky top-0 z-10">
                         <tr>
-                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900">Aktivitas</th>
-                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900">Progres</th>
+                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
+                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900 whitespace-nowrap">Progres</th>
                             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                                <th key={day} scope="col" className="px-2 py-3 font-bold text-center w-12 min-w-[48px] bg-gray-800">
+                                <th key={day} scope="col" className="px-2 py-3 font-bold text-center w-12 min-w-[48px] bg-gray-800 whitespace-nowrap">
                                     {day}
                                 </th>
                             ))}
@@ -104,14 +104,14 @@ const MenteeReportDetailView: React.FC<{
                         {Object.entries(groupedActivities).map(([category, activities]) => (
                             <Fragment key={category}>
                                 <tr className="bg-gray-700">
-                                    <td colSpan={daysInMonth + 2} className="px-3 py-2 font-bold text-teal-200 sticky left-0 z-10 bg-gray-700">
+                                    <td colSpan={daysInMonth + 2} className="px-3 py-2 font-bold text-teal-200 sticky left-0 z-10 bg-gray-700 whitespace-nowrap">
                                         {category}
                                     </td>
                                 </tr>
                                 {activities.map(activity => (
                                     <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
-                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10">{activity.title}</td>
-                                        <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10">
+                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10 whitespace-nowrap">{activity.title}</td>
+                                        <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10 whitespace-nowrap">
                                             {activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}
                                         </td>
                                         {Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0')).map(day => {
@@ -318,18 +318,18 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                             <table className="min-w-full text-sm text-left text-white">
                                 <thead className="bg-white/10 text-xs uppercase text-blue-200">
                                     <tr>
-                                        <th className="px-4 py-3">Nama Karyawan</th>
-                                        <th className="px-4 py-3">Periode Laporan</th>
-                                        <th className="px-4 py-3">Tanggal Pengajuan</th>
-                                        <th className="px-4 py-3 text-center">Aksi</th>
+                                        <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
+                                        <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
+                                        <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
+                                        <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredSubmissions.map(sub => (
                                         <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
-                                            <td className="px-4 py-3 font-semibold">{sub.menteeName}</td>
-                                            <td className="px-4 py-3">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
-                                            <td className="px-4 py-3">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
+                                            <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <button onClick={() => setSelectedSubmission(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                                                     Lihat & Tinjau

@@ -330,22 +330,22 @@ const RiwayatBacaan: React.FC<{
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-4 py-3">Tanggal</th>
-                            <th scope="col" className="px-4 py-3">Jenis</th>
-                            <th scope="col" className="px-4 py-3">Detail</th>
-                            <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Jenis</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Detail</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredHistory.length > 0 ? filteredHistory.map(item => (
                             <tr key={item.id} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 whitespace-nowrap">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
                                         {item.type}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3">{item.detail}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{item.detail}</td>
                                 <td className="px-4 py-3 text-center">
                                     <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
                                         <TrashIcon className="w-4 h-4" />
@@ -756,7 +756,7 @@ const ToDoListView: React.FC<{
                                 <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
                             </div>
                         </div>
-                    )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif yang cocok dengan filter.</p>
+                    )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif</p>
                 ) : (
                     completedTasks.length > 0 ? completedTasks.map(task => (
                          <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
@@ -771,7 +771,7 @@ const ToDoListView: React.FC<{
                                 <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
                             </div>
                         </div>
-                    )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai yang cocok dengan filter.</p>
+                    )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai</p>
                 )}
             </div>
 

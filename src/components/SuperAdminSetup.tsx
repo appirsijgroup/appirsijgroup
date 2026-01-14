@@ -76,9 +76,6 @@ const SuperAdminSetup: React.FC<SuperAdminSetupProps> = ({ onSetup }) => {
                     <h1 className="text-3xl font-bold tracking-wider text-white">
                         Pengaturan Awal APPI
                     </h1>
-                    <p className="text-md text-slate-300 mt-2">
-                        Selamat datang! Silakan daftarkan rumah sakit dan Super Admin pertama.
-                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">

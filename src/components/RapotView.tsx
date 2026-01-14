@@ -504,9 +504,9 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                 <table className="min-w-full text-sm text-left border-collapse">
                     <thead className="sticky top-0 z-10">
                         <tr>
-                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-slate-100 border-b-2 border-slate-300">Indikator Penilaian</th>
+                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-slate-100 border-b-2 border-slate-300 whitespace-nowrap">Indikator Penilaian</th>
                             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                                <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] border-b-2 border-l border-slate-300 ${isCurrentMonthView && day.toString().padStart(2, '0') === todayDay ? 'bg-teal-100 text-teal-800' : 'bg-slate-50'}`}>
+                                <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] border-b-2 border-l border-slate-300 whitespace-nowrap ${isCurrentMonthView && day.toString().padStart(2, '0') === todayDay ? 'bg-teal-100 text-teal-800' : 'bg-slate-50'}`}>
                                     {day}
                                 </th>
                             ))}
@@ -515,10 +515,10 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                     <tbody>
                         {Object.entries(groupedActivities).map(([category, activities]) => (
                             <Fragment key={category}>
-                                <tr><td colSpan={daysInMonth + 1} className="px-3 py-2 font-bold text-teal-700 sticky left-0 z-10 bg-slate-200 border-b border-slate-300">{category}</td></tr>
+                                <tr><td colSpan={daysInMonth + 1} className="px-3 py-2 font-bold text-teal-700 sticky left-0 z-10 bg-slate-200 border-b border-slate-300 whitespace-nowrap">{category}</td></tr>
                                 {activities.map((activity, actIndex) => (
                                     <tr key={activity.id} className={`border-b border-slate-200 ${actIndex === activities.length - 1 ? 'border-b-2 border-slate-300' : ''}`}>
-                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-white z-10">{activity.title}</td>
+                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-white z-10 whitespace-nowrap">{activity.title}</td>
                                         {Array.from({ length: daysInMonth }, (_, i) => {
                                             const dayKey = (i + 1).toString().padStart(2, '0');
                                             const isChecked = progress[dayKey]?.[activity.id] || false;
@@ -651,14 +651,14 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                     <div className="mt-8">
                          <h4 className="text-lg sm:text-xl font-bold text-center tracking-widest text-gray-700 mb-4">TRANSKRIP NILAI APPI</h4>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm border-collapse border border-slate-300">
+                            <table className="min-w-full text-sm border-collapse border border-slate-300">
                                 <thead className="bg-slate-100 text-slate-600 text-left">
                                     <tr>
-                                        <th className="border border-slate-300 p-2 w-[50%]">Kategori & Indikator Penilaian</th>
-                                        <th className="border border-slate-300 p-2 w-[35%] text-center">Detail Capaian</th>
-                                        <th className="border border-slate-300 p-2 text-center">Nilai</th>
-                                        <th className="border border-slate-300 p-2 text-center">Huruf</th>
-                                        <th className="border border-slate-300 p-2 text-center">Bobot</th>
+                                        <th className="border border-slate-300 p-2 w-[50%] whitespace-nowrap">Kategori & Indikator Penilaian</th>
+                                        <th className="border border-slate-300 p-2 w-[35%] text-center whitespace-nowrap">Detail Capaian</th>
+                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Nilai</th>
+                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Huruf</th>
+                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Bobot</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -676,11 +676,11 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
         }) => (
                                         <Fragment key={cat.name}>
                                             <tr className="bg-slate-100 font-bold">
-                                                <td className="border border-slate-300 p-2 text-slate-700">{cat.name.toUpperCase()}</td>
+                                                <td className="border border-slate-300 p-2 text-slate-700 whitespace-nowrap">{cat.name.toUpperCase()}</td>
                                                 <td className="border border-slate-300 p-2 text-center"></td>
-                                                <td className="border border-slate-300 p-2 text-center text-slate-700">{cat.score}</td>
-                                                <td className="border border-slate-300 p-2 text-center text-teal-600 font-extrabold text-base">{cat.grade}</td>
-                                                <td className="border border-slate-300 p-2 text-center text-slate-700">{cat.bobot.toFixed(1)}</td>
+                                                <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.score}</td>
+                                                <td className="border border-slate-300 p-2 text-center text-teal-600 font-extrabold text-base whitespace-nowrap">{cat.grade}</td>
+                                                <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.bobot.toFixed(1)}</td>
                                             </tr>
                                             {cat.details.map((detail: {
                 title: string;
@@ -689,7 +689,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                 percentage: number;
             }) => (
                                                 <tr key={detail.title}>
-                                                    <td className="border-x border-b border-slate-300 p-2 pl-6 text-sm text-gray-600">- {detail.title}</td>
+                                                    <td className="border-x border-b border-slate-300 p-2 pl-6 text-sm text-gray-600 whitespace-nowrap">- {detail.title}</td>
                                                     <td className="border-x border-b border-slate-300 p-2 text-sm text-gray-600">
                                                         <div className="flex items-center gap-2"><div className="w-full bg-slate-200 rounded-full h-2"><div className="bg-teal-500 h-2 rounded-full" style={{ width: `${detail.percentage}%` }}></div></div><span className="font-semibold w-16 text-right">{detail.achieved}/{detail.target}</span></div>
                                                     </td>
@@ -755,7 +755,7 @@ const TabButton: React.FC<{
             : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
           }`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
     </button>
 );
@@ -912,12 +912,12 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                             <table className="min-w-full text-sm text-left text-white">
                                 <thead className="bg-white/10 text-xs uppercase text-blue-200">
                                     <tr>
-                                        <th scope="col" className="px-4 py-3">No</th>
-                                        <th scope="col" className="px-4 py-3">Deskripsi</th>
-                                        <th scope="col" className="px-4 py-3">Bulan</th>
-                                        <th scope="col" className="px-4 py-3">Tahun</th>
-                                        <th scope="col" className="px-4 py-3">Periode Penilaian</th>
-                                        <th scope="col" className="px-4 py-3 text-center">Aksi</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">No</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Deskripsi</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Bulan</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Tahun</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Periode Penilaian</th>
+                                        <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -926,10 +926,10 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                         const isCurrent = monthKey === currentMonthKey;
                                         return (
                                             <tr key={monthKey} className="border-b border-gray-700 hover:bg-white/5">
-                                                <td className="px-4 py-3">{index + 1}</td>
-                                                <td className="px-4 py-3 font-semibold">Lembar Mutabaah Karyawan</td>
-                                                <td className="px-4 py-3">{monthDate.toLocaleDateString('id-ID', { month: 'long' })}</td>
-                                                <td className="px-4 py-3">{monthDate.getFullYear()}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{index + 1}</td>
+                                                <td className="px-4 py-3 font-semibold whitespace-nowrap">Lembar Mutabaah Karyawan</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{monthDate.toLocaleDateString('id-ID', { month: 'long' })}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{monthDate.getFullYear()}</td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${isCurrent ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'}`}>
                                                         {isCurrent ? 'AKTIF' : 'SELESAI'}

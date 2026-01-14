@@ -528,7 +528,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                         <UserGroupIcon className="w-6 h-6 text-teal-300" />
                         Manajemen Presensi Tim
                     </h3>
-                    <p className="text-blue-200 mt-1 text-sm">Buat dan kelola sesi presensi untuk tim atau unit Anda. Sesi akan tampil di sini dan di halaman 'Kegiatan Terjadwal' pada harinya.</p>
                 </div>
                 <button onClick={() => setIsCreateModalOpen(true)} className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
                     <PlusCircleIcon className="w-5 h-5" /> Buat Sesi Baru
@@ -541,7 +540,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     sessionsForToday.map(session => <SessionCard key={session.id} session={session} />)
                 ) : (
                     <div className="text-center py-10 bg-black/20 rounded-lg">
-                        <p className="text-blue-200">Tidak ada sesi presensi tim yang dijadwalkan untuk Anda hari ini.</p>
+                        <p className="text-blue-200 text-sm">Tidak ada sesi presensi hari ini</p>
                     </div>
                 )}
             </div>
@@ -558,7 +557,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     </div>
                 ) : (
                     <div className="text-center py-10 bg-black/20 rounded-lg">
-                        <p className="text-blue-200">Tidak ada riwayat atau sesi mendatang untuk kategori {activeTab === 'KIE' ? 'KIE' : 'Doa Pagi'}.</p>
+                        <p className="text-blue-200 text-sm">Tidak ada sesi</p>
                     </div>
                 )}
             </div>

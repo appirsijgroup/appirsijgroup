@@ -40,8 +40,7 @@ const RequestTadarusModal: React.FC<{
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 animate-pop-in">
-                <h3 className="text-lg font-bold text-white mb-2">Ajukan Kehadiran Tadarus</h3>
-                <p className="text-blue-200 mb-4">Jika Anda hadir dalam sesi tadarus yang belum tercatat, ajukan kehadiran di sini.</p>
+                <h3 className="text-lg font-bold text-white mb-4">Ajukan Kehadiran Tadarus</h3>
                 <div className="space-y-4">
                     <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal Tadarus</label>
@@ -97,8 +96,7 @@ const MissedPrayerRequestModal: React.FC<{
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 animate-pop-in">
-                <h3 className="text-lg font-bold text-white mb-2">Ajukan Presensi Terlewat</h3>
-                <p className="text-blue-200 mb-4">Isi form untuk mengajukan presensi sholat wajib yang terlewat pada hari sebelumnya.</p>
+                <h3 className="text-lg font-bold text-white mb-4">Ajukan Presensi Terlewat</h3>
                 <div className="space-y-4">
                     <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
@@ -142,7 +140,7 @@ const SubTabButton: React.FC<{
             : 'bg-white/10 text-blue-200 hover:bg-white/20'
           }`}
     >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-5 h-5 hidden sm:block" />
         {label}
     </button>
 );
@@ -386,8 +384,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                             </div>
                         ) : (
                             <div className="text-center py-16 bg-black/20 rounded-lg">
-                                <p className="text-lg text-blue-200">Tidak ada riwayat laporan yang cocok dengan filter Anda.</p>
-                                <p className="text-sm text-gray-400 mt-2">Coba hapus filter atau ajukan laporan baru.</p>
+                                <p className="text-lg text-blue-200">Tidak ada riwayat laporan</p>
                             </div>
                         )}
                     </div>
@@ -453,23 +450,23 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                 <table className="min-w-full text-sm text-left text-white">
                                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                                         <tr>
-                                            <th scope="col" className="px-4 py-3">Sholat & Tanggal</th>
-                                            <th scope="col" className="px-4 py-3">Tgl Pengajuan</th>
-                                            <th scope="col" className="px-4 py-3">Alasan</th>
-                                            <th scope="col" className="px-4 py-3">Status</th>
-                                            <th scope="col" className="px-4 py-3">Catatan Mentor</th>
+                                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Sholat & Tanggal</th>
+                                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Tgl Pengajuan</th>
+                                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Alasan</th>
+                                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
+                                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Catatan Mentor</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {sortedMissedPrayerRequests.map(req => (
                                             <tr key={req.id} className="border-b border-gray-700 hover:bg-white/5">
-                                                <td className="px-4 py-3 font-semibold">
+                                                <td className="px-4 py-3 font-semibold whitespace-nowrap">
                                                     {req.prayerName}
                                                     <p className="text-xs text-gray-400 font-normal">
                                                         {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                                                     </p>
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 whitespace-nowrap">
                                                     {new Date(req.requestedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                 </td>
                                                 <td className="px-4 py-3 max-w-xs truncate italic" title={req.reason}>

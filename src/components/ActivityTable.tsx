@@ -121,21 +121,20 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
     
     return (
         <section className="mt-8">
-            <h2 className="text-xl font-bold text-white">Kegiatan Terjadwal</h2>
-            <p className="text-blue-200 mb-4 text-sm">Daftar semua kegiatan yang dijadwalkan. Lakukan presensi untuk kegiatan yang Anda ikuti.</p>
-            
+            <h2 className="text-xl font-bold text-white mb-4">Kegiatan Terjadwal</h2>
+
             <div className="bg-white/10 p-2 sm:p-4 rounded-2xl shadow-lg border border-white/20 overflow-x-auto">
                 <table className="min-w-full text-xs sm:text-sm text-left text-white">
                     <thead className="bg-black/20 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 min-w-[120px]">Kegiatan</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 min-w-[120px] whitespace-nowrap">Kegiatan</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3">Jenis</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Jenis</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden sm:table-cell">Waktu</th>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell">Status</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell whitespace-nowrap">Status</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden sm:table-cell">Sisa Waktu</th>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden lg:table-cell">Tautan Online</th>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 text-center min-w-[140px] sm:min-w-[180px]">Aksi Presensi</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 text-center hidden lg:table-cell whitespace-nowrap">Tautan Online</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 text-center min-w-[140px] sm:min-w-[180px] whitespace-nowrap">Aksi Presensi</th>
                         </tr>
                     </thead>
                     <tbody>

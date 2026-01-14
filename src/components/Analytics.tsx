@@ -12,12 +12,20 @@ interface AnalyticsProps {
     dailyActivitiesConfig: DailyActivity[];
 }
 
-const ChartCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?: string }> = ({ title, children, minWidth }) => (
     <div className="bg-black/20 p-4 rounded-lg border border-white/10">
         <h4 className="font-semibold text-white mb-2">{title}</h4>
-        <div className="w-full h-72">
-            {children}
-        </div>
+        {minWidth ? (
+            <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
+                <div className="min-w-[700px] md:min-w-0 h-72">
+                    {children}
+                </div>
+            </div>
+        ) : (
+            <div className="w-full h-72">
+                {children}
+            </div>
+        )}
     </div>
 );
 
@@ -232,10 +240,6 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                     <Cell fill={ACTIVATED_COLOR} />
                                     <Cell fill={NOT_ACTIVATED_COLOR} />
                                 </Pie>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem', color: 'white' }}
-                                    itemStyle={{ color: 'white' }}
-                                />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center -mt-4">
@@ -252,20 +256,20 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                     </div>
                 </div>
                 <div className="lg:col-span-2 flex flex-col">
-                    <div className="max-h-96 overflow-y-auto rounded-lg border border-white/10 flex-grow">
+                    <div className="max-h-96 overflow-auto rounded-lg border border-white/10 flex-grow">
                         <table className="min-w-full text-sm text-left text-white">
                             <thead className="bg-gray-800/70 backdrop-blur-sm text-xs uppercase text-blue-200 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-4 py-3">Nama Karyawan</th>
-                                    <th className="px-4 py-3">Unit</th>
-                                    <th className="px-4 py-3 text-center">Status Aktivasi</th>
+                                    <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
+                                    <th className="px-4 py-3 whitespace-nowrap">Unit</th>
+                                    <th className="px-4 py-3 text-center whitespace-nowrap">Status Aktivasi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-700">
                                 {paginatedTableData.map(user => (
                                     <tr key={user.id}>
-                                        <td className="px-4 py-2 font-semibold">{user.name}</td>
-                                        <td className="px-4 py-2 text-blue-200">{user.unit}</td>
+                                        <td className="px-4 py-2 font-semibold whitespace-nowrap">{user.name}</td>
+                                        <td className="px-4 py-2 text-blue-200 whitespace-nowrap">{user.unit}</td>
                                         <td className="px-4 py-2 text-center">
                                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.isActivated ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
                                                 {user.isActivated ? 'Sudah' : 'Belum'}
@@ -502,23 +506,16 @@ const MutabaahPerformanceReport: React.FC<{
                 </select>
             </div>
 
-            <p className="text-sm text-center text-blue-200">Menampilkan data untuk <strong>{filteredUsers.length}</strong> karyawan yang cocok.</p>
+            <p className="text-sm text-center text-blue-200">{filteredUsers.length} karyawan</p>
 
             {filteredUsers.length > 0 ? (
                 <div className="space-y-6">
-                    <ChartCard title="Rata-rata Capaian per Kategori">
-                        <ResponsiveContainer>
+                    <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
+                        <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={performanceByCategory} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                 <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
                                 <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                <Tooltip
-                                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                    contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem' }}
-                                    itemStyle={{ color: '#ffffff' }}
-                                    labelStyle={{ color: '#cbd5e1', fontWeight: 'bold' }}
-                                    formatter={(value: number | undefined) => value !== undefined ? [`${value}%`, 'Rata-rata Capaian'] : ['', '']}
-                                />
                                 <Bar dataKey="Persentase" isAnimationActive={false}>
                                     <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: unknown) => typeof value === 'number' ? `${value}%` : ''} />
                                     {performanceByCategory.map((entry, index) => (
@@ -530,19 +527,12 @@ const MutabaahPerformanceReport: React.FC<{
                     </ChartCard>
 
                     {Object.entries(groupedPerformanceByActivity).map(([category, activities], index) => (
-                        <ChartCard key={category} title={`Detail Kategori: ${category}`}>
-                            <ResponsiveContainer>
+                        <ChartCard key={category} title={`Detail Kategori: ${category}`} minWidth="700px">
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                     <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
                                     <YAxis dataKey="name" type="category" stroke="#94a3b8" width={180} tick={{ fontSize: 11, fill: '#e2e8f0' }} interval={0} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #4b5563', borderRadius: '0.5rem' }}
-                                        itemStyle={{ color: '#ffffff' }}
-                                        labelStyle={{ color: '#cbd5e1', fontWeight: 'bold' }}
-                                        formatter={(value: unknown) => typeof value === 'number' ? [`${value}%`, 'Capaian'] : ['', '']}
-                                    />
                                     <Bar dataKey="percentage" name="Capaian" barSize={20} fill={COLORS[index % COLORS.length]} isAnimationActive={false}>
                                         <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => typeof value === 'number' && value > 0 ? `${value}%` : ''} />
                                     </Bar>

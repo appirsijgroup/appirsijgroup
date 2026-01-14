@@ -489,8 +489,8 @@ const RiwayatBacaan: React.FC<{
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredHistory.length > 0 ? filteredHistory.map(item => (
-                            <tr key={item.id} className="border-b border-gray-700 hover:bg-white/5">
+                        {filteredHistory.length > 0 ? filteredHistory.map((item, index) => (
+                            <tr key={item.id || `reading-${item.type}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
                                 <td className="px-4 py-3">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
@@ -505,7 +505,7 @@ const RiwayatBacaan: React.FC<{
                                 </td>
                             </tr>
                         )) : (
-                            <tr><td colSpan={4} className="text-center p-8 text-blue-200">Tidak ada riwayat bacaan pada bulan ini.</td></tr>
+                            <tr key="empty-state"><td colSpan={4} className="text-center p-8 text-blue-200">Tidak ada riwayat bacaan pada bulan ini.</td></tr>
                         )}
                     </tbody>
                 </table>

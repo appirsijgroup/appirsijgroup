@@ -51,7 +51,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, shareModalState } = useUIStore();
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
-    const { loadFromSupabase } = useMutabaahStore();
+    const { loadFromSupabase, subscribeToRealtime } = useMutabaahStore();
 
     // ⚡ OPTIMIZATION: Defer non-critical counts to prevent blocking initial render
     const [deferredUnreadAnnouncements, setDeferredUnreadAnnouncements] = useState(0);
@@ -151,6 +151,21 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             });
         }
     }, [isHydrated, loggedInEmployee, loadFromSupabase]);
+
+    // --- Subscribe to Mutabaah Settings Realtime Updates ---
+    useEffect(() => {
+        // Subscribe to realtime updates after user is logged in
+        if (isHydrated && loggedInEmployee) {
+            const unsubscribe = subscribeToRealtime();
+
+            // Cleanup on unmount
+            return () => {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            };
+        }
+    }, [isHydrated, loggedInEmployee, subscribeToRealtime]);
 
     // --- Load Notifications from Supabase & Subscribe to Realtime ---
     useEffect(() => {

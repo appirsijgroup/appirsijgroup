@@ -6,9 +6,8 @@ CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     description TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_by UUID REFERENCES auth.users(id)
+    updated_by TEXT
 );
 
 -- Enable RLS
@@ -64,7 +63,7 @@ CREATE OR REPLACE FUNCTION update_app_settings_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
-    NEW.updated_by = auth.uid();
+    NEW.updated_by = auth.uid()::text;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -79,4 +78,4 @@ COMMENT ON TABLE app_settings IS 'Global application settings that affect all us
 COMMENT ON COLUMN app_settings.key IS 'Unique identifier for the setting (e.g., mutabaah_locking_mode)';
 COMMENT ON COLUMN app_settings.value IS 'Current value of the setting';
 COMMENT ON COLUMN app_settings.description IS 'Human-readable description of what this setting does';
-COMMENT ON COLUMN app_settings.updated_by IS 'ID of the super-admin who last updated this setting';
+COMMENT ON COLUMN app_settings.updated_by IS 'Employee ID of the super-admin who last updated this setting';

@@ -16,6 +16,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE employees;
 -- -------------------------------------------
 -- ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 
+-- 4. ENABLE REALTIME FOR APP_SETTINGS TABLE
+-- -------------------------------------------
+-- This enables realtime updates for global settings like mutabaah locking mode
+ALTER PUBLICATION supabase_realtime ADD TABLE app_settings;
+
 -- ============================================================
 -- VERIFY REALTIME IS ENABLED
 -- ============================================================
@@ -34,18 +39,19 @@ SELECT
     END as realtime_status
 FROM pg_tables
 WHERE schemaname = 'public'
-AND tablename IN ('employees', 'weekly_report_submissions', 'notifications')
+AND tablename IN ('employees', 'weekly_report_submissions', 'notifications', 'app_settings')
 ORDER BY tablename;
 
 -- ============================================================
 -- NOTES:
 -- ============================================================
--- 1. After running this script, realtime will be enabled for the employees table
--- 2. Any UPDATE, INSERT, or DELETE on the employees table will trigger realtime updates
+-- 1. After running this script, realtime will be enabled for employees and app_settings tables
+-- 2. Any UPDATE, INSERT, or DELETE on these tables will trigger realtime updates
 -- 3. The MutabaahContext in your app will automatically receive these updates
--- 4. Make sure your Supabase project has Realtime enabled in the dashboard:
+-- 4. For app_settings, all users will receive realtime updates when super-admin changes global settings
+-- 5. Make sure your Supabase project has Realtime enabled in the dashboard:
 --    - Go to Database > Replication
 --    - Ensure "Realtime" is enabled for your project
--- 5. If you encounter issues, check Supabase logs:
+-- 6. If you encounter issues, check Supabase logs:
 --    - Database > Logs > Realtime
 -- ============================================================

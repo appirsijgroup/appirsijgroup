@@ -8,6 +8,7 @@ import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon,
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
 import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
+import MutabaahReport from './MutabaahReport';
 import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin } from '@/lib/rolePermissions';
 
 // Lazy load heavy components that are only rendered conditionally
@@ -2687,7 +2688,7 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
     const [pdfDataUri, setPdfDataUri] = useState<string | null>(null);
     const [pdfFileName, setPdfFileName] = useState('');
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
-    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan'>('sholat');
+    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah'>('sholat');
 
     const allUsers = useMemo(() => Object.values(allUsersData).map((d: { employee: Employee }) => d.employee), [allUsersData]);
 
@@ -2797,12 +2798,16 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
                         <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
                             <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
                             <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
+                            <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
                         </div>
                         {reportSubView === 'sholat' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'kegiatan' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                        )}
+                        {reportSubView === 'mutabaah' && (
+                            <MutabaahReport allUsersData={allUsersData} />
                         )}
                     </div>
                 )}
@@ -3418,7 +3423,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
     const [userManagementSubView, setUserManagementSubView] = useState<UserManagementSubView>('database');
     const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('kegiatan');
-    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan'>('sholat');
+    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [managingScopeForUser, setManagingScopeForUser] = useState<Employee | null>(null);
@@ -3678,12 +3683,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
                             <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
                             <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
+                            <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
                         </div>
                         {reportSubView === 'sholat' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'kegiatan' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                        )}
+                        {reportSubView === 'mutabaah' && (
+                            <MutabaahReport allUsersData={allUsersData} />
                         )}
                     </div>
                 )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
+import { createToken, setSessionCookie } from '@/lib/auth';
 
 // Rate limiting: Store attempts in memory (in production, use Redis)
 const loginAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -68,8 +69,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔑 Login attempt:', identifier);
-
     // Fetch employee from Supabase
     const { data: employeeData, error } = await supabase
       .from('employees')
@@ -80,8 +79,6 @@ export async function POST(request: NextRequest) {
     const employee = employeeData as any;
 
     if (error) {
-      console.error('❌ Supabase error:', error);
-
       if (error.code === 'PGRST116') {
         recordFailedAttempt(identifier);
         return NextResponse.json(
@@ -98,7 +95,6 @@ export async function POST(request: NextRequest) {
 
     if (!employee) {
       recordFailedAttempt(identifier);
-      console.error('❌ Employee not found for identifier:', identifier);
       return NextResponse.json(
         { error: `NIP/Email "${identifier}" tidak ditemukan.` },
         { status: 401 }
@@ -111,7 +107,6 @@ export async function POST(request: NextRequest) {
 
     if (!isActive) {
       recordFailedAttempt(identifier);
-      console.error('❌ Account inactive:', employee.id);
       return NextResponse.json(
         { error: `Akun untuk ${employee.name} dinonaktifkan. Hubungi Admin.` },
         { status: 403 }
@@ -131,7 +126,6 @@ export async function POST(request: NextRequest) {
       try {
         isMatch = bcrypt.compareSync(password, employee.password);
       } catch (err) {
-        console.error('❌ Bcrypt error:', err);
         return NextResponse.json(
           { error: 'Error validasi password. Silakan coba lagi.' },
           { status: 500 }
@@ -146,7 +140,6 @@ export async function POST(request: NextRequest) {
 
     if (!isMatch) {
       recordFailedAttempt(identifier);
-      console.error('❌ Password mismatch for user:', employee.id);
       return NextResponse.json(
         { error: 'Password salah. Silakan coba lagi.' },
         { status: 401 }
@@ -156,10 +149,18 @@ export async function POST(request: NextRequest) {
     // Successful login - reset attempts
     resetAttempts(identifier);
 
+    // Create JWT token
+    const token = await createToken({
+      userId: employee.id,
+      name: employee.name,
+      role: employee.role || 'user'
+    });
+
+    // Set HTTP-only cookie
+    await setSessionCookie(token);
+
     // Remove sensitive data before sending to client
     const { password: _, ...safeEmployeeData } = employee;
-
-    console.log('✅ Login successful for:', employee.name);
 
     return NextResponse.json({
       success: true,
@@ -167,7 +168,10 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Login API error:', error);
+    // Log error server-side only
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login API error:', error);
+    }
     return NextResponse.json(
       { error: 'Terjadi kesalahan server. Silakan coba lagi.' },
       { status: 500 }

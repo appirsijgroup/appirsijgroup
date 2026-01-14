@@ -31,7 +31,7 @@ export default function AdminPage() {
     const { dailyActivitiesConfig, updateDailyActivitiesConfig } = useDailyActivitiesStore();
     const { jobStructure, updateJobStructure } = useJobStructureStore();
     const { auditLog, logAudit } = useAuditLogStore();
-    const { announcements, addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
+    const { announcements, addAnnouncement, deleteAnnouncement, loadAnnouncements } = useAnnouncementStore();
     const { mutabaahLockingMode, setMutabaahLockingMode } = useMutabaahStore();
     const { createNotification } = useNotificationStore();
     // const { hospitals: localHospitals, addHospital, updateHospital, deleteHospital, toggleHospitalStatus } = useHospitalStore(); // Unused - using hospitals state instead
@@ -146,6 +146,14 @@ export default function AdminPage() {
                 setHospitals(hospitalsData);
                 console.log(`✅ Loaded ${hospitalsData.length} hospitals`);
 
+                // 🔥 FIX: Load announcements
+                try {
+                    await loadAnnouncements();
+                    console.log('✅ Loaded announcements from Supabase');
+                } catch (error) {
+                    console.error('⚠️ Error loading announcements from Supabase:', error);
+                }
+
                 console.timeEnd('⚡ Load Admin Data');
             } catch (err: unknown) {
                 console.error('Error loading employees:', err);
@@ -156,7 +164,7 @@ export default function AdminPage() {
         };
 
         loadData();
-    }, [setAllUsersData]);
+    }, [setAllUsersData, loadAnnouncements]);
 
     // Handler functions
     const handleToggleStatus = async (userId: string) => {
@@ -251,9 +259,10 @@ export default function AdminPage() {
             const employee: Employee = {
                 ...newEmployeeData,
                 id,
-                email: `${id}@rsijsp.co.id`,
-                password: `hashed_${id}`,
-                role: 'user',
+                email: `${id}@rsijsp.co.id`, // Generate email from ID
+                password: `hashed_${id}`, // Default password
+                role: 'user', // Default role for new employees
+                gender: newEmployeeData.gender || 'Laki-laki', // Use provided gender
                 isActive: true,
                 lastVisitDate: new Date().toISOString().split('T')[0],
                 notificationEnabled: true,
@@ -275,8 +284,21 @@ export default function AdminPage() {
                 lastAnnouncementReadTimestamp: undefined,
                 managedHospitalIds: [],
                 achievements: [],
-                mustChangePassword: true
+                mustChangePassword: true // Require password change on first login
             };
+
+            console.log('📤 Creating employee with data:', {
+                id: employee.id,
+                name: employee.name,
+                email: employee.email,
+                role: employee.role,
+                gender: employee.gender,
+                unit: employee.unit,
+                bagian: employee.bagian,
+                professionCategory: employee.professionCategory,
+                profession: employee.profession,
+                hospitalId: employee.hospitalId
+            });
 
             // Create in Supabase
             await createEmployeeSupabase(employee);
@@ -320,8 +342,26 @@ export default function AdminPage() {
             setAllUsersData(() => newData);
             return { success: true };
         } catch (err: unknown) {
-            console.error('Error adding user:', err);
-            return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+            // Enhanced error logging
+            console.error('❌ Error adding user - Full error object:', err);
+            console.error('❌ Error type:', typeof err);
+            console.error('❌ Error keys:', err ? Object.keys(err) : 'N/A');
+
+            // Try to extract more error details
+            let errorMessage = 'Unknown error';
+            if (err instanceof Error) {
+                errorMessage = err.message;
+                console.error('❌ Error message:', err.message);
+                console.error('❌ Error stack:', err.stack);
+            } else if (typeof err === 'object' && err !== null) {
+                errorMessage = JSON.stringify(err);
+                console.error('❌ Stringified error:', errorMessage);
+            } else {
+                errorMessage = String(err);
+                console.error('❌ String error:', errorMessage);
+            }
+
+            return { success: false, error: errorMessage };
         }
     };
 

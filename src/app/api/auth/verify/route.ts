@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getSession } from '@/lib/auth';
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId } = body;
+    // Get session from cookie
+    const session = await getSession();
 
-    if (!userId) {
+    if (!session) {
       return NextResponse.json(
-        { error: 'User ID diperlukan.' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     const { data: employeeData, error } = await supabase
       .from('employees')
       .select('*')
-      .eq('id', userId)
+      .eq('id', session.userId)
       .single();
 
     if (error || !employeeData) {
@@ -47,7 +48,9 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Verify session API error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Verify session API error:', error);
+    }
     return NextResponse.json(
       { error: 'Terjadi kesalahan server.' },
       { status: 500 }

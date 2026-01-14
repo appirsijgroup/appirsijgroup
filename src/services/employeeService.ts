@@ -269,11 +269,38 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         gender: employee.gender,
     };
 
+    console.log('📤 Sending to Supabase:', {
+        id: dbEmployee.id,
+        name: dbEmployee.name,
+        email: dbEmployee.email,
+        role: dbEmployee.role,
+        gender: dbEmployee.gender,
+        gender_type: typeof dbEmployee.gender,
+        unit: dbEmployee.unit,
+        bagian: dbEmployee.bagian,
+        profession_category: dbEmployee.profession_category,
+        profession: dbEmployee.profession,
+        hospital_id: dbEmployee.hospital_id
+    });
+
     const { data, error } = await (supabase
         .from('employees') as any)
-        .insert(dbEmployee) // No need for explicit cast here, as 'any' bypasses it
+        .insert(dbEmployee)
+        .select()
+        .single();
 
-    if (error) throw error;
+    if (error) {
+        console.error('❌ Supabase insert error:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            fullError: error
+        });
+        throw error;
+    }
+
+    console.log('✅ Successfully created employee in Supabase:', data);
     return convertToCamelCase(data);
 };
 
@@ -563,10 +590,17 @@ export const getPotentialMentors = async (): Promise<Employee[]> => {
 
 // Search employees by name or email
 export const searchEmployees = async (query: string): Promise<Employee[]> => {
+    // Sanitize query to prevent SQL injection
+    const sanitizedQuery = query
+        .replace(/%/g, '\\%')
+        .replace(/_/g, '\\_')
+        .replace(/\\/g, '\\\\')
+        .trim();
+
     const { data, error } = await supabase
         .from('employees')
         .select('*')
-        .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+        .or(`name.ilike.%${sanitizedQuery}%,email.ilike.%${sanitizedQuery}%`)
         .order('name')
         .limit(50);
 

@@ -655,6 +655,8 @@ const UserModal: React.FC<{
 }> = ({ isOpen, onClose, onSave, existingUser, hospitals }) => {
     const [id, setId] = useState('');
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [role, setRole] = useState<'super-admin' | 'admin' | 'user'>('user');
     const [unit, setUnit] = useState('');
     const [bagian, setBagian] = useState('');
     const [professionCategory, setProfessionCategory] = useState<'MEDIS' | 'NON MEDIS'>('NON MEDIS');
@@ -662,13 +664,19 @@ const UserModal: React.FC<{
     const [gender, setGender] = useState<'Laki-laki' | 'Perempuan'>('Laki-laki');
     const [hospitalId, setHospitalId] = useState<string | undefined>('');
     const [error, setError] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [generatedPassword, setGeneratedPassword] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             setError('');
+            setShowSuccessModal(false);
+            setGeneratedPassword('');
             if (existingUser) {
                 setId(existingUser.id);
                 setName(existingUser.name);
+                setEmail(existingUser.email);
+                setRole(existingUser.role);
                 setUnit(existingUser.unit);
                 setBagian(existingUser.bagian);
                 setProfessionCategory(existingUser.professionCategory);
@@ -678,6 +686,8 @@ const UserModal: React.FC<{
             } else {
                 setId('');
                 setName('');
+                setEmail('');
+                setRole('user');
                 setUnit('');
                 setBagian('');
                 setProfessionCategory('NON MEDIS');
@@ -688,14 +698,46 @@ const UserModal: React.FC<{
         }
     }, [isOpen, existingUser]);
 
+    // Function to generate secure random password
+    const generateSecurePassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$%';
+        let password = '';
+        const array = new Uint32Array(12);
+        crypto.getRandomValues(array);
+
+        for (let i = 0; i < 12; i++) {
+            password += chars[array[i] % chars.length];
+        }
+        return password;
+    };
+
     const handleSubmit = async () => {
-        if (!id || !name || !unit || !profession || !bagian) {
+        if (!id || !name || !email || !unit || !profession || !bagian || !role) {
             setError('Semua field wajib diisi.');
             return;
         }
-        const result = await onSave(id, { name, unit, bagian, professionCategory, profession, gender, hospitalId });
+
+        // Generate password only for new users
+        const newPassword = existingUser ? undefined : generateSecurePassword();
+
+        const result = await onSave(id, {
+            name,
+            unit,
+            bagian,
+            professionCategory,
+            profession,
+            gender,
+            hospitalId
+        });
+
         if (result.success) {
-            onClose();
+            if (!existingUser && newPassword) {
+                // Show success modal with generated password
+                setGeneratedPassword(newPassword);
+                setShowSuccessModal(true);
+            } else {
+                onClose();
+            }
         } else {
             setError(result.error || 'Terjadi kesalahan.');
         }
@@ -711,7 +753,7 @@ const UserModal: React.FC<{
                 {/* Two-column layout for desktop */}
                 <div className="flex-grow overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {/* Left column - 4 fields */}
+                        {/* Left column - 5 fields */}
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">NIP / NOPEG</label>
@@ -721,6 +763,13 @@ const UserModal: React.FC<{
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Nama Lengkap</label>
                                 <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Jenis Kelamin</label>
+                                <select value={gender} onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                    <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
+                                    <option value="Perempuan" className="text-black bg-white">Perempuan</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Kategori Profesi</label>
@@ -735,8 +784,16 @@ const UserModal: React.FC<{
                             </div>
                         </div>
 
-                        {/* Right column - 4 fields */}
+                        {/* Right column - 5 fields */}
                         <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Role</label>
+                                <select value={role} onChange={e => setRole(e.target.value as 'super-admin' | 'admin' | 'user')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                    <option value="user" className="text-black bg-white">User</option>
+                                    <option value="admin" className="text-black bg-white">Admin</option>
+                                    <option value="super-admin" className="text-black bg-white">Super Admin</option>
+                                </select>
+                            </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Rumah Sakit</label>
                                 <select value={hospitalId || ''} onChange={e => setHospitalId(e.target.value || undefined)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
@@ -755,11 +812,8 @@ const UserModal: React.FC<{
                                 <input type="text" value={bagian} onChange={e => setBagian(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-blue-200 block mb-1">Jenis Kelamin</label>
-                                <select value={gender} onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                                    <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
-                                    <option value="Perempuan" className="text-black bg-white">Perempuan</option>
-                                </select>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Email</label>
+                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" placeholder="contoh@rsi.co.id" />
                             </div>
                             {error && <p className="text-red-400 text-sm p-2 bg-red-500/20 border border-red-500 rounded-md">{error}</p>}
                         </div>
@@ -774,6 +828,72 @@ const UserModal: React.FC<{
         </div>,
         document.body
     );
+
+    // Success Modal with Password Info
+    if (showSuccessModal) {
+        return createPortal(
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md border border-white/20">
+                    <div className="text-center">
+                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">Karyawan Berhasil Ditambahkan!</h3>
+                        <p className="text-blue-200 mb-6">Data karyawan baru telah disimpan. Berikut informasi untuk login:</p>
+
+                        <div className="bg-black/30 rounded-lg p-4 mb-6 text-left space-y-3">
+                            <div>
+                                <p className="text-xs text-blue-300 uppercase tracking-wide">Nama Lengkap</p>
+                                <p className="text-white font-semibold">{name}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-blue-300 uppercase tracking-wide">NIP / NOPEG</p>
+                                <p className="text-white font-semibold">{id}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-blue-300 uppercase tracking-wide">Email</p>
+                                <p className="text-white font-semibold">{email}</p>
+                            </div>
+                            <div className="bg-teal-500/20 border border-teal-500/50 rounded-lg p-3">
+                                <p className="text-xs text-teal-300 uppercase tracking-wide mb-1">Password untuk Login</p>
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="text-teal-100 font-mono font-bold text-lg tracking-wider">{generatedPassword}</p>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(generatedPassword);
+                                        }}
+                                        className="px-3 py-1 bg-teal-500 hover:bg-teal-400 text-white text-sm rounded-lg font-semibold transition-colors"
+                                        title="Copy Password"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-6">
+                            <p className="text-yellow-200 text-sm">
+                                ⚠️ <strong>Penting:</strong> User akan diminta mengubah password saat login pertama untuk keamanan.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setShowSuccessModal(false);
+                                onClose();
+                            }}
+                            className="w-full px-6 py-3 rounded-lg bg-teal-500 hover:bg-teal-400 text-white font-bold text-lg transition-colors"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        );
+    }
 };
 
 const UserImportModal: React.FC<{
@@ -2694,6 +2814,7 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
                         announcements={announcements}
                         loggedInEmployee={loggedInEmployee}
                         allUsers={allUsers}
+                        hospitals={hospitals}
                         onCreate={onCreateAnnouncement}
                         onDelete={onDeleteAnnouncement}
                         onMarkAsRead={onMarkAsRead}
@@ -3566,6 +3687,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         announcements={announcements}
                         loggedInEmployee={loggedInEmployee}
                         allUsers={allUsers}
+                        hospitals={hospitals}
                         onCreate={onCreateAnnouncement}
                         onDelete={onDeleteAnnouncement}
                         onMarkAsRead={onMarkAsRead}

@@ -2,38 +2,61 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/services/database.types';
+import { getSession } from '@/lib/auth';
 
 /**
  * API Endpoint untuk mengubah password
- * Menerima: userId, oldPassword, newPassword
+ * Menerima: oldPassword, newPassword
  * Memvalidasi old password dan update dengan new password di server side
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    const { userId, oldPassword, newPassword } = body;
+    const { oldPassword, newPassword } = body;
 
     // Validate input
-    if (!userId || !oldPassword || !newPassword) {
+    if (!oldPassword || !newPassword) {
       return NextResponse.json(
-        { error: 'User ID, password lama, dan password baru wajib diisi.' },
+        { error: 'Password lama dan password baru wajib diisi.' },
         { status: 400 }
       );
     }
 
-    console.log('🔑 Password change attempt for user:', userId);
+    // Password strength validation
+    if (newPassword.length < 8) {
+      return NextResponse.json(
+        { error: 'Password baru harus minimal 8 karakter.' },
+        { status: 400 }
+      );
+    }
+
+    // Check if old and new password are the same
+    if (oldPassword === newPassword) {
+      return NextResponse.json(
+        { error: 'Password baru tidak boleh sama dengan password lama.' },
+        { status: 400 }
+      );
+    }
 
     // Fetch employee from Supabase with password
     const { data: employeeData, error } = await supabase
       .from('employees')
       .select('*')
-      .eq('id', userId)
+      .eq('id', session.userId)
       .single();
 
     const employee = employeeData as any;
 
     if (error || !employee) {
-      console.error('❌ Employee not found:', error);
       return NextResponse.json(
         { error: 'User tidak ditemukan.' },
         { status: 404 }
@@ -48,7 +71,6 @@ export async function POST(request: NextRequest) {
       try {
         isOldPasswordValid = bcrypt.compareSync(oldPassword, storedPassword);
       } catch (e) {
-        console.error('❌ Bcrypt error:', e);
         return NextResponse.json(
           { error: 'Error validasi password. Silakan coba lagi.' },
           { status: 500 }
@@ -60,7 +82,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isOldPasswordValid) {
-      console.error('❌ Old password mismatch for user:', userId);
       return NextResponse.json(
         { error: 'Password lama salah.' },
         { status: 401 }
@@ -86,17 +107,14 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         must_change_password: false
       })
-      .eq('id', userId);
+      .eq('id', session.userId);
 
     if (updateError) {
-      console.error('❌ Update password error:', updateError);
       return NextResponse.json(
         { error: 'Gagal mengupdate password. Silakan coba lagi.' },
         { status: 500 }
       );
     }
-
-    console.log('✅ Password changed successfully for user:', employee.name);
 
     return NextResponse.json({
       success: true,
@@ -104,7 +122,9 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Change password API error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Change password API error:', error);
+    }
     return NextResponse.json(
       { error: 'Terjadi kesalahan server. Silakan coba lagi.' },
       { status: 500 }

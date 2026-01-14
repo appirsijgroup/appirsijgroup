@@ -3,6 +3,7 @@
 import { useAppDataStore } from '@/store/store';
 import MainLayoutShell from '@/components/MainLayoutShell';
 import { MutabaahProvider } from '@/contexts/MutabaahContext';
+import DataLoader from '@/components/DataLoader';
 import type { Employee } from '@/types';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
     return (
         <MutabaahProvider employee={loggedInEmployee} onUpdateEmployee={handleUpdateEmployee}>
-            <MainLayoutShell>{children}</MainLayoutShell>
+            <DataLoader>
+                <MainLayoutShell>{children}</MainLayoutShell>
+            </DataLoader>
         </MutabaahProvider>
     );
 }

@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { clearSession } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Clear session cookie if exists
-    const cookieStore = await cookies();
-    cookieStore.delete('session');
-
-    console.log('🚪 User logged out successfully');
+    // Clear the session cookie
+    await clearSession();
 
     return NextResponse.json({
       success: true,
@@ -15,7 +12,9 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Logout API error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Logout API error:', error);
+    }
     return NextResponse.json(
       { error: 'Terjadi kesalahan saat logout.' },
       { status: 500 }

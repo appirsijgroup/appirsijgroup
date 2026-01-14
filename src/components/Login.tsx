@@ -38,8 +38,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
         // Otherwise use direct login logic
         setIsAuthenticating(true);
         try {
-            console.log('🔑 Login attempt:', employeeId);
-
             // Clear any existing Supabase auth sessions
             await supabase.auth.signOut();
 
@@ -50,10 +48,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                 .or(`id.eq.${employeeId},email.eq.${employeeId}`)
                 .single();
 
-            console.log('📊 Query result:', { error, employeeData });
-
             if (error) {
-                console.error('❌ Supabase error:', error);
                 if (error.code === 'PGRST116') {
                     setError(`NIP/Email "${employeeId}" tidak ditemukan di database.`);
                     return;
@@ -63,14 +58,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             }
 
             if (!employeeData) {
-                console.error('❌ Employee not found for identifier:', employeeId);
                 setError(`NIP/Email "${employeeId}" tidak ditemukan. Pastikan NIP/Email sudah benar.`);
                 return;
             }
 
             // 🔥 FIX: Type guard to ensure employeeData is valid Employee
             if ('error' in employeeData || !('id' in employeeData)) {
-                console.error('❌ Invalid employee data:', employeeData);
                 setError('Data karyawan tidak valid. Hubungi admin.');
                 return;
             }
@@ -88,7 +81,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                 try {
                     isMatch = bcrypt.compareSync(password, employee.password);
                 } catch (err) {
-                    console.error('❌ Bcrypt error:', err);
+                    // Bcrypt error, password invalid
                 }
             } else {
                 if (employee.password === password || employee.password === `hashed_${password}`) {
@@ -97,25 +90,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             }
 
             if (!isMatch) {
-                console.error('❌ Password mismatch');
                 setError('Password salah. Silakan coba lagi.');
                 return;
             }
 
             // Check if account is active
             if (!isActive) {
-                console.error('❌ Account inactive:', employee.id);
                 setError(`Akun untuk ${employee.name} (NIP: ${employee.id}) dinonaktifkan. Hubungi Admin.`);
                 return;
             }
 
-            // Success
-            console.log('✅ Login successful for:', employee.name);
-            localStorage.setItem('loggedInUserId', employee.id);
+            // Success - API will handle setting the HTTP-only cookie
             router.push('/dashboard');
 
         } catch (err: unknown) {
-            console.error('❌ Login error:', err);
             setError('Terjadi kesalahan saat login. Silakan coba lagi.');
         } finally {
             setIsAuthenticating(false);

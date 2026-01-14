@@ -60,82 +60,112 @@ const AnnouncementModal: React.FC<{
 
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20 h-[90vh] flex flex-col">
+            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl border border-white/20 max-h-[90vh] flex flex-col">
                 <div className="flex-shrink-0 mb-4">
                     <h3 className="text-lg font-bold text-white">Buat Pengumuman Baru</h3>
                 </div>
-                <div className="flex-grow overflow-y-auto pr-2 space-y-4">
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul Pengumuman" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Isi pengumuman..." rows={6} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    <div>
-                        <label className="text-sm font-medium text-blue-100 block mb-2">Target Pengumuman</label>
-                        <div className="flex items-center gap-4">
-                            {isAdmin && (
-                                <button onClick={() => { setScope('alliansi'); setSelectedHospitalIds([]); }} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'alliansi' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
-                                    <GlobeAltIcon className="w-5 h-5" /> Aliansi
-                                </button>
-                            )}
-                            {loggedInEmployee.canBeMentor && (
-                                <button onClick={() => { setScope('mentor'); setSelectedHospitalIds([]); }} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'mentor' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}>
-                                    <UserGroupIcon className="w-5 h-5" /> Untuk Mentee
-                                </button>
-                            )}
+
+                {/* Two-column layout for desktop */}
+                <div className="flex-grow overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left column: Title and Content */}
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                placeholder="Judul Pengumuman"
+                                className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"
+                            />
+                            <textarea
+                                value={content}
+                                onChange={e => setContent(e.target.value)}
+                                placeholder="Isi pengumuman..."
+                                rows={12}
+                                className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white resize-none"
+                            />
                         </div>
 
-                        {/* Hospital/BRAND selector - only show for Admin when Aliansi is selected */}
-                        {isAdmin && scope === 'alliansi' && (
-                            <div className="mt-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="text-sm font-medium text-blue-100">
-                                        Pilih RS/BRAND (Opsional)
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedHospitalIds(selectedHospitalIds.length === hospitals.length ? [] : hospitals.map(h => h.id))}
-                                        className="text-xs text-teal-400 hover:text-teal-300 underline"
-                                    >
-                                        {selectedHospitalIds.length === hospitals.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
-                                    </button>
-                                </div>
-
-                                <div className="bg-white/5 border border-white/20 rounded-lg p-3 max-h-48 overflow-y-auto">
-                                    {hospitals.length === 0 ? (
-                                        <p className="text-sm text-gray-400 text-center py-4">Belum ada data RS</p>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {hospitals.map(hospital => (
-                                                <label key={hospital.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedHospitalIds.includes(hospital.id)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setSelectedHospitalIds([...selectedHospitalIds, hospital.id]);
-                                                            } else {
-                                                                setSelectedHospitalIds(selectedHospitalIds.filter(id => id !== hospital.id));
-                                                            }
-                                                        }}
-                                                        className="w-4 h-4 rounded border-gray-400 text-teal-500 focus:ring-teal-400 focus:ring-offset-gray-800"
-                                                    />
-                                                    <div className="flex-1">
-                                                        <div className="text-sm text-white font-medium">{hospital.brand}</div>
-                                                        <div className="text-xs text-gray-400">{hospital.name}</div>
-                                                    </div>
-                                                </label>
-                                            ))}
-                                        </div>
+                        {/* Right column: Target Pengumuman */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-blue-100 block mb-2">Target Pengumuman</label>
+                                <div className="flex items-center gap-4">
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => { setScope('alliansi'); setSelectedHospitalIds([]); }}
+                                            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'alliansi' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+                                        >
+                                            <GlobeAltIcon className="w-5 h-5" /> Aliansi
+                                        </button>
+                                    )}
+                                    {loggedInEmployee.canBeMentor && (
+                                        <button
+                                            onClick={() => { setScope('mentor'); setSelectedHospitalIds([]); }}
+                                            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'mentor' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+                                        >
+                                            <UserGroupIcon className="w-5 h-5" /> Untuk Mentee
+                                        </button>
                                     )}
                                 </div>
-
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {selectedHospitalIds.length === 0
-                                        ? 'Semua user di Aliansi dapat melihat pengumuman ini'
-                                        : `Hanya user dari ${selectedHospitalIds.length} RS terpilih yang dapat melihat pengumuman ini`}
-                                </p>
                             </div>
-                        )}
+
+                            {/* Hospital/BRAND selector - only show for Admin when Aliansi is selected */}
+                            {isAdmin && scope === 'alliansi' && (
+                                <div className="bg-white/5 border border-white/20 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-sm font-medium text-blue-100">
+                                            Pilih RS/BRAND (Opsional)
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedHospitalIds(selectedHospitalIds.length === hospitals.length ? [] : hospitals.map(h => h.id))}
+                                            className="text-xs text-teal-400 hover:text-teal-300 underline"
+                                        >
+                                            {selectedHospitalIds.length === hospitals.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-black/20 border border-white/10 rounded-lg p-3 max-h-72 overflow-y-auto">
+                                        {hospitals.length === 0 ? (
+                                            <p className="text-sm text-gray-400 text-center py-4">Belum ada data RS</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {hospitals.map(hospital => (
+                                                    <label key={hospital.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedHospitalIds.includes(hospital.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedHospitalIds([...selectedHospitalIds, hospital.id]);
+                                                                } else {
+                                                                    setSelectedHospitalIds(selectedHospitalIds.filter(id => id !== hospital.id));
+                                                                }
+                                                            }}
+                                                            className="w-4 h-4 rounded border-gray-400 text-teal-500 focus:ring-teal-400 focus:ring-offset-gray-800"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className="text-sm text-white font-medium">{hospital.brand}</div>
+                                                            <div className="text-xs text-gray-400">{hospital.name}</div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <p className="text-xs text-gray-400 mt-3">
+                                        {selectedHospitalIds.length === 0
+                                            ? 'Semua user di Aliansi dapat melihat pengumuman ini'
+                                            : `Hanya user dari ${selectedHospitalIds.length} RS terpilih yang dapat melihat pengumuman ini`}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
+
                 <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
                     <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
                     <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">

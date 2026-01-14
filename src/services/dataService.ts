@@ -176,7 +176,7 @@ export const monthlyActivitiesService = {
       .single();
 
     if (error) throw error;
-    return (data as { monthly_activities: Database['public']['Tables']['employees']['Row']['monthly_activities'] }).monthly_activities || {};
+    return (data as unknown as { monthly_activities: Database['public']['Tables']['employees']['Row']['monthly_activities'] }).monthly_activities || {};
   },
 
   // Update monthly activities for an employee

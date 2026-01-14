@@ -534,7 +534,7 @@ export const getEmployeesByRole = async (role: string): Promise<Employee[]> => {
         .order('name');
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Employee[]) || [];
 };
 
 // Get employees by hospital
@@ -546,7 +546,7 @@ export const getEmployeesByHospital = async (hospitalId: string): Promise<Employ
         .order('name');
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Employee[]) || [];
 };
 
 // Get employees that can be mentors
@@ -558,7 +558,7 @@ export const getPotentialMentors = async (): Promise<Employee[]> => {
         .order('name');
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Employee[]) || [];
 };
 
 // Search employees by name or email
@@ -571,7 +571,7 @@ export const searchEmployees = async (query: string): Promise<Employee[]> => {
         .limit(50);
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Employee[]) || [];
 };
 
 // Batch get all employees with their attendance

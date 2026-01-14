@@ -8,6 +8,7 @@ interface NotificationPanelProps {
     isOpen: boolean;
     onClose: () => void;
     onNavigate: (link: Notification['linkTo']) => void;
+    onOpenAssignmentLetter?: (notification: Notification) => void;
     loggedInUserId: string;
 }
 
@@ -46,7 +47,7 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     return <div className="p-3 bg-black/20 rounded-full">{iconMap[type]}</div>;
 };
 
-const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, onNavigate, loggedInUserId }) => {
+const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, onNavigate, onOpenAssignmentLetter, loggedInUserId }) => {
     const { 
         notifications: allNotifications, 
         clearAll, 
@@ -61,9 +62,19 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
 
     const notifications = useMemo(() => {
         const now = Date.now();
-        return allNotifications
+        const filtered = allNotifications
             .filter(n => n.userId === loggedInUserId)
             .filter(n => !(n.expiresAt && now > n.expiresAt));
+
+        console.log('📬 NotificationPanel filtered notifications:', {
+            loggedInUserId,
+            totalAll: allNotifications.length,
+            totalFiltered: filtered.length,
+            allUserNotifications: allNotifications.filter(n => n.userId === loggedInUserId).map(n => ({ id: n.id, type: n.type, title: n.title })),
+            filteredNotifications: filtered.map(n => ({ id: n.id, type: n.type, title: n.title }))
+        });
+
+        return filtered;
     }, [allNotifications, loggedInUserId]);
 
     const handleEnterManageMode = () => {
@@ -104,14 +115,28 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
     };
     
     const handleItemClick = (notification: Notification) => {
+        console.log('🔔 Notification clicked:', notification.id, notification.title);
+
         if (notification.dismissOnClick) {
+            console.log('🗑️ Dismissing notification:', notification.id);
             dismissNotification(notification.id);
         } else if (!notification.isRead) {
-            markAsRead(notification.id);
+            console.log('📖 Marking as read:', notification.id);
+            // 🔥 FIX: Use await to ensure markAsRead completes before navigation
+            markAsRead(notification.id).then(() => {
+                console.log('✅ Mark as read completed for:', notification.id);
+            }).catch((error) => {
+                console.error('❌ Failed to mark as read:', error);
+            });
         }
-        
+
         if (notification.linkTo) {
-            onNavigate(notification.linkTo);
+            // Check if this is an assignment letter notification
+            if (notification.linkTo.view === 'assignment_letter' && onOpenAssignmentLetter) {
+                onOpenAssignmentLetter(notification);
+            } else {
+                onNavigate(notification.linkTo);
+            }
         }
     };
 

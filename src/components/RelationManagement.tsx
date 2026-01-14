@@ -3,6 +3,7 @@ import { type Employee } from '../types';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 import { SearchIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
+import { useNotificationStore } from '../store/notificationStore';
 
 interface RelationManagementProps {
     allUsers: Employee[];
@@ -51,6 +52,7 @@ const ToggleSwitch: React.FC<{
 
 
 const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile }) => {
+    const { createNotification } = useNotificationStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
@@ -141,7 +143,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
             const fieldNameMap = {
                 mentorId: 'Mentor',
                 supervisorId: 'Supervisor',
-                kaUnitId: 'Ka. Unit Kerja',
+                kaUnitId: 'Kepala Unit',
             };
 
             const oldRelationId = userToUpdate[field]!;
@@ -159,6 +161,26 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     try {
                         const result = await onUpdateProfile(userToUpdate.id, { [field]: undefined });
                         if (result) {
+                            // Create notification for removal
+                            console.log('🔔 Creating removal notification for user:', userToUpdate.id, userToUpdate.name);
+                            const notificationData = {
+                                userId: userToUpdate.id,
+                                type: 'account_role_changed' as const,
+                                title: `Pemberhentian ${fieldNameMap[field]}`,
+                                message: `Penugasan Anda di bawah ${fieldNameMap[field]} (${oldRelationName}) telah berakhir.`,
+                                linkTo: {
+                                    view: 'assignment_letter' as const,
+                                    params: {
+                                        roleName: fieldNameMap[field] as 'Mentor' | 'Supervisor' | 'Kepala Unit',
+                                        assignmentType: 'removal' as const,
+                                        previousAssigneeName: oldRelationName, // 🔥 FIX: Kirim nama, bukan ID
+                                    }
+                                }
+                            };
+                            console.log('📝 Notification data:', notificationData);
+                            await createNotification(notificationData);
+                            console.log('✅ Removal notification created successfully');
+
                             setConfirmation(null);
                         } else {
                             throw new Error('Update failed');
@@ -169,10 +191,56 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     }
                 },
             });
-        } else if (newId !== userToUpdate[field]) {
+        } else if (newId !== undefined) {
+            // 🔥 PERBAIKAN: Selalu buat notifikasi ketika ada relation assignment
+            // (tidak peduli nilai baru sama atau beda dengan yang lama)
             try {
+                const fieldNameMap = {
+                    mentorId: 'Mentor',
+                    supervisorId: 'Supervisor',
+                    kaUnitId: 'Kepala Unit',
+                };
+
+                const oldRelationId = userToUpdate[field];
+                const oldRelationName = oldRelationId ? userMap.get(oldRelationId) : null;
+                const newRelationName = userMap.get(newId!) || 'N/A';
+
                 const result = await onUpdateProfile(userToUpdate.id, { [field]: newId });
-                if (!result) {
+                if (result) {
+                    // Determine assignment type
+                    let assignmentType: 'assignment' | 'change' = 'assignment';
+                    if (oldRelationId) {
+                        assignmentType = 'change';
+                    }
+
+                    // Create notification - SELALU buat untuk setiap assignment/re-assignment
+                    console.log('🔔 Creating assignment notification for user:', userToUpdate.id, userToUpdate.name);
+                    console.log('📊 Assignment type:', assignmentType);
+                    console.log('👤 Previous:', oldRelationName, '→ New:', newRelationName);
+                    console.log('🔄 Creating notification (even if values are same)');
+                    const notificationData = {
+                        userId: userToUpdate.id,
+                        type: 'account_role_changed' as const,
+                        title: assignmentType === 'assignment'
+                            ? `Penugasan ${fieldNameMap[field]} Baru`
+                            : `Perubahan ${fieldNameMap[field]}`,
+                        message: assignmentType === 'assignment'
+                            ? `Anda telah ditugaskan ${fieldNameMap[field]} baru: ${newRelationName}`
+                            : `${fieldNameMap[field]} Anda telah diubah dari ${oldRelationName} menjadi ${newRelationName}`,
+                        linkTo: {
+                            view: 'assignment_letter' as const,
+                            params: {
+                                roleName: fieldNameMap[field] as 'Mentor' | 'Supervisor' | 'Kepala Unit',
+                                assignmentType: assignmentType,
+                                assigneeName: newRelationName, // 🔥 FIX: Kirim nama, bukan ID
+                                previousAssigneeName: oldRelationName || undefined, // 🔥 FIX: Kirim nama, bukan ID
+                            }
+                        }
+                    };
+                    console.log('📝 Notification data:', notificationData);
+                    await createNotification(notificationData);
+                    console.log('✅ Assignment notification created successfully');
+                } else {
                     throw new Error('Update failed');
                 }
             } catch (error) {
@@ -245,6 +313,40 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                             if (!result) {
                                                 throw new Error('Update failed');
                                             }
+
+                                            // 🔥 Create notification for role capability change
+                                            if (checked && !user.canBeMentor) {
+                                                // Designation - user baru bisa jadi Mentor
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Penugasan Sebagai Mentor',
+                                                    message: 'Selamat! Anda telah ditugaskan sebagai Mentor. Lihat surat penugasan Anda.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Mentor',
+                                                            assignmentType: 'designation',
+                                                        }
+                                                    }
+                                                });
+                                            } else if (!checked && user.canBeMentor) {
+                                                // Revocation - user tidak bisa lagi jadi Mentor
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Pencabutan Penugasan Mentor',
+                                                    message: 'Penugasan Anda sebagai Mentor telah berakhir. Lihat surat pemberitahuan.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Mentor',
+                                                            assignmentType: 'revocation',
+                                                        }
+                                                    }
+                                                });
+                                            }
+
                                             return result;
                                         }}
                                     />
@@ -257,6 +359,40 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                             if (!result) {
                                                 throw new Error('Update failed');
                                             }
+
+                                            // 🔥 Create notification for role capability change
+                                            if (checked && !user.canBeSupervisor) {
+                                                // Designation - user baru bisa jadi Supervisor
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Penugasan Sebagai Supervisor',
+                                                    message: 'Selamat! Anda telah ditugaskan sebagai Supervisor. Lihat surat penugasan Anda.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Supervisor',
+                                                            assignmentType: 'designation',
+                                                        }
+                                                    }
+                                                });
+                                            } else if (!checked && user.canBeSupervisor) {
+                                                // Revocation - user tidak bisa lagi jadi Supervisor
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Pencabutan Penugasan Supervisor',
+                                                    message: 'Penugasan Anda sebagai Supervisor telah berakhir. Lihat surat pemberitahuan.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Supervisor',
+                                                            assignmentType: 'revocation',
+                                                        }
+                                                    }
+                                                });
+                                            }
+
                                             return result;
                                         }}
                                     />
@@ -269,6 +405,40 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                             if (!result) {
                                                 throw new Error('Update failed');
                                             }
+
+                                            // 🔥 Create notification for role capability change
+                                            if (checked && !user.canBeKaUnit) {
+                                                // Designation - user baru bisa jadi Ka.Unit
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Penugasan Sebagai Kepala Unit',
+                                                    message: 'Selamat! Anda telah ditugaskan sebagai Kepala Unit. Lihat surat penugasan Anda.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Kepala Unit',
+                                                            assignmentType: 'designation',
+                                                        }
+                                                    }
+                                                });
+                                            } else if (!checked && user.canBeKaUnit) {
+                                                // Revocation - user tidak bisa lagi jadi Ka.Unit
+                                                await createNotification({
+                                                    userId: user.id,
+                                                    type: 'account_role_changed',
+                                                    title: 'Pencabutan Penugasan Kepala Unit',
+                                                    message: 'Penugasan Anda sebagai Kepala Unit telah berakhir. Lihat surat pemberitahuan.',
+                                                    linkTo: {
+                                                        view: 'assignment_letter',
+                                                        params: {
+                                                            roleName: 'Kepala Unit',
+                                                            assignmentType: 'revocation',
+                                                        }
+                                                    }
+                                                });
+                                            }
+
                                             return result;
                                         }}
                                     />

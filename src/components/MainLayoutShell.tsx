@@ -7,9 +7,13 @@ import Navigation from './Navigation';
 import Footer from './Footer';
 import ShareImageModal from './ShareImageModal';
 import NotificationPanel from './NotificationPanel';
+import AssignmentLetter from './AssignmentLetter';
 import { ErrorBoundary } from './ErrorBoundary';
+import ActivationRequired from './ActivationRequired';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
+import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
 import { useAnnouncementStore } from '@/store/announcementStore';
+import type { Employee } from '@/types';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 import {
     CalendarDaysIcon,
@@ -52,6 +56,54 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     // ⚡ OPTIMIZATION: Defer non-critical counts to prevent blocking initial render
     const [deferredUnreadAnnouncements, setDeferredUnreadAnnouncements] = useState(0);
     const [deferredUnreadNotifications, setDeferredUnreadNotifications] = useState(0);
+    const [isActivating, setIsActivating] = useState(false);
+
+    // 🔥 Assignment Letter Modal State
+    const [assignmentLetter, setAssignmentLetter] = useState<{
+        recipient: Employee;
+        roleName: 'Mentor' | 'Supervisor' | 'Kepala Unit';
+        assignmentType: 'assignment' | 'removal' | 'change' | 'designation' | 'revocation';
+        assigneeName?: string;
+        previousAssigneeName?: string;
+        notificationTimestamp: number;
+    } | null>(null);
+
+    // --- Handle Activation of Lembar Mutaba'ah ---
+    const { addToast } = useUIStore();
+
+    const handleActivation = useCallback(async (monthKey: string): Promise<boolean> => {
+        if (!loggedInEmployee?.id) {
+            addToast('Data user belum dimuat. Silakan coba lagi.', 'error');
+            return false;
+        }
+
+        setIsActivating(true);
+        try {
+            const success = await activateMonthService(loggedInEmployee.id, monthKey);
+
+            if (success) {
+                // Show success toast
+                addToast('Lembar Mutaba\'ah berhasil diaktifkan!', 'success');
+
+                // Reload employee data from Supabase to get latest state
+                await loadLoggedInEmployee();
+
+                // Reset activating state
+                setIsActivating(false);
+
+                return true;
+            } else {
+                addToast('Gagal mengaktifkan Lembar Mutaba\'ah. Silakan coba lagi.', 'error');
+                setIsActivating(false);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error activating month:', error);
+            addToast('Terjadi kesalahan saat mengaktifkan Lembar Mutaba\'ah.', 'error');
+            setIsActivating(false);
+            return false;
+        }
+    }, [loggedInEmployee, addToast, loadLoggedInEmployee]);
 
     // --- Auth Check (FAST PATH - runs before loading data) ---
     useEffect(() => {
@@ -99,6 +151,70 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             });
         }
     }, [isHydrated, loggedInEmployee, loadFromSupabase]);
+
+    // --- Load Notifications from Supabase & Subscribe to Realtime ---
+    useEffect(() => {
+        // Load notifications after user is logged in
+        if (isHydrated && loggedInEmployee) {
+            const { hydrate, subscribeToRealtime } = useNotificationStore.getState();
+
+            console.log('🔄 Loading notifications for user:', loggedInEmployee.id);
+
+            // Load notifications from Supabase - SELALU load setiap user login (bukan cuma sekali)
+            hydrate(loggedInEmployee.id).then(() => {
+                console.log('✅ Notifications loaded from Supabase');
+                // Force refresh component setelah hydrate selesai
+                setTimeout(() => {
+                    const { notifications } = useNotificationStore.getState();
+                    console.log('📊 Current notifications in store:', notifications.length, 'for user', loggedInEmployee.id);
+                }, 500);
+            }).catch(error => {
+                console.error('❌ Error loading notifications:', error);
+            });
+
+            // Subscribe to realtime notifications
+            subscribeToRealtime(loggedInEmployee.id);
+        }
+    }, [isHydrated, loggedInEmployee]);
+
+    // --- Handle Assignment Letter Modal from Custom Events ---
+    useEffect(() => {
+        const handleOpenAssignmentLetter = (event: CustomEvent) => {
+            console.log('📜 Open assignment letter event received:', event.detail);
+            const { link } = event.detail;
+            const params = link.params;
+
+            if (!loggedInEmployee || !params) {
+                console.error('❌ Missing employee or params for assignment letter');
+                return;
+            }
+
+            // Get assignee and previous assignee names from allUsers if needed
+            let assigneeName = params.assigneeName;
+            let previousAssigneeName = params.previousAssigneeName;
+
+            // If names not provided but IDs are, fetch from users data
+            // This will be handled by the server when notifications are created
+            // For now, use what's provided in params
+
+            setAssignmentLetter({
+                recipient: loggedInEmployee,
+                roleName: params.roleName,
+                assignmentType: params.assignmentType,
+                assigneeName: assigneeName || params.assigneeId,
+                previousAssigneeName: previousAssigneeName || params.previousAssigneeId,
+                notificationTimestamp: Date.now(),
+            });
+
+            console.log('✅ Assignment letter modal opened');
+        };
+
+        window.addEventListener('open-assignment-letter', handleOpenAssignmentLetter as EventListener);
+
+        return () => {
+            window.removeEventListener('open-assignment-letter', handleOpenAssignmentLetter as EventListener);
+        };
+    }, [loggedInEmployee]);
 
     // ⚡ OPTIMIZATION: Defer unread counts calculation using startTransition
     useEffect(() => {
@@ -161,6 +277,33 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         [pathname]
     );
 
+    // --- Check if current month is activated for Mutaba'ah ---
+    const activationStatus = useMemo(() => {
+        if (!loggedInEmployee) {
+            return {
+                isActivated: true,
+                shouldShowActivationRequired: false,
+                currentMonthName: '',
+                currentMonthKey: ''
+            }; // Default to true if no employee
+        }
+
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const activatedMonths = loggedInEmployee.activatedMonths || loggedInEmployee.activated_months || [];
+        const isActivated = activatedMonths.includes(currentMonthKey);
+
+        // Don't block on the aktivitas-bulanan page itself (user can still see the activation UI there)
+        const isOnAktivitasBulananPage = pathname?.startsWith('/aktivitas-bulanan');
+
+        return {
+            isActivated,
+            shouldShowActivationRequired: !isActivated && !isOnAktivitasBulananPage,
+            currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
+            currentMonthKey: currentMonthKey || ''
+        };
+    }, [loggedInEmployee, pathname]);
+
     // ⚡ OPTIMIZATION: Use useCallback to prevent unnecessary re-renders
     const handleLogout = useCallback(() => {
         logoutEmployee();
@@ -179,6 +322,14 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         if (link) {
             setIsNotificationPanelOpen(false);
 
+            // Special handling for assignment_letter - dispatch custom event
+            if (link.view === 'assignment_letter') {
+                window.dispatchEvent(new CustomEvent('open-assignment-letter', {
+                    detail: { link }
+                }));
+                return;
+            }
+
             // Build the URL based on the link structure
             const basePath = `/${link.view}`;
             const queryString = link.params
@@ -193,6 +344,31 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             router.push(fullPath);
         }
     }, [router, setIsNotificationPanelOpen]);
+
+    // --- Handle Assignment Letter from Notification Click ---
+    const handleOpenAssignmentLetter = useCallback((notification: Notification) => {
+        console.log('📜 Assignment letter notification clicked:', notification);
+        const params = notification.linkTo?.params;
+
+        if (!loggedInEmployee || !params) {
+            console.error('❌ Missing employee or params for assignment letter');
+            return;
+        }
+
+        setAssignmentLetter({
+            recipient: loggedInEmployee,
+            roleName: params.roleName,
+            assignmentType: params.assignmentType,
+            assigneeName: params.assigneeName || params.assigneeId,
+            previousAssigneeName: params.previousAssigneeName || params.previousAssigneeId,
+            notificationTimestamp: notification.timestamp,
+        });
+
+        // Close notification panel
+        setIsNotificationPanelOpen(false);
+
+        console.log('✅ Assignment letter modal opened from notification');
+    }, [loggedInEmployee, setIsNotificationPanelOpen]);
 
     const handleToggleMenu = useCallback(() => {
         setIsMenuOpen(!isMenuOpen);
@@ -228,9 +404,20 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                     unreadNotificationsCount={deferredUnreadNotifications}
                     onToggleNotifications={handleToggleNotifications}
                 />
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" id="main-content-area">
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4" id="main-content-area">
                     <ErrorBoundary>
-                        {children}
+                        {activationStatus.shouldShowActivationRequired ? (
+                            <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
+                                <ActivationRequired
+                                    monthName={activationStatus.currentMonthName}
+                                    monthKey={activationStatus.currentMonthKey}
+                                    onActivate={handleActivation}
+                                    isLoading={isActivating}
+                                />
+                            </div>
+                        ) : (
+                            children
+                        )}
                     </ErrorBoundary>
                 </main>
                 <Footer />
@@ -273,8 +460,22 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 isOpen={isNotificationPanelOpen}
                 onClose={handleCloseNotifications}
                 onNavigate={handleNotificationNavigate}
+                onOpenAssignmentLetter={handleOpenAssignmentLetter}
                 loggedInUserId={loggedInEmployee?.id || ''}
             />
+
+            {/* Assignment Letter Modal */}
+            {assignmentLetter && (
+                <AssignmentLetter
+                    recipient={assignmentLetter.recipient}
+                    roleName={assignmentLetter.roleName}
+                    assignmentType={assignmentLetter.assignmentType}
+                    assigneeName={assignmentLetter.assigneeName}
+                    previousAssigneeName={assignmentLetter.previousAssigneeName}
+                    notificationTimestamp={assignmentLetter.notificationTimestamp}
+                    onClose={() => setAssignmentLetter(null)}
+                />
+            )}
 
         </div>
     );

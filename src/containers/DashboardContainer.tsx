@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MyDashboard } from '@/components/MyDashboard';
+import AssignmentLetter from '@/components/AssignmentLetter';
 import {
     useAppDataStore,
     useUIStore,
@@ -46,6 +47,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
+
+    // Assignment Letter State
+    const [assignmentLetter, setAssignmentLetter] = useState<{
+        recipient: Employee;
+        roleName: 'Mentor' | 'Supervisor' | 'Kepala Unit';
+        assignmentType: 'assignment' | 'removal' | 'change' | 'designation' | 'revocation';
+        assigneeName?: string;
+        previousAssigneeName?: string;
+        notificationTimestamp: number;
+    } | null>(null);
 
     // --- Handlers from App.tsx ---
 
@@ -632,9 +643,56 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     }, [allUsersData, loggedInEmployee, setLoggedInEmployee]);
 
+    // 🔥 Event Listener for Assignment Letter from Notification Panel
+    useEffect(() => {
+        const handleOpenAssignmentLetter = (event: CustomEvent) => {
+            const { link } = event.detail;
+            if (!loggedInEmployee || !link.params) return;
+
+            const params = link.params;
+            const assignee = allUsersData[params.assigneeId]?.employee;
+            if (!assignee) return;
+
+            setAssignmentLetter({
+                recipient: loggedInEmployee,
+                roleName: params.roleName,
+                assignmentType: params.assignmentType,
+                assigneeName: assignee.name,
+                previousAssigneeName: params.previousAssigneeName,
+                notificationTimestamp: Date.now(),
+            });
+        };
+
+        // Add event listener
+        window.addEventListener('open-assignment-letter', handleOpenAssignmentLetter as EventListener);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('open-assignment-letter', handleOpenAssignmentLetter as EventListener);
+        };
+    }, [loggedInEmployee, allUsersData]);
+
+    // Handler untuk membuka assignment letter dari notifikasi
+    const handleOpenAssignmentLetter = useCallback((notification: any) => {
+        if (!loggedInEmployee || !notification.linkTo?.params) return;
+
+        const params = notification.linkTo.params;
+        const assignee = allUsersData[params.assigneeId]?.employee;
+        if (!assignee) return;
+
+        setAssignmentLetter({
+            recipient: loggedInEmployee,
+            roleName: params.roleName,
+            assignmentType: params.assignmentType,
+            assigneeName: assignee.name,
+            previousAssigneeName: params.previousAssigneeName,
+            notificationTimestamp: notification.timestamp,
+        });
+    }, [loggedInEmployee, allUsersData]);
+
     if (!loggedInEmployee) return null;
 
-    return (
+    const dashboard = (
         <MyDashboard
             employee={loggedInEmployee}
             dailyActivitiesConfig={dailyActivitiesConfig}
@@ -751,8 +809,29 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onAddActivity={(data) => addActivity({ ...data, id: Date.now().toString(), createdBy: loggedInEmployee.id, createdByName: loggedInEmployee.name })}
             onUpdateTeamAttendance={(id, presentUserIds) => updateTeamAttendanceSession(id, { presentUserIds })}
             onDeleteTeamAttendanceSession={deleteTeamAttendanceSession}
+            onOpenAssignmentLetter={handleOpenAssignmentLetter}
         />
     );
+
+    // Render AssignmentLetter if active
+    if (assignmentLetter) {
+        return (
+            <>
+                {dashboard}
+                <AssignmentLetter
+                    recipient={assignmentLetter.recipient}
+                    roleName={assignmentLetter.roleName}
+                    assignmentType={assignmentLetter.assignmentType}
+                    assigneeName={assignmentLetter.assigneeName}
+                    previousAssigneeName={assignmentLetter.previousAssigneeName}
+                    onClose={() => setAssignmentLetter(null)}
+                    notificationTimestamp={assignmentLetter.notificationTimestamp}
+                />
+            </>
+        );
+    }
+
+    return dashboard;
 }
 
 export default DashboardContainer;

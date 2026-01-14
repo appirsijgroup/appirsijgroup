@@ -705,57 +705,68 @@ const UserModal: React.FC<{
 
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20">
+            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 max-h-[90vh] flex flex-col">
                 <h3 className="text-lg font-bold mb-4 text-white">{existingUser ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru'}</h3>
-                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">NIP / NOPEG</label>
-                        <input type="text" value={id} onChange={e => setId(e.target.value)} disabled={!!existingUser} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white" />
-                        {existingUser && <p className="text-xs text-yellow-400 mt-1">NIP tidak dapat diubah.</p>}
+
+                {/* Two-column layout for desktop */}
+                <div className="flex-grow overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Left column - 4 fields */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">NIP / NOPEG</label>
+                                <input type="text" value={id} onChange={e => setId(e.target.value)} disabled={!!existingUser} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white" />
+                                {existingUser && <p className="text-xs text-yellow-400 mt-1">NIP tidak dapat diubah.</p>}
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Nama Lengkap</label>
+                                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Kategori Profesi</label>
+                                <select value={professionCategory} onChange={e => setProfessionCategory(e.target.value as 'MEDIS' | 'NON MEDIS')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                    <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
+                                    <option value="MEDIS" className="text-black bg-white">MEDIS</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Profesi</label>
+                                <input type="text" value={profession} onChange={e => setProfession(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                            </div>
+                        </div>
+
+                        {/* Right column - 4 fields */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Rumah Sakit</label>
+                                <select value={hospitalId || ''} onChange={e => setHospitalId(e.target.value || undefined)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                    <option value="" className="text-black bg-white">-- Tidak Ada --</option>
+                                    {hospitals.map(h => (
+                                        <option key={h.id} value={h.id} className="text-black bg-white">{h.brand} - {h.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Unit Kerja</label>
+                                <input type="text" value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Bagian</label>
+                                <input type="text" value={bagian} onChange={e => setBagian(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-1">Jenis Kelamin</label>
+                                <select value={gender} onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                    <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
+                                    <option value="Perempuan" className="text-black bg-white">Perempuan</option>
+                                </select>
+                            </div>
+                            {error && <p className="text-red-400 text-sm p-2 bg-red-500/20 border border-red-500 rounded-md">{error}</p>}
+                        </div>
                     </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Nama Lengkap</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Rumah Sakit (RS ID)</label>
-                        <select value={hospitalId || ''} onChange={e => setHospitalId(e.target.value || undefined)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                            <option value="" className="text-black bg-white">-- Tidak Ada --</option>
-                            {hospitals.map(h => (
-                                <option key={h.id} value={h.id} className="text-black bg-white">{h.brand} - {h.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Unit Kerja</label>
-                        <input type="text" value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Bagian</label>
-                        <input type="text" value={bagian} onChange={e => setBagian(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Kategori Profesi</label>
-                        <select value={professionCategory} onChange={e => setProfessionCategory(e.target.value as 'MEDIS' | 'NON MEDIS')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                            <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
-                            <option value="MEDIS" className="text-black bg-white">MEDIS</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Profesi</label>
-                        <input type="text" value={profession} onChange={e => setProfession(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-blue-200 block mb-1">Jenis Kelamin</label>
-                        <select value={gender} onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                            <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
-                            <option value="Perempuan" className="text-black bg-white">Perempuan</option>
-                        </select>
-                    </div>
-                    {!existingUser && <p className="text-xs text-blue-300">Password awal akan sama dengan NIP/NOPEG.</p>}
-                    {error && <p className="text-red-400 text-sm mt-2 p-2 bg-red-500/20 border border-red-500 rounded-md">{error}</p>}
                 </div>
-                <div className="mt-6 flex justify-end space-x-3">
+
+                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
                     <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan</button>
                 </div>

@@ -71,9 +71,10 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
     const [submissionConfirmation, setSubmissionConfirmation] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState<'prev' | 'next' | null>(null);
-    
+
     const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('weekly');
     const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+    const [isActivating, setIsActivating] = useState(false);
 
     const userMap = useMemo(() => new Map(allUsers.map(u => [u.id, u.name])), [allUsers]);
 
@@ -230,7 +231,23 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         setSubmissionConfirmation(false);
         setTimeout(() => setSuccessMessage(''), 5000);
     };
-    
+
+    const handleActivateClick = async () => {
+        if (isPastMonth) return;
+
+        setIsActivating(true);
+        try {
+            await onActivateMonth(employee.id, monthKey);
+            // Success - parent will update employee and trigger re-render
+            setSuccessMessage('Lembar Mutaba\'ah berhasil diaktifkan!');
+            setIsActivating(false);
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (error) {
+            console.error('Error activating month:', error);
+            setIsActivating(false);
+        }
+    };
+
     const isNextMonthFuture = () => {
         const nextMonth = new Date(date);
         nextMonth.setDate(1);
@@ -334,18 +351,27 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
             </div>
 
             {!isMonthActivated ? (
-                <div className="text-center py-16 bg-black/20 rounded-lg border border-white/10">
-                    <CalendarDaysIcon className="w-16 h-16 mx-auto text-teal-300 mb-4"/>
-                    <h3 className="text-xl font-semibold text-white">Lembar Mutaba&apos;ah bulan ini belum diaktifkan.</h3>
-                    <p className="text-blue-200 mt-2 mb-6">Aktifkan lembar ini untuk mulai mencatat progres dan melakukan presensi harian.</p>
+                <div className="flex flex-col items-center justify-center text-center bg-black/20 rounded-2xl p-8 sm:p-12 animate-view-change border-2 border-dashed border-teal-500/50 w-full max-w-7xl mx-auto">
+                    <CalendarDaysIcon className="w-20 h-20 text-teal-300 mb-6" />
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Aktivasi Lembar Mutaba'ah Diperlukan</h2>
+                    <p className="text-blue-200 text-base sm:text-lg mt-3 max-w-3xl">
+                        Untuk dapat melakukan presensi dan mencatat aktivitas lainnya, Anda harus mengaktifkan Lembar Mutaba'ah untuk bulan <strong>{date.toLocaleDateString('id-ID', { month: 'long' })}</strong> terlebih dahulu.
+                    </p>
                     <button
-                        onClick={() => onActivateMonth(employee.id, monthKey)}
-                        disabled={isPastMonth}
-                        className="bg-teal-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-teal-400 transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed"
+                        onClick={handleActivateClick}
+                        disabled={isPastMonth || isActivating}
+                        className="mt-8 bg-teal-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-teal-400 transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed text-base flex items-center gap-2"
                     >
-                        {isPastMonth ? "Bulan Telah Lewat" : "Aktifkan Lembar Mutaba'ah"}
+                        {isPastMonth || isActivating ? (
+                            <>
+                                {isActivating && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>}
+                                {isPastMonth ? "Bulan Telah Lewat" : "Memproses..."}
+                            </>
+                        ) : (
+                            "Aktifkan Lembar Mutaba'ah"
+                        )}
                     </button>
-                     {isPastMonth && <p className="text-xs text-yellow-300 mt-3">Anda tidak dapat mengaktifkan lembar untuk bulan yang telah berlalu.</p>}
+                    {isPastMonth && <p className="text-xs text-yellow-300 mt-4">Anda tidak dapat mengaktifkan lembar untuk bulan yang telah berlalu.</p>}
                 </div>
             ) : (
                 <>

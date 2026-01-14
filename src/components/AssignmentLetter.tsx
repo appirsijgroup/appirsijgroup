@@ -31,7 +31,14 @@ const getRoleSpecificText = (roleName: AssignmentLetterProps['roleName']) => {
 const AssignmentLetter: React.FC<AssignmentLetterProps> = ({ recipient, roleName, assignmentType, assigneeName, previousAssigneeName, onClose, notificationTimestamp }) => {
     const dateOfLetter = new Date(notificationTimestamp);
     const today = dateOfLetter.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const salutation = recipient.gender === 'Laki-laki' ? 'Bapak' : 'Ibu';
+
+    // 🔥 FIX: Handle gender with case-insensitive comparison and fallback
+    const normalizedGender = recipient.gender?.toLowerCase().trim();
+    const salutation = normalizedGender === 'laki-laki' || normalizedGender === 'lk' || normalizedGender === 'pria' || normalizedGender === 'male'
+        ? 'Bapak'
+        : normalizedGender === 'perempuan' || normalizedGender === 'pr' || normalizedGender === 'wanita' || normalizedGender === 'female'
+        ? 'Ibu'
+        : 'Bapak/Ibu'; // Fallback if gender is unclear
 
     const roleText = getRoleSpecificText(roleName);
     let subject = "";

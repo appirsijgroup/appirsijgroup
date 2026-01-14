@@ -45,7 +45,7 @@ export const getUserWeeklyReports = async (userId: string): Promise<WeeklyReport
 
     if (error) throw error;
 
-    return data.map(item => mapDbToApp(item));
+    return (data as unknown as WeeklyReportSubmissionDB[]).map(item => mapDbToApp(item));
   } catch (error) {
     console.error('Error fetching weekly reports:', error);
     return [];
@@ -77,7 +77,7 @@ export const getWeeklyReport = async (
       throw error;
     }
 
-    return mapDbToApp(data);
+    return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
   } catch (error) {
     console.error('Error fetching weekly report:', error);
     return null;
@@ -115,7 +115,7 @@ export const submitWeeklyReport = async (
       throw error;
     }
 
-    return mapDbToApp(data);
+    return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
   } catch (error) {
     console.error('Error submitting weekly report:', error);
     return null;
@@ -214,7 +214,7 @@ export const getMonthlySubmissions = async (
 
     if (error) throw error;
 
-    return data.map(item => mapDbToApp(item));
+    return (data as unknown as WeeklyReportSubmissionDB[]).map(item => mapDbToApp(item));
   } catch (error) {
     console.error('Error fetching monthly submissions:', error);
     return [];

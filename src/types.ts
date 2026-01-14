@@ -436,6 +436,8 @@ export interface MyDashboardViewProps {
   onActivateMonth?: (userId: string, monthKey: string) => void;
   onUpdateMonthlyActivities?: (userId: string, monthKey: string, monthProgress: any) => void;
   onSubmitReport?: (monthKey: string, weekIndex: number) => void;
+  // Assignment Letter
+  onOpenAssignmentLetter?: (notification: any) => void;
 }
 
 

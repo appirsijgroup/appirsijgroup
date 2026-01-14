@@ -14,7 +14,7 @@ export const getAllAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };
 
 // Get announcement by ID
@@ -29,7 +29,7 @@ export const getAnnouncementById = async (id: string): Promise<Announcement | nu
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    return data;
+    return data as unknown as Announcement | null;
 };
 
 // Get global/alliansi announcements
@@ -41,7 +41,7 @@ export const getGlobalAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };
 
 // Get mentor announcements
@@ -53,7 +53,7 @@ export const getMentorAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };
 
 // Get announcements by author
@@ -65,7 +65,7 @@ export const getAnnouncementsByAuthor = async (authorId: string): Promise<Announ
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };
 
 // Create new announcement
@@ -170,7 +170,7 @@ export const getRecentAnnouncements = async (limit: number = 10): Promise<Announ
         .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };
 
 // Get announcements after a certain timestamp (for polling)
@@ -182,5 +182,5 @@ export const getAnnouncementsAfter = async (timestamp: number): Promise<Announce
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as Announcement[]) || [];
 };

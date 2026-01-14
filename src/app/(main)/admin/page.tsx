@@ -518,6 +518,8 @@ export default function AdminPage() {
     const handleUpdateProfile = async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>> | { functionalRoles: FunctionalRole[] }) => {
         try {
             console.log("🔄 Updating profile for user");
+            console.log("📦 UPDATES OBJECT:", JSON.stringify(updates, null, 2));
+            console.log("📋 UPDATES KEYS:", Object.keys(updates));
 
             // Get old user data before updating
             const oldUserData = allUsersData[userId];
@@ -568,35 +570,76 @@ export default function AdminPage() {
             }
 
             // 🔥 FIX: Create notification for relation changes (mentor, supervisor, kaUnit, dirut)
-            const relationFields: Array<keyof Employee> = ['mentorId', 'supervisorId', 'kaUnitId', 'dirutId'];
+            // Support both camelCase (mentorId) and snake_case (mentor_id)
+            const relationFields: Array<{camel: keyof Employee, snake: string}> = [
+                { camel: 'mentorId', snake: 'mentor_id' },
+                { camel: 'supervisorId', snake: 'supervisor_id' },
+                { camel: 'kaUnitId', snake: 'ka_unit_id' }
+            ];
             const relationLabels: Record<string, string> = {
                 mentorId: 'Mentor',
                 supervisorId: 'Supervisor',
-                kaUnitId: 'Ka. Unit Kerja',
-                dirutId: 'Dirut'
+                kaUnitId: 'Kepala Unit'
             };
 
-            for (const field of relationFields) {
-                if (field in updates) {
-                    const newValue = (updates as any)[field] as string | undefined;
-                    const oldValue = (oldUserData?.employee as any)[field] as string | undefined;
+            console.log('🔍 Checking relation fields for notification...');
+            for (const { camel, snake } of relationFields) {
+                // Check both camelCase and snake_case
+                const newValue = (updates as any)[camel] ?? (updates as any)[snake];
+                const oldValue = (oldUserData?.employee as any)[camel];
 
-                    if (newValue !== oldValue) {
-                        const message = newValue
-                            ? `${relationLabels[field]} Anda telah diubah menjadi ${userMap.get(newValue as string) || newValue}.`
-                            : `${relationLabels[field]} Anda telah dihapus.`;
+                console.log(`  📌 Field ${camel}/${snake}:`, {
+                    newValue,
+                    oldValue,
+                    camelValue: (updates as any)[camel],
+                    snakeValue: (updates as any)[snake],
+                    hasNewValue: newValue !== undefined
+                });
 
-                        createNotification({
-                            userId: userId,
-                            type: 'account_role_changed',
-                            title: 'Hubungan Kerja Anda Telah Diperbarui',
-                            message: message,
-                            linkTo: {
-                                view: 'profile',
-                            },
-                            dismissOnClick: false,
-                        });
+                // 🔥 PERBAIKAN: Buat notifikasi jika field ada di updates (BAHKAUN nilai sama atau beda)
+                if (newValue !== undefined) {
+                    console.log('🔔 Creating assignment notification for user:', userId, 'from Admin Dashboard');
+                    console.log('📊 Field:', camel, 'Old:', oldValue, 'New:', newValue);
+
+                    // Determine assignment type
+                    let assignmentType: 'assignment' | 'change' | 'removal' = 'assignment';
+                    if (oldValue && !newValue) {
+                        assignmentType = 'removal';
+                    } else if (oldValue && newValue) {
+                        assignmentType = 'change';
                     }
+
+                    const newRelationName = newValue ? userMap.get(newValue) || newValue : null;
+                    const oldRelationName = oldValue ? userMap.get(oldValue) || oldValue : null;
+
+                    const notificationData = {
+                        userId: userId,
+                        type: 'account_role_changed' as const,
+                        title: assignmentType === 'removal'
+                            ? `Pemberhentian ${relationLabels[camel]}`
+                            : assignmentType === 'assignment'
+                                ? `Penugasan ${relationLabels[camel]} Baru`
+                                : `Perubahan ${relationLabels[camel]}`,
+                        message: assignmentType === 'removal'
+                            ? `Penugasan Anda di bawah ${relationLabels[camel]} (${oldRelationName}) telah berakhir.`
+                            : assignmentType === 'assignment'
+                                ? `Anda telah ditugaskan ${relationLabels[camel]} baru: ${newRelationName}`
+                                : `${relationLabels[camel]} Anda telah diubah dari ${oldRelationName} menjadi ${newRelationName}`,
+                        linkTo: {
+                            view: 'assignment_letter' as const,
+                            params: {
+                                roleName: relationLabels[camel] as 'Mentor' | 'Supervisor' | 'Kepala Unit',
+                                assignmentType: assignmentType,
+                                assigneeId: newValue || oldValue,
+                                previousAssigneeId: oldValue,
+                                previousAssigneeName: oldRelationName || undefined,
+                            }
+                        }
+                    };
+
+                    console.log('📝 Notification data:', notificationData);
+                    await createNotification(notificationData);
+                    console.log('✅ Assignment notification created successfully');
                 }
             }
 

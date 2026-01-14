@@ -2,10 +2,10 @@
 > appi-rsi-group@0.1.0 dev
 > next dev
 
-⚠ Port 3000 is in use by process 11276, using available port 3002 instead.
+⚠ Port 3000 is in use by process 26256, using available port 3001 instead.
 ▲ Next.js 16.1.1 (Turbopack)
-- Local:         http://localhost:3002
-- Network:       http://10.206.18.2:3002
+- Local:         http://localhost:3001
+- Network:       http://10.155.161.2:3001
 - Environments: .env.local
 
 ✓ Starting...

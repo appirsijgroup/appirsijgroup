@@ -68,7 +68,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                 return;
             }
 
-            const employee: Employee = employeeData;
+            // 🔥 FIX: Type guard to ensure employeeData is valid Employee
+            if ('error' in employeeData || !('id' in employeeData)) {
+                console.error('❌ Invalid employee data:', employeeData);
+                setError('Data karyawan tidak valid. Hubungi admin.');
+                return;
+            }
+
+            const employee = employeeData as Employee;
             const dbIsActive = (employee as any).is_active;
             const isActive = dbIsActive !== false && employee.isActive !== false;
 

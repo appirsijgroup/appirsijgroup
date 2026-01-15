@@ -224,32 +224,14 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
 
     // Excel export
     const handleDownloadXlsx = () => {
-        const header = [
-            'No',
-            'Bulan',
-            'NIP',
-            'Nama Karyawan',
-            'Unit',
-            'Kategori Profesi',
-            'Profesi',
-            'Mentor',
-            'Supervisor',
-            'KA Unit',
-            'SIDIQ - Capaian',
-            'SIDIQ - Target',
-            'SIDIQ - %',
-            'TABLIGH - Capaian',
-            'TABLIGH - Target',
-            'TABLIGH - %',
-            'AMANAH - Capaian',
-            'AMANAH - Target',
-            'AMANAH - %',
-            'FATONAH - Capaian',
-            'FATONAH - Target',
-            'FATONAH - %',
-            'Total Capaian',
-            'Total Target',
-            'Total %',
+        // Multi-row header untuk Excel (mirip dengan tabel HTML)
+        const headerRow1 = [
+            'No', 'Bulan', 'NIP', 'Nama', 'Unit', 'Profesi', 'Mentor',
+            'SIDIQ', '', '', 'TABLIGH', '', '', 'AMANAH', '', '', 'FATONAH', '', '', 'TOTAL', '', ''
+        ];
+        const headerRow2 = [
+            '', '', '', '', '', '', '',
+            'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%'
         ];
 
         const data = filteredData.map((record, index) => [
@@ -258,29 +240,41 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
             record.employeeId,
             record.employeeName,
             record.unit,
-            record.professionCategory,
             record.profession,
             record.mentorName || '-',
-            record.supervisorName || '-',
-            record.kaUnitName || '-',
+            // SIDIQ
             record.sidiqCount,
             record.sidiqTarget,
             `${record.sidiqPercentage}%`,
+            // TABLIGH
             record.tablighCount,
             record.tablighTarget,
             `${record.tablighPercentage}%`,
+            // AMANAH
             record.amanahCount,
             record.amanahTarget,
             `${record.amanahPercentage}%`,
+            // FATONAH
             record.fatonahCount,
             record.fatonahTarget,
             `${record.fatonahPercentage}%`,
+            // TOTAL
             record.totalCount,
             record.totalTarget,
             `${record.totalPercentage}%`,
         ]);
 
-        const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+        // Merge cells untuk header utama
+        const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
+
+        // Merge cells untuk SIDIQ (column H-J)
+        if (!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push({ s: { r: 0, c: 7 }, e: { r: 0, c: 9 } }); // SIDIQ
+        ws['!merges'].push({ s: { r: 0, c: 10 }, e: { r: 0, c: 12 } }); // TABLIGH
+        ws['!merges'].push({ s: { r: 0, c: 13 }, e: { r: 0, c: 15 } }); // AMANAH
+        ws['!merges'].push({ s: { r: 0, c: 16 }, e: { r: 0, c: 18 } }); // FATONAH
+        ws['!merges'].push({ s: { r: 0, c: 19 }, e: { r: 0, c: 21 } }); // TOTAL
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Laporan Mutabaah');
 
@@ -549,7 +543,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                         ))}
                         {filteredData.length === 0 && (
                             <tr>
-                                <td colSpan={12} className="text-center p-8 text-blue-200">
+                                <td colSpan={22} className="text-center p-8 text-blue-200">
                                     Tidak ada data yang cocok dengan filter yang dipilih.
                                 </td>
                             </tr>

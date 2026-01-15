@@ -521,7 +521,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     );
 
     return (
-         <div className="space-y-8">
+         <div className="space-y-8 -mx-2 sm:mx-0 px-2 sm:px-0">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
@@ -530,10 +530,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     </h3>
                 </div>
                 <button onClick={() => setIsCreateModalOpen(true)} className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
-                    <PlusCircleIcon className="w-5 h-5" /> Buat Sesi Baru
+                    <PlusCircleIcon className="w-5 h-5" /> <span className="hidden sm:inline">Buat Sesi Baru</span><span className="sm:hidden">Buat Sesi</span>
                 </button>
             </div>
-            
+
             <div className="space-y-4">
                 <h3 className="text-lg font-bold text-white border-l-4 border-teal-400 pl-3">Sesi Hari Ini</h3>
                 {sessionsForToday.length > 0 ? (

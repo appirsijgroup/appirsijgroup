@@ -302,9 +302,9 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                 <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
             </div>
 
-            <div key={activeSubTab} className="animate-view-change">
+            <div key={activeSubTab} className="animate-view-change -mx-2 sm:mx-0">
                 {activeSubTab === 'reports' && (
-                     <div className="space-y-6">
+                     <div className="space-y-6 px-2 sm:px-0">
                         <div className="flex flex-col sm:flex-row gap-4">
                             <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full sm:w-auto bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                                 <option value="all" className="text-black bg-white">Semua Tahun</option>
@@ -391,19 +391,20 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                 )}
                 
                 {activeSubTab === 'sessions' && (
-                    <div className="space-y-8">
+                    <div className="space-y-8 px-2 sm:px-0">
                          {openBbqSessions.length > 0 && (
-                            <div className="bg-teal-900/50 border border-teal-500/50 p-4 rounded-lg space-y-3">
+                            <div className="bg-teal-900/50 border border-teal-500/50 p-2 sm:p-4 rounded-lg space-y-3">
                                 <h3 className="text-xl font-semibold text-white">Sesi Terbuka Hari Ini</h3>
                                 {openBbqSessions.map(session => (
-                                    <div key={session.id} className="bg-black/20 p-3 rounded-md flex justify-between items-center">
+                                    <div key={session.id} className="bg-black/20 p-2 sm:p-3 rounded-md flex justify-between items-center">
                                         <div>
                                             <p className="font-semibold text-white">{session.title}</p>
                                             <p className="text-sm text-blue-200">Hari ini, {new Date(session.date + 'T12:00:00Z').toLocaleDateString('id-ID', {day: '2-digit', month: 'long'})}</p>
                                         </div>
-                                        <button onClick={() => onMenteeAttendSession(session.id)} className="px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                                            <CheckIcon className="w-5 h-5"/>
-                                            Konfirmasi Hadir
+                                        <button onClick={() => onMenteeAttendSession(session.id)} className="px-3 sm:px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
+                                            <CheckIcon className="w-4 h-4 sm:w-5 sm:h-5"/>
+                                            <span className="hidden sm:inline">Konfirmasi Hadir</span>
+                                            <span className="sm:hidden">Hadir</span>
                                         </button>
                                     </div>
                                 ))}
@@ -412,14 +413,14 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                         <div>
                              <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold text-white">Riwayat Pengajuan Kehadiran</h3>
-                                <button onClick={() => setIsRequestModalOpen(true)} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                                    <CalendarDaysIcon className="w-5 h-5" /> Ajukan Manual
+                                <button onClick={() => setIsRequestModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
+                                    <CalendarDaysIcon className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Ajukan Manual</span><span className="sm:hidden">Ajukan</span>
                                 </button>
                              </div>
                              {sortedTadarusRequests.length > 0 ? (
                                 <div className="space-y-3">
                                      {sortedTadarusRequests.map(req => (
-                                        <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-white/10 flex justify-between items-center">
+                                        <div key={req.id} className="bg-black/20 p-2 sm:p-4 rounded-lg border border-white/10 flex justify-between items-center">
                                             <div>
                                                 <p className="font-semibold text-white">Pengajuan untuk {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year:'numeric'})}</p>
                                                 <p className="text-xs text-gray-400">Diajukan pada {new Date(req.requestedAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year:'numeric'})}</p>
@@ -438,15 +439,15 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                 )}
                 
                 {activeSubTab === 'missed-requests' && (
-                     <div>
+                     <div className="px-2 sm:px-0">
                          <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-white">Pengajuan Presensi Terlewat</h3>
-                            <button onClick={() => setIsMissedPrayerModalOpen(true)} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                                <ClockIcon className="w-5 h-5" /> Buat Pengajuan
+                            <button onClick={() => setIsMissedPrayerModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
+                                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Buat Pengajuan</span><span className="sm:hidden">Buat</span>
                             </button>
                          </div>
                         {sortedMissedPrayerRequests.length > 0 ? (
-                            <div className="overflow-x-auto rounded-lg border border-white/20">
+                            <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
                                 <table className="min-w-full text-sm text-left text-white">
                                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                                         <tr>

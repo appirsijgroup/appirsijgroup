@@ -1891,7 +1891,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </div>
                 )}
                 <div className="lg:col-span-1 flex items-end justify-end gap-2">
-                    <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download PDF"><PdfIcon className="w-5 h-5" /></button>
+                    <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
                     <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><ExcelIcon className="w-5 h-5" /></button>
                 </div>
             </div>

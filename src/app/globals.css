@@ -98,3 +98,47 @@ body {
   color: #134e4a !important; /* teal-900 */
   opacity: 0.6;
 }
+
+/* --- Horizontal Scrollable Table for Mobile --- */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    /* Force horizontal scrolling on mobile */
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+
+    /* Show scrollbar on mobile for better UX */
+    scrollbar-width: auto;
+  }
+
+  /* Ensure all table elements have normal positioning on mobile */
+  .overflow-x-auto th,
+  .overflow-x-auto td {
+    /* Remove any inline sticky positioning on mobile */
+    position: static !important;
+    left: auto !important;
+  }
+
+  /* Custom scrollbar for better visibility on mobile */
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(94, 234, 212, 0.6);
+    border-radius: 4px;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: rgba(94, 234, 212, 0.8);
+  }
+}

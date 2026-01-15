@@ -423,8 +423,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 <table className="min-w-full text-sm text-left text-white border-collapse">
                                     <thead>
                                         <tr>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900 whitespace-nowrap">Progres</th>
+                                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sm:sticky sm:left-0 sm:z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
+                                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sm:sticky sm:left-[250px] sm:z-20 bg-gray-900 whitespace-nowrap">Progres</th>
                                             {selectedWeekDays.map(day => (
                                                 <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-20 min-w-[80px] whitespace-nowrap ${isCurrentMonthView && day === todayDay ? 'bg-teal-700' : 'bg-gray-800'}`}>
                                                     {new Date(date.getFullYear(), date.getMonth(), day).toLocaleDateString('id-ID', { weekday: 'short' })} <br/> {day}
@@ -435,13 +435,13 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <tbody>
                                         {Object.entries(groupedActivities).map(([category, activities]) => (
                                             <Fragment key={category}>
-                                                <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sticky left-0 z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={selectedWeekDays.length + 2}>{category}</td></tr>
+                                                <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sm:sticky sm:left-0 sm:z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={selectedWeekDays.length + 2}>{category}</td></tr>
                                                 {activities.map(activity => {
                                                     const isAutomated = activity.automationTrigger && ['PRAYER_WAJIB', 'ACTIVITY_TYPE', 'TADARUS_SESSION', 'BOOK_READING_REPORT', 'TEAM_ATTENDANCE'].includes(activity.automationTrigger.type);
                                                     return (
                                                         <tr key={activity.id} className="group border-b border-gray-700">
-                                                            <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 group-hover:bg-gray-700 z-10 whitespace-nowrap">{activity.title}</td>
-                                                            <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 group-hover:bg-gray-700 z-10 whitespace-nowrap">
+                                                            <td className="px-3 py-3 font-medium text-left sm:sticky sm:left-0 bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activity.title}</td>
+                                                            <td className="px-3 py-3 font-semibold text-center sm:sticky sm:left-[250px] bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">
                                                                 {(() => {
                                                                     const isDailyTask = activity.monthlyTarget > 7;
                                                                     if (isDailyTask) {
@@ -553,8 +553,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 <table className="min-w-full text-sm text-left text-white border-collapse">
                                     <thead>
                                         <tr>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sticky left-[250px] z-20 bg-gray-900 whitespace-nowrap">Progres</th>
+                                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sm:sticky sm:left-0 sm:z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
+                                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sm:sticky sm:left-[250px] sm:z-20 bg-gray-900 whitespace-nowrap">Progres</th>
                                             {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
                                                 <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] whitespace-nowrap ${isCurrentMonthView && day === todayDay ? 'bg-teal-700' : 'bg-gray-800'}`}>{day}</th>
                                             ))}
@@ -563,11 +563,11 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <tbody>
                                         {Object.entries(groupedActivities).map(([category, activities]) => (
                                             <Fragment key={category}>
-                                                <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sticky left-0 z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={daysInMonth + 2}>{category}</td></tr>
+                                                <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sm:sticky sm:left-0 sm:z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={daysInMonth + 2}>{category}</td></tr>
                                                 {activities.map(activity => (
                                                     <tr key={activity.id} className="group border-b border-gray-700">
-                                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 group-hover:bg-gray-700 z-10 whitespace-nowrap">{activity.title}</td>
-                                                        <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 group-hover:bg-gray-700 z-10 whitespace-nowrap">{activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}</td>
+                                                        <td className="px-3 py-3 font-medium text-left sm:sticky sm:left-0 bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activity.title}</td>
+                                                        <td className="px-3 py-3 font-semibold text-center sm:sticky sm:left-[250px] bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}</td>
                                                         {Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0')).map(dayKey => (
                                                             <td key={dayKey} className={`text-center border-l border-gray-700 group-hover:bg-white/5 ${isCurrentMonthView && parseInt(dayKey) === todayDay ? 'bg-teal-900/40' : ''}`}>
                                                                 <div className="w-full h-full flex items-center justify-center py-3">{progress[dayKey]?.[activity.id] ? <CheckSquareIcon className="w-6 h-6 text-teal-400" /> : <SquareIcon className="w-6 h-6 text-gray-600" />}</div>

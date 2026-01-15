@@ -455,9 +455,13 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                 </div>
-                <div className="lg:col-span-4 flex justify-end">
-                    <button onClick={() => {}} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download PDF (Segera)"><PdfIcon className="w-5 h-5" /></button>
-                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><ExcelIcon className="w-5 h-5" /></button>
+                <div className="lg:col-span-4 flex justify-end gap-2">
+                    <button onClick={() => {}} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
+                        <PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" />
+                    </button>
+                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download Excel">
+                        <ExcelIcon className="w-6 h-6 text-green-500 disabled:text-gray-400" />
+                    </button>
                 </div>
             </div>
 
@@ -467,9 +471,9 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                 <span>← Geser untuk melihat kolom →</span>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
+            <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-white/20 -mx-2 sm:mx-0 touch-pan-x">
                 <table className="min-w-[1500px] w-full text-sm text-left text-white">
-                    <thead className="bg-white/10 text-xs uppercase text-blue-200 sticky top-0">
+                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         {/* Main Header Row - Level 1 */}
                         <tr>
                             <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[50px]">No</th>

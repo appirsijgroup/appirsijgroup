@@ -2755,10 +2755,12 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
     return (
         <div>
             <div className="mb-6">
-                <nav className="flex items-center gap-2 -mb-px flex-wrap border-b border-white/20">
-                    <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
-                    <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
-                    <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
+                <nav className="overflow-x-auto overflow-y-hidden touch-pan-x border-b border-white/20">
+                    <div className="flex items-center gap-2 -mb-px min-w-max">
+                        <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
+                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
+                        <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
+                    </div>
                 </nav>
             </div>
 
@@ -3613,16 +3615,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     return (
         <div>
             <div className="mb-6">
-                <nav className="flex items-center gap-2 -mb-px flex-wrap border-b border-white/20">
-                    {isSuperAdmin(loggedInEmployee) && (
-                        <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
-                    )}
-                    <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
-                    <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
-                    <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
-                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
-                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
-                    {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
+                <nav className="overflow-x-auto overflow-y-hidden touch-pan-x border-b border-white/20">
+                    <div className="flex items-center gap-2 -mb-px min-w-max">
+                        {isSuperAdmin(loggedInEmployee) && (
+                            <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
+                        )}
+                        <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
+                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
+                        <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
+                    </div>
                 </nav>
             </div>
 

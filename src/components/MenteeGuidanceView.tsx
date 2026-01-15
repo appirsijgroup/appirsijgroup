@@ -134,13 +134,13 @@ const SubTabButton: React.FC<{
 }> = ({ active, onClick, label, icon: Icon }) => (
      <button
         onClick={onClick}
-        className={`flex items-center justify-center gap-2 py-2 px-4 rounded-full font-semibold transition-all duration-300 ease-in-out text-sm
+        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm
           ${active
-            ? 'bg-teal-500 text-white shadow-md'
-            : 'bg-white/10 text-blue-200 hover:bg-white/20'
+            ? 'bg-teal-500 text-white'
+            : 'text-blue-200 hover:text-white hover:bg-white/10'
           }`}
     >
-        <Icon className="w-5 h-5 hidden sm:block" />
+        <Icon className="w-4 h-4" />
         {label}
     </button>
 );
@@ -296,7 +296,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
 
     return (
         <div className="space-y-6">
-            <div className="bg-black/20 p-2 rounded-full flex justify-around items-center border border-white/20 mb-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 border-b border-white/10 pb-3">
                 <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
                 <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
                 <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />

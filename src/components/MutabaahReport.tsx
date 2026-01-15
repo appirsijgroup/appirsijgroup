@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { type Employee, type MonthlyActivityProgress, type DailyActivity } from '../types';
+import { type Employee, type MonthlyActivityProgress, type DailyActivity, type Hospital } from '../types';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import * as XLSX from 'xlsx';
 import { PdfIcon, ExcelIcon, SearchIcon } from './Icons';
 
 interface MutabaahReportProps {
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
+    hospitals: Hospital[];
 }
 
 interface MutabaahReportRecord {
@@ -14,6 +15,8 @@ interface MutabaahReportRecord {
     unit: string;
     profession: string;
     professionCategory: 'MEDIS' | 'NON MEDIS';
+    hospitalId?: string;
+    hospitalName?: string;
     mentorId?: string;
     mentorName?: string;
     supervisorId?: string;
@@ -60,8 +63,9 @@ const SelectFilter: React.FC<{
     </select>
 );
 
-const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
+const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals }) => {
     const [yearFilter, setYearFilter] = useState<string>('');
+    const [hospitalFilter, setHospitalFilter] = useState<string>('all');
     const [unitFilter, setUnitFilter] = useState<string>('all');
     const [professionFilter, setProfessionFilter] = useState<string>('all');
     const [nameOrNipFilter, setNameOrNipFilter] = useState<string>('');
@@ -73,6 +77,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
         const years = new Set<number>();
 
         Object.values(allUsersData).forEach(({ employee }) => {
+
             units.add(employee.unit);
             professions.add(employee.profession);
 
@@ -100,7 +105,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
         }
     }, [allYearsWithData, yearFilter]);
 
-    // Aggregate mutaba'ah data
+    // Aggregate mutaba'ah data per YEAR (akumulasi semua bulan dalam tahun)
     const mutabaahData: MutabaahReportRecord[] = useMemo(() => {
         const records: MutabaahReportRecord[] = [];
         const userMap = new Map(Object.values(allUsersData).map((d) => [d.employee.id, d.employee]));
@@ -111,48 +116,65 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
         const amanahActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'AMANAH (Disiplin)');
         const fatonahActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'FATONAH (Belajar)');
 
-        const getTargetTotal = (activities: DailyActivity[]) =>
-            activities.reduce((sum, a) => sum + a.monthlyTarget, 0);
+        // Calculate MONTHLY target dari DAILY_ACTIVITIES
+        const monthlySidiqTarget = sidiqActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 6
+        const monthlyTablighTarget = tablighActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 41
+        const monthlyAmanahTarget = amanahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 41
+        const monthlyFatonahTarget = fatonahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 25
 
-        const sidiqTarget = getTargetTotal(sidiqActivities);
-        const tablighTarget = getTargetTotal(tablighActivities);
-        const amanahTarget = getTargetTotal(amanahActivities);
-        const fatonahTarget = getTargetTotal(fatonahActivities);
+        // Accumulator untuk mengumpulkan data per employee per year
+        type YearlyAccumulator = {
+            hospitalId?: string;
+            hospitalName?: string;
+            employeeId: string;
+            employeeName: string;
+            unit: string;
+            profession: string;
+            professionCategory: 'MEDIS' | 'NON MEDIS';
+            mentorId?: string;
+            mentorName?: string;
+            supervisorId?: string;
+            supervisorName?: string;
+            kaUnitId?: string;
+            kaUnitName?: string;
+            year: string;
+            sidiqCount: number;
+            tablighCount: number;
+            amanahCount: number;
+            fatonahCount: number;
+            monthsCount: number;
+        };
 
+        // Accumulator untuk mengumpulkan data per employee per year
+        const yearlyAccumulator = new Map<string, YearlyAccumulator>();
+
+        // DEBUG: Log untuk cek hospitalId
+        console.log('🔍 DEBUG - Filter RS:', hospitalFilter);
+        console.log('🔍 DEBUG - Total Hospitals:', hospitals.length);
+        console.table(hospitals.map(h => ({ id: h.id, brand: h.brand, name: h.name })));
+        console.log('🔍 DEBUG - Hospitals JSON:', JSON.stringify(hospitals.map(h => ({ id: h.id, brand: h.brand }))));
+
+        // Loop 1: Initialize SEMUA employees (tanpa filter RS di sini)
         Object.values(allUsersData).forEach(({ employee }) => {
-            if (!employee.monthlyActivities) return;
+            const key = `${employee.id}-${yearFilter}`;
 
-            Object.entries(employee.monthlyActivities).forEach(([monthKey, monthProgress]) => {
-                // Filter: Only show data for selected year
-                const year = monthKey.split('-')[0];
-                if (yearFilter && year !== yearFilter) return;
-
-                // Calculate progress for each category
-                const allDaysProgress = Object.values(monthProgress);
-
-                const countProgress = (activityIds: string[]) => {
-                    return allDaysProgress.reduce((total, dayProgress) => {
-                        return (
-                            total +
-                            activityIds.filter((id) => dayProgress[id]).length
-                        );
-                    }, 0);
-                };
-
-                const sidiqCount = countProgress(sidiqActivities.map((a) => a.id));
-                const tablighCount = countProgress(tablighActivities.map((a) => a.id));
-                const amanahCount = countProgress(amanahActivities.map((a) => a.id));
-                const fatonahCount = countProgress(fatonahActivities.map((a) => a.id));
-
-                const totalCount = sidiqCount + tablighCount + amanahCount + fatonahCount;
-                const totalTarget = sidiqTarget + tablighTarget + amanahTarget + fatonahTarget;
-
-                // Get hierarchy info
+            if (!yearlyAccumulator.has(key)) {
                 const mentor = employee.mentorId ? userMap.get(employee.mentorId) : undefined;
+                // Match hospital by both id and brand (employee.hospitalId might be brand code like "RSIJSP")
+                const hospital = employee.hospitalId
+                    ? hospitals.find(h => h.id === employee.hospitalId || h.brand === employee.hospitalId)
+                    : undefined;
                 const supervisor = employee.supervisorId ? userMap.get(employee.supervisorId) : undefined;
                 const kaUnit = employee.kaUnitId ? userMap.get(employee.kaUnitId) : undefined;
 
-                records.push({
+                // DEBUG: Log untuk setiap 10 employee
+                if (yearlyAccumulator.size % 100 === 0) {
+                    console.log(`Employee: ${employee.name}, hospitalId:`, employee.hospitalId, `Found hospital:`, hospital ? `${hospital.brand} (id: ${hospital.id})` : 'none');
+                }
+
+                yearlyAccumulator.set(key, {
+                    hospitalId: employee.hospitalId,
+                    hospitalName: hospital?.name,
                     employeeId: employee.id,
                     employeeName: employee.name,
                     unit: employee.unit,
@@ -164,34 +186,117 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                     supervisorName: supervisor?.name,
                     kaUnitId: employee.kaUnitId,
                     kaUnitName: kaUnit?.name,
-                    monthKey,
-                    sidiqCount,
-                    sidiqTarget,
-                    sidiqPercentage: Math.round((sidiqCount / sidiqTarget) * 100) || 0,
-                    tablighCount,
-                    tablighTarget,
-                    tablighPercentage: Math.round((tablighCount / tablighTarget) * 100) || 0,
-                    amanahCount,
-                    amanahTarget,
-                    amanahPercentage: Math.round((amanahCount / amanahTarget) * 100) || 0,
-                    fatonahCount,
-                    fatonahTarget,
-                    fatonahPercentage: Math.round((fatonahCount / fatonahTarget) * 100) || 0,
-                    totalCount,
-                    totalTarget,
-                    totalPercentage: Math.round((totalCount / totalTarget) * 100) || 0,
+                    year: yearFilter,
+                    sidiqCount: 0,
+                    tablighCount: 0,
+                    amanahCount: 0,
+                    fatonahCount: 0,
+                    monthsCount: 0,
                 });
+            }
+        });
+
+        // Loop 2: Accumulate capaian dari monthlyActivities (untuk employees yang punya data)
+        Object.values(allUsersData).forEach(({ employee }) => {
+            // Skip jika tidak ada monthlyActivities (belum aktivasi/isi)
+            if (!employee.monthlyActivities) return;
+
+            Object.entries(employee.monthlyActivities).forEach(([monthKey, monthProgress]) => {
+                const year = monthKey.split('-')[0];
+
+                // Skip jika bukan tahun yang dipilih
+                if (yearFilter && year !== yearFilter) return;
+
+                const key = `${employee.id}-${year}`;
+                const accumulator = yearlyAccumulator.get(key);
+                
+                if (!accumulator) return; // Skip jika record tidak ditemukan
+
+                const allDaysProgress = Object.values(monthProgress);
+
+                const countProgress = (activityIds: string[]) => {
+                    return allDaysProgress.reduce((total, dayProgress) => {
+                        return total + activityIds.filter((id) => dayProgress[id]).length;
+                    }, 0);
+                };
+
+                // Accumulate capaian dari bulan ini
+                accumulator.sidiqCount += countProgress(sidiqActivities.map((a) => a.id));
+                accumulator.tablighCount += countProgress(tablighActivities.map((a) => a.id));
+                accumulator.amanahCount += countProgress(amanahActivities.map((a) => a.id));
+                accumulator.fatonahCount += countProgress(fatonahActivities.map((a) => a.id));
+                accumulator.monthsCount += 1;
             });
         });
 
-        return records.sort(
-            (a, b) => b.monthKey.localeCompare(a.monthKey) || a.employeeName.localeCompare(b.employeeName)
-        );
+        // Loop 2: Convert accumulator ke final records dengan target tahunan
+        yearlyAccumulator.forEach((data) => {
+            // Target TAHUNAN = target bulanan × jumlah bulan dengan data
+            const sidiqTarget = monthlySidiqTarget * data.monthsCount;
+            const tablighTarget = monthlyTablighTarget * data.monthsCount;
+            const amanahTarget = monthlyAmanahTarget * data.monthsCount;
+            const fatonahTarget = monthlyFatonahTarget * data.monthsCount;
+            const totalTarget = sidiqTarget + tablighTarget + amanahTarget + fatonahTarget;
+
+            const totalCount = data.sidiqCount + data.tablighCount + data.amanahCount + data.fatonahCount;
+
+            records.push({
+                hospitalId: data.hospitalId,
+                hospitalName: data.hospitalName,
+                employeeId: data.employeeId,
+                employeeName: data.employeeName,
+                unit: data.unit,
+                profession: data.profession,
+                professionCategory: data.professionCategory,
+                mentorId: data.mentorId,
+                mentorName: data.mentorName,
+                supervisorId: data.supervisorId,
+                supervisorName: data.supervisorName,
+                kaUnitId: data.kaUnitId,
+                kaUnitName: data.kaUnitName,
+                monthKey: data.year, // Gunakan tahun sebagai identifier
+                sidiqCount: data.sidiqCount,
+                sidiqTarget,
+                sidiqPercentage: Math.min(100, Math.round((data.sidiqCount / sidiqTarget) * 100) || 0),
+                tablighCount: data.tablighCount,
+                tablighTarget,
+                tablighPercentage: Math.min(100, Math.round((data.tablighCount / tablighTarget) * 100) || 0),
+                amanahCount: data.amanahCount,
+                amanahTarget,
+                amanahPercentage: Math.min(100, Math.round((data.amanahCount / amanahTarget) * 100) || 0),
+                fatonahCount: data.fatonahCount,
+                fatonahTarget,
+                fatonahPercentage: Math.min(100, Math.round((data.fatonahCount / fatonahTarget) * 100) || 0),
+                totalCount,
+                totalTarget,
+                totalPercentage: Math.min(100, Math.round((totalCount / totalTarget) * 100) || 0),
+            });
+        });
+
+        return records.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
     }, [allUsersData, yearFilter]);
 
     // Apply filters
     const filteredData = useMemo(() => {
         return mutabaahData.filter((record) => {
+            // Filter RS: Show all if 'all', otherwise filter by hospitalId
+            // Employees without hospitalId only shown when hospitalFilter is 'all'
+            if (hospitalFilter !== 'all') {
+                // User selected specific RS
+                if (!record.hospitalId) return false; // Employee without RS - skip
+
+                // hospitalFilter is the id from the selected hospital in dropdown
+                // record.hospitalId might be brand code (like "RSIJSP") or UUID
+                // So we need to check if the selected hospital matches by id or brand
+                const selectedHospital = hospitals.find(h => h.id === hospitalFilter);
+                if (!selectedHospital) return false; // Invalid hospital selection
+
+                // Check if employee's hospitalId matches either the hospital's id or brand
+                if (record.hospitalId !== selectedHospital.id && record.hospitalId !== selectedHospital.brand) {
+                    return false; // Employee from different RS - skip
+                }
+            }
+
             if (unitFilter !== 'all' && record.unit !== unitFilter) return false;
             if (professionFilter !== 'all' && record.profession !== professionFilter) return false;
             if (nameOrNipFilter) {
@@ -202,7 +307,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
             }
             return true;
         });
-    }, [mutabaahData, unitFilter, professionFilter, nameOrNipFilter]);
+    }, [mutabaahData, hospitalFilter, unitFilter, professionFilter, nameOrNipFilter, hospitals]);
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -213,23 +318,24 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [yearFilter, unitFilter, professionFilter, nameOrNipFilter]);
+    }, [yearFilter, hospitalFilter, unitFilter, professionFilter, nameOrNipFilter]);
 
     // Excel export
     const handleDownloadXlsx = () => {
         // Multi-row header untuk Excel (mirip dengan tabel HTML)
         const headerRow1 = [
-            'No', 'Bulan', 'NIP', 'Nama', 'Unit', 'Profesi', 'Mentor',
+            'No', 'Tahun', 'RS ID', 'NIP', 'Nama', 'Unit', 'Profesi', 'Mentor',
             'SIDIQ', '', '', 'TABLIGH', '', '', 'AMANAH', '', '', 'FATONAH', '', '', 'TOTAL', '', ''
         ];
         const headerRow2 = [
-            '', '', '', '', '', '', '',
+            '', '', '', '', '', '', '', '',
             'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%'
         ];
 
         const data = filteredData.map((record, index) => [
             index + 1,
             record.monthKey,
+            record.hospitalId || '-',
             record.employeeId,
             record.employeeName,
             record.unit,
@@ -260,13 +366,13 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
         // Merge cells untuk header utama
         const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
 
-        // Merge cells untuk SIDIQ (column H-J)
+        // Merge cells untuk header categories
         if (!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push({ s: { r: 0, c: 7 }, e: { r: 0, c: 9 } }); // SIDIQ
-        ws['!merges'].push({ s: { r: 0, c: 10 }, e: { r: 0, c: 12 } }); // TABLIGH
-        ws['!merges'].push({ s: { r: 0, c: 13 }, e: { r: 0, c: 15 } }); // AMANAH
-        ws['!merges'].push({ s: { r: 0, c: 16 }, e: { r: 0, c: 18 } }); // FATONAH
-        ws['!merges'].push({ s: { r: 0, c: 19 }, e: { r: 0, c: 21 } }); // TOTAL
+        ws['!merges'].push({ s: { r: 0, c: 8 }, e: { r: 0, c: 10 } }); // SIDIQ
+        ws['!merges'].push({ s: { r: 0, c: 11 }, e: { r: 0, c: 13 } }); // TABLIGH
+        ws['!merges'].push({ s: { r: 0, c: 14 }, e: { r: 0, c: 16 } }); // AMANAH
+        ws['!merges'].push({ s: { r: 0, c: 17 }, e: { r: 0, c: 19 } }); // FATONAH
+        ws['!merges'].push({ s: { r: 0, c: 20 }, e: { r: 0, c: 22 } }); // TOTAL
 
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Laporan Mutabaah');
@@ -291,6 +397,23 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                         {allYearsWithData.map((year) => (
                             <option key={year} value={year} className="text-black bg-white">
                                 {year}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="lg:col-span-1">
+                    <label className="text-xs font-semibold text-blue-200 block mb-1">
+                        Rumah Sakit
+                    </label>
+                    <select
+                        value={hospitalFilter}
+                        onChange={(e) => setHospitalFilter(e.target.value)}
+                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    >
+                        <option value="all" className="text-black bg-white">Semua RS</option>
+                        {hospitals.map((hospital) => (
+                            <option key={hospital.id} value={hospital.id} className="text-black bg-white">
+                                {hospital.brand}
                             </option>
                         ))}
                     </select>
@@ -345,12 +468,13 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
-                <table className="min-w-[1400px] w-full text-sm text-left text-white">
+                <table className="min-w-[1500px] w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200 sticky top-0">
                         {/* Main Header Row - Level 1 */}
                         <tr>
                             <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[50px]">No</th>
-                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[100px]">Bulan</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[100px]">Tahun</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[100px]">RS ID</th>
                             <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[120px]">NIP</th>
                             <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[180px]">Nama</th>
                             <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20 min-w-[150px]">Unit</th>
@@ -390,6 +514,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                                 {/* Info Karyawan */}
                                 <td className="px-4 py-3 whitespace-nowrap">{index + 1}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.monthKey}</td>
+                                <td className="px-4 py-3 whitespace-nowrap truncate" title={record.hospitalId || '-'}>{record.hospitalId || '-'}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.employeeId}</td>
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.employeeName}</td>
                                 <td className="px-4 py-3 whitespace-nowrap truncate" title={record.unit}>{record.unit}</td>

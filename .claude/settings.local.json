@@ -25,7 +25,9 @@
       "Bash(done)",
       "Bash(git mv:*)",
       "Bash(npm audit fix:*)",
-      "Bash(bash cleanup-unused-files.sh:*)"
+      "Bash(bash cleanup-unused-files.sh:*)",
+      "WebSearch",
+      "Bash(npm view:*)"
     ],
     "deny": [],
     "ask": []

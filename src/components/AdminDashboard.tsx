@@ -2801,7 +2801,7 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'mutabaah' && (
-                            <MutabaahReport allUsersData={allUsersData} />
+                            <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
                         )}
                     </div>
                 )}
@@ -3686,7 +3686,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'mutabaah' && (
-                            <MutabaahReport allUsersData={allUsersData} />
+                            <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
                         )}
                     </div>
                 )}

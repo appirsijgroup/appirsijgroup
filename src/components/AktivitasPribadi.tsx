@@ -732,9 +732,11 @@ const ToDoListView: React.FC<{
                 </div>
             </div>
 
-            <div className="border-b border-white/10 flex">
-                <button onClick={() => setActiveTab('active')} className={`py-2 px-4 font-semibold ${activeTab === 'active' ? 'border-b-2 border-teal-400 text-teal-300' : 'text-gray-400'}`}>Tugas Aktif ({activeTasks.length})</button>
-                <button onClick={() => setActiveTab('completed')} className={`py-2 px-4 font-semibold ${activeTab === 'completed' ? 'border-b-2 border-teal-400 text-teal-300' : 'text-gray-400'}`}>Tugas Selesai ({completedTasks.length})</button>
+            <div className="overflow-x-auto overflow-y-hidden touch-pan-x border-b border-white/10">
+                <div className="flex min-w-max">
+                    <button onClick={() => setActiveTab('active')} className={`py-2 px-4 font-semibold ${activeTab === 'active' ? 'border-b-2 border-teal-400 text-teal-300' : 'text-gray-400'}`}>Tugas Aktif ({activeTasks.length})</button>
+                    <button onClick={() => setActiveTab('completed')} className={`py-2 px-4 font-semibold ${activeTab === 'completed' ? 'border-b-2 border-teal-400 text-teal-300' : 'text-gray-400'}`}>Tugas Selesai ({completedTasks.length})</button>
+                </div>
             </div>
 
             <div className="space-y-3 min-h-[300px]">
@@ -934,25 +936,27 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
 
     return (
         <div>
-            <div className="flex items-center gap-2 mb-6 border-b border-white/10">
-                <SubTabButton
-                    label="Laporan Manual"
-                    tab="laporan"
-                    isActive={activeSubTab === 'laporan'}
-                    onClick={setActiveSubTab}
-                />
-                <SubTabButton
-                    label="Riwayat Bacaan"
-                    tab="riwayat"
-                    isActive={activeSubTab === 'riwayat'}
-                    onClick={setActiveSubTab}
-                />
-                <SubTabButton
-                    label="To-Do List"
-                    tab="todolist"
-                    isActive={activeSubTab === 'todolist'}
-                    onClick={setActiveSubTab}
-                />
+            <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">
+                <div className="flex items-center gap-2 border-b border-white/10 min-w-max pb-3">
+                    <SubTabButton
+                        label="Laporan Manual"
+                        tab="laporan"
+                        isActive={activeSubTab === 'laporan'}
+                        onClick={setActiveSubTab}
+                    />
+                    <SubTabButton
+                        label="Riwayat Bacaan"
+                        tab="riwayat"
+                        isActive={activeSubTab === 'riwayat'}
+                        onClick={setActiveSubTab}
+                    />
+                    <SubTabButton
+                        label="To-Do List"
+                        tab="todolist"
+                        isActive={activeSubTab === 'todolist'}
+                        onClick={setActiveSubTab}
+                    />
+                </div>
             </div>
 
             {activeSubTab === 'laporan' && (

@@ -2765,10 +2765,12 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
                 {activeView === 'manajemen-konten' && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
-                            <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Manajemen Kegiatan</SubTabButton>
-                            <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
-                            <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
+                            <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Manajemen Kegiatan</SubTabButton>
+                                <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
+                                <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                            </div>
                         </div>
                         {contentManagementSubView === 'kegiatan' && (
                             <ActivityManagement activities={activities} allEmployees={allUsers} onOpenModal={handleOpenActivityModal} onInitiateDelete={handleInitiateDeleteActivity} />
@@ -2789,10 +2791,12 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
 
                 {activeView === 'reports' && (
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
-                            <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
-                            <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
-                            <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
+                            <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
+                                <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
+                                <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
+                            </div>
                         </div>
                         {reportSubView === 'sholat' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
@@ -3625,11 +3629,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
                 {activeView === 'manajemen-pengguna' && isSuperAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start flex-wrap">
-                            <SubTabButton active={userManagementSubView === 'database'} onClick={() => setUserManagementSubView('database')}>Database</SubTabButton>
-                            <SubTabButton active={userManagementSubView === 'akun'} onClick={() => setUserManagementSubView('akun')}>Akun</SubTabButton>
-                            <SubTabButton active={userManagementSubView === 'relasi'} onClick={() => setUserManagementSubView('relasi')}>Relasi</SubTabButton>
-                            <SubTabButton active={userManagementSubView === 'jabatan'} onClick={() => setUserManagementSubView('jabatan')}>Jabatan</SubTabButton>
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
+                            <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={userManagementSubView === 'database'} onClick={() => setUserManagementSubView('database')}>Database</SubTabButton>
+                                <SubTabButton active={userManagementSubView === 'akun'} onClick={() => setUserManagementSubView('akun')}>Akun</SubTabButton>
+                                <SubTabButton active={userManagementSubView === 'relasi'} onClick={() => setUserManagementSubView('relasi')}>Relasi</SubTabButton>
+                                <SubTabButton active={userManagementSubView === 'jabatan'} onClick={() => setUserManagementSubView('jabatan')}>Jabatan</SubTabButton>
+                            </div>
                         </div>
                         {userManagementSubView === 'database' && (
                             <DatabaseKaryawan allUsers={allUsers} onInitiateDeleteUser={handleInitiateDeleteUser} onAddUser={onAddUser} onUpdateUser={onUpdateUser} onBulkUpdateUsers={onBulkUpdateUsers} onOpenUserModal={handleOpenUserModal} hospitals={hospitals} />
@@ -3650,10 +3656,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
                 {activeView === 'manajemen-konten' && (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
-                            <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Manajemen Kegiatan</SubTabButton>
-                            <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
-                            <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
+                            <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Manajemen Kegiatan</SubTabButton>
+                                <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
+                                <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                            </div>
                         </div>
                         {contentManagementSubView === 'kegiatan' && (
                             <ActivityManagement activities={activities} allEmployees={allUsers} onOpenModal={handleOpenActivityModal} onInitiateDelete={handleInitiateDeleteActivity} />
@@ -3674,10 +3682,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
                 {activeView === 'reports' && (
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-lg self-start">
-                            <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
-                            <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
-                            <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
+                            <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
+                                <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
+                                <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
+                            </div>
                         </div>
                         {reportSubView === 'sholat' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />

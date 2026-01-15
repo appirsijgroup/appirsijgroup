@@ -455,12 +455,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                 </div>
-                <div className="lg:col-span-4 flex justify-end gap-2">
+                <div className="lg:col-span-2 flex items-center justify-end gap-2">
                     <button onClick={() => {}} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
                         <PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" />
                     </button>
-                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download Excel">
-                        <ExcelIcon className="w-6 h-6 text-green-500 disabled:text-gray-400" />
+                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel">
+                        <ExcelIcon className="w-5 h-5" />
                     </button>
                 </div>
             </div>

@@ -1319,16 +1319,18 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                         className="w-full bg-white/5 border border-white/20 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white transition-colors"
                     />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 p-1.5 bg-black/20 rounded-full self-start">
-                    <button onClick={() => setActivationFilter('all')} className={filterButtonClass('all')}>
-                        Semua Akun ({allUsers.length})
-                    </button>
-                    <button onClick={() => setActivationFilter('active')} className={filterButtonClass('active')}>
-                        Sudah Aktivasi Bulan Ini
-                    </button>
-                    <button onClick={() => setActivationFilter('inactive')} className={filterButtonClass('inactive')}>
-                        Belum Aktivasi Bulan Ini
-                    </button>
+                <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                    <div className="flex items-center gap-2 min-w-max p-1.5 bg-black/20 rounded-full">
+                        <button onClick={() => setActivationFilter('all')} className={filterButtonClass('all')}>
+                            Semua Akun
+                        </button>
+                        <button onClick={() => setActivationFilter('active')} className={filterButtonClass('active')}>
+                            Sudah Aktivasi
+                        </button>
+                        <button onClick={() => setActivationFilter('inactive')} className={filterButtonClass('inactive')}>
+                            Belum Aktivasi
+                        </button>
+                    </div>
                 </div>
             </div>
             <div className="overflow-x-auto rounded-lg border border-white/20">

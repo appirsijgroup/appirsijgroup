@@ -338,16 +338,79 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         return d;
     }, []);
     const todayDay = today.getDate();
-    const isCurrentMonthView = today.getFullYear() === date.getFullYear() && today.getMonth() === date.getMonth();
+    const isCurrentMonthView = today.getFullYear() === date.getFullYear() && date.getMonth() === date.getMonth();
 
     const selectedWeekDays = weeks[currentWeekIndex]?.days || [];
-    
+
+    // Generate month options
+    const monthOptions = useMemo(() => {
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        return months.map((month, index) => ({
+            value: index,
+            label: month
+        }));
+    }, []);
+
+    // Generate year options (current year +/- 2 years)
+    const yearOptions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years = [];
+        for (let i = currentYear - 2; i <= currentYear + 1; i++) {
+            years.push({
+                value: i,
+                label: i.toString()
+            });
+        }
+        return years.reverse();
+    }, []);
+
     return (
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
-            <div className="flex flex-col sm:flex-row items-center justify-between mb-6 bg-black/20 p-2 rounded-full">
-                <button onClick={() => navigateMonth('prev')} className="px-4 py-2 rounded-full hover:bg-white/10 transition-colors">&larr; Sebelumnya</button>
-                <span className="font-bold text-lg text-teal-300">{date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-                <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-2 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Berikutnya &rarr;</button>
+            {/* Enterprise-style Month/Year Filter */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-black/20 p-4 rounded-xl">
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-2">
+                        Bulan
+                    </label>
+                    <select
+                        value={date.getMonth()}
+                        onChange={(e) => {
+                            const newDate = new Date(date);
+                            newDate.setMonth(parseInt(e.target.value));
+                            onDateChange(newDate);
+                        }}
+                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    >
+                        {monthOptions.map((month) => (
+                            <option key={month.value} value={month.value} className="text-black bg-white">
+                                {month.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-2">
+                        Tahun
+                    </label>
+                    <select
+                        value={date.getFullYear()}
+                        onChange={(e) => {
+                            const newDate = new Date(date);
+                            newDate.setFullYear(parseInt(e.target.value));
+                            onDateChange(newDate);
+                        }}
+                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    >
+                        {yearOptions.map((year) => (
+                            <option key={year.value} value={year.value} className="text-black bg-white">
+                                {year.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {!isMonthActivated ? (

@@ -1,8 +1,5 @@
 {
   "buildCommand": "next build",
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "env": {
-    "NEXT_PRIVATE_DISABLE_TURBOPACK_IN_NEXT_BUILD": "1"
-  }
+  "installCommand": "npm install"
 }

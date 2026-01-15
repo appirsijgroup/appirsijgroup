@@ -112,9 +112,9 @@ const ReadingActivityCard: React.FC<{
     }, [dateCompleted, submissions]);
 
     return (
-        <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-4">
-            <h4 className="text-lg font-bold text-white">Membaca Al-Quran dan buku</h4>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="border border-white/10 p-4 rounded-lg">
+            <h4 className="text-base font-bold text-white mb-3">Membaca Al-Quran dan buku</h4>
+            <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
                     <label className="text-sm font-medium text-blue-200 block mb-1">Judul Buku</label>
                     <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"/>
@@ -223,9 +223,9 @@ const SimpleActivityCard: React.FC<{
     };
 
     return (
-        <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-4">
-            <h4 className="text-lg font-bold text-white">{activity.title}</h4>
-            <div className="space-y-4">
+        <div className="border border-white/10 p-4 rounded-lg">
+            <h4 className="text-base font-bold text-white mb-3">{activity.title}</h4>
+            <div className="space-y-3">
                  <div>
                     <label className="text-sm font-medium text-blue-200 block mb-1">Pilih Tanggal</label>
                     <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{colorScheme: 'dark'}}/>

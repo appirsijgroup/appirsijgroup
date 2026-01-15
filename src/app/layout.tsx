@@ -4,6 +4,7 @@ import "./globals.css";
 import SupressHydrationWarning from "@/components/SupressHydrationWarning";
 import { QueryProvider } from "@/lib/react-query/QueryProvider";
 import { baseMetadata } from "./metadata";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 // ⚡ OPTIMIZATION: Use display: 'swap' for faster font rendering
 const inter = Inter({
@@ -43,6 +44,24 @@ export default function RootLayout({
         {/* Font Awesome CDN (Legacy) */}
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossOrigin="anonymous" referrerPolicy="no-referrer" />
 
+        {/* PWA Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#14b8a6" />
+
+        {/* Favicons */}
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png" />
+        <link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/favicon-48x48.png" sizes="48x48" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+
+        {/* PWA Meta Tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="APPI" />
+        <meta name="application-name" content="APPI" />
+
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -55,6 +74,7 @@ export default function RootLayout({
         className={`${inter.className} ${notoNaskh.variable} ${playfair.variable} antialiased`}
         suppressHydrationWarning
       >
+        <ServiceWorkerRegister />
         <SupressHydrationWarning />
         <QueryProvider>
           {children}

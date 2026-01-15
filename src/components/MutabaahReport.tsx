@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { type Employee, type MonthlyActivityProgress, type DailyActivity } from '../types';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import * as XLSX from 'xlsx';
-import { ExcelIcon, SearchIcon } from './Icons';
+import { PdfIcon, ExcelIcon, SearchIcon } from './Icons';
 
 interface MutabaahReportProps {
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
@@ -401,14 +401,8 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                     </div>
                 </div>
                 <div className="lg:col-span-4 flex justify-end">
-                    <button
-                        onClick={handleDownloadXlsx}
-                        disabled={filteredData.length === 0}
-                        className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white text-sm transition-all disabled:bg-gray-500 disabled:cursor-not-allowed"
-                    >
-                        <ExcelIcon className="w-5 h-5" />
-                        <span>Download Excel</span>
-                    </button>
+                    <button onClick={() => {}} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download PDF (Segera)"><PdfIcon className="w-5 h-5" /></button>
+                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><ExcelIcon className="w-5 h-5" /></button>
                 </div>
             </div>
 
@@ -416,19 +410,38 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
             <div className="overflow-x-auto rounded-lg border border-white/20">
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                        {/* Main Header Row - Level 1 */}
                         <tr>
-                            <th className="px-4 py-3 whitespace-nowrap">No</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Bulan</th>
-                            <th className="px-4 py-3 whitespace-nowrap">NIP</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Nama</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Unit</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Profesi</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Mentor</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap">SIDIQ</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap">TABLIGH</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap">AMANAH</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap">FATONAH</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap">Total</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">No</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">Bulan</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">NIP</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">Nama</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">Unit</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">Profesi</th>
+                            <th rowSpan={2} className="px-4 py-3 whitespace-nowrap border-b-2 border-white/20">Mentor</th>
+                            <th colSpan={3} className="px-4 py-3 text-center whitespace-nowrap border-b-2 border-white/20 bg-teal-900/30">SIDIQ</th>
+                            <th colSpan={3} className="px-4 py-3 text-center whitespace-nowrap border-b-2 border-white/20 bg-blue-900/30">TABLIGH</th>
+                            <th colSpan={3} className="px-4 py-3 text-center whitespace-nowrap border-b-2 border-white/20 bg-purple-900/30">AMANAH</th>
+                            <th colSpan={3} className="px-4 py-3 text-center whitespace-nowrap border-b-2 border-white/20 bg-orange-900/30">FATONAH</th>
+                            <th colSpan={3} className="px-4 py-3 text-center whitespace-nowrap border-b-2 border-white/20 bg-pink-900/30">TOTAL</th>
+                        </tr>
+                        {/* Sub Header Row - Level 2 */}
+                        <tr>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Capaian</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Target</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">%</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Capaian</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Target</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">%</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Capaian</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Target</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">%</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Capaian</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Target</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">%</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Capaian</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">Target</th>
+                            <th className="px-3 py-2 text-center whitespace-nowrap border-b-2 border-white/20">%</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -437,6 +450,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                                 key={`${record.employeeId}-${record.monthKey}`}
                                 className="border-b border-gray-700 hover:bg-white/5"
                             >
+                                {/* Info Karyawan */}
                                 <td className="px-4 py-3 whitespace-nowrap">{index + 1}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.monthKey}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.employeeId}</td>
@@ -446,85 +460,90 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData }) => {
                                 <td className="px-4 py-3">{record.unit}</td>
                                 <td className="px-4 py-3">{record.profession}</td>
                                 <td className="px-4 py-3">{record.mentorName || '-'}</td>
-                                <td className="px-4 py-3 text-center">
-                                    <div className="text-xs">
-                                        {record.sidiqCount}/{record.sidiqTarget}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-semibold ${
+
+                                {/* SIDIQ - 3 kolom terpisah */}
+                                <td className="px-3 py-3 text-center whitespace-nowrap font-semibold">{record.sidiqCount}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">{record.sidiqTarget}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
                                             record.sidiqPercentage >= 100
-                                                ? 'text-green-400'
+                                                ? 'bg-green-500/20 text-green-300'
                                                 : record.sidiqPercentage >= 50
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                                ? 'bg-yellow-500/20 text-yellow-300'
+                                                : 'bg-red-500/20 text-red-300'
                                         }`}
                                     >
                                         {record.sidiqPercentage}%
-                                    </div>
+                                    </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                    <div className="text-xs">
-                                        {record.tablighCount}/{record.tablighTarget}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-semibold ${
+
+                                {/* TABLIGH - 3 kolom terpisah */}
+                                <td className="px-3 py-3 text-center whitespace-nowrap font-semibold">{record.tablighCount}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">{record.tablighTarget}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
                                             record.tablighPercentage >= 100
-                                                ? 'text-green-400'
+                                                ? 'bg-green-500/20 text-green-300'
                                                 : record.tablighPercentage >= 50
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                                ? 'bg-yellow-500/20 text-yellow-300'
+                                                : 'bg-red-500/20 text-red-300'
                                         }`}
                                     >
                                         {record.tablighPercentage}%
-                                    </div>
+                                    </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                    <div className="text-xs">
-                                        {record.amanahCount}/{record.amanahTarget}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-semibold ${
+
+                                {/* AMANAH - 3 kolom terpisah */}
+                                <td className="px-3 py-3 text-center whitespace-nowrap font-semibold">{record.amanahCount}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">{record.amanahTarget}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
                                             record.amanahPercentage >= 100
-                                                ? 'text-green-400'
+                                                ? 'bg-green-500/20 text-green-300'
                                                 : record.amanahPercentage >= 50
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                                ? 'bg-yellow-500/20 text-yellow-300'
+                                                : 'bg-red-500/20 text-red-300'
                                         }`}
                                     >
                                         {record.amanahPercentage}%
-                                    </div>
+                                    </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                    <div className="text-xs">
-                                        {record.fatonahCount}/{record.fatonahTarget}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-semibold ${
+
+                                {/* FATONAH - 3 kolom terpisah */}
+                                <td className="px-3 py-3 text-center whitespace-nowrap font-semibold">{record.fatonahCount}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">{record.fatonahTarget}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
                                             record.fatonahPercentage >= 100
-                                                ? 'text-green-400'
+                                                ? 'bg-green-500/20 text-green-300'
                                                 : record.fatonahPercentage >= 50
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                                ? 'bg-yellow-500/20 text-yellow-300'
+                                                : 'bg-red-500/20 text-red-300'
                                         }`}
                                     >
                                         {record.fatonahPercentage}%
-                                    </div>
+                                    </span>
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                    <div className="text-xs">
-                                        {record.totalCount}/{record.totalTarget}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-bold ${
+
+                                {/* TOTAL - 3 kolom terpisah */}
+                                <td className="px-3 py-3 text-center whitespace-nowrap font-bold bg-white/5">{record.totalCount}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap bg-white/5">{record.totalTarget}</td>
+                                <td className="px-3 py-3 text-center whitespace-nowrap bg-white/5">
+                                    <span
+                                        className={`px-2 py-1 rounded text-xs font-bold ${
                                             record.totalPercentage >= 100
-                                                ? 'text-green-400'
+                                                ? 'bg-green-500/20 text-green-300'
                                                 : record.totalPercentage >= 50
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                                ? 'bg-yellow-500/20 text-yellow-300'
+                                                : 'bg-red-500/20 text-red-300'
                                         }`}
                                     >
                                         {record.totalPercentage}%
-                                    </div>
+                                    </span>
                                 </td>
                             </tr>
                         ))}

@@ -1359,22 +1359,24 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     return (
         <div>
             <nav className="border-b border-white/20">
-                <div className="flex items-center gap-2 -mb-px flex-wrap">
-                    {initialTab === 'aktivitas-pribadi' ? (
-                        <>
-                            <TabButton label="Aktivitas Pribadi" icon={PencilIcon} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                            <TabButton label="Bimbingan Saya" icon={AcademicCapIcon} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
-                            {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheckIcon} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
-                            {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquareIcon} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
-                            {canDoTeamAttendance && <TabButton label="Presensi Tim" icon={UserGroupIcon} active={activeTab === 'presensi-tim'} onClick={() => setActiveTab('presensi-tim')} />}
-                        </>
-                    ) : (
-                        <>
-                            <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                            <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-                            <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                        </>
-                    )}
+                <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                    <div className="flex items-center gap-2 -mb-px min-w-max">
+                        {initialTab === 'aktivitas-pribadi' ? (
+                            <>
+                                <TabButton label="Aktivitas Pribadi" icon={PencilIcon} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
+                                <TabButton label="Bimbingan Saya" icon={AcademicCapIcon} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
+                                {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheckIcon} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
+                                {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquareIcon} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
+                                {canDoTeamAttendance && <TabButton label="Presensi Tim" icon={UserGroupIcon} active={activeTab === 'presensi-tim'} onClick={() => setActiveTab('presensi-tim')} />}
+                            </>
+                        ) : (
+                            <>
+                                <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
+                                <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+                                <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
+                            </>
+                        )}
+                    </div>
                 </div>
             </nav>
             <div className="mt-6">

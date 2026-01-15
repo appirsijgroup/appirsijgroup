@@ -899,9 +899,11 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
             </div>
 
             <div className="border-b border-white/10">
-                <nav className="flex items-center gap-2 -mb-px flex-wrap">
-                    <TabButton label="Lembar Mutabaah" icon={DocumentTextIcon} active={activeTab === 'mutabaah'} onClick={() => setActiveTab('mutabaah')} />
-                    <TabButton label="Transkrip Nilai" icon={ChartBarIcon} active={activeTab === 'transkrip'} onClick={() => setActiveTab('transkrip')} />
+                <nav className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                    <div className="flex items-center gap-2 -mb-px min-w-max">
+                        <TabButton label="Lembar Mutabaah" icon={DocumentTextIcon} active={activeTab === 'mutabaah'} onClick={() => setActiveTab('mutabaah')} />
+                        <TabButton label="Transkrip Nilai" icon={ChartBarIcon} active={activeTab === 'transkrip'} onClick={() => setActiveTab('transkrip')} />
+                    </div>
                 </nav>
             </div>
 

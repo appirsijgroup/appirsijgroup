@@ -547,9 +547,11 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
 
             <div className="space-y-4 mt-8">
                 <h3 className="text-lg font-bold text-white border-l-4 border-teal-400 pl-3">Sesi Akan Datang & Riwayat</h3>
-                <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded-full self-start">
-                    <SubTabButton label="KIE" active={activeTab === 'KIE'} onClick={() => setActiveTab('KIE')} />
-                    <SubTabButton label="Doa Pagi" active={activeTab === 'Doa Bersama'} onClick={() => setActiveTab('Doa Bersama')} />
+                <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                    <div className="flex items-center gap-2 min-w-max">
+                        <SubTabButton label="KIE" active={activeTab === 'KIE'} onClick={() => setActiveTab('KIE')} />
+                        <SubTabButton label="Doa Pagi" active={activeTab === 'Doa Bersama'} onClick={() => setActiveTab('Doa Bersama')} />
+                    </div>
                 </div>
                 {sessionsForTab.length > 0 ? (
                     <div className="space-y-3">

@@ -293,11 +293,13 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                     </div>
 
                     <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full self-start flex-wrap">
-                            <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                            <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                            <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                            <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                            <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full min-w-max">
+                                <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                            </div>
                         </div>
                          <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">

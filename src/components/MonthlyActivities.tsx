@@ -446,8 +446,9 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                     
                     {activeTab === 'weekly' && (
                         <div className="animate-view-change">
-                            <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
-                                {weeks.map(({ weekIndex, days }) => {
+                            <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">
+                                <div className="flex items-center justify-center gap-2 min-w-max">
+                                    {weeks.map(({ weekIndex, days }) => {
                                     const submission = weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndex);
                                     let statusDot: React.ReactNode = null;
                                     if (submission) {
@@ -469,6 +470,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                         </button>
                                     );
                                 })}
+                                </div>
                             </div>
 
                             {isReadOnlyForWeek && (

@@ -1264,13 +1264,15 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
 
     return (
         <div className="space-y-6">
-             <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-white/10 pb-3">
-                <SubTabButton label="Persetujuan" icon={CheckSquareIcon} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
-                <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={mentorSubView === 'sessions'} onClick={() => setMentorSubView('sessions')} />
-                <SubTabButton label="Anggota Bimbingan" icon={UserGroupIcon} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
-                <SubTabButton label="Target Bimbingan" icon={TagIcon} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
-                <SubTabButton label="Progres Anggota" icon={ChartBarIcon} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
-                <SubTabButton label="Laporan Bacaan" icon={BookOpenIcon} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
+             <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
+                <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
+                    <SubTabButton label="Persetujuan" icon={CheckSquareIcon} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
+                    <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={mentorSubView === 'sessions'} onClick={() => setMentorSubView('sessions')} />
+                    <SubTabButton label="Anggota Bimbingan" icon={UserGroupIcon} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
+                    <SubTabButton label="Target Bimbingan" icon={TagIcon} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
+                    <SubTabButton label="Progres Anggota" icon={ChartBarIcon} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
+                    <SubTabButton label="Laporan Bacaan" icon={BookOpenIcon} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
+                </div>
             </div>
 
             <div className="animate-view-change">

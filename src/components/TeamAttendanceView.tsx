@@ -530,7 +530,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     </h3>
                 </div>
                 <button onClick={() => setIsCreateModalOpen(true)} className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
-                    <PlusCircleIcon className="w-5 h-5" /> <span className="hidden sm:inline">Buat Sesi Baru</span><span className="sm:hidden">Buat Sesi</span>
+                    <PlusCircleIcon className="w-5 h-5" /> Buat Sesi Baru
                 </button>
             </div>
 

@@ -296,10 +296,12 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-center gap-2 sm:gap-3 border-b border-white/10 pb-3">
-                <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
-                <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
-                <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
+            <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
+                <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
+                    <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
+                    <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
+                    <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
+                </div>
             </div>
 
             <div key={activeSubTab} className="animate-view-change -mx-2 sm:mx-0">
@@ -403,8 +405,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                         </div>
                                         <button onClick={() => onMenteeAttendSession(session.id)} className="px-3 sm:px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
                                             <CheckIcon className="w-4 h-4 sm:w-5 sm:h-5"/>
-                                            <span className="hidden sm:inline">Konfirmasi Hadir</span>
-                                            <span className="sm:hidden">Hadir</span>
+                                            Konfirmasi Hadir
                                         </button>
                                     </div>
                                 ))}
@@ -414,7 +415,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                              <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold text-white">Riwayat Pengajuan Kehadiran</h3>
                                 <button onClick={() => setIsRequestModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                    <CalendarDaysIcon className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Ajukan Manual</span><span className="sm:hidden">Ajukan</span>
+                                    <CalendarDaysIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Ajukan Manual
                                 </button>
                              </div>
                              {sortedTadarusRequests.length > 0 ? (
@@ -443,7 +444,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                          <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-white">Pengajuan Presensi Terlewat</h3>
                             <button onClick={() => setIsMissedPrayerModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Buat Pengajuan</span><span className="sm:hidden">Buat</span>
+                                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Buat Pengajuan
                             </button>
                          </div>
                         {sortedMissedPrayerRequests.length > 0 ? (

@@ -40,8 +40,11 @@ const doesEmployeeMatchRules = (employee: Employee, rules: AudienceRules): boole
 
 export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAttendanceSessions, attendance, onHadir, onTidakHadir, onUbah, loggedInEmployee }) => {
     const [now, setNow] = useState(new Date());
+    const [isClient, setIsClient] = useState(false);
 
+    // 🔥 FIX: Prevent hydration error by only rendering time-dependent content on client
     useEffect(() => {
+        setIsClient(true);
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -118,7 +121,21 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
             </section>
         );
     }
-    
+
+    // 🔥 FIX: Don't render time-dependent content during SSR to prevent hydration error
+    if (!isClient) {
+        return (
+            <section className="mt-8">
+                <h2 className="text-xl font-bold text-white mb-4">Kegiatan Terjadwal</h2>
+                <div className="bg-white/10 p-2 sm:p-4 rounded-2xl shadow-lg border border-white/20 overflow-x-auto">
+                    <div className="text-center py-8 text-blue-200">
+                        Memuat jadwal kegiatan...
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section className="mt-8">
             <h2 className="text-xl font-bold text-white mb-4">Kegiatan Terjadwal</h2>

@@ -24,9 +24,14 @@ const convertToCamelCase = (emp: any): any => {
     managerScope: emp.manager_scope,
     locationId: emp.location_id,
     locationName: emp.location_name,
-    readingHistory: emp.reading_history,
-    quranReadingHistory: emp.quran_reading_history,
-    todoList: emp.todo_list,
+
+    // 🔥 IMPORTANT: Field-field ini SUDAH di-convert manual dari tabel terpisah!
+    // JANGAN di-convert lagi atau menimpa dengan data dari tabel employees lama
+    // Biarkan apa adanya (sudah camelCase dari manual conversion)
+    // readingHistory: emp.reading_history,         // ❌ REMOVED - already converted manually
+    // quranReadingHistory: emp.quran_reading_history, // ❌ REMOVED - already converted manually
+    // todoList: emp.todo_list,                     // ❌ REMOVED - already converted manually
+
     signature: emp.signature,
     lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp,
     managedHospitalIds: emp.managed_hospital_ids,
@@ -157,12 +162,14 @@ export async function GET(request: NextRequest) {
     }))
 
     // Gabungkan SEMUA data dari tabel terpisah
+    // 🔥 FIX: Gunakan camelCase untuk field-field dari tabel terpisah
     const employeeWithAllData = {
       ...employee,
       monthly_activities: monthlyActivitiesData?.activities || {},
-      reading_history: convertedReadingHistory,
-      quran_reading_history: convertedQuranHistory,
-      todo_list: convertedTodos,
+      // Gunakan camelCase langsung untuk field yang sudah di-convert manual
+      readingHistory: convertedReadingHistory,        // ✅ camelCase
+      quranReadingHistory: convertedQuranHistory,     // ✅ camelCase
+      todoList: convertedTodos,                       // ✅ camelCase
     }
 
     console.log('✅ /api/auth/me - Found:', employee.name)
@@ -173,6 +180,16 @@ export async function GET(request: NextRequest) {
 
     // 🔥 FIX: Convert to camelCase BEFORE returning (consistent with employeeService)
     const employeeInCamelCase = convertToCamelCase(employeeWithAllData);
+
+    // 🔥 DEBUG: Log hasil akhir SEBELUM return
+    console.log('📦 /api/auth/me - Final employee data being returned:', {
+      id: employeeInCamelCase.id,
+      name: employeeInCamelCase.name,
+      monthlyActivitiesKeys: Object.keys(employeeInCamelCase.monthlyActivities || {}).length,
+      readingHistoryCount: employeeInCamelCase.readingHistory?.length || 0,
+      quranReadingHistoryCount: employeeInCamelCase.quranReadingHistory?.length || 0,
+      todoListCount: employeeInCamelCase.todoList?.length || 0,
+    })
 
     return NextResponse.json({ employee: employeeInCamelCase })
 

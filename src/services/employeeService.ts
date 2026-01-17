@@ -207,7 +207,14 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         is_active: employee.isActive,
         notification_enabled: employee.notificationEnabled,
         profile_picture: employee.profilePicture,
-        monthly_activities: employee.monthlyActivities,
+
+        // 🔥 IMPORTANT: Field-field ini SUDAH DIPINDAH ke tabel terpisah!
+        // JANGAN tulis ke employees.monthly_activities, gunakan monthlyActivityService
+        // JANGAN tulis ke employees.reading_history, gunakan readingHistoryService
+        // JANGAN tulis ke employees.quran_reading_history, gunakan readingHistoryService
+        // JANGAN tulis ke employees.todo_list, gunakan todoService
+        // ❌ REMOVED: monthly_activities, reading_history, quran_reading_history, todo_list
+
         activated_months: employee.activatedMonths,
         ka_unit_id: employee.kaUnitId,
         supervisor_id: employee.supervisorId,
@@ -221,9 +228,12 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         manager_scope: employee.managerScope ? JSON.stringify(employee.managerScope) : null, // Keep this stringify
         location_id: employee.locationId,
         location_name: employee.locationName,
-        reading_history: employee.readingHistory,
-        quran_reading_history: employee.quranReadingHistory,
-        todo_list: employee.todoList,
+
+        // ❌ REMOVED: These fields are now in separate tables
+        // reading_history: employee.readingHistory,
+        // quran_reading_history: employee.quranReadingHistory,
+        // todo_list: employee.todoList,
+
         signature: employee.signature,
         last_announcement_read_timestamp: employee.lastAnnouncementReadTimestamp,
         managed_hospital_ids: employee.managedHospitalIds,
@@ -281,10 +291,11 @@ export const updateEmployee = async (
         id,
         updates: {
             ...updates,
-            monthlyActivities: updates.monthlyActivities ? 'present' : 'not present',
-            readingHistory: updates.readingHistory ? 'present' : 'not present',
-            quranReadingHistory: updates.quranReadingHistory ? 'present' : 'not present',
-            todoList: updates.todoList ? 'present' : 'not present'
+            // ❌ Field-field ini TIDAK boleh dikirim ke tabel employees lagi!
+            monthlyActivities: updates.monthlyActivities ? 'IGNORED - use employee_monthly_activities table' : 'not present',
+            readingHistory: updates.readingHistory ? 'IGNORED - use employee_reading_history table' : 'not present',
+            quranReadingHistory: updates.quranReadingHistory ? 'IGNORED - use employee_quran_reading_history table' : 'not present',
+            todoList: updates.todoList ? 'IGNORED - use employee_todos table' : 'not present'
         }
     });
 
@@ -299,7 +310,13 @@ export const updateEmployee = async (
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
     if (updates.notificationEnabled !== undefined) dbUpdates.notification_enabled = updates.notificationEnabled;
     if (updates.profilePicture !== undefined) dbUpdates.profile_picture = updates.profilePicture;
-    // monthlyActivities sudah dipindah ke tabel employee_monthly_activities, di-handle oleh monthlyActivityService
+
+    // 🔥 IMPORTANT: Field-field ini SUDAH DIPINDAH ke tabel terpisah!
+    // JANGAN tulis ke employees.monthly_activities, gunakan monthlyActivityService
+    // JANGAN tulis ke employees.reading_history, gunakan readingHistoryService
+    // JANGAN tulis ke employees.quran_reading_history, gunakan readingHistoryService
+    // JANGAN tulis ke employees.todo_list, gunakan todoService
+
     if (updates.activatedMonths !== undefined) dbUpdates.activated_months = updates.activatedMonths;
     if (updates.kaUnitId !== undefined) dbUpdates.ka_unit_id = updates.kaUnitId;
     if (updates.supervisorId !== undefined) dbUpdates.supervisor_id = updates.supervisorId;
@@ -313,9 +330,12 @@ export const updateEmployee = async (
     if (updates.managerScope !== undefined) dbUpdates.manager_scope = updates.managerScope ? JSON.stringify(updates.managerScope) : null;
     if (updates.locationId !== undefined) dbUpdates.location_id = updates.locationId;
     if (updates.locationName !== undefined) dbUpdates.location_name = updates.locationName;
-    if (updates.readingHistory !== undefined) dbUpdates.reading_history = updates.readingHistory;
-    if (updates.quranReadingHistory !== undefined) dbUpdates.quran_reading_history = updates.quranReadingHistory;
-    if (updates.todoList !== undefined) dbUpdates.todo_list = updates.todoList;
+
+    // ❌ REMOVED: These fields are now in separate tables
+    // if (updates.readingHistory !== undefined) dbUpdates.reading_history = updates.readingHistory;
+    // if (updates.quranReadingHistory !== undefined) dbUpdates.quran_reading_history = updates.quranReadingHistory;
+    // if (updates.todoList !== undefined) dbUpdates.todo_list = updates.todoList;
+
     if (updates.signature !== undefined) dbUpdates.signature = updates.signature;
     if (updates.lastAnnouncementReadTimestamp !== undefined) dbUpdates.last_announcement_read_timestamp = updates.lastAnnouncementReadTimestamp;
     if (updates.managedHospitalIds !== undefined) dbUpdates.managed_hospital_ids = updates.managedHospitalIds;

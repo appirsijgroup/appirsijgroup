@@ -80,32 +80,99 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Ambil data monthly activities dari tabel terpisah
+    // 🔥 FIX: Ambil data dari tabel terpisah untuk SEMUA field yang sudah dipindah
+
+    // 1. Monthly activities dari employee_monthly_activities
     const { data: monthlyActivitiesData, error: activitiesError } = await supabase
       .from('employee_monthly_activities')
       .select('activities')
       .eq('employee_id', userId)
-      .maybeSingle() // Gunakan maybeSingle untuk handle case dimana data belum ada
+      .maybeSingle()
 
-    // Log jika ada error (bukan critical error, karena monthly activities mungkin belum ada)
     if (activitiesError && activitiesError.code !== 'PGRST116') {
       console.log('⚠️ Warning: Could not fetch monthly activities:', activitiesError.message)
     }
 
-    // 🔥 FIX: Gunakan data dari tabel employee_monthly_activities
-    const monthlyActivitiesFromNewTable = monthlyActivitiesData?.activities || {};
+    // 2. Reading history dari employee_reading_history
+    const { data: readingHistoryData, error: readingError } = await supabase
+      .from('employee_reading_history')
+      .select('*')
+      .eq('employee_id', userId)
+      .order('created_at', { ascending: false })
 
-    // Gabungkan dengan employee data
-    const employeeWithActivities = {
+    if (readingError && readingError.code !== 'PGRST116') {
+      console.log('⚠️ Warning: Could not fetch reading history:', readingError.message)
+    }
+
+    // 3. Quran reading history dari employee_quran_reading_history
+    const { data: quranHistoryData, error: quranError } = await supabase
+      .from('employee_quran_reading_history')
+      .select('*')
+      .eq('employee_id', userId)
+      .order('date', { ascending: false })
+
+    if (quranError && quranError.code !== 'PGRST116') {
+      console.log('⚠️ Warning: Could not fetch quran reading history:', quranError.message)
+    }
+
+    // 4. Todos dari employee_todos
+    const { data: todosData, error: todosError } = await supabase
+      .from('employee_todos')
+      .select('*')
+      .eq('employee_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (todosError && todosError.code !== 'PGRST116') {
+      console.log('⚠️ Warning: Could not fetch todos:', todosError.message)
+    }
+
+    // 5. Convert format data dari tabel terpisah ke format camelCase seperti di Employee type
+    const convertedReadingHistory = (readingHistoryData || []).map((item: any) => ({
+      id: item.id,
+      bookTitle: item.book_title,
+      pagesRead: item.pages_read,
+      dateCompleted: item.date_completed,
+      createdAt: item.created_at
+    }))
+
+    const convertedQuranHistory = (quranHistoryData || []).map((item: any) => ({
+      id: item.id,
+      date: item.date,
+      surahName: item.surah_name,
+      surahNumber: item.surah_number,
+      startAyah: item.start_ayah,
+      endAyah: item.end_ayah,
+      createdAt: item.created_at
+    }))
+
+    const convertedTodos = (todosData || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      notes: item.description,
+      completed: item.is_completed,
+      date: item.due_date,
+      priority: item.priority,
+      completedAt: item.completed_at,
+      createdAt: item.created_at
+    }))
+
+    // Gabungkan SEMUA data dari tabel terpisah
+    const employeeWithAllData = {
       ...employee,
-      monthly_activities: monthlyActivitiesFromNewTable, // Temporarily use snake_case
+      monthly_activities: monthlyActivitiesData?.activities || {},
+      reading_history: convertedReadingHistory,
+      quran_reading_history: convertedQuranHistory,
+      todo_list: convertedTodos,
     }
 
     console.log('✅ /api/auth/me - Found:', employee.name)
-    console.log('  - Months in employee_monthly_activities table:', Object.keys(monthlyActivitiesFromNewTable).length)
+    console.log('  - Monthly activities months:', Object.keys(monthlyActivitiesData?.activities || {}).length)
+    console.log('  - Reading history:', convertedReadingHistory.length, 'items')
+    console.log('  - Quran history:', convertedQuranHistory.length, 'items')
+    console.log('  - Todos:', convertedTodos.length, 'items')
 
     // 🔥 FIX: Convert to camelCase BEFORE returning (consistent with employeeService)
-    const employeeInCamelCase = convertToCamelCase(employeeWithActivities);
+    const employeeInCamelCase = convertToCamelCase(employeeWithAllData);
 
     return NextResponse.json({ employee: employeeInCamelCase })
 

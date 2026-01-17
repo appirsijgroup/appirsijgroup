@@ -12,24 +12,38 @@ interface AnalyticsProps {
     dailyActivitiesConfig: DailyActivity[];
 }
 
-const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?: string }> = ({ title, children, minWidth }) => (
-    <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-        <h4 className="font-semibold text-white mb-2">{title}</h4>
-        {minWidth ? (
-            <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
-                <div className="min-w-[700px] md:min-w-0 h-72">
-                    {children}
+const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?: string }> = ({ title, children, minWidth }) => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    return (
+        <div className="bg-black/20 p-4 rounded-lg border border-white/10">
+            <h4 className="font-semibold text-white mb-2">{title}</h4>
+            {minWidth ? (
+                <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
+                    <div className="min-w-[700px] md:min-w-0 h-72">
+                        {isClient ? children : <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>}
+                    </div>
                 </div>
-            </div>
-        ) : (
-            <div className="w-full h-72">
-                {children}
-            </div>
-        )}
-    </div>
-);
+            ) : (
+                <div className="w-full h-72">
+                    {isClient ? children : <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
     const currentMonthLabel = useMemo(() => new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }), []);
 
@@ -234,14 +248,18 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1 h-80 flex flex-col items-center justify-center">
                     <div className="relative w-full h-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={reportData.chartData} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={'70%'} outerRadius={'90%'} paddingAngle={5} isAnimationActive={false}>
-                                    <Cell fill={ACTIVATED_COLOR} />
-                                    <Cell fill={NOT_ACTIVATED_COLOR} />
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
+                        {isClient ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={reportData.chartData} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={'70%'} outerRadius={'90%'} paddingAngle={5} isAnimationActive={false}>
+                                        <Cell fill={ACTIVATED_COLOR} />
+                                        <Cell fill={NOT_ACTIVATED_COLOR} />
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                        )}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center -mt-4">
                             <span className="text-4xl font-bold text-white">{activationPercentage}%</span>
                         </div>
@@ -363,6 +381,12 @@ const MutabaahPerformanceReport: React.FC<{
     allUsers: Employee[];
     dailyActivitiesConfig: DailyActivity[];
 }> = ({ allUsers, dailyActivitiesConfig }) => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     // Date filter
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -511,33 +535,41 @@ const MutabaahPerformanceReport: React.FC<{
             {filteredUsers.length > 0 ? (
                 <div className="space-y-6">
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={performanceByCategory} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
-                                <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                <Bar dataKey="Persentase" isAnimationActive={false}>
-                                    <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: unknown) => typeof value === 'number' ? `${value}%` : ''} />
-                                    {performanceByCategory.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {isClient ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={performanceByCategory} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                    <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
+                                    <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                    <Bar dataKey="Persentase" isAnimationActive={false}>
+                                        <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: unknown) => typeof value === 'number' ? `${value}%` : ''} />
+                                        {performanceByCategory.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                        )}
                     </ChartCard>
 
                     {Object.entries(groupedPerformanceByActivity).map(([category, activities], index) => (
                         <ChartCard key={category} title={`Detail Kategori: ${category}`} minWidth="700px">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                    <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                    <YAxis dataKey="name" type="category" stroke="#94a3b8" width={180} tick={{ fontSize: 11, fill: '#e2e8f0' }} interval={0} />
-                                    <Bar dataKey="percentage" name="Capaian" barSize={20} fill={COLORS[index % COLORS.length]} isAnimationActive={false}>
-                                        <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => typeof value === 'number' && value > 0 ? `${value}%` : ''} />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                            {isClient ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                        <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                        <YAxis dataKey="name" type="category" stroke="#94a3b8" width={180} tick={{ fontSize: 11, fill: '#e2e8f0' }} interval={0} />
+                                        <Bar dataKey="percentage" name="Capaian" barSize={20} fill={COLORS[index % COLORS.length]} isAnimationActive={false}>
+                                            <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => typeof value === 'number' && value > 0 ? `${value}%` : ''} />
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                            )}
                         </ChartCard>
                     ))}
                 </div>

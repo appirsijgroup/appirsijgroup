@@ -57,14 +57,14 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   const initializeFromEmployee = useCallback(async (emp: Employee) => {
     console.log('🔄 MutabaahContext: Quick initializing from employee object', {
       employeeId: emp.id,
-      activatedMonths: emp.activated_months || emp.activatedMonths,
-      hasActivities: !!emp.monthly_activities // 🔥 FIX: HANYA cek monthly_activities (sudah dari tabel baru)
+      activatedMonths: emp.activatedMonths || emp.activated_months,
+      hasActivities: !!emp.monthlyActivities // 🔥 FIX: Gunakan monthlyActivities (camelCase) - konsisten dengan API
     });
 
     // Use data directly from employee object (already fresh from Supabase)
-    // 🔥 FIX: monthly_activities sudah diambil dari employee_monthly_activities table oleh /api/auth/me
-    const months = emp.activated_months || emp.activatedMonths || [];
-    const activities = emp.monthly_activities || {}; // HANYA gunakan monthly_activities
+    // 🔥 FIX: monthlyActivities sekarang dikonversi ke camelCase oleh /api/auth/me
+    const months = emp.activatedMonths || emp.activated_months || [];
+    const activities = emp.monthlyActivities || emp.monthly_activities || {}; // Gunakan monthlyActivities (camelCase) dulu
 
     // 🔥 Define currentMonth
     const now = new Date();
@@ -127,12 +127,11 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
             const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
             await updateMonthlyProgress(emp.id, currentMonth, updatedActivities[currentMonth]);
 
-            // 🔥 FIX: HANYA update monthly_activities (snake_case), jangan update properti lama
-            // Properti employee_monthly_activities TIDAK ADA di database
+            // 🔥 FIX: Update monthlyActivities (camelCase) - konsisten dengan API
             if (onUpdateEmployee) {
               const updatedEmployee = {
                 ...emp,
-                monthly_activities: updatedActivities
+                monthlyActivities: updatedActivities
               };
               onUpdateEmployee(updatedEmployee);
             }

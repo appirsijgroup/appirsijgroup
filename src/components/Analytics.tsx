@@ -436,6 +436,7 @@ const MutabaahPerformanceReport: React.FC<{
         });
 
         filteredUsers.forEach(user => {
+            // 🔥 FIX: Use monthlyActivities (camelCase) - now consistent across all APIs
             const monthProgress = user.monthlyActivities?.[monthKey] || {};
             dailyActivitiesConfig.forEach(activity => {
                 activityTotals[activity.id].target += activity.monthlyTarget;

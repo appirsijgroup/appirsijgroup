@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
+// Helper function to convert snake_case to camelCase for employee objects
+// 🔥 SAME as employeeService.convertToCamelCase for consistency
+const convertToCamelCase = (emp: any): any => {
+  return {
+    ...emp,
+    lastVisitDate: emp.last_visit_date,
+    isActive: emp.is_active,
+    notificationEnabled: emp.notification_enabled,
+    profilePicture: emp.profile_picture,
+    monthlyActivities: emp.monthly_activities, // 🔥 Convert to camelCase
+    activatedMonths: emp.activated_months, // 🔥 Convert to camelCase
+    kaUnitId: emp.ka_unit_id,
+    supervisorId: emp.supervisor_id,
+    mentorId: emp.mentor_id,
+    dirutId: emp.dirut_id,
+    canBeMentor: emp.can_be_mentor,
+    canBeSupervisor: emp.can_be_supervisor,
+    canBeKaUnit: emp.can_be_ka_unit,
+    canBeDirut: emp.can_be_dirut,
+    functionalRoles: emp.functional_roles,
+    managerScope: emp.manager_scope,
+    locationId: emp.location_id,
+    locationName: emp.location_name,
+    readingHistory: emp.reading_history,
+    quranReadingHistory: emp.quran_reading_history,
+    todoList: emp.todo_list,
+    signature: emp.signature,
+    lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp,
+    managedHospitalIds: emp.managed_hospital_ids,
+    mustChangePassword: emp.must_change_password,
+    hospitalId: emp.hospital_id,
+    professionCategory: emp.profession_category,
+  };
+};
+
 export async function GET(request: NextRequest) {
   // 🔥 FIX: Create Supabase client inside function to avoid build-time errors
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -57,21 +92,22 @@ export async function GET(request: NextRequest) {
       console.log('⚠️ Warning: Could not fetch monthly activities:', activitiesError.message)
     }
 
-    // Combine employee data dengan monthly activities
-    // 🔥 FIX: HANYA gunakan data dari tabel employee_monthly_activities
-    // Kolom employees.monthly_activities sudah TIDAK DIGUNAKAN LAGI
+    // 🔥 FIX: Gunakan data dari tabel employee_monthly_activities
     const monthlyActivitiesFromNewTable = monthlyActivitiesData?.activities || {};
 
+    // Gabungkan dengan employee data
     const employeeWithActivities = {
       ...employee,
-      // HANYA gunakan data dari tabel baru employee_monthly_activities
-      monthly_activities: monthlyActivitiesFromNewTable,
+      monthly_activities: monthlyActivitiesFromNewTable, // Temporarily use snake_case
     }
 
     console.log('✅ /api/auth/me - Found:', employee.name)
     console.log('  - Months in employee_monthly_activities table:', Object.keys(monthlyActivitiesFromNewTable).length)
 
-    return NextResponse.json({ employee: employeeWithActivities })
+    // 🔥 FIX: Convert to camelCase BEFORE returning (consistent with employeeService)
+    const employeeInCamelCase = convertToCamelCase(employeeWithActivities);
+
+    return NextResponse.json({ employee: employeeInCamelCase })
 
   } catch (error) {
     console.error('Error /api/auth/me:', error)

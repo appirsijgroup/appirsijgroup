@@ -33,6 +33,12 @@ const LoginContainer = () => {
 
             console.log('✅ Success:', data.employee.name);
 
+            // 🔥 FIX: Stop loading SEBELUM redirect agar tidak muncul blank screen
+            setIsLoading(false);
+
+            // Tunggu sebentar agar UI ter-update dengan isLoading = false
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Redirect ke dashboard
             // MainLayoutShell akan memuat data lengkap melalui loadLoggedInEmployee()
             router.push('/dashboard');
@@ -43,7 +49,10 @@ const LoginContainer = () => {
             console.error('❌ Error:', err);
             return { employee: null, error: 'Terjadi kesalahan' };
         } finally {
-            setIsLoading(false);
+            // Pastikan loading di-stop (double protection)
+            if (isLoading) {
+                setIsLoading(false);
+            }
         }
     };
 

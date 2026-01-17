@@ -368,10 +368,28 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsMenuOpen(!isMenuOpen);
     }, [isMenuOpen, setIsMenuOpen]);
 
-    // 🔥 REMOVED: No loading screen - middleware handles auth redirect
-    // Don't show loading spinner, just render empty or let middleware redirect
+    // 🔥 FIX: Load employee data on mount to prevent blank screen after login
+    useEffect(() => {
+        // Jika belum ada employee data dan belum pernah mencoba load (belum hydrated)
+        if (!loggedInEmployee && !isHydrated) {
+            console.log('🔄 MainLayoutShell: No employee data, loading from server...');
+            loadLoggedInEmployee();
+        }
+    }, []); // Only run once on mount
 
-    // Guard: if no employee, don't render (middleware will redirect)
+    // 🔥 FIX: Show loading screen if loading employee data
+    if (!loggedInEmployee && !isHydrated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
+                    <p className="text-white text-lg">Memuat data karyawan...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Guard: if still no employee after hydration, don't render (middleware will redirect)
     if (!loggedInEmployee) {
         return null;
     }

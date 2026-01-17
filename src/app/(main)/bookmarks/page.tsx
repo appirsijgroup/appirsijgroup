@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import Bookmarks from '@/components/Bookmarks';
 import { useAppDataStore } from '@/store/store';
 import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/bookmarkStore';
@@ -18,6 +19,7 @@ import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/book
  */
 export default function BookmarksPage() {
     const { loggedInEmployee } = useAppDataStore();
+    const router = useRouter();
 
     // React Query untuk data fetching (otomatis loading state, error handling, caching)
     const {
@@ -73,8 +75,8 @@ export default function BookmarksPage() {
     };
 
     const handleNavigateToAyah = (surahNumber: number, ayahNumber: number) => {
-        // Navigate to Al-Qur'an page with specific ayah
-        window.location.href = `/alquran?surah=${surahNumber}&ayah=${ayahNumber}`;
+        // 🔥 FIX: Use Next.js router for client-side navigation (no full page reload)
+        router.push(`/alquran?surah=${surahNumber}&ayah=${ayahNumber}`);
     };
 
     // Loading state otomatis dari React Query

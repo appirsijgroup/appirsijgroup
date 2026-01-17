@@ -41,11 +41,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 🔥 FIX: Add defensive check for environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Supabase environment variables not configured')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     // Use service role client to bypass RLS policies
-    const supabaseService = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
     // Check if email already exists in employees (bypass RLS)
     const { data: existingEmployee, error: checkError } = await supabaseService

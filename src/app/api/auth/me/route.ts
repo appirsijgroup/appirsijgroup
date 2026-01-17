@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-const supabase = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function GET(request: NextRequest) {
+  // 🔥 FIX: Create Supabase client inside function to avoid build-time errors
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('❌ Supabase environment variables not configured')
+    return NextResponse.json(
+      { error: 'Server configuration error' },
+      { status: 500 }
+    )
+  }
+
+  const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey)
+
   try {
     // Baca cookie userId
     const userId = request.cookies.get('userId')?.value

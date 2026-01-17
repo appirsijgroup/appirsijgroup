@@ -21,11 +21,20 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ /api/employees - Authenticated userId:', userId)
 
+    // 🔥 FIX: Add defensive check for environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Supabase environment variables not configured')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     // Use service role client to bypass RLS
-    const supabaseService = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
     // Fetch all employees
     const { data: employees, error } = await supabaseService

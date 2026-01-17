@@ -775,14 +775,42 @@ export default function AdminPage() {
         }
     };
 
-    const handleAddActivity = (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => {
-        const newActivity: Activity = {
-            ...activityData,
-            id: Date.now().toString(),
-            createdBy: loggedInEmployee?.id || '',
-            createdByName: loggedInEmployee?.name || 'System'
+    const handleAddActivity = async (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => {
+        const creator = {
+            id: loggedInEmployee?.id || '',
+            name: loggedInEmployee?.name || 'System'
         };
-        addActivity(newActivity);
+
+        try {
+            // 🔥 Sync to Supabase
+            const { createActivity } = await import('@/services/scheduledActivityService');
+
+            // Prepare activity with creator info
+            const activityWithCreator = {
+                ...activityData,
+                createdBy: creator.id,
+                createdAt: new Date().toISOString()
+            };
+
+            const createdActivity = await createActivity(activityWithCreator as any);
+
+            // Add to local store (convert from service type to store type)
+            addActivity(createdActivity as any);
+
+            console.log('✅ Activity created in Supabase:', createdActivity);
+            addToast('Kegiatan berhasil dibuat!', 'success');
+        } catch (error) {
+            console.error('❌ Failed to create activity in Supabase:', error);
+            // Still add to local store as fallback
+            const newActivity: Activity = {
+                ...activityData,
+                id: Date.now().toString(),
+                createdBy: creator.id,
+                createdByName: creator.name
+            };
+            addActivity(newActivity);
+            addToast('Gagal menyimpan ke database. Data hanya tersimpan lokal.', 'error');
+        }
     };
 
     const handleAddSunnahIbadah = async (ibadahData: Omit<SunnahIbadah, 'id' | 'createdBy' | 'createdByName'>) => {

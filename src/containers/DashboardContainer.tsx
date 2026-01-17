@@ -43,7 +43,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     const { createNotification } = useNotificationStore();
     const { logAudit } = useAuditLogStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
-    const { activities, teamAttendanceSessions, addActivity, addTeamAttendanceSessions, updateTeamAttendanceSession, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase } = useActivityStore();
+    const { activities, teamAttendanceSessions, addActivity, addTeamAttendanceSessions, updateTeamAttendanceSession, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
     const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
@@ -698,6 +698,22 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
         loadTeamAttendanceSessions();
     }, []); // Empty dependency array = run once on mount
+
+    // Load activities from Supabase on mount
+    useEffect(() => {
+        const loadActivities = async () => {
+            if (!loggedInEmployee) return;
+
+            try {
+                console.log('📋 Loading activities from Supabase...');
+                await loadActivitiesFromSupabase(loggedInEmployee.id);
+            } catch (error) {
+                console.error('❌ Failed to load activities:', error);
+            }
+        };
+
+        loadActivities();
+    }, [loggedInEmployee]); // Run when loggedInEmployee changes
 
     // 🔥 Load sunnah ibadah from Supabase on mount
     useEffect(() => {

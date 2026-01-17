@@ -6,7 +6,9 @@ interface ActivityState {
     activities: Activity[];
     teamAttendanceSessions: TeamAttendanceSession[];
     isLoadingTeamAttendance: boolean;
+    isLoadingActivities: boolean;
     teamAttendanceError: string | null;
+    activitiesError: string | null;
     addActivity: (activity: Activity) => void;
     updateActivity: (activityId: string, updates: Partial<Activity>) => void;
     deleteActivity: (activityId: string) => void;
@@ -14,6 +16,7 @@ interface ActivityState {
     updateTeamAttendanceSession: (sessionId: string, updates: Partial<TeamAttendanceSession>) => void;
     deleteTeamAttendanceSession: (sessionId: string) => void;
     loadTeamAttendanceSessionsFromSupabase: () => Promise<void>;
+    loadActivitiesFromSupabase: (employeeId?: string) => Promise<void>;
 }
 
 export const useActivityStore = create<ActivityState>()(
@@ -22,7 +25,9 @@ export const useActivityStore = create<ActivityState>()(
             activities: [],
             teamAttendanceSessions: [],
             isLoadingTeamAttendance: false,
+            isLoadingActivities: false,
             teamAttendanceError: null,
+            activitiesError: null,
             addActivity: (activity) => set((state) => ({ activities: [...state.activities, activity] })),
             updateActivity: (activityId, updates) => set((state) => ({
                 activities: state.activities.map(act => act.id === activityId ? { ...act, ...updates } : act)
@@ -61,6 +66,43 @@ export const useActivityStore = create<ActivityState>()(
                     set({
                         teamAttendanceError: error instanceof Error ? error.message : 'Failed to load sessions',
                         isLoadingTeamAttendance: false
+                    });
+                }
+            },
+            loadActivitiesFromSupabase: async (employeeId?: string) => {
+                set({ isLoadingActivities: true, activitiesError: null });
+
+                try {
+                    // Dynamic import to avoid circular dependencies
+                    const { getAllActivities, getActivitiesForEmployee } = await import('@/services/activitiesService');
+                    let activities;
+
+                    if (employeeId) {
+                        // If employeeId provided, get employee-specific activities
+                        const { getEmployeeById } = await import('@/services/employeeService');
+                        const employee = await getEmployeeById(employeeId);
+                        if (employee) {
+                            activities = await getActivitiesForEmployee(employee);
+                        } else {
+                            throw new Error('Employee not found');
+                        }
+                    } else {
+                        // Get all activities (admin view)
+                        activities = await getAllActivities();
+                    }
+
+                    set({
+                        activities: activities,
+                        isLoadingActivities: false,
+                        activitiesError: null
+                    });
+
+                    console.log(`✅ Loaded ${activities.length} activities from Supabase`);
+                } catch (error) {
+                    console.error('❌ Error loading activities:', error);
+                    set({
+                        activitiesError: error instanceof Error ? error.message : 'Failed to load activities',
+                        isLoadingActivities: false
                     });
                 }
             },

@@ -58,22 +58,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Combine employee data dengan monthly activities
-    // 🔥 FIX: Prioritaskan data dari employee_monthly_activities, bukan dari employees.monthly_activities
+    // 🔥 FIX: HANYA gunakan data dari tabel employee_monthly_activities
+    // Kolom employees.monthly_activities sudah TIDAK DIGUNAKAN LAGI
     const monthlyActivitiesFromNewTable = monthlyActivitiesData?.activities || {};
 
     const employeeWithActivities = {
       ...employee,
-      // Prioritaskan data dari tabel baru
-      monthly_activities: Object.keys(monthlyActivitiesFromNewTable).length > 0
-        ? monthlyActivitiesFromNewTable
-        : (employee.monthly_activities || {}),
-      // Untuk kompatibilitas dengan kode yang lama
-      employee_monthly_activities: monthlyActivitiesFromNewTable,
+      // HANYA gunakan data dari tabel baru employee_monthly_activities
+      monthly_activities: monthlyActivitiesFromNewTable,
     }
 
     console.log('✅ /api/auth/me - Found:', employee.name)
-    console.log('  - Months in new table:', Object.keys(monthlyActivitiesFromNewTable).length)
-    console.log('  - Using activities from:', Object.keys(monthlyActivitiesFromNewTable).length > 0 ? 'NEW table (employee_monthly_activities)' : 'OLD column (employees.monthly_activities)')
+    console.log('  - Months in employee_monthly_activities table:', Object.keys(monthlyActivitiesFromNewTable).length)
 
     return NextResponse.json({ employee: employeeWithActivities })
 

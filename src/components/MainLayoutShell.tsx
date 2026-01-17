@@ -105,42 +105,17 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         }
     }, [loggedInEmployee, addToast, loadLoggedInEmployee]);
 
-    // --- Auth Check (FAST PATH - runs before loading data) ---
+    // --- Load Employee Data from Session on Mount ---
     useEffect(() => {
-        // Fast auth check using localStorage (no database query needed)
-        const userId = localStorage.getItem('loggedInUserId');
-
-        if (!userId && !isHydrated) {
-            setHydrated(true);
-            router.push('/login');
-            return;
-        }
-    }, [isHydrated, router, setHydrated]);
-
-    // --- Load Employee Data from Supabase on Mount ---
-    useEffect(() => {
+        // HANYA load jika BELUM hydrate DAN employee BELUM ada
+        // Jangan load lagi ketika employee sudah ada!
         if (!isHydrated && loggedInEmployee === null) {
-            const userId = localStorage.getItem('loggedInUserId');
-            if (userId) {
-                loadLoggedInEmployee();
-            } else {
-                // No user session - mark as hydrated immediately to prevent loading
-                setHydrated(true);
-            }
+            // Load user from session (middleware already verified the session)
+            loadLoggedInEmployee();
         }
-    }, [isHydrated, loggedInEmployee, loadLoggedInEmployee, setHydrated]);
-
-    // --- Auth Check After Hydration ---
-    useEffect(() => {
-        // Only check auth after hydration is complete
-        if (!isHydrated) return;
-
-        // Check if user is authenticated
-        const userId = localStorage.getItem('loggedInUserId');
-        if (!userId || !loggedInEmployee) {
-            router.push('/login');
-        }
-    }, [loggedInEmployee, isHydrated, router]);
+        // 🔥 FIX: Remove loadLoggedInEmployee from deps to prevent infinite reload
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHydrated, loggedInEmployee]);
 
     // --- Load Mutabaah Settings from Supabase ---
     useEffect(() => {
@@ -150,7 +125,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 console.error('❌ Error loading mutabaah settings:', error);
             });
         }
-    }, [isHydrated, loggedInEmployee, loadFromSupabase]);
+        // 🔥 FIX: Remove loadFromSupabase from deps to prevent infinite loop
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHydrated, loggedInEmployee]);
 
     // --- Subscribe to Mutabaah Settings Realtime Updates ---
     useEffect(() => {
@@ -165,7 +142,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 }
             };
         }
-    }, [isHydrated, loggedInEmployee, subscribeToRealtime]);
+        // 🔥 FIX: Remove subscribeToRealtime from deps to prevent infinite loop
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHydrated, loggedInEmployee]);
 
     // --- Load Notifications from Supabase & Subscribe to Realtime ---
     useEffect(() => {
@@ -389,15 +368,12 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsMenuOpen(!isMenuOpen);
     }, [isMenuOpen, setIsMenuOpen]);
 
-    // 🔥 OPTIMIZATION: Only check loggedInEmployee, defer all non-critical loading
-    // Don't show loading spinner if we're logging out
-    if (!loggedInEmployee && !isLoggingOut) {
-        return (
-            <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
-                <p className="text-lg">{!isHydrated ? 'Memuat sesi...' : 'Memuat data user...'}</p>
-            </div>
-        );
+    // 🔥 REMOVED: No loading screen - middleware handles auth redirect
+    // Don't show loading spinner, just render empty or let middleware redirect
+
+    // Guard: if no employee, don't render (middleware will redirect)
+    if (!loggedInEmployee) {
+        return null;
     }
 
     return (
@@ -419,20 +395,33 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                     unreadNotificationsCount={deferredUnreadNotifications}
                     onToggleNotifications={handleToggleNotifications}
                 />
-                <main className="flex-1 overflow-y-auto p-2 sm:p-4" id="main-content-area">
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4 relative" id="main-content-area">
                     <ErrorBoundary>
-                        {activationStatus.shouldShowActivationRequired ? (
-                            <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
-                                <ActivationRequired
-                                    monthName={activationStatus.currentMonthName}
-                                    monthKey={activationStatus.currentMonthKey}
-                                    onActivate={handleActivation}
-                                    isLoading={isActivating}
-                                />
+                        {/* 🔥 Smooth loading indicator */}
+                        {(!isHydrated || !loggedInEmployee) && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-slate-900/95 to-indigo-800/95 backdrop-blur-sm">
+                                <div className="text-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-400 border-t-transparent mx-auto mb-4"></div>
+                                    <p className="text-white text-base font-medium">Memuat...</p>
+                                </div>
                             </div>
-                        ) : (
-                            children
                         )}
+
+                        {/* Page content with fade-in animation */}
+                        <div className={`transition-opacity duration-200 ${isHydrated && loggedInEmployee ? 'opacity-100' : 'opacity-0'}`}>
+                            {activationStatus.shouldShowActivationRequired ? (
+                                <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
+                                    <ActivationRequired
+                                        monthName={activationStatus.currentMonthName}
+                                        monthKey={activationStatus.currentMonthKey}
+                                        onActivate={handleActivation}
+                                        isLoading={isActivating}
+                                    />
+                                </div>
+                            ) : (
+                                children
+                            )}
+                        </div>
                     </ErrorBoundary>
                 </main>
                 <Footer />

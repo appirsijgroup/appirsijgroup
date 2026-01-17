@@ -264,11 +264,31 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const newMonthProgress = { ...monthProgress, [dayKey]: newDayProgress };
                 const newMonthlyActivities = { ...monthlyActivities, [monthKey]: newMonthProgress };
 
-                // Optimistically update the profile
-                handleUpdateProfile(loggedInEmployee.id, { monthlyActivities: newMonthlyActivities });
+                console.log('🔄 Step 1: Optimistically updating local state...');
+                // 🔥 CRITICAL: Don't send monthlyActivities to handleUpdateProfile - update local state manually instead
+                // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
+                // Ini untuk mencegah re-render cascade di MainLayoutShell
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [loggedInEmployee.id]: {
+                        ...prev[loggedInEmployee.id],
+                        employee: {
+                            ...prev[loggedInEmployee.id].employee,
+                            monthlyActivities: newMonthlyActivities
+                        }
+                    }
+                }));
+                console.log('✅ Step 1 complete: Local state updated (allUsersData only, NOT loggedInEmployee)');
 
-                // Then save to Supabase
-                await updateEmployee(loggedInEmployee.id, { monthlyActivities: newMonthlyActivities });
+                console.log('🔄 Step 2: Saving to employee_monthly_activities table...');
+                // 🔥 FIX: Save to employee_monthly_activities table via monthlyActivityService
+                const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                console.log('✅ Step 2a: monthlyActivityService imported successfully');
+
+                await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                console.log('✅ Step 2b: updateMonthlyActivities completed');
+
+                console.log('✅ Manual activity saved to employee_monthly_activities table:', { activityId, date, monthKey });
 
                 addToast('Aktivitas berhasil dilaporkan.', 'success');
                 return true;
@@ -276,8 +296,18 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             } catch (error: unknown) {
                 console.error('❌ Error saving manual activity to Supabase:', error);
 
-                // Rollback the optimistic update on failure
-                handleUpdateProfile(loggedInEmployee.id, { monthlyActivities: originalMonthlyActivities });
+                // Rollback the optimistic update on failure - update local state manually
+                // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [loggedInEmployee.id]: {
+                        ...prev[loggedInEmployee.id],
+                        employee: {
+                            ...prev[loggedInEmployee.id].employee,
+                            monthlyActivities: originalMonthlyActivities
+                        }
+                    }
+                }));
 
                 let errorMessage = 'Unknown error occurred';
                 if (error instanceof Error) {
@@ -334,16 +364,44 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             }
 
             // Update local state FIRST to provide immediate feedback
+            // 🔥 CRITICAL: Don't send monthlyActivities to handleUpdateProfile - it will try to save to employees table and fail!
             handleUpdateProfile(loggedInEmployee.id, {
-                readingHistory: updatedHistory,
-                monthlyActivities: newMonthlyActivities
+                readingHistory: updatedHistory
+                // monthlyActivities is handled separately below
             });
 
-            // 🔥 FIX: Simpan ke Supabase database (readingHistory + monthlyActivities)
-            await updateEmployee(loggedInEmployee.id, {
-                readingHistory: updatedHistory,
-                monthlyActivities: newMonthlyActivities
-            });
+            // Also update monthlyActivities in local state manually
+            if (newMonthlyActivities) {
+                setLoggedInEmployee(prev => prev ? { ...prev, monthlyActivities: newMonthlyActivities } : prev);
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [loggedInEmployee.id]: {
+                        ...prev[loggedInEmployee.id],
+                        employee: {
+                            ...prev[loggedInEmployee.id].employee,
+                            monthlyActivities: newMonthlyActivities
+                        }
+                    }
+                }));
+            }
+
+            // 🔥 FIX: Save to Supabase database
+            // Save readingHistory to employee_reading_history table and monthlyActivities to employee_monthly_activities table
+            const { submitBookReading } = await import('@/services/readingHistoryService');
+            await submitBookReading(
+                loggedInEmployee.id,
+                bookTitle,
+                pagesRead,
+                dateCompleted
+            );
+            console.log('✅ Reading history saved to employee_reading_history table');
+
+            // Save monthlyActivities to employee_monthly_activities table
+            if (newMonthlyActivities) {
+                const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                console.log('✅ Book reading monthly activities saved to employee_monthly_activities table');
+            }
             console.log("✅ Book reading saved to Supabase");
 
             if (activityIdToUpdate && isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
@@ -407,15 +465,27 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (!loggedInEmployee) return;
 
         try {
-            console.log("📝 Updating todo list");
+            console.log("📝 Updating todo list to employee_todos table");
             console.log('📋 New todo list:', todoList);
 
             // Update local state FIRST to provide immediate feedback
-            handleUpdateProfile(userId, { todoList });
+            // 🔥 CRITICAL: Don't send todoList to handleUpdateProfile - update local state manually instead
+            setLoggedInEmployee(prev => prev ? { ...prev, todoList } : prev);
+            setAllUsersData(prev => ({
+                ...prev,
+                [userId]: {
+                    ...prev[userId],
+                    employee: {
+                        ...prev[userId].employee,
+                        todoList
+                    }
+                }
+            }));
 
-            // Save to Supabase
-            await updateEmployee(userId, { todoList });
-            console.log("✅ Todo list saved to Supabase");
+            // 🔥 FIX: Save to employee_todos table using todoService
+            const { bulkUpdateEmployeeTodos } = await import('@/services/todoService');
+            await bulkUpdateEmployeeTodos(userId, todoList);
+            console.log("✅ Todo list saved to employee_todos table");
 
             addToast('To-Do List berhasil diperbarui!', 'success');
 
@@ -424,56 +494,60 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // Small delay to ensure Supabase has processed the update
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                const freshEmployee = await getEmployeeById(userId);
-                if (freshEmployee) {
-                    console.log('🔄 Fresh employee data retrieved from Supabase after todo list update:', {
-                        id: freshEmployee.id,
-                        todoList: freshEmployee.todoList
-                    });
+                // Reload todos from database to ensure sync
+                const { getEmployeeTodos } = await import('@/services/todoService');
+                const freshTodos = await getEmployeeTodos(userId);
 
-                    if (userId === loggedInEmployee.id) {
-                        setLoggedInEmployee(freshEmployee);
-                    }
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
+                console.log('🔄 Fresh todos retrieved from employee_todos table:', freshTodos.length);
 
-                    console.log('✅ Local state synchronized with Supabase data after todo list update');
-                } else {
-                    console.warn('⚠️ Could not retrieve fresh employee data after todo list update');
+                // Update local state with fresh data from database
+                if (userId === loggedInEmployee.id) {
+                    setLoggedInEmployee(prev => prev ? { ...prev, todoList: freshTodos } : prev);
                 }
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [userId]: {
+                        ...prev[userId],
+                        employee: {
+                            ...prev[userId].employee,
+                            todoList: freshTodos
+                        }
+                    }
+                }));
+
+                console.log('✅ Local state synchronized with employee_todos data');
             } catch (refreshError) {
-                console.error('❌ Error refreshing employee data after todo list update:', refreshError);
+                console.error('❌ Error refreshing todo data after update:', refreshError);
             }
         } catch (error) {
-            console.error('❌ Error saving todo list to Supabase:', error);
+            console.error('❌ Error saving todo list to employee_todos table:', error);
 
             // Rollback the local state update in case of failure
             try {
-                const freshEmployee = await getEmployeeById(userId);
-                if (freshEmployee) {
-                    if (userId === loggedInEmployee.id) {
-                        setLoggedInEmployee(freshEmployee);
-                    }
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
+                // Reload from database to get accurate state
+                const { getEmployeeTodos } = await import('@/services/todoService');
+                const freshTodos = await getEmployeeTodos(userId);
+
+                if (userId === loggedInEmployee.id) {
+                    setLoggedInEmployee(prev => prev ? { ...prev, todoList: freshTodos } : prev);
                 }
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [userId]: {
+                        ...prev[userId],
+                        employee: {
+                            ...prev[userId].employee,
+                            todoList: freshTodos
+                        }
+                    }
+                }));
             } catch (rollbackError) {
                 console.error('Could not rollback after failed todo list update:', rollbackError);
             }
 
             addToast('Gagal menyimpan To-Do List. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, handleUpdateProfile, addToast, setLoggedInEmployee, setAllUsersData]);
+    }, [loggedInEmployee, setLoggedInEmployee, setAllUsersData]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleDeleteReadingHistory = useCallback(async (type: 'book' | 'quran', id: string, _date: string) => {
@@ -484,11 +558,24 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const updatedHistory = (loggedInEmployee.readingHistory || []).filter(item => item.id !== id);
 
                 // Update local state FIRST to provide immediate feedback
-                handleUpdateProfile(loggedInEmployee.id, { readingHistory: updatedHistory });
+                // 🔥 CRITICAL: Don't send readingHistory to handleUpdateProfile - it will try to save to employees table!
+                // Just update local state manually
+                setLoggedInEmployee(prev => prev ? { ...prev, readingHistory: updatedHistory } : prev);
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [loggedInEmployee.id]: {
+                        ...prev[loggedInEmployee.id],
+                        employee: {
+                            ...prev[loggedInEmployee.id].employee,
+                            readingHistory: updatedHistory
+                        }
+                    }
+                }));
 
-                // 🔥 FIX: Simpan ke Supabase database
-                await updateEmployee(loggedInEmployee.id, { readingHistory: updatedHistory });
-                console.log("✅ Book reading history deleted");
+                // 🔥 FIX: Delete from employee_reading_history table
+                const { deleteReadingHistory: deleteHistory } = await import('@/services/readingHistoryService');
+                await deleteHistory(id, loggedInEmployee.id);
+                console.log("✅ Book reading history deleted from employee_reading_history table");
 
                 addToast('Riwayat bacaan buku berhasil dihapus', 'success');
 
@@ -524,11 +611,24 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const updatedHistory = (loggedInEmployee.quranReadingHistory || []).filter(item => item.id !== id);
 
                 // Update local state FIRST to provide immediate feedback
-                handleUpdateProfile(loggedInEmployee.id, { quranReadingHistory: updatedHistory });
+                // 🔥 CRITICAL: Don't send quranReadingHistory to handleUpdateProfile - it will try to save to employees table!
+                // Just update local state manually
+                setLoggedInEmployee(prev => prev ? { ...prev, quranReadingHistory: updatedHistory } : prev);
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [loggedInEmployee.id]: {
+                        ...prev[loggedInEmployee.id],
+                        employee: {
+                            ...prev[loggedInEmployee.id].employee,
+                            quranReadingHistory: updatedHistory
+                        }
+                    }
+                }));
 
-                // 🔥 FIX: Simpan ke Supabase database
-                await updateEmployee(loggedInEmployee.id, { quranReadingHistory: updatedHistory });
-                console.log("✅ Quran reading history deleted");
+                // 🔥 FIX: Delete from employee_quran_reading_history table using service
+                const { deleteQuranReadingHistory } = await import('@/services/readingHistoryService');
+                await deleteQuranReadingHistory(id, loggedInEmployee.id);
+                console.log("✅ Quran reading history deleted from employee_quran_reading_history table");
 
                 addToast('Riwayat bacaan Quran berhasil dihapus', 'success');
 

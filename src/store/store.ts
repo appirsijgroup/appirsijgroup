@@ -43,45 +43,59 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     setHospitalsData: (hospitals) => set({ hospitalsData: hospitals }),
     setHydrated: (isHydrated) => set({ isHydrated }),
 
-    // 🔥 NEW: Load logged-in employee from Supabase
-    // ⚡ OPTIMIZED: Skip database query if no user in localStorage to prevent slow loading
+    // 🔥 NEW: Load logged-in employee from session
+    // ⚡ SIMPLIFIED: Single source of truth - session cookie (JWT)
     loadLoggedInEmployee: async () => {
-        const userId = localStorage.getItem('loggedInUserId');
-
-        // Fast path: No user in localStorage = skip database query entirely
-        if (!userId) {
-            console.log('❌ No logged-in user ID in localStorage - skipping database query');
-            set({ isHydrated: true });
-            return;
-        }
-
         try {
-            const employee = await getEmployeeById(userId);
+            // Call API to verify session and get user data
+            const response = await fetch('/api/auth/me', {
+                credentials: 'include', // Important: include cookies
+            });
 
-            if (employee) {
-                set({
-                    loggedInEmployee: employee,
-                    allUsersData: {
-                        [userId]: {
-                            employee,
-                            attendance: {},
-                            history: {}
-                        }
-                    },
-                    isHydrated: true
-                });
+            if (response.ok) {
+                const data = await response.json();
+                const employee = data.employee;
 
-                console.log('✅ Logged-in employee fully loaded and hydrated');
+                if (employee) {
+                    // Update localStorage for client-side convenience
+                    localStorage.setItem('loggedInUserId', employee.id);
+
+                    set({
+                        loggedInEmployee: employee,
+                        allUsersData: {
+                            [employee.id]: {
+                                employee,
+                                attendance: {},
+                                history: {}
+                            }
+                        },
+                        isHydrated: true
+                    });
+
+                    console.log('✅ Logged-in employee loaded from session:', employee.name);
+                } else {
+                    // No employee data in response
+                    throw new Error('No employee data in response');
+                }
             } else {
-                console.error('❌ Employee not found in Supabase for ID:', userId);
-                // Clear invalid localStorage and mark as hydrated
+                // No valid session - not logged in
+                console.log('❌ No valid session - not logged in');
                 localStorage.removeItem('loggedInUserId');
                 set({ loggedInEmployee: null, isHydrated: true });
+                // Redirect to login page
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/login';
+                }
             }
         } catch (error) {
-            console.error('❌ Error loading employee from Supabase:', error);
-            // On error, still mark as hydrated to prevent infinite loading
-            set({ isHydrated: true });
+            console.error('❌ Error loading employee from session:', error);
+            // On error, clear state and mark as hydrated
+            localStorage.removeItem('loggedInUserId');
+            set({ loggedInEmployee: null, isHydrated: true });
+            // Redirect to login page
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+            }
         }
     },
 

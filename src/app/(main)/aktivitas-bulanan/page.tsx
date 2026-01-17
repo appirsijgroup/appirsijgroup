@@ -195,7 +195,7 @@ export default function AktivitasBulananPage() {
         <MonthlyActivities
             employee={loggedInEmployee}
             allUsers={Object.values(allUsersData).map(data => data.employee)}
-            monthlyProgressData={monthlyProgressData}
+            monthlyProgressData={monthlyProgressData || {}}
             onUpdate={handleUpdateMonthlyActivities}
             onActivateMonth={handleActivateMonth}
             weeklyReportSubmissions={weeklyReportSubmissions}

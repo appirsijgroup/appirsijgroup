@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/services/database.types';
+import * as monthlyActivityService from '@/services/monthlyActivityService';
 
 // Use centralized Supabase client to avoid multiple instances
 export { supabase };
@@ -169,14 +170,8 @@ export const attendanceService = {
 export const monthlyActivitiesService = {
   // Get monthly activities for an employee
   getMonthlyActivities: async (employeeId: string) => {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('monthly_activities')
-      .eq('id', employeeId)
-      .single();
-
-    if (error) throw error;
-    return (data as unknown as { monthly_activities: Database['public']['Tables']['employees']['Row']['monthly_activities'] }).monthly_activities || {};
+    // Gunakan monthlyActivityService yang sudah di-update untuk menggunakan tabel employee_monthly_activities
+    return await monthlyActivityService.getMonthlyActivities(employeeId);
   },
 
   // Update monthly activities for an employee
@@ -184,14 +179,16 @@ export const monthlyActivitiesService = {
     employeeId: string,
     monthlyActivities: Record<string, any>
   ) => {
-    const { data, error } = await (supabase
-      .from('employees') as any)
-      .update({ monthly_activities: monthlyActivities })
+    // Gunakan monthlyActivityService yang sudah di-update untuk menggunakan tabel employee_monthly_activities
+    await monthlyActivitiesService.updateMonthlyActivities(employeeId, monthlyActivities);
+
+    // Return employee data (optional, untuk consistency)
+    const { data } = await supabase
+      .from('employees')
+      .select('*')
       .eq('id', employeeId)
-      .select()
       .single();
 
-    if (error) throw error;
     return data;
   },
 

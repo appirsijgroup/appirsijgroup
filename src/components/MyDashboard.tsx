@@ -369,11 +369,14 @@ const SimpleActivityCard: React.FC<{
     }, [date, submissions]);
 
     const handleSubmit = () => {
+        console.log('🔵 [SimpleActivityCard] handleSubmit called for activity:', activity.title, 'activity.id:', activity.id, 'date:', date);
         if (!date) {
             alert("Harap pilih tanggal.");
             return;
         }
+        console.log('🔵 [SimpleActivityCard] Calling onLogManualActivity with:', activity.id, date);
         onLogManualActivity(activity.id, date);
+        console.log('🔵 [SimpleActivityCard] onLogManualActivity call completed');
     };
 
     return (

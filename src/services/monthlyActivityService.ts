@@ -8,18 +8,42 @@ import type { Employee, MonthlyActivityProgress } from '@/types';
 
 // Get monthly activities for an employee
 export const getMonthlyActivities = async (employeeId: string): Promise<Record<string, MonthlyActivityProgress>> => {
-    const { data, error } = await supabase
-        .from('employees')
-        .select('monthly_activities')
-        .eq('id', employeeId)
-        .single();
+    try {
+        // Ambil dari tabel employee_monthly_activities
+        const { data, error } = await supabase
+            .from('employee_monthly_activities')
+            .select('activities')
+            .eq('employee_id', employeeId)
+            .maybeSingle(); // Use maybeSingle instead of single to handle no rows
 
-    if (error) {
-        console.error('Error getting monthly activities:', error);
-        throw error;
+        if (error) {
+            console.error('❌ Error getting monthly activities:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+
+            // Jika tabel tidak ada (42P01), return empty object
+            if (error.code === '42P01') {
+                console.log('⚠️ Table employee_monthly_activities does not exist yet, using empty data');
+            }
+
+            // Return empty object untuk semua error (graceful degradation)
+            return {};
+        }
+
+        // Jika tidak ada data, return empty object
+        if (!data) {
+            console.log('ℹ️ No monthly activities found for employee:', employeeId);
+            return {};
+        }
+
+        return (data as any)?.activities || {};
+    } catch (err) {
+        console.error('❌ Unexpected error in getMonthlyActivities:', err);
+        return {};
     }
-
-    return (data as any)?.monthly_activities || {};
 };
 
 // Update monthly activities for an employee
@@ -27,17 +51,110 @@ export const updateMonthlyActivities = async (
     employeeId: string,
     monthlyActivities: Record<string, MonthlyActivityProgress>
 ): Promise<void> => {
-    const { error } = await (supabase
-        .from('employees') as any)
-        .update({
-            monthly_activities: monthlyActivities,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', employeeId);
+    console.log('🔄 updateMonthlyActivities called:', {
+        employeeId,
+        monthsCount: Object.keys(monthlyActivities).length,
+        months: Object.keys(monthlyActivities),
+        sampleData: JSON.stringify(monthlyActivities).substring(0, 200) + '...'
+    });
 
-    if (error) {
-        console.error('Error updating monthly activities:', error);
-        throw error;
+    try {
+        // Cek apakah data sudah ada
+        console.log('🔍 Step 1: Checking if employee exists in employee_monthly_activities...');
+        const { data: existing, error: checkError } = await supabase
+            .from('employee_monthly_activities')
+            .select('employee_id, activities')
+            .eq('employee_id', employeeId)
+            .maybeSingle();
+
+        console.log('Check result:', {
+            employeeId,
+            existing: !!existing,
+            checkError
+        });
+
+        if (checkError) {
+            console.error('❌ Error checking existing monthly activities:', checkError);
+            throw checkError;
+        }
+
+        if (existing) {
+            console.log('📝 Step 2: Employee exists, updating existing data...');
+            // Update existing data
+            const { data, error } = await supabase
+                .from('employee_monthly_activities')
+                .update({
+                    activities: monthlyActivities,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('employee_id', employeeId)
+                .select();
+
+            console.log('Update result:', {
+                    success: !error,
+                    error: error ? {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details
+                    } : null,
+                    data: data ? 'Updated successfully' : null
+                });
+
+            if (error) {
+                console.error('❌ Error updating monthly activities:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
+                throw error;
+            }
+
+            console.log('✅ Monthly activities updated for employee:', employeeId);
+        } else {
+            console.log('📝 Step 2: Employee not exists, inserting new data...');
+            // Insert new data
+            const { data, error } = await supabase
+                .from('employee_monthly_activities')
+                .insert({
+                    employee_id: employeeId,
+                    activities: monthlyActivities,
+                    updated_at: new Date().toISOString()
+                })
+                .select();
+
+            console.log('Insert result:', {
+                    success: !error,
+                    error: error ? {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details
+                    } : null,
+                    data: data ? 'Inserted successfully' : null
+                });
+
+            if (error) {
+                console.error('❌ Error inserting monthly activities:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
+                throw error;
+            }
+
+            console.log('✅ Monthly activities inserted for employee:', employeeId);
+        }
+
+        console.log('🎉 updateMonthlyActivities completed successfully!');
+    } catch (err) {
+        console.error('❌ Unexpected error in updateMonthlyActivities:', err);
+        console.error('Error type:', err instanceof Error ? err.constructor.name : typeof err);
+        console.error('Error message:', err instanceof Error ? err.message : String(err));
+        if (err instanceof Error && err.stack) {
+            console.error('Stack trace:', err.stack);
+        }
+        throw err;
     }
 };
 
@@ -150,19 +267,41 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
     monthlyActivities: Record<string, MonthlyActivityProgress>;
     activatedMonths: string[];
 }> => {
-    const { data, error } = await supabase
-        .from('employees')
-        .select('monthly_activities, activated_months')
-        .eq('id', employeeId)
-        .single();
+    try {
+        // Ambil monthly activities dari tabel employee_monthly_activities
+        const { data: activitiesData, error: activitiesError } = await supabase
+            .from('employee_monthly_activities')
+            .select('activities')
+            .eq('employee_id', employeeId)
+            .maybeSingle(); // Use maybeSingle instead of single
 
-    if (error) {
-        console.error('Error getting employee monthly data:', error);
-        throw error;
+        // Log jika ada error tapi jangan throw
+        if (activitiesError) {
+            if (activitiesError.code === '42P01') {
+                console.warn('⚠️ Table employee_monthly_activities does not exist yet');
+            } else {
+                console.warn('⚠️ Error getting monthly activities:', activitiesError.message);
+            }
+        }
+
+        // Ambil activated months dari tabel employees
+        const { data: employeeData, error: employeeError } = await supabase
+            .from('employees')
+            .select('activated_months')
+            .eq('id', employeeId)
+            .single();
+
+        if (employeeError) {
+            console.error('❌ Error getting employee data:', employeeError);
+            throw employeeError;
+        }
+
+        return {
+            monthlyActivities: (activitiesData as any)?.activities || {},
+            activatedMonths: (employeeData as any)?.activated_months || []
+        };
+    } catch (err) {
+        console.error('❌ Unexpected error in getEmployeeMonthlyData:', err);
+        throw err;
     }
-
-    return {
-        monthlyActivities: (data as any)?.monthly_activities || {},
-        activatedMonths: (data as any)?.activated_months || []
-    };
 };

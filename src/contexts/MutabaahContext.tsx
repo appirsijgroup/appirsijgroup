@@ -58,12 +58,12 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     console.log('🔄 MutabaahContext: Quick initializing from employee object', {
       employeeId: emp.id,
       activatedMonths: emp.activated_months || emp.activatedMonths,
-      hasActivities: !!(emp.monthly_activities || emp.monthlyActivities)
+      hasActivities: !!(emp.employee_monthly_activities || emp.monthly_activities || emp.monthlyActivities)
     });
 
     // Use data directly from employee object (already fresh from Supabase)
     const months = emp.activated_months || emp.activatedMonths || [];
-    const activities = emp.monthly_activities || emp.monthlyActivities || {};
+    const activities = emp.employee_monthly_activities || emp.monthly_activities || emp.monthlyActivities || {};
 
     // 🔥 Define currentMonth
     const now = new Date();
@@ -131,7 +131,8 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               const updatedEmployee = {
                 ...emp,
                 monthlyActivities: updatedActivities,
-                monthly_activities: updatedActivities
+                monthly_activities: updatedActivities,
+                employee_monthly_activities: updatedActivities
               };
               onUpdateEmployee(updatedEmployee);
             }

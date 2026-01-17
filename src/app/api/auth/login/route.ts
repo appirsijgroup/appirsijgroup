@@ -1,180 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { supabase } from '@/lib/supabase';
-import { createToken, setSessionCookie } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import bcrypt from 'bcryptjs'
 
-// Rate limiting: Store attempts in memory (in production, use Redis)
-const loginAttempts = new Map<string, { count: number; resetTime: number }>();
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-
-function checkRateLimit(identifier: string): { allowed: boolean; error?: string } {
-  const now = Date.now();
-  const attempts = loginAttempts.get(identifier);
-
-  if (attempts) {
-    if (now > attempts.resetTime) {
-      // Reset the counter if lockout period has passed
-      loginAttempts.delete(identifier);
-      return { allowed: true };
-    }
-
-    if (attempts.count >= MAX_ATTEMPTS) {
-      const remainingTime = Math.ceil((attempts.resetTime - now) / 1000);
-      return {
-        allowed: false,
-        error: `Terlalu banyak percobaan login. Coba lagi dalam ${remainingTime} detik.`
-      };
-    }
-  }
-
-  return { allowed: true };
-}
-
-function recordFailedAttempt(identifier: string) {
-  const now = Date.now();
-  const attempts = loginAttempts.get(identifier) || { count: 0, resetTime: now + LOCKOUT_DURATION };
-
-  attempts.count++;
-  loginAttempts.set(identifier, attempts);
-
-  if (attempts.count >= MAX_ATTEMPTS) {
-    console.warn(`🚨 Account locked for identifier: ${identifier} due to too many failed attempts`);
-  }
-}
-
-function resetAttempts(identifier: string) {
-  loginAttempts.delete(identifier);
-}
+// Simple Supabase client with service role
+const supabase = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { identifier, password } = body;
+    const { identifier, password } = await request.json()
 
-    // Validate input
     if (!identifier || !password) {
-      return NextResponse.json(
-        { error: 'NIP/Email dan password wajib diisi.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ID/NIP/Email dan password wajib diisi' }, { status: 400 })
     }
 
-    // Rate limiting check
-    const rateLimitCheck = checkRateLimit(identifier);
-    if (!rateLimitCheck.allowed) {
-      return NextResponse.json(
-        { error: rateLimitCheck.error },
-        { status: 429 }
-      );
-    }
+    console.log(`🔐 Login attempt: ${identifier}`)
 
-    // Fetch employee from Supabase
-    const { data: employeeData, error } = await supabase
+    // Cari employee by id, nip, atau email
+    const { data: employee, error } = await supabase
       .from('employees')
       .select('*')
-      .or(`id.eq.${identifier},email.eq.${identifier}`)
-      .single();
+      .or(`id.eq.${identifier},nip.eq.${identifier},email.eq.${identifier}`)
+      .single()
 
-    const employee = employeeData as any;
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        recordFailedAttempt(identifier);
-        return NextResponse.json(
-          { error: `NIP/Email "${identifier}" tidak ditemukan.` },
-          { status: 401 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: 'Database error. Silakan coba lagi.' },
-        { status: 500 }
-      );
+    if (error || !employee) {
+      console.log('❌ Employee not found')
+      return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 401 })
     }
 
-    if (!employee) {
-      recordFailedAttempt(identifier);
-      return NextResponse.json(
-        { error: `NIP/Email "${identifier}" tidak ditemukan.` },
-        { status: 401 }
-      );
+    // Cek password
+    const passwordMatch = await bcrypt.compare(password, employee.password)
+    if (!passwordMatch) {
+      console.log('❌ Wrong password')
+      return NextResponse.json({ error: 'Password salah' }, { status: 401 })
     }
 
-    // Check if account is active
-    const dbIsActive = employee.is_active;
-    const isActive = dbIsActive !== false && employee.isActive !== false;
-
-    if (!isActive) {
-      recordFailedAttempt(identifier);
-      return NextResponse.json(
-        { error: `Akun untuk ${employee.name} dinonaktifkan. Hubungi Admin.` },
-        { status: 403 }
-      );
+    // Cek aktif
+    if (!employee.is_active) {
+      return NextResponse.json({ error: 'Akun tidak aktif' }, { status: 403 })
     }
 
-    // Password verification
-    let isMatch = false;
+    console.log(`✅ Login success: ${employee.name}`)
 
-    // Check if password is hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
-    const isHashed = employee.password &&
-      (employee.password.startsWith('$2a$') ||
-       employee.password.startsWith('$2b$') ||
-       employee.password.startsWith('$2y$'));
-
-    if (isHashed) {
-      try {
-        isMatch = bcrypt.compareSync(password, employee.password);
-      } catch (err) {
-        return NextResponse.json(
-          { error: 'Error validasi password. Silakan coba lagi.' },
-          { status: 500 }
-        );
-      }
-    } else {
-      // Legacy plain text fallback
-      if (employee.password === password || employee.password === `hashed_${password}`) {
-        isMatch = true;
-      }
-    }
-
-    if (!isMatch) {
-      recordFailedAttempt(identifier);
-      return NextResponse.json(
-        { error: 'Password salah. Silakan coba lagi.' },
-        { status: 401 }
-      );
-    }
-
-    // Successful login - reset attempts
-    resetAttempts(identifier);
-
-    // Create JWT token
-    const token = await createToken({
-      userId: employee.id,
-      name: employee.name,
-      role: employee.role || 'user'
-    });
-
-    // Set HTTP-only cookie
-    await setSessionCookie(token);
-
-    // Remove sensitive data before sending to client
-    const { password: _, ...safeEmployeeData } = employee;
-
-    return NextResponse.json({
+    // Simpan ke cookie
+    const response = NextResponse.json({
       success: true,
-      employee: safeEmployeeData
-    }, { status: 200 });
+      employee: {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        nip: employee.nip,
+        role: employee.role,
+      }
+    })
+
+    // Set cookie dengan benar untuk development
+    response.cookies.set('userId', employee.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // false di development
+      sameSite: 'lax',
+      maxAge: 8 * 60 * 60, // 8 jam
+      path: '/' // penting!
+    })
+
+    console.log('🍪 Cookie set for userId:', employee.id)
+
+    return response
 
   } catch (error) {
-    // Log error server-side only
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Login API error:', error);
-    }
-    return NextResponse.json(
-      { error: 'Terjadi kesalahan server. Silakan coba lagi.' },
-      { status: 500 }
-    );
+    console.error('Login error:', error)
+    return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 })
   }
 }

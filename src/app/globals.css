@@ -25,6 +25,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  /* 🔥 Smooth scroll for better UX */
+  scroll-behavior: smooth;
+}
+
+/* 🔥 Optimize rendering performance */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve touch responsiveness */
+button, a {
+  touch-action: manipulation;
 }
 
 /* --- Legacy Animations from index.html --- */

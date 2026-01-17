@@ -86,8 +86,11 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
     }, [date]);
 
+    // 🔥 FIX: Ensure monthlyProgressData is never undefined - default to empty object
+    const safeMonthlyProgressData = monthlyProgressData || {};
+
     // This is now the single source of truth for progress data in this component.
-    const progress = useMemo(() => monthlyProgressData[monthKey] || {}, [monthlyProgressData, monthKey]);
+    const progress = useMemo(() => safeMonthlyProgressData[monthKey] || {}, [safeMonthlyProgressData, monthKey]);
     
     const isMonthActivated = useMemo(() => {
         // Support both camelCase (from Supabase) and snake_case conversions

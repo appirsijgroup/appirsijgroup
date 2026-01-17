@@ -1,23 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { clearSession } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // Clear the session cookie
-    await clearSession();
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Logout berhasil'
-    }, { status: 200 });
+    })
+
+    // Hapus cookie userId
+    response.cookies.delete('userId')
+
+    return response
 
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Logout API error:', error);
-    }
+    console.error('Logout error:', error)
     return NextResponse.json(
-      { error: 'Terjadi kesalahan saat logout.' },
+      { error: 'Terjadi kesalahan saat logout' },
       { status: 500 }
-    );
+    )
   }
 }

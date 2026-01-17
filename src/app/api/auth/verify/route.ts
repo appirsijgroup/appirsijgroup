@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { getSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get session from cookie
-    const session = await getSession();
+    // Get userId from cookie
+    const userId = request.cookies.get('userId')?.value;
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No userId cookie' },
         { status: 401 }
       );
     }
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { data: employeeData, error } = await supabase
       .from('employees')
       .select('*')
-      .eq('id', session.userId)
+      .eq('id', userId)
       .single();
 
     if (error || !employeeData) {

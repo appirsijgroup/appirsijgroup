@@ -43,53 +43,21 @@ const convertToCamelCase = (emp: any): Employee => {
 
 // Get all employees with camelCase column names
 export const getAllEmployees = async (): Promise<Employee[]> => {
-    const { data, error } = await supabase
-        .from('employees')
-        .select(`
-            id,
-            name,
-            email,
-            password,
-            last_visit_date,
-            role,
-            is_active,
-            notification_enabled,
-            profile_picture,
-            monthly_activities,
-            activated_months,
-            ka_unit_id,
-            supervisor_id,
-            mentor_id,
-            dirut_id,
-            can_be_mentor,
-            can_be_supervisor,
-            can_be_ka_unit,
-            can_be_dirut,
-            functional_roles,
-            manager_scope,
-            location_id,
-            location_name,
-            reading_history,
-            quran_reading_history,
-            todo_list,
-            signature,
-            last_announcement_read_timestamp,
-            managed_hospital_ids,
-            achievements,
-            must_change_password,
-            hospital_id,
-            unit,
-            bagian,
-            profession_category,
-            profession,
-            gender
-        `)
-        .order('name');
+    // 🔥 Use API endpoint instead of direct Supabase query
+    // This avoids RLS policy issues with anon key
+    const response = await fetch('/api/employees', {
+        credentials: 'include', // Include session cookie
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch employees');
+    }
+
+    const { employees } = await response.json();
 
     // Convert snake_case to camelCase
-    return data.map((emp: any) => convertToCamelCase(emp));
+    return employees.map((emp: any) => convertToCamelCase(emp));
 };
 
 // Get employee by ID
@@ -331,7 +299,7 @@ export const updateEmployee = async (
     if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
     if (updates.notificationEnabled !== undefined) dbUpdates.notification_enabled = updates.notificationEnabled;
     if (updates.profilePicture !== undefined) dbUpdates.profile_picture = updates.profilePicture;
-    if (updates.monthlyActivities !== undefined) dbUpdates.monthly_activities = updates.monthlyActivities;
+    // monthlyActivities sudah dipindah ke tabel employee_monthly_activities, di-handle oleh monthlyActivityService
     if (updates.activatedMonths !== undefined) dbUpdates.activated_months = updates.activatedMonths;
     if (updates.kaUnitId !== undefined) dbUpdates.ka_unit_id = updates.kaUnitId;
     if (updates.supervisorId !== undefined) dbUpdates.supervisor_id = updates.supervisorId;
@@ -364,40 +332,26 @@ export const updateEmployee = async (
         id,
         dbUpdates: {
             ...dbUpdates,
-            monthly_activities: dbUpdates.monthly_activities ? 'present' : 'not present',
             reading_history: dbUpdates.reading_history ? 'present' : 'not present',
             quran_reading_history: dbUpdates.quran_reading_history ? 'present' : 'not present',
             todo_list: dbUpdates.todo_list ? 'present' : 'not present'
         }
     });
 
+    // 🔥 CRITICAL: monthly_activities should NEVER be sent to employees table
+    // It should always go to employee_monthly_activities table via monthlyActivityService
+    if ('monthlyActivities' in dbUpdates || 'monthly_activities' in dbUpdates) {
+        console.error('❌ ERROR: Attempted to save monthly_activities to employees table!');
+        console.error('⚠️ This should NEVER happen. Use monthlyActivityService instead.');
+        // Remove it from dbUpdates to prevent saving to wrong table
+        delete (dbUpdates as any).monthlyActivities;
+        delete (dbUpdates as any).monthly_activities;
+    }
+
     // 🔥 FIX: Validate and sanitize JSONB columns before sending
     const sanitizedUpdates = { ...dbUpdates };
 
-    // Ensure all JSONB columns are valid JSON
-    if (sanitizedUpdates.monthly_activities !== undefined) {
-        // Validate it's a proper object
-        if (typeof sanitizedUpdates.monthly_activities !== 'object' || sanitizedUpdates.monthly_activities === null) {
-            console.error('❌ Invalid monthly_activities:', sanitizedUpdates.monthly_activities);
-            throw new Error('monthly_activities must be a valid object');
-        }
-        // Log the actual data for debugging
-        console.log('🔍 monthly_activities data to save:', {
-            type: typeof sanitizedUpdates.monthly_activities,
-            keys: Object.keys(sanitizedUpdates.monthly_activities),
-            size: JSON.stringify(sanitizedUpdates.monthly_activities).length,
-            preview: JSON.stringify(sanitizedUpdates.monthly_activities).substring(0, 200)
-        });
-        // Ensure it's JSON serializable
-        try {
-            const jsonString = JSON.stringify(sanitizedUpdates.monthly_activities);
-            console.log('✅ monthly_activities is JSON serializable, length:', jsonString.length);
-        } catch (e) {
-            console.error('❌ monthly_activities is not JSON serializable:', e);
-            throw new Error('monthly_activities contains non-serializable data');
-        }
-    }
-
+    // Ensure all JSONB columns are valid JSON (EXCEPT monthly_activities which is removed)
     if (sanitizedUpdates.reading_history !== undefined) {
         // Validate it's a proper array
         if (!Array.isArray(sanitizedUpdates.reading_history)) {

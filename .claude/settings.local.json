@@ -27,7 +27,10 @@
       "Bash(npm audit fix:*)",
       "Bash(bash cleanup-unused-files.sh:*)",
       "WebSearch",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(npm run migrate-employees:*)",
+      "Bash(supabase:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

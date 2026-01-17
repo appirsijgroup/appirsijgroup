@@ -665,12 +665,14 @@ const UserModal: React.FC<{
     const [gender, setGender] = useState<'Laki-laki' | 'Perempuan'>('Laki-laki');
     const [hospitalId, setHospitalId] = useState<string | undefined>('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [generatedPassword, setGeneratedPassword] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             setError('');
+            setLoading(false);
             setShowSuccessModal(false);
             setGeneratedPassword('');
             if (existingUser) {
@@ -718,29 +720,44 @@ const UserModal: React.FC<{
             return;
         }
 
-        // Generate password only for new users
-        const newPassword = existingUser ? undefined : generateSecurePassword();
+        // Clear previous errors
+        setError('');
+        setLoading(true);
 
-        const result = await onSave(id, {
-            name,
-            unit,
-            bagian,
-            professionCategory,
-            profession,
-            gender,
-            hospitalId
-        });
+        try {
+            // Generate password only for new users
+            const newPassword = existingUser ? undefined : generateSecurePassword();
 
-        if (result.success) {
-            if (!existingUser && newPassword) {
-                // Show success modal with generated password
-                setGeneratedPassword(newPassword);
-                setShowSuccessModal(true);
+            const result = await onSave(id, {
+                name,
+                email,
+                unit,
+                bagian,
+                professionCategory,
+                profession,
+                gender,
+                hospitalId
+            });
+
+            if (result.success) {
+                if (!existingUser && newPassword) {
+                    // Show success modal with generated password
+                    setGeneratedPassword(newPassword);
+                    setShowSuccessModal(true);
+                    setLoading(false);
+                } else {
+                    // For editing, just close
+                    setLoading(false);
+                    onClose();
+                }
             } else {
-                onClose();
+                setLoading(false);
+                setError(result.error || 'Terjadi kesalahan.');
             }
-        } else {
-            setError(result.error || 'Terjadi kesalahan.');
+        } catch (err) {
+            setLoading(false);
+            setError('Terjadi kesalahan tak terduga. Silakan coba lagi.');
+            console.error('Error saving user:', err);
         }
     };
 
@@ -758,30 +775,58 @@ const UserModal: React.FC<{
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">NIP / NOPEG</label>
-                                <input type="text" value={id} onChange={e => setId(e.target.value)} disabled={!!existingUser} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white" />
+                                <input
+                                    type="text"
+                                    value={id}
+                                    onChange={e => setId(e.target.value)}
+                                    disabled={!!existingUser || loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                />
                                 {existingUser && <p className="text-xs text-yellow-400 mt-1">NIP tidak dapat diubah.</p>}
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Nama Lengkap</label>
-                                <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                />
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Jenis Kelamin</label>
-                                <select value={gender} onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                <select
+                                    value={gender}
+                                    onChange={e => setGender(e.target.value as 'Laki-laki' | 'Perempuan')}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                >
                                     <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
                                     <option value="Perempuan" className="text-black bg-white">Perempuan</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Kategori Profesi</label>
-                                <select value={professionCategory} onChange={e => setProfessionCategory(e.target.value as 'MEDIS' | 'NON MEDIS')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                <select
+                                    value={professionCategory}
+                                    onChange={e => setProfessionCategory(e.target.value as 'MEDIS' | 'NON MEDIS')}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                >
                                     <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
                                     <option value="MEDIS" className="text-black bg-white">MEDIS</option>
                                 </select>
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Profesi</label>
-                                <input type="text" value={profession} onChange={e => setProfession(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                                <input
+                                    type="text"
+                                    value={profession}
+                                    onChange={e => setProfession(e.target.value)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                />
                             </div>
                         </div>
 
@@ -789,7 +834,12 @@ const UserModal: React.FC<{
                         <div className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Role</label>
-                                <select value={role} onChange={e => setRole(e.target.value as 'super-admin' | 'admin' | 'user')} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                <select
+                                    value={role}
+                                    onChange={e => setRole(e.target.value as 'super-admin' | 'admin' | 'user')}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                >
                                     <option value="user" className="text-black bg-white">User</option>
                                     <option value="admin" className="text-black bg-white">Admin</option>
                                     <option value="super-admin" className="text-black bg-white">Super Admin</option>
@@ -797,7 +847,12 @@ const UserModal: React.FC<{
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Rumah Sakit</label>
-                                <select value={hospitalId || ''} onChange={e => setHospitalId(e.target.value || undefined)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
+                                <select
+                                    value={hospitalId || ''}
+                                    onChange={e => setHospitalId(e.target.value || undefined)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                >
                                     <option value="" className="text-black bg-white">-- Tidak Ada --</option>
                                     {hospitals.map(h => (
                                         <option key={h.id} value={h.id} className="text-black bg-white">{h.brand} - {h.name}</option>
@@ -806,24 +861,106 @@ const UserModal: React.FC<{
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Unit Kerja</label>
-                                <input type="text" value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                                <input
+                                    type="text"
+                                    value={unit}
+                                    onChange={e => setUnit(e.target.value)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                />
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Bagian</label>
-                                <input type="text" value={bagian} onChange={e => setBagian(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
+                                <input
+                                    type="text"
+                                    value={bagian}
+                                    onChange={e => setBagian(e.target.value)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                />
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Email</label>
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" placeholder="contoh@rsi.co.id" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    disabled={loading}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
+                                    placeholder="contoh@rsi.co.id"
+                                />
                             </div>
-                            {error && <p className="text-red-400 text-sm p-2 bg-red-500/20 border border-red-500 rounded-md">{error}</p>}
                         </div>
                     </div>
                 </div>
 
+                {/* Error Alert - Enterprise Standard */}
+                {error && (
+                    <div className="mt-4 p-4 bg-red-500/10 border-l-4 border-red-500 rounded-r-lg">
+                        <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-red-400">Terjadi Kesalahan</h4>
+                                <p className="mt-1 text-sm text-red-300">{error}</p>
+                            </div>
+                            <button
+                                onClick={() => setError('')}
+                                className="flex-shrink-0 text-red-400 hover:text-red-300 transition-colors"
+                                title="Tutup pesan error"
+                            >
+                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Loading Alert - Enterprise Standard */}
+                {loading && !error && (
+                    <div className="mt-4 p-4 bg-teal-500/10 border-l-4 border-teal-500 rounded-r-lg">
+                        <div className="flex items-center gap-3">
+                            <svg className="animate-spin h-5 w-5 text-teal-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-teal-400">Memproses Data</h4>
+                                <p className="mt-1 text-sm text-teal-300">Sedang menyimpan data karyawan ke database...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                    <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan</button>
+                    <button
+                        onClick={onClose}
+                        disabled={loading}
+                        className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        {loading ? (
+                            <>
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Menyimpan...
+                            </>
+                        ) : (
+                            'Simpan'
+                        )}
+                    </button>
                 </div>
             </div>
         </div>,

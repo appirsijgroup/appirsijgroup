@@ -1,5 +1,20 @@
-const CACHE_NAME = 'appi-rsi-group-v1';
+const CACHE_NAME = 'appi-rsi-group-v2';
+
+// Only cache static assets and public pages
+// NEVER cache authenticated pages or pages with redirects
 const urlsToCache = [
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/favicon.ico',
+  '/favicon-16x16.png',
+  '/favicon-32x32.png',
+  '/favicon-48x48.png',
+  '/apple-touch-icon.png',
+];
+
+// Dynamic pages that should always be fetched from network
+const dynamicRoutes = [
   '/',
   '/dashboard',
   '/aktivitas-bulanan',
@@ -7,9 +22,8 @@ const urlsToCache = [
   '/presensi',
   '/panduan-doa',
   '/kegiatan',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/profile',
+  '/login',
 ];
 
 // Install event - cache assets
@@ -24,6 +38,7 @@ self.addEventListener('install', (event) => {
         console.error('Cache installation failed:', error);
       })
   );
+  // Immediately activate the new service worker
   self.skipWaiting();
 });
 
@@ -32,21 +47,89 @@ self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
+      return Promise.all([
+        // Delete old caches
+        ...cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
           return null;
-        })
-      );
+        }),
+        // Take control of all clients immediately
+        self.clients.claim()
+      ]);
     })
   );
-  self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Handle skip waiting message
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch event - smart caching strategy
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // IMPORTANT: Skip chrome-extension and other extension schemes
+  if (url.protocol === 'chrome-extension:' ||
+      url.protocol === 'extension:' ||
+      url.protocol === 'moz-extension:') {
+    return;
+  }
+
+  // Check if this is a dynamic route
+  const isDynamicRoute = dynamicRoutes.some(route => url.pathname === route || url.pathname.startsWith(route + '/'));
+
+  // For dynamic routes, always use network first (never cache)
+  if (isDynamicRoute) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          return response;
+        })
+        .catch((error) => {
+          console.error('Fetch failed for dynamic route:', error);
+          return new Response('Offline - Tidak ada koneksi internet. Silakan refresh halaman.', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
+        })
+    );
+    return;
+  }
+
+  // IMPORTANT: Do NOT cache API routes (especially POST/PUT/DELETE)
+  const isApiRoute = url.pathname.startsWith('/api');
+
+  if (isApiRoute) {
+    // For API routes, always fetch from network, never cache
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          return response;
+        })
+        .catch((error) => {
+          console.error('API fetch failed:', error);
+          return new Response('API Error - Gagal mengambil data dari server', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
+        })
+    );
+    return;
+  }
+
+  // For static assets, use cache first strategy
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -75,7 +158,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         }).catch((error) => {
           console.error('Fetch failed:', error);
-          // You can return a custom offline page here if needed
           return new Response('Offline - Tidak ada koneksi internet', {
             status: 503,
             statusText: 'Service Unavailable',

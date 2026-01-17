@@ -1,42 +1,11 @@
+import 'server-only';
 import { cookies } from 'next/headers';
-import { SignJWT, jwtVerify } from 'jose';
+import type { SessionPayload } from './jwt';
+import { createToken, verifyToken } from './jwt';
 
-const JWT_SECRET = new TextEncoder().encode(
-    process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
-);
-
-export interface SessionPayload {
-    userId: string;
-    name: string;
-    role: string;
-    exp?: number;
-}
-
-/**
- * Create JWT token for user session
- */
-export async function createToken(payload: SessionPayload): Promise<string> {
-    const token = await new SignJWT({ ...payload })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('8h') // Session expires in 8 hours
-        .sign(JWT_SECRET);
-
-    return token;
-}
-
-/**
- * Verify JWT token (can be used in middleware and server components)
- */
-export async function verifyToken(token: string): Promise<SessionPayload | null> {
-    try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
-        return payload as unknown as SessionPayload;
-    } catch (error) {
-        // Silently fail - token is invalid or expired
-        return null;
-    }
-}
+// Re-export types and functions for convenience
+export type { SessionPayload };
+export { createToken, verifyToken };
 
 /**
  * Set session cookie (for use in Server Actions and Route Handlers)

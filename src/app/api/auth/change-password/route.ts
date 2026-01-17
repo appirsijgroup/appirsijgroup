@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/services/database.types';
-import { getSession } from '@/lib/auth';
 
 /**
  * API Endpoint untuk mengubah password
@@ -11,11 +10,12 @@ import { getSession } from '@/lib/auth';
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    // Get userId from cookie
+    const userId = request.cookies.get('userId')?.value;
 
-    if (!session) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No userId cookie' },
         { status: 401 }
       );
     }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const { data: employeeData, error } = await supabase
       .from('employees')
       .select('*')
-      .eq('id', session.userId)
+      .eq('id', userId)
       .single();
 
     const employee = employeeData as any;
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         must_change_password: false
       })
-      .eq('id', session.userId);
+      .eq('id', userId);
 
     if (updateError) {
       return NextResponse.json(

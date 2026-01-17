@@ -58,12 +58,13 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     console.log('🔄 MutabaahContext: Quick initializing from employee object', {
       employeeId: emp.id,
       activatedMonths: emp.activated_months || emp.activatedMonths,
-      hasActivities: !!(emp.employee_monthly_activities || emp.monthly_activities || emp.monthlyActivities)
+      hasActivities: !!emp.monthly_activities // 🔥 FIX: HANYA cek monthly_activities (sudah dari tabel baru)
     });
 
     // Use data directly from employee object (already fresh from Supabase)
+    // 🔥 FIX: monthly_activities sudah diambil dari employee_monthly_activities table oleh /api/auth/me
     const months = emp.activated_months || emp.activatedMonths || [];
-    const activities = emp.employee_monthly_activities || emp.monthly_activities || emp.monthlyActivities || {};
+    const activities = emp.monthly_activities || {}; // HANYA gunakan monthly_activities
 
     // 🔥 Define currentMonth
     const now = new Date();
@@ -126,13 +127,12 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
             const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
             await updateMonthlyProgress(emp.id, currentMonth, updatedActivities[currentMonth]);
 
-            // CRITICAL: Update employee in parent store with synced monthlyActivities
+            // 🔥 FIX: HANYA update monthly_activities (snake_case), jangan update properti lama
+            // Properti employee_monthly_activities TIDAK ADA di database
             if (onUpdateEmployee) {
               const updatedEmployee = {
                 ...emp,
-                monthlyActivities: updatedActivities,
-                monthly_activities: updatedActivities,
-                employee_monthly_activities: updatedActivities
+                monthly_activities: updatedActivities
               };
               onUpdateEmployee(updatedEmployee);
             }

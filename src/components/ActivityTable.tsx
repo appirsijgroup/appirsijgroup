@@ -149,7 +149,9 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                             const diffToEnd = endTime.getTime() - now.getTime();
 
                             const isOngoing = diffToStart <= 0 && diffToEnd > 0;
-                            const isActionable = isOngoing && !isSubmitted && item.status === 'scheduled';
+                            const isStarted = diffToStart <= 0; // 🔥 FIX: Sudah mulai (bisa presensi)
+                            const isNotFinished = diffToEnd > 0; // 🔥 FIX: Belum selesai
+                            const isActionable = isStarted && isNotFinished && !isSubmitted && item.status === 'scheduled';
 
                             const isCreator = item.isTeamSession && (item.originalData as TeamAttendanceSession).creatorId === loggedInEmployee.id;
 

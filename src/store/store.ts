@@ -27,6 +27,7 @@ export interface AppDataState {
     setHydrated: (isHydrated: boolean) => void;
     markAnnouncementAsRead: () => void;
     loadLoggedInEmployee: () => Promise<void>;
+    loadAllEmployees: () => Promise<void>;
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
 }
@@ -176,6 +177,54 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             console.log(`✅ Loaded ${hospitals.length} hospitals`);
         } catch (error) {
             console.error('❌ Error loading hospitals:', error);
+        }
+    },
+
+    // Load all employees from Supabase
+    loadAllEmployees: async () => {
+        try {
+            const { getAllEmployees } = await import('@/services/employeeService');
+            const allEmployees = await getAllEmployees();
+            console.log(`✅ Loaded ${allEmployees.length} employees`);
+
+            // Load attendance records for all employees
+            const { getEmployeeAttendance } = await import('@/services/attendanceService');
+
+            const newData: Record<string, UserData> = {};
+
+            for (const emp of allEmployees) {
+                let attendanceData: Attendance = {};
+                try {
+                    const records = await getEmployeeAttendance(emp.id);
+                    Object.entries(records).forEach(([entityId, record]: [string, any]) => {
+                        if (record && record.status) {
+                            attendanceData[entityId] = {
+                                status: record.status,
+                                reason: record.reason || null,
+                                timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
+                                submitted: true,
+                                isLateEntry: record.is_late_entry || false
+                            };
+                        }
+                    });
+                } catch (error) {
+                    if (process.env.NODE_ENV === "development") console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
+                    attendanceData = {};
+                }
+
+                newData[emp.id] = {
+                    employee: emp,
+                    attendance: attendanceData,
+                    history: {}
+                };
+            }
+
+            // Update allUsersData
+            set({ allUsersData: newData });
+            console.log('✅ All employees data loaded successfully');
+        } catch (error) {
+            console.error('❌ Error loading all employees:', error);
+            throw error;
         }
     },
 

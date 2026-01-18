@@ -160,14 +160,14 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         // handleUpdateProfile(userId, { activatedMonths: ... })
         // For now simplified:
         if (loggedInEmployee) {
-            console.log("🔄 Activating month for user");
+            if (process.env.NODE_ENV === "development") console.log("🔄 Activating month for user");
             const newMonths = [...(loggedInEmployee.activatedMonths || []), monthKey];
             handleUpdateProfile(userId, { activatedMonths: newMonths });
         }
     };
 
     const handleUpdateMonthlyActivities = (userId: string, monthKey: string, monthProgress: any) => {
-        console.log("🔄 Updating monthly activities for user");
+        if (process.env.NODE_ENV === "development") console.log("🔄 Updating monthly activities for user");
         const existing = loggedInEmployee?.monthlyActivities || {};
         const newActivity = { ...existing, [monthKey]: monthProgress };
         handleUpdateProfile(userId, { monthlyActivities: newActivity });
@@ -175,7 +175,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
     const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
         if (!loggedInEmployee) return;
-        console.log('🔄 Submitting weekly report for:', {
+        if (process.env.NODE_ENV === "development") console.log('🔄 Submitting weekly report for:', {
             userId: loggedInEmployee.id,
             monthKey,
             weekIndex
@@ -204,7 +204,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        console.log('📅 Validating date for mutabaah update:', {
+        if (process.env.NODE_ENV === "development") console.log('📅 Validating date for mutabaah update:', {
             dateString,
             selectedDate: selectedDate.toISOString(),
             today: today.toISOString(),
@@ -213,7 +213,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
         // 1. Block future dates
         if (selectedDate > today) {
-            console.log('❌ Date validation failed: selected date is in the future');
+            if (process.env.NODE_ENV === "development") console.log('❌ Date validation failed: selected date is in the future');
             return false;
         }
 
@@ -224,7 +224,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         firstDayOfThisWeek.setDate(today.getDate() - dayOffset);
 
         if (selectedDate < firstDayOfThisWeek) {
-            console.log('❌ Date validation failed: selected date is before current week');
+            if (process.env.NODE_ENV === "development") console.log('❌ Date validation failed: selected date is before current week');
             return false;
         }
 
@@ -237,12 +237,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             const userSubmissions = weeklyReportSubmissions.filter(s => s.menteeId === employee.id);
             const currentWeeklySubmission = userSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === currentWeekIndexForToday);
             if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-                console.log('❌ Date validation failed: current week already submitted/approved');
+                if (process.env.NODE_ENV === "development") console.log('❌ Date validation failed: current week already submitted/approved');
                 return false;
             }
         }
 
-        console.log('✅ Date validation passed');
+        if (process.env.NODE_ENV === "development") console.log('✅ Date validation passed');
         return true;
     }, [weeklyReportSubmissions]);
 
@@ -264,7 +264,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const newMonthProgress = { ...monthProgress, [dayKey]: newDayProgress };
                 const newMonthlyActivities = { ...monthlyActivities, [monthKey]: newMonthProgress };
 
-                console.log('🔄 Step 1: Optimistically updating local state...');
+                if (process.env.NODE_ENV === "development") console.log('🔄 Step 1: Optimistically updating local state...');
                 // 🔥 CRITICAL: Don't send monthlyActivities to handleUpdateProfile - update local state manually instead
                 // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
                 // Ini untuk mencegah re-render cascade di MainLayoutShell
@@ -278,23 +278,23 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         }
                     }
                 }));
-                console.log('✅ Step 1 complete: Local state updated (allUsersData only, NOT loggedInEmployee)');
+                if (process.env.NODE_ENV === "development") console.log('✅ Step 1 complete: Local state updated (allUsersData only, NOT loggedInEmployee)');
 
-                console.log('🔄 Step 2: Saving to employee_monthly_activities table...');
+                if (process.env.NODE_ENV === "development") console.log('🔄 Step 2: Saving to employee_monthly_activities table...');
                 // 🔥 FIX: Save to employee_monthly_activities table via monthlyActivityService
                 const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-                console.log('✅ Step 2a: monthlyActivityService imported successfully');
+                if (process.env.NODE_ENV === "development") console.log('✅ Step 2a: monthlyActivityService imported successfully');
 
                 await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
-                console.log('✅ Step 2b: updateMonthlyActivities completed');
+                if (process.env.NODE_ENV === "development") console.log('✅ Step 2b: updateMonthlyActivities completed');
 
-                console.log('✅ Manual activity saved to employee_monthly_activities table:', { activityId, date, monthKey });
+                if (process.env.NODE_ENV === "development") console.log('✅ Manual activity saved to employee_monthly_activities table:', { activityId, date, monthKey });
 
                 addToast('Aktivitas berhasil dilaporkan.', 'success');
                 return true;
 
             } catch (error: unknown) {
-                console.error('❌ Error saving manual activity to Supabase:', error);
+                if (process.env.NODE_ENV === "development") console.error('❌ Error saving manual activity to Supabase:', error);
 
                 // Rollback the optimistic update on failure - update local state manually
                 // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
@@ -395,15 +395,15 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 parseInt(pagesRead) || 0,
                 dateCompleted
             );
-            console.log('✅ Reading history saved to employee_reading_history table');
+            if (process.env.NODE_ENV === "development") console.log('✅ Reading history saved to employee_reading_history table');
 
             // Save monthlyActivities to employee_monthly_activities table
             if (newMonthlyActivities) {
                 const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
                 await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
-                console.log('✅ Book reading monthly activities saved to employee_monthly_activities table');
+                if (process.env.NODE_ENV === "development") console.log('✅ Book reading monthly activities saved to employee_monthly_activities table');
             }
-            console.log("✅ Book reading saved to Supabase");
+            if (process.env.NODE_ENV === "development") console.log("✅ Book reading saved to Supabase");
 
             if (activityIdToUpdate && isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
                 addToast('Laporan membaca buku berhasil disimpan!', 'success');
@@ -416,7 +416,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                 const freshEmployee = await getEmployeeById(loggedInEmployee.id);
                 if (freshEmployee) {
-                    console.log('🔄 Fresh employee data retrieved from Supabase after book reading:', {
+                    if (process.env.NODE_ENV === "development") console.log('🔄 Fresh employee data retrieved from Supabase after book reading:', {
                         id: freshEmployee.id,
                         monthlyActivities: freshEmployee.monthlyActivities,
                         readingHistory: freshEmployee.readingHistory
@@ -431,15 +431,15 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         }
                     }));
 
-                    console.log('✅ Local state synchronized with Supabase data after book reading');
+                    if (process.env.NODE_ENV === "development") console.log('✅ Local state synchronized with Supabase data after book reading');
                 } else {
-                    console.warn('⚠️ Could not retrieve fresh employee data after book reading update');
+                    if (process.env.NODE_ENV === "development") console.warn('⚠️ Could not retrieve fresh employee data after book reading update');
                 }
             } catch (refreshError) {
-                console.error('❌ Error refreshing employee data after book reading update:', refreshError);
+                if (process.env.NODE_ENV === "development") console.error('❌ Error refreshing employee data after book reading update:', refreshError);
             }
         } catch (error) {
-            console.error('❌ Error saving book reading to Supabase:', error);
+            if (process.env.NODE_ENV === "development") console.error('❌ Error saving book reading to Supabase:', error);
 
             // Rollback the local state update in case of failure
             try {
@@ -455,7 +455,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }));
                 }
             } catch (rollbackError) {
-                console.error('Could not rollback after failed book reading update:', rollbackError);
+                if (process.env.NODE_ENV === "development") console.error('Could not rollback after failed book reading update:', rollbackError);
             }
 
             addToast('Gagal menyimpan laporan buku ke database. Silakan coba lagi.', 'error');
@@ -466,8 +466,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (!loggedInEmployee) return;
 
         try {
-            console.log("📝 Updating todo list to employee_todos table");
-            console.log('📋 New todo list:', todoList);
+            if (process.env.NODE_ENV === "development") console.log("📝 Updating todo list to employee_todos table");
+            if (process.env.NODE_ENV === "development") console.log('📋 New todo list:', todoList);
 
             // Update local state FIRST to provide immediate feedback
             // 🔥 CRITICAL: Don't send todoList to handleUpdateProfile - update local state manually instead
@@ -487,7 +487,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             // 🔥 FIX: Save to employee_todos table using todoService
             const { bulkUpdateEmployeeTodos } = await import('@/services/todoService');
             await bulkUpdateEmployeeTodos(userId, todoList || []);
-            console.log("✅ Todo list saved to employee_todos table");
+            if (process.env.NODE_ENV === "development") console.log("✅ Todo list saved to employee_todos table");
 
             addToast('To-Do List berhasil diperbarui!', 'success');
 
@@ -500,7 +500,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const { getEmployeeTodos } = await import('@/services/todoService');
                 const freshTodos = await getEmployeeTodos(userId);
 
-                console.log('🔄 Fresh todos retrieved from employee_todos table:', freshTodos.length);
+                if (process.env.NODE_ENV === "development") console.log('🔄 Fresh todos retrieved from employee_todos table:', freshTodos.length);
 
                 // Update local state with fresh data from database
                 if (userId === loggedInEmployee.id) {
@@ -518,12 +518,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }
                 }));
 
-                console.log('✅ Local state synchronized with employee_todos data');
+                if (process.env.NODE_ENV === "development") console.log('✅ Local state synchronized with employee_todos data');
             } catch (refreshError) {
-                console.error('❌ Error refreshing todo data after update:', refreshError);
+                if (process.env.NODE_ENV === "development") console.error('❌ Error refreshing todo data after update:', refreshError);
             }
         } catch (error) {
-            console.error('❌ Error saving todo list to employee_todos table:', error);
+            if (process.env.NODE_ENV === "development") console.error('❌ Error saving todo list to employee_todos table:', error);
 
             // Rollback the local state update in case of failure
             try {
@@ -546,7 +546,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }
                 }));
             } catch (rollbackError) {
-                console.error('Could not rollback after failed todo list update:', rollbackError);
+                if (process.env.NODE_ENV === "development") console.error('Could not rollback after failed todo list update:', rollbackError);
             }
 
             addToast('Gagal menyimpan To-Do List. Silakan coba lagi.', 'error');
@@ -580,7 +580,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // 🔥 FIX: Delete from employee_reading_history table
                 const { deleteReadingHistory: deleteHistory } = await import('@/services/readingHistoryService');
                 await deleteHistory(id, loggedInEmployee.id);
-                console.log("✅ Book reading history deleted from employee_reading_history table");
+                if (process.env.NODE_ENV === "development") console.log("✅ Book reading history deleted from employee_reading_history table");
 
                 addToast('Riwayat bacaan buku berhasil dihapus', 'success');
 
@@ -591,7 +591,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     const freshEmployeeData = allUsersData[loggedInEmployee.id];
                     if (freshEmployeeData) {
-                        console.log('🔄 Fresh employee data retrieved from Supabase after book reading history deletion:', {
+                        if (process.env.NODE_ENV === "development") console.log('🔄 Fresh employee data retrieved from Supabase after book reading history deletion:', {
                             id: freshEmployeeData.employee.id,
                             readingHistory: freshEmployeeData.employee.readingHistory
                         });
@@ -605,12 +605,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                             }
                         }));
 
-                        console.log('✅ Local state synchronized with Supabase data after book reading history deletion');
+                        if (process.env.NODE_ENV === "development") console.log('✅ Local state synchronized with Supabase data after book reading history deletion');
                     } else {
-                        console.warn('⚠️ Could not retrieve fresh employee data after book reading history deletion');
+                        if (process.env.NODE_ENV === "development") console.warn('⚠️ Could not retrieve fresh employee data after book reading history deletion');
                     }
                 } catch (refreshError) {
-                    console.error('❌ Error refreshing employee data after book reading history deletion:', refreshError);
+                    if (process.env.NODE_ENV === "development") console.error('❌ Error refreshing employee data after book reading history deletion:', refreshError);
                 }
             } else {
                 const updatedHistory = (loggedInEmployee.quranReadingHistory || []).filter(item => item.id !== id);
@@ -634,7 +634,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // 🔥 FIX: Delete from employee_quran_reading_history table using service
                 const { deleteQuranReadingHistory } = await import('@/services/readingHistoryService');
                 await deleteQuranReadingHistory(id, loggedInEmployee.id);
-                console.log("✅ Quran reading history deleted from employee_quran_reading_history table");
+                if (process.env.NODE_ENV === "development") console.log("✅ Quran reading history deleted from employee_quran_reading_history table");
 
                 addToast('Riwayat bacaan Quran berhasil dihapus', 'success');
 
@@ -645,7 +645,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     const freshEmployeeData = allUsersData[loggedInEmployee.id];
                     if (freshEmployeeData) {
-                        console.log('🔄 Fresh employee data retrieved from Supabase after quran reading history deletion:', {
+                        if (process.env.NODE_ENV === "development") console.log('🔄 Fresh employee data retrieved from Supabase after quran reading history deletion:', {
                             id: freshEmployeeData.employee.id,
                             quranReadingHistory: freshEmployeeData.employee.quranReadingHistory
                         });
@@ -659,16 +659,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                             }
                         }));
 
-                        console.log('✅ Local state synchronized with Supabase data after quran reading history deletion');
+                        if (process.env.NODE_ENV === "development") console.log('✅ Local state synchronized with Supabase data after quran reading history deletion');
                     } else {
-                        console.warn('⚠️ Could not retrieve fresh employee data after quran reading history deletion');
+                        if (process.env.NODE_ENV === "development") console.warn('⚠️ Could not retrieve fresh employee data after quran reading history deletion');
                     }
                 } catch (refreshError) {
-                    console.error('❌ Error refreshing employee data after quran reading history deletion:', refreshError);
+                    if (process.env.NODE_ENV === "development") console.error('❌ Error refreshing employee data after quran reading history deletion:', refreshError);
                 }
             }
         } catch (error) {
-            console.error('❌ Error deleting reading history from Supabase:', error);
+            if (process.env.NODE_ENV === "development") console.error('❌ Error deleting reading history from Supabase:', error);
 
             // Rollback the local state update in case of failure
             try {
@@ -684,7 +684,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }));
                 }
             } catch (rollbackError) {
-                console.error('Could not rollback after failed reading history deletion:', rollbackError);
+                if (process.env.NODE_ENV === "development") console.error('Could not rollback after failed reading history deletion:', rollbackError);
             }
 
             addToast('Gagal menghapus riwayat bacaan dari database. Silakan coba lagi.', 'error');
@@ -703,10 +703,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             await new Promise(resolve => setTimeout(resolve, 100));
 
             try {
-                console.log('📋 Loading activities from Supabase (background)...');
+                if (process.env.NODE_ENV === "development") console.log('📋 Loading activities from Supabase (background)...');
                 await loadActivitiesFromSupabase(loggedInEmployee.id);
             } catch (error) {
-                console.error('❌ Failed to load activities:', error);
+                if (process.env.NODE_ENV === "development") console.error('❌ Failed to load activities:', error);
             }
         };
 
@@ -720,22 +720,22 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             await new Promise(resolve => setTimeout(resolve, 500));
 
             try {
-                console.log('📅 Loading team attendance sessions from Supabase (background)...');
+                if (process.env.NODE_ENV === "development") console.log('📅 Loading team attendance sessions from Supabase (background)...');
                 await loadTeamAttendanceSessionsFromSupabase();
             } catch (error) {
-                console.error('❌ Failed to load team attendance sessions:', error);
+                if (process.env.NODE_ENV === "development") console.error('❌ Failed to load team attendance sessions:', error);
             }
 
             try {
-                console.log('🕌 Loading sunnah ibadah from Supabase (background)...');
+                if (process.env.NODE_ENV === "development") console.log('🕌 Loading sunnah ibadah from Supabase (background)...');
                 const { getAllSunnahIbadah } = await import('@/services/sunnahIbadahService');
                 const sunnahIbadahFromDb = await getAllSunnahIbadah();
 
                 const { setSunnahIbadahList } = useSunnahIbadahStore.getState();
                 setSunnahIbadahList(sunnahIbadahFromDb);
-                console.log(`✅ Loaded ${sunnahIbadahFromDb.length} sunnah ibadah items from Supabase`);
+                if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${sunnahIbadahFromDb.length} sunnah ibadah items from Supabase`);
             } catch (error) {
-                console.error('❌ Failed to load sunnah ibadah from Supabase:', error);
+                if (process.env.NODE_ENV === "development") console.error('❌ Failed to load sunnah ibadah from Supabase:', error);
             }
         };
 
@@ -764,7 +764,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                            JSON.stringify(loggedInEmployee.functionalRoles) !== JSON.stringify(freshEmployeeData.functionalRoles);
 
         if (hasCamelCaseFields && isDifferent) {
-            console.log('🔄 DashboardContainer: Updating loggedInEmployee from allUsersData (ONE TIME ONLY)');
+            if (process.env.NODE_ENV === "development") console.log('🔄 DashboardContainer: Updating loggedInEmployee from allUsersData (ONE TIME ONLY)');
 
             const criticalFields = {
                 monthlyActivities: loggedInEmployee.monthlyActivities,
@@ -906,7 +906,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onCreateTeamAttendanceSessions={async (sessionsData) => {
                 // 🔥 FIX: Implement create team attendance sessions with Supabase sync
                 try {
-                    console.log('📅 Creating team attendance sessions:', sessionsData);
+                    if (process.env.NODE_ENV === "development") console.log('📅 Creating team attendance sessions:', sessionsData);
 
                     if (!loggedInEmployee) {
                         throw new Error('User not logged in');
@@ -925,7 +925,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                                 presentUserIds: [] // Initialize as empty array as it's required
                                 // Note: createdAt is handled by Supabase default value (NOW())
                             };
-                            console.log('📅 Creating session:', sessionWithCreator);
+                            if (process.env.NODE_ENV === "development") console.log('📅 Creating session:', sessionWithCreator);
                             return createTeamAttendanceSession(sessionWithCreator);
                         })
                     );
@@ -933,10 +933,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     // Update local state (pass array, not spread)
                     addTeamAttendanceSessions(createdSessions);
 
-                    console.log('✅ Team attendance sessions created successfully:', createdSessions.length);
+                    if (process.env.NODE_ENV === "development") console.log('✅ Team attendance sessions created successfully:', createdSessions.length);
                     addToast(`${createdSessions.length} sesi presensi berhasil dibuat!`, 'success');
                 } catch (error) {
-                    console.error('❌ Error creating team attendance sessions:', error);
+                    if (process.env.NODE_ENV === "development") console.error('❌ Error creating team attendance sessions:', error);
 
                     // Better error logging
                     let errorMessage = 'Unknown error';

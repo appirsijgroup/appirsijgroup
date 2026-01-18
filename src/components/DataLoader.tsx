@@ -15,7 +15,7 @@ interface DataLoaderProps {
 }
 
 export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
-    const { loadHospitals } = useAppDataStore();
+    const { loadHospitals, loadAllEmployees } = useAppDataStore();
     const { loadAnnouncements } = useAnnouncementStore();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -30,22 +30,28 @@ export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
                 const loadPromises = [
                     // Announcements - needed for sidebar badge and admin dashboard
                     loadAnnouncements().catch(err => {
-                        console.error('Failed to load announcements:', err);
+                        if (process.env.NODE_ENV === "development") console.error('Failed to load announcements:', err);
                         // Don't throw - allow other data to load
                     }),
 
                     // Hospitals - needed for various features
                     loadHospitals().catch(err => {
-                        console.error('Failed to load hospitals:', err);
+                        if (process.env.NODE_ENV === "development") console.error('Failed to load hospitals:', err);
+                        // Don't throw - allow other data to load
+                    }),
+
+                    // All Employees - needed for Analytics page (accessible to all users)
+                    loadAllEmployees().catch(err => {
+                        if (process.env.NODE_ENV === "development") console.error('Failed to load all employees:', err);
                         // Don't throw - allow other data to load
                     }),
                 ];
 
                 await Promise.allSettled(loadPromises);
 
-                console.log('✅ Essential data loaded in background');
+                if (process.env.NODE_ENV === "development") console.log('✅ Essential data loaded in background');
             } catch (err: any) {
-                console.error('Error loading essential data:', err);
+                if (process.env.NODE_ENV === "development") console.error('Error loading essential data:', err);
                 setError(err.message);
                 // Don't block UI - data will load when needed
             } finally {
@@ -54,7 +60,7 @@ export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
         };
 
         loadEssentialData();
-    }, [loadAnnouncements, loadHospitals]);
+    }, [loadAnnouncements, loadHospitals, loadAllEmployees]);
 
     // Don't block rendering - load in background
     return <>{children}</>;
@@ -76,7 +82,7 @@ export const useReloadData = () => {
             ]);
             return true;
         } catch (error) {
-            console.error('Failed to reload data:', error);
+            if (process.env.NODE_ENV === "development") console.error('Failed to reload data:', error);
             return false;
         }
     };

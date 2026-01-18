@@ -289,11 +289,10 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         };
     }, [loggedInEmployee, pathname]);
 
-    // ⚡ OPTIMIZATION: Use useCallback to prevent unnecessary re-renders
+    // ⚡ OPTIMIZATION: Direct logout without router.push - logoutEmployee already redirects
     const handleLogout = useCallback(() => {
         logoutEmployee();
-        router.push('/login');
-    }, [logoutEmployee, router]);
+    }, [logoutEmployee]);
 
     const handleToggleNotifications = useCallback(() => {
         setIsNotificationPanelOpen(true);
@@ -379,10 +378,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         // Render nothing during SSR to prevent hydration mismatch
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                    <p className="text-white text-lg">Memuat data karyawan...</p>
-                </div>
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
             </div>
         );
     }
@@ -390,10 +386,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     if (!loggedInEmployee && isHydrated) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                    <p className="text-white text-lg">Memuat data karyawan...</p>
-                </div>
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
             </div>
         );
     }

@@ -36,11 +36,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
   }, [setIsOpen]);
 
   const handleLogout = useCallback(() => {
-    setClickedItem('logout');
-    setTimeout(() => {
-      onLogout();
-      setClickedItem(null);
-    }, 150);
+    onLogout();
   }, [onLogout]);
 
   const isActive = (href: string) => {

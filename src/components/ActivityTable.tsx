@@ -128,8 +128,8 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
             <section className="mt-8">
                 <h2 className="text-xl font-bold text-white mb-4">Kegiatan Terjadwal</h2>
                 <div className="bg-white/10 p-2 sm:p-4 rounded-2xl shadow-lg border border-white/20 overflow-x-auto">
-                    <div className="text-center py-8 text-blue-200">
-                        Memuat jadwal kegiatan...
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
                     </div>
                 </div>
             </section>

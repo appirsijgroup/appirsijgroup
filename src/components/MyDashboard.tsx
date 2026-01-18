@@ -287,7 +287,7 @@ const ReadingActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            console.error('Week calculation error in ReadingActivityCard:', {
+            if (process.env.NODE_ENV === "development") console.error('Week calculation error in ReadingActivityCard:', {
                 dateCompleted,
                 selectedDateObj,
                 monthKey,
@@ -386,7 +386,7 @@ const SimpleActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            console.error('Week calculation error:', {
+            if (process.env.NODE_ENV === "development") console.error('Week calculation error:', {
                 date,
                 selectedDateObj,
                 monthKey,
@@ -420,14 +420,14 @@ const SimpleActivityCard: React.FC<{
     }, [date, submissions]);
 
     const handleSubmit = () => {
-        console.log('🔵 [SimpleActivityCard] handleSubmit called for activity:', activity.title, 'activity.id:', activity.id, 'date:', date);
+        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] handleSubmit called for activity:', activity.title, 'activity.id:', activity.id, 'date:', date);
         if (!date) {
             alert("Harap pilih tanggal.");
             return;
         }
-        console.log('🔵 [SimpleActivityCard] Calling onLogManualActivity with:', activity.id, date);
+        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] Calling onLogManualActivity with:', activity.id, date);
         onLogManualActivity(activity.id, date);
-        console.log('🔵 [SimpleActivityCard] onLogManualActivity call completed');
+        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] onLogManualActivity call completed');
     };
 
     return (
@@ -471,7 +471,7 @@ const RiwayatBacaan: React.FC<{
     const [confirmDelete, setConfirmDelete] = useState<{ type: 'book' | 'quran'; id: string; date: string; detail: string } | null>(null);
 
     const combinedHistory = useMemo(() => {
-        console.log('📚 RiwayatBacaan processing history:', {
+        if (process.env.NODE_ENV === "development") console.log('📚 RiwayatBacaan processing history:', {
             hasBookHistory: !!employee.readingHistory,
             bookCount: employee.readingHistory?.length || 0,
             hasQuranHistory: !!employee.quranReadingHistory,

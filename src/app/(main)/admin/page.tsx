@@ -12,8 +12,7 @@ const AdminDashboard = nextDynamic(() => import('@/components/AdminDashboard').t
     loading: () => (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                <p className="text-white text-lg">Memuat Admin Dashboard...</p>
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
             </div>
         </div>
     ),
@@ -126,18 +125,18 @@ export default function AdminPage() {
                 try {
                     const { getAllSunnahIbadah } = await import('@/services/sunnahIbadahService');
                     const sunnahIbadahFromDb = await getAllSunnahIbadah();
-                    console.log(`✅ Loaded ${sunnahIbadahFromDb.length} sunnah ibadah from Supabase`);
+                    if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${sunnahIbadahFromDb.length} sunnah ibadah from Supabase`);
 
                     // 🔥 REPLACE store data with data from Supabase (not merge!)
                     const { setSunnahIbadahList } = useSunnahIbadahStore.getState();
                     setSunnahIbadahList(sunnahIbadahFromDb);
-                    console.log('✅ Replaced sunnah ibadah list with data from Supabase');
+                    if (process.env.NODE_ENV === "development") console.log('✅ Replaced sunnah ibadah list with data from Supabase');
                 } catch (error) {
-                    console.error('⚠️ Error loading sunnah ibadah from Supabase:', error);
+                    if (process.env.NODE_ENV === "development") console.error('⚠️ Error loading sunnah ibadah from Supabase:', error);
                 }
 
                 // ✅ NEW: Load employees with PAGINATION (15 per page)
-                console.log(`🔍 Loading employees: page ${page}, search="${searchTerm}", role="${roleFilter}"`);
+                if (process.env.NODE_ENV === "development") console.log(`🔍 Loading employees: page ${page}, search="${searchTerm}", role="${roleFilter}"`);
                 const paginatedResult = await getPaginatedEmployees({
                     page,
                     limit: 15, // 15 employees per page
@@ -146,7 +145,7 @@ export default function AdminPage() {
                     isActive: isActiveFilter
                 });
 
-                console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
+                if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
 
                 // Convert employees to allUsersData format
                 const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
@@ -167,7 +166,7 @@ export default function AdminPage() {
                 // Update pagination state
                 setTotalCount(paginatedResult.pagination.total);
                 setTotalPages(paginatedResult.pagination.totalPages);
-                console.log(`✅ Page ${paginatedResult.pagination.page}/${paginatedResult.pagination.totalPages}`);
+                if (process.env.NODE_ENV === "development") console.log(`✅ Page ${paginatedResult.pagination.page}/${paginatedResult.pagination.totalPages}`);
 
                 // Load attendance records for current page employees
                 const { getEmployeeAttendance, getAllAttendanceRecords } = await import('@/services/attendanceService');
@@ -175,7 +174,7 @@ export default function AdminPage() {
                 // 🔥 FIX: Load ALL attendance in ONE call instead of per employee
                 try {
                     const allRecords = await getAllAttendanceRecords();
-                    console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records in ONE call`);
+                    if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records in ONE call`);
 
                     // Update attendance for current page employees
                     setAllUsersData((prev) => {
@@ -202,25 +201,25 @@ export default function AdminPage() {
                         return updated;
                     });
                 } catch (error) {
-                    console.error('⚠️ Error loading bulk attendance:', error);
+                    if (process.env.NODE_ENV === "development") console.error('⚠️ Error loading bulk attendance:', error);
                 }
 
                 // Load hospitals
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
-                console.log(`✅ Loaded ${hospitalsData.length} hospitals`);
+                if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${hospitalsData.length} hospitals`);
 
                 // 🔥 FIX: Load announcements
                 try {
                     await loadAnnouncements();
-                    console.log('✅ Loaded announcements from Supabase');
+                    if (process.env.NODE_ENV === "development") console.log('✅ Loaded announcements from Supabase');
                 } catch (error) {
-                    console.error('⚠️ Error loading announcements from Supabase:', error);
+                    if (process.env.NODE_ENV === "development") console.error('⚠️ Error loading announcements from Supabase:', error);
                 }
 
                 console.timeEnd('⚡ Load Admin Data');
             } catch (err: unknown) {
-                console.error('Error loading employees:', err);
+                if (process.env.NODE_ENV === "development") console.error('Error loading employees:', err);
                 setError(err instanceof Error ? err.message : 'Failed to load employees from database');
             } finally {
                 setIsLoading(false);
@@ -250,7 +249,7 @@ export default function AdminPage() {
                 return newData;
             });
         } catch (err: unknown) {
-            console.error('Error toggling status:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error toggling status:', err);
             addToast('Gagal mengupdate status: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
@@ -312,7 +311,7 @@ export default function AdminPage() {
                 dismissOnClick: false,
             });
         } catch (err: unknown) {
-            console.error('Error setting role:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error setting role:', err);
             addToast('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
@@ -351,7 +350,7 @@ export default function AdminPage() {
                 mustChangePassword: true // Require password change on first login
             };
 
-            console.log('📤 Creating employee with data:', {
+            if (process.env.NODE_ENV === "development") console.log('📤 Creating employee with data:', {
                 id: employee.id,
                 name: employee.name,
                 email: employee.email,
@@ -392,7 +391,7 @@ export default function AdminPage() {
                         }
                     });
                 } catch (error) {
-                    console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
+                    if (process.env.NODE_ENV === "development") console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
                     attendanceData = {};
                 }
 
@@ -407,22 +406,22 @@ export default function AdminPage() {
             return { success: true };
         } catch (err: unknown) {
             // Enhanced error logging
-            console.error('❌ Error adding user - Full error object:', err);
-            console.error('❌ Error type:', typeof err);
-            console.error('❌ Error keys:', err ? Object.keys(err) : 'N/A');
+            if (process.env.NODE_ENV === "development") console.error('❌ Error adding user - Full error object:', err);
+            if (process.env.NODE_ENV === "development") console.error('❌ Error type:', typeof err);
+            if (process.env.NODE_ENV === "development") console.error('❌ Error keys:', err ? Object.keys(err) : 'N/A');
 
             // Try to extract more error details
             let errorMessage = 'Unknown error';
             if (err instanceof Error) {
                 errorMessage = err.message;
-                console.error('❌ Error message:', err.message);
-                console.error('❌ Error stack:', err.stack);
+                if (process.env.NODE_ENV === "development") console.error('❌ Error message:', err.message);
+                if (process.env.NODE_ENV === "development") console.error('❌ Error stack:', err.stack);
             } else if (typeof err === 'object' && err !== null) {
                 errorMessage = JSON.stringify(err);
-                console.error('❌ Stringified error:', errorMessage);
+                if (process.env.NODE_ENV === "development") console.error('❌ Stringified error:', errorMessage);
             } else {
                 errorMessage = String(err);
-                console.error('❌ String error:', errorMessage);
+                if (process.env.NODE_ENV === "development") console.error('❌ String error:', errorMessage);
             }
 
             return { success: false, error: errorMessage };
@@ -448,7 +447,7 @@ export default function AdminPage() {
 
             return { success: true };
         } catch (err: unknown) {
-            console.error('Error updating user:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error updating user:', err);
             return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
         }
     };
@@ -465,7 +464,7 @@ export default function AdminPage() {
                 return newData;
             });
         } catch (err: unknown) {
-            console.error('Error deleting user:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error deleting user:', err);
             addToast('Gagal menghapus user: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
@@ -526,7 +525,7 @@ export default function AdminPage() {
                                 }
                             });
                         } catch (error) {
-                            console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
+                            if (process.env.NODE_ENV === "development") console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
                             attendanceData = {};
                         }
 
@@ -613,7 +612,7 @@ export default function AdminPage() {
 
             return true;
         } catch (error) {
-            console.error('Error updating attendance:', error);
+            if (process.env.NODE_ENV === "development") console.error('Error updating attendance:', error);
             addToast('Gagal mengupdate kehadiran: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             return false;
         }
@@ -621,9 +620,9 @@ export default function AdminPage() {
 
     const handleUpdateProfile = async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>> | { functionalRoles: FunctionalRole[] }) => {
         try {
-            console.log("🔄 Updating profile for user");
-            console.log("📦 UPDATES OBJECT:", JSON.stringify(updates, null, 2));
-            console.log("📋 UPDATES KEYS:", Object.keys(updates));
+            if (process.env.NODE_ENV === "development") console.log("🔄 Updating profile for user");
+            if (process.env.NODE_ENV === "development") console.log("📦 UPDATES OBJECT:", JSON.stringify(updates, null, 2));
+            if (process.env.NODE_ENV === "development") console.log("📋 UPDATES KEYS:", Object.keys(updates));
 
             // Get old user data before updating
             const oldUserData = allUsersData[userId];
@@ -686,13 +685,13 @@ export default function AdminPage() {
                 kaUnitId: 'Kepala Unit'
             };
 
-            console.log('🔍 Checking relation fields for notification...');
+            if (process.env.NODE_ENV === "development") console.log('🔍 Checking relation fields for notification...');
             for (const { camel, snake } of relationFields) {
                 // Check both camelCase and snake_case
                 const newValue = (updates as any)[camel] ?? (updates as any)[snake];
                 const oldValue = (oldUserData?.employee as any)[camel];
 
-                console.log(`  📌 Field ${camel}/${snake}:`, {
+                if (process.env.NODE_ENV === "development") console.log(`  📌 Field ${camel}/${snake}:`, {
                     newValue,
                     oldValue,
                     camelValue: (updates as any)[camel],
@@ -702,8 +701,8 @@ export default function AdminPage() {
 
                 // 🔥 PERBAIKAN: Buat notifikasi jika field ada di updates (BAHKAUN nilai sama atau beda)
                 if (newValue !== undefined) {
-                    console.log('🔔 Creating assignment notification for user:', userId, 'from Admin Dashboard');
-                    console.log('📊 Field:', camel, 'Old:', oldValue, 'New:', newValue);
+                    if (process.env.NODE_ENV === "development") console.log('🔔 Creating assignment notification for user:', userId, 'from Admin Dashboard');
+                    if (process.env.NODE_ENV === "development") console.log('📊 Field:', camel, 'Old:', oldValue, 'New:', newValue);
 
                     // Determine assignment type
                     let assignmentType: 'assignment' | 'change' | 'removal' = 'assignment';
@@ -741,16 +740,16 @@ export default function AdminPage() {
                         }
                     };
 
-                    console.log('📝 Notification data:', notificationData);
+                    if (process.env.NODE_ENV === "development") console.log('📝 Notification data:', notificationData);
                     await createNotification(notificationData);
-                    console.log('✅ Assignment notification created successfully');
+                    if (process.env.NODE_ENV === "development") console.log('✅ Assignment notification created successfully');
                 }
             }
 
-            console.log("✅ Profile updated successfully");
+            if (process.env.NODE_ENV === "development") console.log("✅ Profile updated successfully");
             return true;
         } catch (error) {
-            console.error('Error updating profile:', error);
+            if (process.env.NODE_ENV === "development") console.error('Error updating profile:', error);
             // Don't throw error here, just return false so the calling component can handle it
             return false;
         }
@@ -765,7 +764,7 @@ export default function AdminPage() {
                 // Generate temporary ID for upload (brand as ID)
                 const tempId = data.brand.toLowerCase().replace(/\s+/g, '-');
                 logoUrl = await uploadHospitalLogo(data.logoFile, tempId);
-                console.log('✅ Logo uploaded:', logoUrl);
+                if (process.env.NODE_ENV === "development") console.log('✅ Logo uploaded:', logoUrl);
             }
 
             // Add isActive field before creating
@@ -779,7 +778,7 @@ export default function AdminPage() {
 
             return { success: true };
         } catch (err: unknown) {
-            console.error('Error adding hospital:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error adding hospital:', err);
             return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
         }
     };
@@ -791,7 +790,7 @@ export default function AdminPage() {
             if (data.logoFile) {
                 const { uploadHospitalLogo } = await import('@/services/hospitalService');
                 const logoUrl = await uploadHospitalLogo(data.logoFile, id);
-                console.log('✅ Logo uploaded:', logoUrl);
+                if (process.env.NODE_ENV === "development") console.log('✅ Logo uploaded:', logoUrl);
                 finalData = { ...finalData, logo: logoUrl };
             }
 
@@ -804,7 +803,7 @@ export default function AdminPage() {
 
             return { success: true };
         } catch (err: unknown) {
-            console.error('Error updating hospital:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error updating hospital:', err);
             return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
         }
     };
@@ -820,7 +819,7 @@ export default function AdminPage() {
 
             return { success: true };
         } catch (err: unknown) {
-            console.error('Error deleting hospital:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error deleting hospital:', err);
             return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
         }
     };
@@ -834,7 +833,7 @@ export default function AdminPage() {
             const hospitalsData = await getAllHospitals();
             setHospitals(hospitalsData);
         } catch (err: unknown) {
-            console.error('Error toggling hospital status:', err);
+            if (process.env.NODE_ENV === "development") console.error('Error toggling hospital status:', err);
             addToast('Gagal mengupdate status RS: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
     };
@@ -861,10 +860,10 @@ export default function AdminPage() {
             // Add to local store (convert from service type to store type)
             addActivity(createdActivity as any);
 
-            console.log('✅ Activity created in Supabase:', createdActivity);
+            if (process.env.NODE_ENV === "development") console.log('✅ Activity created in Supabase:', createdActivity);
             addToast('Kegiatan berhasil dibuat!', 'success');
         } catch (error) {
-            console.error('❌ Failed to create activity in Supabase:', error);
+            if (process.env.NODE_ENV === "development") console.error('❌ Failed to create activity in Supabase:', error);
             // Still add to local store as fallback
             const newActivity: Activity = {
                 ...activityData,
@@ -891,9 +890,9 @@ export default function AdminPage() {
             // Add to local store
             addSunnahIbadah(ibadahData, creator);
 
-            console.log('✅ Sunnah ibadah created in Supabase:', createdIbadah);
+            if (process.env.NODE_ENV === "development") console.log('✅ Sunnah ibadah created in Supabase:', createdIbadah);
         } catch (error) {
-            console.error('❌ Failed to create sunnah ibadah in Supabase:', error);
+            if (process.env.NODE_ENV === "development") console.error('❌ Failed to create sunnah ibadah in Supabase:', error);
             // Still add to local store as fallback
             addSunnahIbadah(ibadahData, creator);
             addToast('Gagal menyimpan ke database. Data hanya tersimpan lokal.', 'error');
@@ -934,8 +933,7 @@ export default function AdminPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                    <p className="text-white text-lg">Memuat data dari database...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
                 </div>
             </div>
         );
@@ -945,7 +943,6 @@ export default function AdminPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center bg-red-500/20 p-8 rounded-lg border border-red-500">
-                    <p className="text-red-400 text-xl mb-4">Error memuat data</p>
                     <p className="text-white mb-4">{error}</p>
                     <button
                         onClick={() => window.location.reload()}

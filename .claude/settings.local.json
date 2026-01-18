@@ -30,7 +30,9 @@
       "Bash(npm view:*)",
       "Bash(npm run migrate-employees:*)",
       "Bash(supabase:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(wc:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

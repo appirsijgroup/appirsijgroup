@@ -5,6 +5,7 @@ import SupressHydrationWarning from "@/components/SupressHydrationWarning";
 import { QueryProvider } from "@/lib/react-query/QueryProvider";
 import { baseMetadata } from "./metadata";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import { Suspense } from "react";
 
 // ⚡ OPTIMIZATION: Use display: 'swap' for faster font rendering
 const inter = Inter({
@@ -77,7 +78,13 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <SupressHydrationWarning />
         <QueryProvider>
-          {children}
+          <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
+            </div>
+          }>
+            {children}
+          </Suspense>
         </QueryProvider>
       </body>
     </html>

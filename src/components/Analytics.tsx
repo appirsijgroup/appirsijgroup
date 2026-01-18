@@ -25,12 +25,20 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
             {minWidth ? (
                 <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
                     <div className="min-w-[700px] md:min-w-0 h-72">
-                        {isClient ? children : <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>}
+                        {isClient ? children : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (
                 <div className="w-full h-72">
-                    {isClient ? children : <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>}
+                    {isClient ? children : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -258,7 +266,9 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                            <div className="w-full h-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                            </div>
                         )}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center -mt-4">
                             <span className="text-4xl font-bold text-white">{activationPercentage}%</span>
@@ -616,7 +626,9 @@ const MutabaahPerformanceReport: React.FC<{
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                            <div className="w-full h-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                            </div>
                         )}
                     </ChartCard>
 
@@ -634,7 +646,9 @@ const MutabaahPerformanceReport: React.FC<{
                                     </BarChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-blue-200">Memuat grafik...</div>
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                                </div>
                             )}
                         </ChartCard>
                     ))}
@@ -666,8 +680,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     // Show loading state if no data yet
     if (Object.keys(allUsersData).length === 0) {
         return (
-            <div className="bg-black/20 p-8 rounded-lg border border-white/10 text-center">
-                <p className="text-white">Memuat data karyawan...</p>
+            <div className="bg-black/20 p-8 rounded-lg border border-white/10 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
             </div>
         );
     }

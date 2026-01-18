@@ -361,7 +361,11 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                     </button>
                 </div>
 
-                {isLoadingDetail && <div className="text-center p-10 text-blue-200">Memuat detail surah...</div>}
+                {isLoadingDetail && (
+                    <div className="flex items-center justify-center p-10">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                    </div>
+                )}
                 {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                 {selectedSurah && (
@@ -515,7 +519,11 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 </form>
             </div>
 
-            {isLoadingList && <div className="text-center p-10 text-blue-200">Memuat daftar surah...</div>}
+            {isLoadingList && (
+                <div className="flex items-center justify-center p-10">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                </div>
+            )}
             {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
             {filteredSurahs.length > 0 && (

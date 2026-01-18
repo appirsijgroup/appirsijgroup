@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       console.error('❌ JWT_SECRET is missing in production environment');
       return NextResponse.json({
         error: 'Security Configuration Error',
-        details: 'JWT_SECRET must be set in production environment settings.'
+        details: 'JWT_SECRET must be set in Vercel. Code Version: 2026-01-18 11:15. If you already set it, please REDEPLOY your project on Vercel Dashboard because environment variables only take effect after a new build.',
+        env_keys_present: Object.keys(process.env).filter(k => k.includes('SUPABASE') || k.includes('JWT') || k.includes('NEXT_PUBLIC'))
       }, { status: 500 });
     }
 

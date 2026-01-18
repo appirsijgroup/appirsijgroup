@@ -6,16 +6,16 @@ import { MyDashboard } from '@/components/MyDashboard';
 import AssignmentLetter from '@/components/AssignmentLetter';
 import {
     useAppDataStore,
-    useUIStore,
-    useSunnahIbadahStore,
-    useNotificationStore,
-    useAuditLogStore,
-    useDailyActivitiesStore,
-    useActivityStore,
-    useGuidanceStore,
-    useAnnouncementStore,
-    useHospitalStore
+    useUIStore
 } from '@/store/store';
+import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useAuditLogStore } from '@/store/auditLogStore';
+import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
+import { useActivityStore } from '@/store/activityStore';
+import { useGuidanceStore } from '@/store/guidanceStore';
+import { useAnnouncementStore } from '@/store/announcementStore';
+import { useHospitalStore } from '@/store/hospitalStore';
 import { PRAYERS } from '@/data/prayers';
 import { getBalancedWeeks } from '@/utils/dateUtils';
 import { updateEmployee, getEmployeeById } from '@/services/employeeService';

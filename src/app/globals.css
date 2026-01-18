@@ -7,17 +7,18 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 🔥 FIX: Use dark background to prevent white flash - matches app theme (slate-900) */
+  --background: #0f172a; /* slate-900 */
+  --foreground: #f8fafc; /* slate-50 */
   /* Add common variables that might be expected */
-  --border: #e5e7eb;
+  --border: #1e293b; /* slate-800 */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --border: #262626;
+    --background: #0f172a; /* slate-900 - consistent dark theme */
+    --foreground: #f8fafc; /* slate-50 */
+    --border: #1e293b; /* slate-800 */
   }
 }
 
@@ -27,6 +28,18 @@ body {
   font-family: var(--font-sans);
   /* 🔥 Smooth scroll for better UX */
   scroll-behavior: smooth;
+
+  /* 🔥 FIX: Prevent white flash during page transitions with fade-in */
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 🔥 Optimize rendering performance */

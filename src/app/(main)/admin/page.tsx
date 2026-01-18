@@ -4,7 +4,16 @@ export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState, Suspense } from 'react';
 import nextDynamic from 'next/dynamic';
-import { useAppDataStore, useUIStore, useActivityStore, useSunnahIbadahStore, useDailyActivitiesStore, useJobStructureStore, useAuditLogStore, useAnnouncementStore, useHospitalStore, useMutabaahStore, useNotificationStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
+import { useActivityStore } from '@/store/activityStore';
+import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
+import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
+import { useJobStructureStore } from '@/store/jobStructureStore';
+import { useAuditLogStore } from '@/store/auditLogStore';
+import { useAnnouncementStore } from '@/store/announcementStore';
+import { useHospitalStore } from '@/store/hospitalStore';
+import { useMutabaahStore } from '@/store/mutabaahStore';
+import { useNotificationStore } from '@/store/notificationStore';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 // 🔥 FIX: Dynamic import untuk AdminDashboard - 200KB akan di-load LAZY!

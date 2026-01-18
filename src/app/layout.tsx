@@ -79,8 +79,21 @@ export default function RootLayout({
         <SupressHydrationWarning />
         <QueryProvider>
           <Suspense fallback={
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
+              {/* 🔥 FIX: Better loading indicator with app branding */}
+              <div className="text-center">
+                  <div className="mb-6">
+                      <img
+                          src="/logorsijsp.png"
+                          alt="Logo RSI Jakarta Group"
+                          className="h-24 w-auto mx-auto animate-pulse"
+                      />
+                  </div>
+                  <div className="inline-block">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                  </div>
+                  <p className="text-slate-400 mt-4 text-sm">Memuat aplikasi...</p>
+              </div>
             </div>
           }>
             {children}

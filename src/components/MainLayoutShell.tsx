@@ -374,26 +374,49 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsClient(true);
     }, []);
 
-    if (!isClient) {
-        // Render nothing during SSR to prevent hydration mismatch
+    // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
+    if (!isClient || !loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800">
+                {/* Skeleton Navigation Sidebar */}
+                <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
+                    <div className="p-6 border-b border-slate-800">
+                        <div className="h-8 bg-slate-700 rounded animate-pulse"></div>
+                    </div>
+                    <div className="flex-1 p-4 space-y-3">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="h-10 bg-slate-800/50 rounded-lg animate-pulse"></div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Skeleton Main Content */}
+                <div className="flex flex-col">
+                    {/* Skeleton Header */}
+                    <div className="h-16 bg-slate-900/50 border-b border-slate-800 flex items-center px-4 lg:px-6">
+                        <div className="h-8 w-8 lg:hidden bg-slate-700 rounded animate-pulse mr-4"></div>
+                        <div className="flex-1 flex justify-between items-center">
+                            <div className="h-6 bg-slate-700 rounded w-48 animate-pulse"></div>
+                            <div className="flex items-center gap-4">
+                                <div className="h-8 w-8 bg-slate-700 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Skeleton Content */}
+                    <div className="p-4 lg:p-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="h-32 bg-slate-800/30 rounded-xl animate-pulse mb-6"></div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {[...Array(6)].map((_, i) => (
+                                    <div key={i} className="h-40 bg-slate-800/30 rounded-xl animate-pulse"></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
-    }
-
-    if (!loggedInEmployee && isHydrated) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
-            </div>
-        );
-    }
-
-    // Guard: if still no employee after hydration, don't render (middleware will redirect)
-    if (!loggedInEmployee) {
-        return null;
     }
 
     return (

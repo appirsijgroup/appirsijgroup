@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ActivityTable } from '@/components/ActivityTable';
-import { useAppDataStore, useActivityStore } from '@/store/store';
+import { useAppDataStore } from '@/store/store';
+import { useActivityStore } from '@/store/activityStore';
 import { getEmployeeAttendance, submitAttendance, type AttendanceRecord } from '@/services/attendanceService';
 import { getEmployeeActivitiesAttendance, submitScheduledAttendance } from '@/services/scheduledActivityService';
 import { supabase } from '@/lib/supabase';

@@ -378,7 +378,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
     if (!isClient || !loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800">
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800" suppressHydrationWarning>
                 {/* Skeleton Navigation Sidebar */}
                 <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3">

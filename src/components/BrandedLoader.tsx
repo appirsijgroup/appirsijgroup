@@ -12,7 +12,7 @@ interface BrandedLoaderProps {
  */
 export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat..." }) => {
     return (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-800">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-800">
             {/* Logo Container dengan Pulse Animation */}
             <div className="relative mb-8">
                 {/* Pulse rings */}
@@ -42,11 +42,6 @@ export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat.
                 <p className="text-slate-400 text-sm mt-2">
                     Mohon tunggu sebentar...
                 </p>
-            </div>
-
-            {/* Animated Progress Bar di bagian bawah */}
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-800">
-                <div className="h-full bg-gradient-to-r from-teal-400 to-teal-600 animate-[loading_1.5s_ease-in-out_infinite]"></div>
             </div>
         </div>
     );

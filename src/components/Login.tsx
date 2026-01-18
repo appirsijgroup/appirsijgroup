@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserIcon, LockClosedIcon } from './Icons';
 import PasswordInput from './PasswordInput';
-import bcrypt from 'bcryptjs';
 import { supabase } from '@/lib/supabase';
 import type { Employee } from '@/types';
 
@@ -79,6 +78,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
 
             if (isHashed) {
                 try {
+                    // 🔥 FIX: Dynamic import bcryptjs to avoid SSR issues
+                    const bcrypt = (await import('bcryptjs')).default;
                     isMatch = bcrypt.compareSync(password, employee.password);
                 } catch (err) {
                     // Bcrypt error, password invalid

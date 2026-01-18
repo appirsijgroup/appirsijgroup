@@ -1,0 +1,105 @@
+import { supabase } from '@/lib/supabase';
+
+export type AppSettingsKey = 'mutabaah_locking_mode';
+
+export interface AppSetting {
+    key: string;
+    value: string;
+    description?: string;
+    updated_at: string;
+    updated_by?: string;
+}
+
+/**
+ * Get a setting value by key
+ */
+export const getAppSetting = async (key: AppSettingsKey): Promise<string | null> => {
+    try {
+        const { data, error } = await supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', key)
+            .single();
+
+        if (error) {
+            console.error('❌ Error fetching app setting:', error);
+            return null;
+        }
+
+        return (data as any)?.value || null;
+    } catch (error) {
+        console.error('❌ Error fetching app setting:', error);
+        return null;
+    }
+};
+
+/**
+ * Get all settings
+ */
+export const getAllSettings = async (): Promise<Record<string, string>> => {
+    try {
+        const { data, error } = await supabase
+            .from('app_settings')
+            .select('key, value');
+
+        if (error) {
+            console.error('❌ Error fetching app settings:', error);
+            return {};
+        }
+
+        const settings: Record<string, string> = {};
+        (data as any)?.forEach((setting: any) => {
+            settings[setting.key] = setting.value;
+        });
+
+        return settings;
+    } catch (error) {
+        console.error('❌ Error fetching app settings:', error);
+        return {};
+    }
+};
+
+/**
+ * Update a setting value (only for super-admin)
+ */
+export const updateAppSetting = async (
+    key: AppSettingsKey,
+    value: string,
+    userId?: string
+): Promise<{ success: boolean; error?: string }> => {
+    try {
+        console.log('🔄 [AppSettingsService] Updating app setting:', key, '=', value);
+        console.log('👤 [AppSettingsService] User ID:', userId);
+
+        // If userId not provided, try to get from Supabase Auth (fallback)
+        let effectiveUserId = userId;
+
+        if (!effectiveUserId) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                console.error('❌ [AppSettingsService] User not authenticated');
+                return { success: false, error: 'User not authenticated' };
+            }
+            effectiveUserId = user.id;
+            console.log('👤 [AppSettingsService] Got user ID from auth:', effectiveUserId);
+        }
+
+        const { error, data } = await (supabase
+            .from('app_settings') as any)
+            .update({ value, updated_at: new Date().toISOString(), updated_by: effectiveUserId })
+            .eq('key', key)
+            .select();
+
+        if (error) {
+            console.error('❌ [AppSettingsService] Error updating app setting:', error);
+            return { success: false, error: error.message };
+        }
+
+        console.log('✅ [AppSettingsService] App setting updated successfully:', key, '=', value);
+        console.log('📊 [AppSettingsService] Updated data:', data);
+        return { success: true };
+    } catch (error: any) {
+        console.error('❌ [AppSettingsService] Error updating app setting:', error);
+        return { success: false, error: error?.message || 'Unknown error' };
+    }
+};

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+:root {
+  /* 🔥 FIX: Use dark background to prevent white flash - matches app theme (slate-900) */
+  --background: #0f172a; /* slate-900 */
+  --foreground: #f8fafc; /* slate-50 */
+  /* Add common variables that might be expected */
+  --border: #1e293b; /* slate-800 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a; /* slate-900 - consistent dark theme */
+    --foreground: #f8fafc; /* slate-50 */
+    --border: #1e293b; /* slate-800 */
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  /* 🔥 Smooth scroll for better UX */
+  scroll-behavior: smooth;
+
+  /* 🔥 FIX: Prevent white flash during page transitions with fade-in */
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 🔥 Optimize rendering performance */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve touch responsiveness */
+button, a {
+  touch-action: manipulation;
+}
+
+/* --- Legacy Animations from index.html --- */
+@keyframes fadeInView {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-view-change {
+  animation: fadeInView 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-pop-in {
+  animation: pop-in 0.4s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-toast-in {
+  animation: toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+.animate-toast-out {
+  animation: toast-out 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+/* --- Branded Loader Animation --- */
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* --- Date Range Picker Styles --- */
+.date-cell {
+  transition: all 0.2s ease;
+}
+.date-cell.is-selected-start,
+.date-cell.is-selected-end.is-single-day {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+.date-cell.is-selected-end,
+.date-cell.is-selected-start.is-single-day {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+.date-cell.is-in-range:not(.is-selected-start):not(.is-selected-end) {
+  border-radius: 0;
+}
+.date-cell.is-hover-preview:not(.is-selected-start) {
+  background-color: #5eead4 !important; /* teal-300 */
+  color: #134e4a !important; /* teal-900 */
+  opacity: 0.6;
+}
+
+/* --- Horizontal Scrollable Navigation --- */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 🔥 Hide scrollbars for navigation menus on desktop */
+@media (min-width: 1024px) {
+  nav.overflow-x-auto {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  nav.overflow-x-auto::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    /* Force horizontal scrolling on mobile */
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+
+    /* Hide scrollbar for mobile only (touchscreen) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera on mobile only */
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Ensure all table elements have normal positioning on mobile */
+  .overflow-x-auto th,
+  .overflow-x-auto td {
+    /* Remove any inline sticky positioning on mobile */
+    position: static !important;
+    left: auto !important;
+  }
+}

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo } from 'react';
 import { KUMPULAN_DOA } from '../data/guides';
 import { useUIStore } from '../store/store';
@@ -37,14 +39,14 @@ const KumpulanDoa: React.FC<KumpulanDoaProps> = ({ searchQuery }) => {
                 {filteredDoa.map((doa) => (
                     <div key={doa.id} className="bg-gray-900/50 p-6 rounded-2xl border border-white/10 shadow-lg flex flex-col space-y-6 h-full transition-all duration-300 hover:border-teal-400/50 hover:shadow-teal-500/10 relative">
                         <div className="flex justify-between items-start">
-                             <h3 className="font-bold text-xl text-teal-300 pr-10">{doa.title}</h3>
-                             <button
+                            <h3 className="font-bold text-xl text-teal-300 pr-10">{doa.title}</h3>
+                            <button
                                 onClick={() => openShareModal('doa', doa)}
                                 className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
                                 title="Bagikan doa ini"
-                             >
-                                <ShareIcon className="w-5 h-5"/>
-                             </button>
+                            >
+                                <ShareIcon className="w-5 h-5" />
+                            </button>
                         </div>
                         <div className="flex-grow space-y-6">
                             <p dir="rtl" className="text-3xl sm:text-4xl text-right text-white font-serif leading-loose">{doa.arabic}</p>

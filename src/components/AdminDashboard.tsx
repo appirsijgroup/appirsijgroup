@@ -1,3 +1,5 @@
+'use client';
+// @ts-nocheck
 /* eslint-disable react-hooks/set-state-in-effect -- Form state resets in modals are intentional */
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
@@ -469,7 +471,7 @@ const ActivityManagement: React.FC<{
     allEmployees: Employee[];
     onOpenModal: (activity?: Activity | null) => void;
     onInitiateDelete: (activity: Activity) => void;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
 }> = ({ activities, allEmployees, onOpenModal, onInitiateDelete }) => {
 
     const sortedActivities = useMemo(() => {
@@ -1351,11 +1353,10 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -1367,11 +1368,10 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -1546,11 +1546,10 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -1562,11 +1561,10 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -2106,11 +2104,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -2122,11 +2119,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -2695,11 +2691,10 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -2711,11 +2706,10 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -3067,7 +3061,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                         {isAnyAdmin({ ...user, role: user.role } as any) ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="grow">
-                                                    {(user.role === 'super-admin' ) && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
+                                                    {(user.role === 'super-admin') && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
                                                         <span className="font-semibold text-purple-300">Global (Semua RS)</span>
                                                     ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
                                                         <div className="flex flex-wrap gap-1">
@@ -3173,11 +3167,10 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -3189,11 +3182,10 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>

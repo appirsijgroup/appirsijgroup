@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { verifyToken } from '@/lib/jwt'
 
 /**
  * GET /api/employees
@@ -8,18 +9,29 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify user is authenticated via userId cookie
-    const userId = request.cookies.get('userId')?.value
+    // Verify user is authenticated via session token
+    const sessionCookie = request.cookies.get('session')?.value
 
-    if (!userId) {
-      console.log('❌ /api/employees - No userId cookie found')
+    if (!sessionCookie) {
+      console.log('❌ /api/employees - No session cookie found')
       return NextResponse.json(
-        { error: 'Unauthorized - No userId cookie' },
+        { error: 'Unauthorized - No session' },
         { status: 401 }
       )
     }
 
-    console.log('✅ /api/employees - Authenticated userId:', userId)
+    // Verify the JWT token
+    const session = await verifyToken(sessionCookie)
+
+    if (!session) {
+      console.log('❌ /api/employees - Invalid session token')
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid session' },
+        { status: 401 }
+      )
+    }
+
+    console.log('✅ /api/employees - Authenticated userId:', session.userId)
 
     // 🔥 FIX: Add defensive check for environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

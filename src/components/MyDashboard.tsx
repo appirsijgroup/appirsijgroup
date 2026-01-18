@@ -10,6 +10,7 @@ import Persetujuan from './Persetujuan';
 import { createPortal } from 'react-dom';
 import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
+import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
 
 
 const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b', '#10b981', '#0ea5e9'];
@@ -24,9 +25,9 @@ const TabButton: React.FC<{
         onClick={onClick}
         className={`flex-grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
           ${active
-            ? 'border-teal-400 text-teal-300'
-            : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
-          }`}
+                ? 'border-teal-400 text-teal-300'
+                : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
+            }`}
     >
         <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
@@ -77,7 +78,41 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
 
         console.info('📅 Current month:', currentMonthKey);
-        console.info('📋 Month progress:', monthProgress);
+        // 🔥 FIX: Merge manual activities with automation data (Reading & Quran history)
+        // This ensures "Membaca Al-Quran dan buku" is synced from history tables
+        const enrichedMonthProgress = { ...monthProgress };
+
+        // 1. Sync Reading History (Books)
+        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+            employee.readingHistory.forEach(history => {
+                const date = history.dateCompleted; // YYYY-MM-DD
+                const monthKeyCheck = date.substring(0, 7); // YYYY-MM
+                if (monthKeyCheck === currentMonthKey) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enrichedMonthProgress[dayKey]) {
+                        enrichedMonthProgress[dayKey] = {};
+                    }
+                    enrichedMonthProgress[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        // 2. Sync Quran History
+        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+            employee.quranReadingHistory.forEach(history => {
+                const date = history.date; // YYYY-MM-DD
+                const monthKeyCheck = date.substring(0, 7); // YYYY-MM
+                if (monthKeyCheck === currentMonthKey) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enrichedMonthProgress[dayKey]) {
+                        enrichedMonthProgress[dayKey] = {};
+                    }
+                    enrichedMonthProgress[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        console.info('📚 Enriched Month Progress with Reading History:', enrichedMonthProgress);
 
         const categories: Record<string, { name: string; details: { id: string; title: string; target: number; achieved: number; percentage: number }[] }> = {
             'SIDIQ (Integritas)': { name: 'SIDIQ (Integritas)', details: [] },
@@ -86,11 +121,29 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
             'FATONAH (Belajar)': { name: 'FATONAH (Belajar)', details: [] },
         };
 
+        // Calculate total reading count specifically for 'baca_alquran_buku'
+        let totalReadingCount = 0;
+        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+            totalReadingCount += employee.readingHistory.filter(h => h.dateCompleted.startsWith(currentMonthKey)).length;
+        }
+        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+            totalReadingCount += employee.quranReadingHistory.filter(h => h.date.startsWith(currentMonthKey)).length;
+        }
+
         dailyActivitiesConfig.forEach(activity => {
             if (categories[activity.category]) {
-                const achieved = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: Record<string, boolean>) => {
-                    return dayCount + (dailyProgress[activity.id] ? 1 : 0);
-                }, 0);
+                let achieved = 0;
+
+                // Special handling for reading activity: Count total entries, not just days
+                if (activity.id === 'baca_alquran_buku') {
+                    achieved = totalReadingCount;
+                } else {
+                    // Default logic: Count unique days
+                    achieved = Object.values(enrichedMonthProgress).reduce((dayCount: number, dailyProgress: Record<string, boolean>) => {
+                        return dayCount + (dailyProgress[activity.id] ? 1 : 0);
+                    }, 0);
+                }
+
                 const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((achieved / activity.monthlyTarget) * 100)) : 0;
 
                 console.info(`  ✨ ${activity.title}: achieved=${achieved}, target=${activity.monthlyTarget}, percentage=${percentage}%`);
@@ -134,13 +187,14 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
 
                 {/* Scrollable container for mobile */}
                 <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
-                    <div className="min-w-[700px] md:min-w-0 h-80">
-                        <ResponsiveContainer width="100%" height="100%">
+                    {/* 🔥 DEBUG: Commented out Chart to fix infinite loop
+                    <div className="w-full min-w-[700px] md:min-w-0 h-80 min-h-80">
+                        <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={300}>
                             <BarChart data={performanceData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                 <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
                                 <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                <Bar dataKey="Persentase">
+                                <Bar dataKey="Persentase" isAnimationActive={false}>
                                     <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value) => typeof value === 'number' ? `${value}%` : ''} />
                                     {performanceData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -148,6 +202,10 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                    */}
+                    <div className="text-center p-10 text-gray-400 border border-dashed border-gray-600 rounded-lg">
+                        Grafik Kinerja sedang dalam perbaikan
                     </div>
                 </div>
             </div>
@@ -182,13 +240,13 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
     );
 };
 
-// Wrap with React.memo to prevent unnecessary re-renders
-const MemoizedKinerjaView = React.memo(KinerjaView, (prevProps, nextProps) => {
-    return (
-        prevProps.employee.monthlyActivities === nextProps.employee.monthlyActivities &&
-        prevProps.dailyActivitiesConfig === nextProps.dailyActivitiesConfig
-    );
-});
+// 🔥 REMOVED React.memo to prevent chart disappearing bug
+// The memo comparison was causing issues because:
+// 1. Reference comparison fails when data is re-fetched
+// 2. Chart doesn't re-render even when data changes
+// 3. Better to let it re-render than to show stale/missing data
+// Performance impact is minimal since useMemo already handles expensive calculations
+const MemoizedKinerjaView = KinerjaView;
 
 const ReadingActivityCard: React.FC<{
     employee: Employee;
@@ -196,11 +254,11 @@ const ReadingActivityCard: React.FC<{
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
 }> = ({ employee, onLogBookReading, onDeleteReadingHistory, submissions, todayForMaxDate }) => {
     const [bookTitle, setBookTitle] = useState('');
     const [pagesRead, setPagesRead] = useState('');
-    const [dateCompleted, setDateCompleted] = useState(new Date().toISOString().split('T')[0]);
+    const [dateCompleted, setDateCompleted] = useState(getTodayLocalDateString());
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -211,25 +269,24 @@ const ReadingActivityCard: React.FC<{
         onLogBookReading(bookTitle, pagesRead, dateCompleted);
         setBookTitle('');
         setPagesRead('');
-        setDateCompleted(new Date().toISOString().split('T')[0]);
+        setDateCompleted(getTodayLocalDateString());
     };
 
     const [isLocked, lockReason] = useMemo(() => {
         if (!dateCompleted) return [true, "Pilih tanggal"];
 
-        const selectedDateObj = new Date(dateCompleted + 'T12:00:00Z');
+        const selectedDateObj = createLocalDate(dateCompleted);
         const monthKey = dateCompleted.slice(0, 7);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setHours(0,0,0,0);
+        const normalizedSelectedDate = normalizeDate(selectedDateObj);
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
 
-        const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
+        const selectedMonthDate = createLocalDate(monthKey + '-02');
         const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
         const dayOfMonth = selectedDateObj.getDate();
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
@@ -271,19 +328,19 @@ const ReadingActivityCard: React.FC<{
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 <div>
                     <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Judul Buku</label>
-                    <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm"/>
+                    <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" />
                 </div>
-                 <div>
+                <div>
                     <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Halaman Dibaca</label>
-                    <input type="text" value={pagesRead} onChange={e => setPagesRead(e.target.value)} placeholder="Contoh: 1-15, 20" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm"/>
+                    <input type="text" value={pagesRead} onChange={e => setPagesRead(e.target.value)} placeholder="Contoh: 1-15, 20" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" />
                 </div>
-                 <div>
+                <div>
                     <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Tanggal Selesai</label>
-                    <input type="date" value={dateCompleted} onChange={e => setDateCompleted(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{colorScheme: 'dark'}}/>
+                    <input type="date" value={dateCompleted} onChange={e => setDateCompleted(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{ colorScheme: 'dark' }} />
                 </div>
-                 {isLocked ? (
+                {isLocked ? (
                     <div className="w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed text-sm sm:text-base">
-                        <LockClosedIcon className="w-5 h-5"/> <span className="truncate">{lockReason}</span>
+                        <LockClosedIcon className="w-5 h-5" /> <span className="truncate">{lockReason}</span>
                     </div>
                 ) : (
                     <button type="submit" className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors text-base sm:text-sm">
@@ -302,7 +359,7 @@ const SimpleActivityCard: React.FC<{
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
 }> = ({ activity, employee, onLogManualActivity, submissions, todayForMaxDate }) => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayLocalDateString());
 
     const isDone = useMemo(() => {
         if (!date) return false;
@@ -314,7 +371,7 @@ const SimpleActivityCard: React.FC<{
     const [isLocked, lockReason] = useMemo(() => {
         if (!date) return [true, "Pilih tanggal"];
 
-        const selectedDateObj = new Date(date + 'T12:00:00Z');
+        const selectedDateObj = createLocalDate(date);
         const monthKey = date.slice(0, 7);
 
         // --- Get today's date, normalized to midnight for comparison ---
@@ -322,14 +379,13 @@ const SimpleActivityCard: React.FC<{
         today.setHours(0, 0, 0, 0);
 
         // --- Check if the selected date is in the future ---
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setHours(0,0,0,0);
+        const normalizedSelectedDate = normalizeDate(selectedDateObj);
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
 
         // --- Determine the week of the selected date ---
-        const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
+        const selectedMonthDate = createLocalDate(monthKey + '-02');
         const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
         const dayOfMonth = selectedDateObj.getDate();
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
@@ -383,28 +439,27 @@ const SimpleActivityCard: React.FC<{
         <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-3 sm:gap-4">
             <h4 className="text-base sm:text-lg font-bold text-white leading-tight">{activity.title}</h4>
             <div className="space-y-3 sm:space-y-4">
-                 <div>
+                <div>
                     <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Pilih Tanggal</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{colorScheme: 'dark'}}/>
+                    <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{ colorScheme: 'dark' }} />
                 </div>
-                 <button
+                <button
                     onClick={handleSubmit}
                     disabled={isDone || isLocked}
-                    className={`w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${
-                        isLocked
+                    className={`w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${isLocked
                         ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
                         : isDone
-                        ? 'bg-green-500/80 text-white cursor-not-allowed'
-                        : 'bg-teal-500 hover:bg-teal-400 text-white'
-                    }`}
+                            ? 'bg-green-500/80 text-white cursor-not-allowed'
+                            : 'bg-teal-500 hover:bg-teal-400 text-white'
+                        }`}
                 >
                     {isLocked ? (
-                       <>
-                         <LockClosedIcon className="w-5 h-5"/> <span className="truncate">{lockReason}</span>
-                       </>
+                        <>
+                            <LockClosedIcon className="w-5 h-5" /> <span className="truncate">{lockReason}</span>
+                        </>
                     ) : isDone ? (
                         <>
-                           <CheckIcon className="w-5 h-5"/> Sudah Dilaporkan
+                            <CheckIcon className="w-5 h-5" /> Sudah Dilaporkan
                         </>
                     ) : 'Lapor Telah Melakukan'}
                 </button>
@@ -421,24 +476,35 @@ const RiwayatBacaan: React.FC<{
     const [confirmDelete, setConfirmDelete] = useState<{ type: 'book' | 'quran'; id: string; date: string; detail: string } | null>(null);
 
     const combinedHistory = useMemo(() => {
+        console.log('📚 RiwayatBacaan processing history:', {
+            hasBookHistory: !!employee.readingHistory,
+            bookCount: employee.readingHistory?.length || 0,
+            hasQuranHistory: !!employee.quranReadingHistory,
+            quranCount: employee.quranReadingHistory?.length || 0
+        });
+
         const bookHistory = (employee.readingHistory || []).map((r: ReadingHistory) => ({
             id: r.id,
             date: r.dateCompleted,
             type: 'Buku' as const,
             detail: `${r.bookTitle} (${r.pagesRead || 'N/A'})`,
         }));
+
+        // Combine quranReadingHistory from employee only (removed redundant client-side fetch)
         const quranHistory = (employee.quranReadingHistory || []).map((r: QuranReadingHistory) => ({
-            id: r.id,
+            id: r.id || `history-${r.date}-${r.surahNumber}-${r.startAyah}`,
             date: r.date,
             type: 'Al-Qur\'an' as const,
             detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
         }));
+
+        // No need for complex deduplication logic anymore since we utilize a single source of truth
         return [...bookHistory, ...quranHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [employee.readingHistory, employee.quranReadingHistory]);
 
     const filteredHistory = useMemo(() => {
         return combinedHistory.filter(item => {
-            const itemDate = new Date(item.date + 'T12:00:00Z'); // Use UTC noon to avoid timezone issues
+            const itemDate = createLocalDate(item.date);
             return itemDate.getFullYear() === currentDate.getFullYear() && itemDate.getMonth() === currentDate.getMonth();
         });
     }, [combinedHistory, currentDate]);
@@ -496,7 +562,7 @@ const RiwayatBacaan: React.FC<{
                     <tbody>
                         {filteredHistory.length > 0 ? filteredHistory.map((item, index) => (
                             <tr key={item.id || `reading-${item.type}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-[11px] sm:text-sm">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-[11px] sm:text-sm">{formatDateIndonesia(item.date)}</td>
                                 <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
                                     <span className={`px-1.5 sm:px-2 py-1 rounded-full text-[10px] sm:text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
                                         {item.type}
@@ -516,7 +582,7 @@ const RiwayatBacaan: React.FC<{
                 </table>
             </div>
             {confirmDelete && (
-                 <ConfirmationModal
+                <ConfirmationModal
                     isOpen={!!confirmDelete}
                     onClose={() => setConfirmDelete(null)}
                     onConfirm={handleDelete}
@@ -524,7 +590,7 @@ const RiwayatBacaan: React.FC<{
                     message={<>Apakah Anda yakin ingin menghapus riwayat bacaan: <strong className="block mt-2">{confirmDelete.detail}</strong>?</>}
                     confirmText="Ya, Hapus"
                     confirmColorClass="bg-red-600 hover:bg-red-500"
-                 />
+                />
             )}
         </div>
     );
@@ -587,7 +653,7 @@ const ToDoListView: React.FC<{
 
             // Date range filter has priority
             if (dateRange.start && todo.date) {
-                const todoDate = new Date(todo.date + 'T00:00:00');
+                const todoDate = createLocalDate(todo.date);
                 const startDate = new Date(dateRange.start);
                 startDate.setHours(0, 0, 0, 0);
 
@@ -609,7 +675,7 @@ const ToDoListView: React.FC<{
                 return yearFilter === 'all' && monthFilter === 'all';
             }
 
-            const todoDate = new Date(todo.date + 'T00:00:00');
+            const todoDate = createLocalDate(todo.date);
             const todoYear = todoDate.getFullYear().toString();
             const todoMonth = (todoDate.getMonth() + 1).toString();
 
@@ -717,12 +783,11 @@ const ToDoListView: React.FC<{
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return null;
-        return new Date(dateString + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        return formatDateIndonesia(dateString, { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const formatDateTime = (timestamp?: number | null) => {
-        if (!timestamp) return '-';
-        return new Date(timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return formatDateTimeIndonesia(timestamp);
     };
 
     // Calendar logic
@@ -848,12 +913,12 @@ const ToDoListView: React.FC<{
 
             <div className="space-y-4 p-4 bg-black/20 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-                    <input type="text" placeholder="Cari berdasarkan judul..." value={titleFilter} onChange={e => setTitleFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400"/>
+                    <input type="text" placeholder="Cari berdasarkan judul..." value={titleFilter} onChange={e => setTitleFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400" />
                     <div className="relative" ref={calendarRef}>
-                         <label className="text-xs font-medium text-blue-100 block mb-1">Filter Rentang Tanggal</label>
+                        <label className="text-xs font-medium text-blue-100 block mb-1">Filter Rentang Tanggal</label>
                         <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white text-left flex justify-between items-center">
                             <span>{dateRange.start ? `${formatDateForDisplay(dateRange.start)} - ${formatDateForDisplay(dateRange.end)}` : 'Pilih Tanggal'}</span>
-                            <CalendarDaysIcon className="w-5 h-5 text-gray-400"/>
+                            <CalendarDaysIcon className="w-5 h-5 text-gray-400" />
                         </button>
                         {isCalendarOpen && (
                             <div className="absolute z-10 top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-xl" onMouseLeave={() => setHoverDate(null)}>
@@ -874,10 +939,10 @@ const ToDoListView: React.FC<{
                             <option value="all" className="bg-white text-black">Semua Tahun</option>
                             {availableYears.map(year => <option key={year} value={year} className="bg-white text-black">{year}</option>)}
                         </select>
-                         <select value={monthFilter} onChange={e => handleSetMonthFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400">
+                        <select value={monthFilter} onChange={e => handleSetMonthFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400">
                             <option value="all" className="bg-white text-black">Semua Bulan</option>
-                            {Array.from({length: 12}, (_, i) =>
-                                <option key={i+1} value={i+1} className="bg-white text-black">{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                            {Array.from({ length: 12 }, (_, i) =>
+                                <option key={i + 1} value={i + 1} className="bg-white text-black">{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
                             )}
                         </select>
                     </div>
@@ -908,24 +973,24 @@ const ToDoListView: React.FC<{
                                 )}
                             </div>
                             <div className="flex-shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><CheckIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
+                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><CheckIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif</p>
                 ) : (
                     completedTasks.length > 0 ? completedTasks.map(task => (
-                         <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
+                        <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
                             <div className="flex-grow">
                                 <p className="font-semibold text-gray-400">{task.title}</p>
                                 <p className="text-xs text-gray-500 mt-1">Selesai: {formatDateTime(task.completedAt)}</p>
                             </div>
-                             <div className="flex-shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><ArrowUturnLeftIcon className="w-5 h-5"/></button>
-                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><PencilIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
+                            <div className="flex-shrink-0 flex items-center gap-1">
+                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><ArrowUturnLeftIcon className="w-5 h-5" /></button>
+                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><PencilIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai</p>
@@ -938,10 +1003,10 @@ const ToDoListView: React.FC<{
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                         <h3 className="text-lg font-bold text-white mb-4">Tambah Tugas Baru</h3>
                         <form onSubmit={handleAddTask} className="space-y-4">
-                            <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Judul Kegiatan" required className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white"/>
+                            <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Judul Kegiatan" required className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" />
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }}/>
-                                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }}/>
+                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }} />
+                                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }} />
                             </div>
                             <textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Catatan (opsional)" rows={3} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white"></textarea>
                             <div className="flex justify-end gap-3 pt-4">
@@ -954,8 +1019,8 @@ const ToDoListView: React.FC<{
             )}
 
             {viewingTodo && createPortal(
-                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-                     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-white/20 animate-pop-in">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-white/20 animate-pop-in">
                         <div className="p-6 border-b border-white/10">
                             <h3 className="text-2xl font-bold text-teal-300 leading-tight">{viewingTodo.title}</h3>
                         </div>
@@ -1004,7 +1069,7 @@ const ToDoListView: React.FC<{
                             )}
 
                             {viewingTodo.completionNotes && (
-                                 <div>
+                                <div>
                                     <h4 className="font-semibold text-teal-300 mb-2">Catatan Penyelesaian</h4>
                                     <p className="text-white bg-black/20 p-3 rounded-lg border border-white/10 whitespace-pre-wrap">{viewingTodo.completionNotes}</p>
                                 </div>
@@ -1032,7 +1097,7 @@ const ToDoListView: React.FC<{
                 </div>, document.body
             )}
 
-             {editingTodo && createPortal(
+            {editingTodo && createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                         <h3 className="text-lg font-bold text-white">Edit Catatan Selesai</h3>
@@ -1076,9 +1141,8 @@ const SubTabButton: React.FC<{
 }> = ({ label, tab, isActive, onClick }) => (
     <button
         onClick={() => onClick(tab)}
-        className={`py-3 px-4 sm:px-5 font-semibold transition-colors duration-200 border-b-2 whitespace-nowrap text-sm sm:text-base ${
-            isActive ? 'border-teal-400 text-teal-300' : 'border-transparent text-gray-400 hover:text-white'
-        }`}
+        className={`py-3 px-4 sm:px-5 font-semibold transition-colors duration-200 border-b-2 whitespace-nowrap text-sm sm:text-base ${isActive ? 'border-teal-400 text-teal-300' : 'border-transparent text-gray-400 hover:text-white'
+            }`}
     >
         {label}
     </button>
@@ -1086,9 +1150,9 @@ const SubTabButton: React.FC<{
 
 const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, onUpdateTodoList, submissions }) => {
     const [activeSubTab, setActiveSubTab] = useState<'laporan' | 'riwayat' | 'todolist'>('laporan');
-    const todayForMaxDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayForMaxDate = useMemo(() => getTodayLocalDateString(), []);
 
-     const manualActivities = useMemo(() => {
+    const manualActivities = useMemo(() => {
         return dailyActivitiesConfig.filter(
             act => act.automationTrigger?.type === 'MANUAL_USER_REPORT'
         );
@@ -1105,23 +1169,23 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
             <div className="overflow-x-auto pb-2 mb-4 -mx-2 px-2 sm:overflow-x-visible sm:mx-0 sm:px-0 border-b border-white/10">
                 <div className="flex items-center gap-2 min-w-max sm:min-w-0">
                     <SubTabButton
-                    label="Laporan Manual"
-                    tab="laporan"
-                    isActive={activeSubTab === 'laporan'}
-                    onClick={setActiveSubTab}
-                />
-                <SubTabButton
-                    label="Riwayat Bacaan"
-                    tab="riwayat"
-                    isActive={activeSubTab === 'riwayat'}
-                    onClick={setActiveSubTab}
-                />
-                <SubTabButton
-                    label="To-Do List"
-                    tab="todolist"
-                    isActive={activeSubTab === 'todolist'}
-                    onClick={setActiveSubTab}
-                />
+                        label="Laporan Manual"
+                        tab="laporan"
+                        isActive={activeSubTab === 'laporan'}
+                        onClick={setActiveSubTab}
+                    />
+                    <SubTabButton
+                        label="Riwayat Bacaan"
+                        tab="riwayat"
+                        isActive={activeSubTab === 'riwayat'}
+                        onClick={setActiveSubTab}
+                    />
+                    <SubTabButton
+                        label="To-Do List"
+                        tab="todolist"
+                        isActive={activeSubTab === 'todolist'}
+                        onClick={setActiveSubTab}
+                    />
                 </div>
             </div>
 
@@ -1154,7 +1218,7 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                     <RiwayatBacaan employee={employee} onDeleteReadingHistory={onDeleteReadingHistory} />
                 </div>
             )}
-             {activeSubTab === 'todolist' && (
+            {activeSubTab === 'todolist' && (
                 <div className="animate-view-change">
                     <ToDoListView employee={employee} onUpdateTodoList={onUpdateTodoList} />
                 </div>
@@ -1204,8 +1268,8 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     // Also check for snake_case fallback for initial load before camelCase conversion
     const hasMentorRole = employee.canBeMentor === true || (employee as Employee & { can_be_mentor?: boolean }).can_be_mentor === true;
     const hasApprovalRole = employee.canBeSupervisor === true || employee.canBeKaUnit === true ||
-                            (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_supervisor === true ||
-                            (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_ka_unit === true;
+        (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_supervisor === true ||
+        (employee as Employee & { can_be_supervisor?: boolean; can_be_ka_unit?: boolean }).can_be_ka_unit === true;
     const functionalRoles = employee.functionalRoles || (employee as Employee & { functional_roles?: string[] }).functional_roles || [];
     const canDoTeamAttendance = hasMentorRole || hasApprovalRole ||
         functionalRoles.includes('MANAJER') ||
@@ -1237,7 +1301,7 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             // Safe because ref prevents re-execution - only runs once on first load
             setTargetMenteeId(menteesOfMentor[0].id);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Including menteesOfMentor would cause re-runs, but ref prevents that
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Including menteesOfMentor would cause re-runs, but ref prevents that
     }, [menteesOfMentor.length, targetMenteeId]);
 
     const handleCreateTarget = (e: React.FormEvent) => {
@@ -1385,7 +1449,7 @@ export const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             <div className="mt-6">
                 {renderContent()}
             </div>
-             <ConfirmationModal
+            <ConfirmationModal
                 isOpen={!!confirmDeleteTarget}
                 onClose={() => setConfirmDeleteTarget(null)}
                 onConfirm={handleDeleteTarget}

@@ -1,3 +1,84 @@
+/**
+ * Mendapatkan tanggal hari ini dalam format YYYY-MM-DD berdasarkan timezone lokal (Indonesia)
+ * Fungsi ini mengatasi masalah timezone di mana new Date().toISOString() mengembalikan waktu UTC
+ */
+export const getTodayLocalDateString = (): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/**
+ * Mendapatkan waktu saat ini dalam format ISO string berdasarkan timezone lokal
+ */
+export const getNowLocal = (): Date => {
+    return new Date();
+};
+
+/**
+ * Format tanggal ke format Indonesia dengan timezone lokal
+ */
+export const formatDateIndonesia = (
+    date: Date | string,
+    options?: Intl.DateTimeFormatOptions
+): string => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        ...options
+    });
+};
+
+/**
+ * Format tanggal dan waktu ke format Indonesia dengan timezone lokal
+ */
+export const formatDateTimeIndonesia = (
+    timestamp?: number | null
+): string => {
+    if (!timestamp) return '-';
+    return new Date(timestamp).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+/**
+ * Membuat Date object dari string tanggal (YYYY-MM-DD) dengan timezone lokal
+ */
+export const createLocalDate = (dateString: string): Date => {
+    // Tambah waktu 'T12:00:00' untuk menghindari masalah timezone
+    return new Date(dateString + 'T12:00:00');
+};
+
+/**
+ * Normalisasi tanggal ke tengah hari (12:00) untuk menghindari masalah timezone
+ */
+export const normalizeDate = (date: Date): Date => {
+    const normalized = new Date(date);
+    normalized.setHours(12, 0, 0, 0);
+    return normalized;
+};
+
+/**
+ * Bandingkan dua tanggal tanpa mempertimbangkan waktu
+ */
+export const isSameDay = (date1: Date, date2: Date): boolean => {
+    return normalizeDate(date1).getTime() === normalizeDate(date2).getTime();
+};
+
+/**
+ * Cek apakah tanggal1 setelah tanggal2 (tanpa waktu)
+ */
+export const isAfterDay = (date1: Date, date2: Date): boolean => {
+    return normalizeDate(date1).getTime() > normalizeDate(date2).getTime();
+};
 
 export const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] => {
     const year = date.getFullYear();

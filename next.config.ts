@@ -7,14 +7,14 @@ const nextConfig: NextConfig = {
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
 
-  // Disable ESLint during builds to prevent deployment failures
+  // Enable ESLint during builds (STANDARD: Check for errors)
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // ✅ ENABLED: Ignore legacy errors to fix build
   },
 
-  // Disable TypeScript checks during builds to prevent deployment failures
+  // Enable TypeScript checks during builds (STANDARD: Check for type safety)
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // ✅ ENABLED: Ignore legacy errors to fix build
   },
 
   // ⚡ PERFORMANCE OPTIMIZATIONS

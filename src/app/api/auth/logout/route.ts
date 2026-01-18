@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { clearSessionCookie } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +8,10 @@ export async function POST(request: NextRequest) {
       message: 'Logout berhasil'
     })
 
-    // Hapus cookie userId
+    // Hapus cookie session
+    clearSessionCookie(response)
+
+    // Also delete legacy userId cookie just in case
     response.cookies.delete('userId')
 
     return response

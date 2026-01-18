@@ -247,7 +247,8 @@ export const getQuranReadingHistory = async (userId: string) => {
       surahName: item.surah_name,
       surahNumber: item.surah_number,
       startAyah: item.start_ayah,
-      endAyah: item.end_ayah
+      endAyah: item.end_ayah,
+      createdAt: item.created_at
     }));
   } catch (error) {
     console.error('Error fetching Quran reading history:', error);

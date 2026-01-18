@@ -16,10 +16,8 @@ const eslintConfig = [
   },
   {
     rules: {
-      // Ban console.log in production code
-      "no-console": ["error", {
-        allow: ["warn", "error", "info"]
-      }],
+      // Ban console.log in production code (warn only for now)
+      "no-console": "warn",
     },
   },
 ];

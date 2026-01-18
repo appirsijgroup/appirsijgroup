@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import { PRAYER_GUIDES } from '../data/guides';
 import type { PrayerGuide } from '../types';
@@ -108,7 +110,7 @@ const PanduanSholat: React.FC<PanduanSholatProps> = ({ searchQuery }) => {
     }
 
     if (filteredGuides.length === 0 && searchQuery) {
-         return (
+        return (
             <div className="text-center py-16 animate-fade-in">
                 <p className="text-lg text-blue-200">Panduan tidak ditemukan untuk "{searchQuery}".</p>
                 <p className="text-sm text-gray-400 mt-2">Coba gunakan kata kunci lain.</p>
@@ -122,10 +124,10 @@ const PanduanSholat: React.FC<PanduanSholatProps> = ({ searchQuery }) => {
                 <div>
                     <h3 className="text-2xl font-bold text-white mb-4 border-l-4 border-teal-400 pl-4">Sholat Fardhu</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {fardhuGuides.map(guide => 
-                            <GuideCard 
-                                key={guide.id} 
-                                guide={guide} 
+                        {fardhuGuides.map(guide =>
+                            <GuideCard
+                                key={guide.id}
+                                guide={guide}
                                 onSelect={() => setSelectedGuideId(guide.id)}
                                 icon={<MosqueIcon className="w-6 h-6" />}
                             />
@@ -133,14 +135,14 @@ const PanduanSholat: React.FC<PanduanSholatProps> = ({ searchQuery }) => {
                     </div>
                 </div>
             )}
-             {sunnahGuides.length > 0 && (
+            {sunnahGuides.length > 0 && (
                 <div>
                     <h3 className="text-2xl font-bold text-white mb-4 border-l-4 border-teal-400 pl-4">Sholat Sunnah</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {sunnahGuides.map(guide => 
-                            <GuideCard 
-                                key={guide.id} 
-                                guide={guide} 
+                        {sunnahGuides.map(guide =>
+                            <GuideCard
+                                key={guide.id}
+                                guide={guide}
                                 onSelect={() => setSelectedGuideId(guide.id)}
                                 icon={<SparklesIcon className="w-6 h-6" />}
                             />

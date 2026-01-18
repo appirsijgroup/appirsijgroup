@@ -74,18 +74,12 @@ export const useActivityStore = create<ActivityState>()(
 
                 try {
                     // Dynamic import to avoid circular dependencies
-                    const { getAllActivities, getActivitiesForEmployee } = await import('@/services/activitiesService');
+                    const { getAllActivities, getActivitiesForEmployee } = await import('@/services/scheduledActivityService');
                     let activities;
 
                     if (employeeId) {
-                        // If employeeId provided, get employee-specific activities
-                        const { getEmployeeById } = await import('@/services/employeeService');
-                        const employee = await getEmployeeById(employeeId);
-                        if (employee) {
-                            activities = await getActivitiesForEmployee(employee);
-                        } else {
-                            throw new Error('Employee not found');
-                        }
+                        // getActivitiesForEmployee expects employeeId as string, not employee object
+                        activities = await getActivitiesForEmployee(employeeId);
                     } else {
                         // Get all activities (admin view)
                         activities = await getAllActivities();
@@ -99,7 +93,11 @@ export const useActivityStore = create<ActivityState>()(
 
                     console.log(`✅ Loaded ${activities.length} activities from Supabase`);
                 } catch (error) {
-                    console.error('❌ Error loading activities:', error);
+                    console.error('❌ Error loading activities:', {
+                        message: error instanceof Error ? error.message : 'Unknown error',
+                        error: error,
+                        stack: error instanceof Error ? error.stack : undefined
+                    });
                     set({
                         activitiesError: error instanceof Error ? error.message : 'Failed to load activities',
                         isLoadingActivities: false

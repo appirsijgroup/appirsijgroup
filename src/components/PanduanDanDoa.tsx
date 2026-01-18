@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import PanduanSholat from './PanduanSholat';
 import KumpulanDoa from './KumpulanDoa';
@@ -67,7 +69,7 @@ const PanduanDanDoa: React.FC<PanduanDanDoaProps> = ({ searchQuery: initialSearc
                     />
                     {searchQuery && (
                         <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 flex items-center pr-4">
-                            <XIcon className="h-5 w-5 text-gray-400 hover:text-white"/>
+                            <XIcon className="h-5 w-5 text-gray-400 hover:text-white" />
                         </button>
                     )}
                 </div>

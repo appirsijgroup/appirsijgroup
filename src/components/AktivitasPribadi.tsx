@@ -5,6 +5,8 @@ import { type Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmiss
 import { CalendarDaysIcon, ClockIcon, CheckIcon, TrashIcon, CheckSquareIcon, PencilIcon, LockClosedIcon, PlusCircleIcon, ListBulletIcon, EyeIcon, ArrowUturnLeftIcon, CheckCircleIcon, InformationCircleIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
 import { createPortal } from 'react-dom';
+import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
+import type { QuranReadingSubmission } from '../services/quranSubmissionService';
 
 // Helper function to calculate balanced weeks
 const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] => {
@@ -46,7 +48,7 @@ const ReadingActivityCard: React.FC<{
 }> = ({ employee, onLogBookReading, onDeleteReadingHistory, submissions, todayForMaxDate }) => {
     const [bookTitle, setBookTitle] = useState('');
     const [pagesRead, setPagesRead] = useState('');
-    const [dateCompleted, setDateCompleted] = useState(new Date().toISOString().split('T')[0]);
+    const [dateCompleted, setDateCompleted] = useState(getTodayLocalDateString());
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,25 +59,24 @@ const ReadingActivityCard: React.FC<{
         onLogBookReading(bookTitle, pagesRead, dateCompleted);
         setBookTitle('');
         setPagesRead('');
-        setDateCompleted(new Date().toISOString().split('T')[0]);
+        setDateCompleted(getTodayLocalDateString());
     };
 
     const [isLocked, lockReason] = useMemo(() => {
         if (!dateCompleted) return [true, "Pilih tanggal"];
 
-        const selectedDateObj = new Date(dateCompleted + 'T12:00:00Z');
+        const selectedDateObj = createLocalDate(dateCompleted);
         const monthKey = dateCompleted.slice(0, 7);
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setHours(0,0,0,0);
+        const normalizedSelectedDate = normalizeDate(selectedDateObj);
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
 
-        const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
+        const selectedMonthDate = createLocalDate(monthKey + '-02');
         const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
         const dayOfMonth = selectedDateObj.getDate();
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
@@ -148,7 +149,7 @@ const SimpleActivityCard: React.FC<{
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
 }> = ({ activity, employee, onLogManualActivity, submissions, todayForMaxDate }) => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayLocalDateString());
 
     const isDone = useMemo(() => {
         if (!date) return false;
@@ -160,7 +161,7 @@ const SimpleActivityCard: React.FC<{
     const [isLocked, lockReason] = useMemo(() => {
         if (!date) return [true, "Pilih tanggal"];
 
-        const selectedDateObj = new Date(date + 'T12:00:00Z');
+        const selectedDateObj = createLocalDate(date);
         const monthKey = date.slice(0, 7);
 
         // --- Get today's date, normalized to midnight for comparison ---
@@ -168,14 +169,13 @@ const SimpleActivityCard: React.FC<{
         today.setHours(0, 0, 0, 0);
 
         // --- Check if the selected date is in the future ---
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setHours(0,0,0,0);
+        const normalizedSelectedDate = normalizeDate(selectedDateObj);
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
 
         // --- Determine the week of the selected date ---
-        const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
+        const selectedMonthDate = createLocalDate(monthKey + '-02');
         const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
         const dayOfMonth = selectedDateObj.getDate();
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
@@ -263,6 +263,34 @@ const RiwayatBacaan: React.FC<{
     const [currentDate, setCurrentDate] = useState(new Date());
     const [confirmDelete, setConfirmDelete] = useState<{ type: 'book' | 'quran'; id: string; date: string; detail: string } | null>(null);
 
+    const [quranSubmissions, setQuranSubmissions] = useState<QuranReadingSubmission[]>([]);
+    const [quranReadingHistory, setQuranReadingHistory] = useState<QuranReadingHistory[]>([]);
+
+    // Load Quran submissions from database
+    useEffect(() => {
+        const loadQuranData = async () => {
+            if (!employee?.id) return;
+
+            try {
+                // Load Quran submissions
+                const { getQuranSubmissions } = await import('../services/quranSubmissionService');
+                const submissions = await getQuranSubmissions(employee.id);
+                console.log('📖 Loaded Quran submissions:', submissions.length);
+                setQuranSubmissions(submissions);
+
+                // Load Quran reading history from employee_quran_reading_history table
+                const { getQuranReadingHistory } = await import('../services/readingHistoryService');
+                const history = await getQuranReadingHistory(employee.id);
+                console.log('📖 Loaded Quran reading history:', history.length);
+                setQuranReadingHistory(history);
+            } catch (error) {
+                console.error('Error loading Quran data:', error);
+            }
+        };
+
+        loadQuranData();
+    }, [employee?.id]);
+
     const combinedHistory = useMemo(() => {
         const bookHistory = (employee.readingHistory || []).map((r: ReadingHistory) => ({
             id: r.id,
@@ -270,18 +298,43 @@ const RiwayatBacaan: React.FC<{
             type: 'Buku' as const,
             detail: `${r.bookTitle} (${r.pagesRead || 'N/A'})`,
         }));
-        const quranHistory = (employee.quranReadingHistory || []).map((r: QuranReadingHistory) => ({
-            id: r.id,
+
+        // Quran reading history from employee_quran_reading_history table (database)
+        const quranHistoryFromTable = quranReadingHistory.map((r: QuranReadingHistory) => ({
+            id: r.id || `quran-${r.date}-${r.surahNumber}`,
             date: r.date,
             type: 'Al-Qur\'an' as const,
             detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
         }));
-        return [...bookHistory, ...quranHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [employee.readingHistory, employee.quranReadingHistory]);
+
+        // Quran reading history from employee JSON field (legacy/fallback)
+        const quranHistoryFromEmployee = (employee.quranReadingHistory || []).map((r: QuranReadingHistory) => ({
+            id: r.id || `history-${r.date}-${r.surahNumber}`,
+            date: r.date,
+            type: 'Al-Qur\'an' as const,
+            detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
+        }));
+
+        // Quran submissions from separate submissions table
+        const quranHistoryFromSubmissions = quranSubmissions.map((r: QuranReadingSubmission) => ({
+            id: r.id || `submission-${r.submissionDate}-${r.surahNumber}`,
+            date: r.submissionDate,
+            type: 'Al-Qur\'an' as const,
+            detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
+        }));
+
+        // Merge and remove duplicates (prioritize table data, then submissions, then employee JSON)
+        const allQuranHistory = [...quranHistoryFromTable, ...quranHistoryFromSubmissions, ...quranHistoryFromEmployee];
+        const uniqueQuranHistory = allQuranHistory.filter((item, index, self) =>
+            index === self.findIndex((t) => t.date === item.date && t.detail === item.detail)
+        );
+
+        return [...bookHistory, ...uniqueQuranHistory].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [employee.readingHistory, employee.quranReadingHistory, quranSubmissions, quranReadingHistory]);
 
     const filteredHistory = useMemo(() => {
         return combinedHistory.filter(item => {
-            const itemDate = new Date(item.date + 'T12:00:00Z'); // Use UTC noon to avoid timezone issues
+            const itemDate = createLocalDate(item.date);
             return itemDate.getFullYear() === currentDate.getFullYear() && itemDate.getMonth() === currentDate.getMonth();
         });
     }, [combinedHistory, currentDate]);
@@ -339,7 +392,7 @@ const RiwayatBacaan: React.FC<{
                     <tbody>
                         {filteredHistory.length > 0 ? filteredHistory.map(item => (
                             <tr key={item.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 whitespace-nowrap">{new Date(item.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{formatDateIndonesia(item.date)}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
                                         {item.type}
@@ -430,7 +483,7 @@ const ToDoListView: React.FC<{
 
             // Date range filter has priority
             if (dateRange.start && todo.date) {
-                const todoDate = new Date(todo.date + 'T00:00:00');
+                const todoDate = createLocalDate(todo.date);
                 const startDate = new Date(dateRange.start);
                 startDate.setHours(0, 0, 0, 0);
 
@@ -452,7 +505,7 @@ const ToDoListView: React.FC<{
                 return yearFilter === 'all' && monthFilter === 'all';
             }
 
-            const todoDate = new Date(todo.date + 'T00:00:00');
+            const todoDate = createLocalDate(todo.date);
             const todoYear = todoDate.getFullYear().toString();
             const todoMonth = (todoDate.getMonth() + 1).toString();
 
@@ -560,12 +613,11 @@ const ToDoListView: React.FC<{
 
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return null;
-        return new Date(dateString + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        return formatDateIndonesia(dateString, { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const formatDateTime = (timestamp?: number | null) => {
-        if (!timestamp) return '-';
-        return new Date(timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return formatDateTimeIndonesia(timestamp);
     };
 
     // Calendar logic
@@ -926,7 +978,7 @@ const SubTabButton: React.FC<{
 
 const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, onUpdateTodoList, submissions }) => {
     const [activeSubTab, setActiveSubTab] = useState<'laporan' | 'riwayat' | 'todolist'>('laporan');
-    const todayForMaxDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+    const todayForMaxDate = useMemo(() => getTodayLocalDateString(), []);
 
      const manualActivities = useMemo(() => {
         return dailyActivitiesConfig.filter(

@@ -73,6 +73,36 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                     });
 
                     console.log('✅ Logged-in employee loaded from session:', employee.name);
+
+                    // 🚀 OPTIMIZATION: Load all employees in background after logged-in user is ready
+                    // This prevents blocking the initial render but ensures data is ready for navigation
+                    setTimeout(async () => {
+                        try {
+                            console.log('🔄 Loading all employees in background...');
+                            const { getAllEmployees } = await import('@/services/employeeService');
+                            const allEmployees = await getAllEmployees();
+                            console.log(`✅ Loaded ${allEmployees.length} employees in background`);
+
+                            // Update allUsersData with all employees
+                            set((state) => {
+                                const newData = { ...state.allUsersData };
+                                allEmployees.forEach((emp) => {
+                                    if (!newData[emp.id]) {
+                                        newData[emp.id] = {
+                                            employee: emp,
+                                            attendance: {},
+                                            history: {}
+                                        };
+                                    }
+                                });
+                                return { allUsersData: newData };
+                            });
+                        } catch (error) {
+                            console.error('⚠️ Error loading all employees in background:', error);
+                            // Don't throw - background load failure is OK, page will handle it
+                        }
+                    }, 100); // Small delay to not block initial render
+
                 } else {
                     // No employee data in response
                     throw new Error('No employee data in response');

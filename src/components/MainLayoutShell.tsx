@@ -106,16 +106,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [loggedInEmployee, addToast, loadLoggedInEmployee]);
 
     // --- Load Employee Data from Session on Mount ---
-    useEffect(() => {
-        // HANYA load jika BELUM hydrate DAN employee BELUM ada
-        // Jangan load lagi ketika employee sudah ada!
-        if (!isHydrated && loggedInEmployee === null) {
-            // Load user from session (middleware already verified the session)
-            loadLoggedInEmployee();
-        }
-        // 🔥 FIX: Remove loadLoggedInEmployee from deps to prevent infinite reload
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isHydrated, loggedInEmployee]);
+    // ✅ REMOVED: Duplicate useEffect - now handled in single useEffect below (line ~370)
 
     // --- Load Mutabaah Settings from Supabase ---
     useEffect(() => {
@@ -225,14 +216,14 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
                 // Alliansi scope with hospital targeting - only users from those hospitals can see
                 if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
-                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin' ;
+                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin';
                     if (isAdmin) return true;
                     return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
                 }
 
                 // Mentor scope - mentors and their mentees can see
                 if (a.scope === 'mentor') {
-                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin' ;
+                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin';
                     if (isAdmin) return true;
                     if (loggedInEmployee.canBeMentor) return true;
                     if (loggedInEmployee.mentorId === a.authorId) return true;
@@ -329,7 +320,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             const queryString = link.params
                 ? '?' + new URLSearchParams(
                     Object.entries(link.params).map(([key, value]) => [key, String(value)])
-                  ).toString()
+                ).toString()
                 : '';
 
             const tabSuffix = link.tab ? `/${link.tab}` : '';
@@ -368,17 +359,35 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsMenuOpen(!isMenuOpen);
     }, [isMenuOpen, setIsMenuOpen]);
 
-    // 🔥 FIX: Load employee data on mount to prevent blank screen after login
+    // 🔥 FIX: Single source of truth for loading employee data
     useEffect(() => {
-        // Jika belum ada employee data dan belum pernah mencoba load (belum hydrated)
+        // Only load if we haven't loaded yet and haven't started hydration
         if (!loggedInEmployee && !isHydrated) {
-            console.log('🔄 MainLayoutShell: No employee data, loading from server...');
+            console.log('🔄 MainLayoutShell: Loading employee data...');
             loadLoggedInEmployee();
         }
-    }, []); // Only run once on mount
+    }, []); // Run ONCE on mount only
 
-    // 🔥 FIX: Show loading screen if loading employee data
-    if (!loggedInEmployee && !isHydrated) {
+    // 🔥 HYDRATION FIX: Track client-side state to prevent SSR mismatches
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        // Render nothing during SSR to prevent hydration mismatch
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
+                    <p className="text-white text-lg">Memuat data karyawan...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!loggedInEmployee && isHydrated) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center">
@@ -415,31 +424,20 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 />
                 <main className="flex-1 overflow-y-auto p-2 sm:p-4 relative" id="main-content-area">
                     <ErrorBoundary>
-                        {/* 🔥 Smooth loading indicator */}
-                        {(!isHydrated || !loggedInEmployee) && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gradient-to-br from-slate-900/95 to-indigo-800/95 backdrop-blur-sm">
-                                <div className="text-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-400 border-t-transparent mx-auto mb-4"></div>
-                                    <p className="text-white text-base font-medium">Memuat...</p>
-                                </div>
+                        {/* 🚀 OPTIMIZED: Removed loading overlay - content renders immediately with cached data */}
+                        {/* Page content */}
+                        {activationStatus.shouldShowActivationRequired ? (
+                            <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
+                                <ActivationRequired
+                                    monthName={activationStatus.currentMonthName}
+                                    monthKey={activationStatus.currentMonthKey}
+                                    onActivate={handleActivation}
+                                    isLoading={isActivating}
+                                />
                             </div>
+                        ) : (
+                            children
                         )}
-
-                        {/* Page content with fade-in animation */}
-                        <div className={`transition-opacity duration-200 ${isHydrated && loggedInEmployee ? 'opacity-100' : 'opacity-0'}`}>
-                            {activationStatus.shouldShowActivationRequired ? (
-                                <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
-                                    <ActivationRequired
-                                        monthName={activationStatus.currentMonthName}
-                                        monthKey={activationStatus.currentMonthKey}
-                                        onActivate={handleActivation}
-                                        isLoading={isActivating}
-                                    />
-                                </div>
-                            ) : (
-                                children
-                            )}
-                        </div>
                     </ErrorBoundary>
                 </main>
                 <Footer />

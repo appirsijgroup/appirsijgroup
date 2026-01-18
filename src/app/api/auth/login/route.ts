@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
+import { createToken, setSessionCookie } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
-  // 🔥 FIX: Create Supabase client inside function to avoid build-time errors
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -26,15 +26,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔐 Login attempt: ${identifier}`)
 
-    // Cari employee by id, nip, atau email
+    // Cari employee by id atau email
+    // Note: id IS the NIP/NOPEG, there's no separate nip column
     const { data: employee, error } = await supabase
       .from('employees')
       .select('*')
-      .or(`id.eq.${identifier},nip.eq.${identifier},email.eq.${identifier}`)
+      .or(`id.eq."${identifier}",email.eq.${identifier}`)
       .single()
 
     if (error || !employee) {
-      console.log('❌ Employee not found')
+      console.log('❌ Employee not found:', error?.message)
       return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 401 })
     }
 
@@ -52,28 +53,34 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ Login success: ${employee.name}`)
 
-    // Simpan ke cookie
+    // Create session payload
+    const sessionPayload = {
+      userId: employee.id,
+      email: employee.email,
+      name: employee.name,
+      nip: employee.id, // id IS the NIP/NOPEG
+      role: employee.role,
+    }
+
+    // Generate JWT
+    const token = await createToken(sessionPayload)
+
+    // Prepare response
     const response = NextResponse.json({
       success: true,
       employee: {
         id: employee.id,
         name: employee.name,
         email: employee.email,
-        nip: employee.nip,
+        nip: employee.id, // id IS the NIP/NOPEG
         role: employee.role,
       }
     })
 
-    // Set cookie dengan benar untuk development
-    response.cookies.set('userId', employee.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // false di development
-      sameSite: 'lax',
-      maxAge: 8 * 60 * 60, // 8 jam
-      path: '/' // penting!
-    })
+    // Set secure session cookie
+    setSessionCookie(response, token)
 
-    console.log('🍪 Cookie set for userId:', employee.id)
+    console.log('🍪 Secure session cookie set for user:', employee.id)
 
     return response
 

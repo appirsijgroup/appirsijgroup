@@ -130,6 +130,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For static assets, use cache first strategy
+  // BUT: Only cache GET requests, never cache POST/PUT/DELETE/PATCH
+  if (event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {

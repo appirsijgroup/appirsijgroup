@@ -685,79 +685,100 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     }, [loggedInEmployee, handleUpdateProfile, addToast, setLoggedInEmployee, setAllUsersData]);
 
-    // Load team attendance sessions from Supabase on mount
-    useEffect(() => {
-        const loadTeamAttendanceSessions = async () => {
-            try {
-                console.log('📅 Loading team attendance sessions from Supabase...');
-                await loadTeamAttendanceSessionsFromSupabase();
-            } catch (error) {
-                console.error('❌ Failed to load team attendance sessions:', error);
-            }
-        };
+    // 🚀 PROGRESSIVE LOADING STRATEGY: Load data in background with priority levels
+    // This allows dashboard to render immediately with cached data from localStorage
 
-        loadTeamAttendanceSessions();
-    }, []); // Empty dependency array = run once on mount
-
-    // Load activities from Supabase on mount
+    // Priority 2: Load important data in background (delayed to prioritize dashboard rendering)
     useEffect(() => {
-        const loadActivities = async () => {
+        const loadImportantData = async () => {
             if (!loggedInEmployee) return;
 
+            // Small delay to let dashboard render first with cached data
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             try {
-                console.log('📋 Loading activities from Supabase...');
+                console.log('📋 Loading activities from Supabase (background)...');
                 await loadActivitiesFromSupabase(loggedInEmployee.id);
             } catch (error) {
                 console.error('❌ Failed to load activities:', error);
             }
         };
 
-        loadActivities();
+        loadImportantData();
     }, [loggedInEmployee]); // Run when loggedInEmployee changes
 
-    // 🔥 Load sunnah ibadah from Supabase on mount
+    // Priority 3: Load nice-to-have data in background (longer delay)
     useEffect(() => {
-        const loadSunnahIbadahFromSupabase = async () => {
+        const loadNiceToHaveData = async () => {
+            // Longer delay - only load after important data and dashboard are ready
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             try {
-                console.log('🕌 Loading sunnah ibadah from Supabase...');
+                console.log('📅 Loading team attendance sessions from Supabase (background)...');
+                await loadTeamAttendanceSessionsFromSupabase();
+            } catch (error) {
+                console.error('❌ Failed to load team attendance sessions:', error);
+            }
+
+            try {
+                console.log('🕌 Loading sunnah ibadah from Supabase (background)...');
                 const { getAllSunnahIbadah } = await import('@/services/sunnahIbadahService');
                 const sunnahIbadahFromDb = await getAllSunnahIbadah();
 
-                // 🔥 REPLACE store data with data from Supabase (not merge!)
                 const { setSunnahIbadahList } = useSunnahIbadahStore.getState();
                 setSunnahIbadahList(sunnahIbadahFromDb);
-                console.log(`✅ Replaced sunnah ibadah list with ${sunnahIbadahFromDb.length} items from Supabase`);
+                console.log(`✅ Loaded ${sunnahIbadahFromDb.length} sunnah ibadah items from Supabase`);
             } catch (error) {
                 console.error('❌ Failed to load sunnah ibadah from Supabase:', error);
             }
         };
 
-        loadSunnahIbadahFromSupabase();
+        loadNiceToHaveData();
     }, []); // Run once on mount
 
-    // 🔥 CRITICAL FIX: Sync loggedInEmployee with allUsersData
-    // When allUsersData is updated with camelCase data, update loggedInEmployee too
+    // 🔥 DISABLED: This useEffect was causing infinite loops
+    // The sync between allUsersData and loggedInEmployee is not critical for functionality
+    // Data is already properly loaded from /api/auth/me
+    /*
+    const hasSyncedRef = React.useRef(false);
+    
     useEffect(() => {
         if (!loggedInEmployee || !allUsersData[loggedInEmployee.id]) return;
+        if (hasSyncedRef.current) return;
 
         const freshEmployeeData = allUsersData[loggedInEmployee.id]?.employee;
         if (!freshEmployeeData) return;
 
-        // Check if the fresh data has different field values (camelCase vs snake_case)
         const hasCamelCaseFields = freshEmployeeData.canBeMentor !== undefined ||
                                    freshEmployeeData.canBeSupervisor !== undefined ||
                                    freshEmployeeData.functionalRoles !== undefined;
 
-        if (hasCamelCaseFields) {
-            console.log('🔄 DashboardContainer: Updating loggedInEmployee from allUsersData', {
-                old_canBeMentor: loggedInEmployee.canBeMentor,
-                new_canBeMentor: freshEmployeeData.canBeMentor,
-                old_can_be_mentor: (loggedInEmployee as any).can_be_mentor,
-                new_can_be_mentor: (freshEmployeeData as any).can_be_mentor
-            });
-            setLoggedInEmployee(freshEmployeeData);
+        const isDifferent = loggedInEmployee.canBeMentor !== freshEmployeeData.canBeMentor ||
+                           loggedInEmployee.canBeSupervisor !== freshEmployeeData.canBeSupervisor ||
+                           JSON.stringify(loggedInEmployee.functionalRoles) !== JSON.stringify(freshEmployeeData.functionalRoles);
+
+        if (hasCamelCaseFields && isDifferent) {
+            console.log('🔄 DashboardContainer: Updating loggedInEmployee from allUsersData (ONE TIME ONLY)');
+
+            const criticalFields = {
+                monthlyActivities: loggedInEmployee.monthlyActivities,
+                readingHistory: loggedInEmployee.readingHistory,
+                quranReadingHistory: loggedInEmployee.quranReadingHistory,
+                todoList: loggedInEmployee.todoList
+            };
+
+            const mergedEmployee = Object.assign({}, loggedInEmployee, freshEmployeeData);
+
+            mergedEmployee.monthlyActivities = criticalFields.monthlyActivities;
+            mergedEmployee.readingHistory = criticalFields.readingHistory;
+            mergedEmployee.quranReadingHistory = criticalFields.quranReadingHistory;
+            mergedEmployee.todoList = criticalFields.todoList;
+
+            setLoggedInEmployee(mergedEmployee);
+            hasSyncedRef.current = true;
         }
-    }, [allUsersData, loggedInEmployee, setLoggedInEmployee]);
+    }, [allUsersData]);
+    */
 
     // 🔥 Event Listener for Assignment Letter from Notification Panel
     useEffect(() => {

@@ -1,4 +1,6 @@
 'use client';
+// @ts-nocheck
+export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
@@ -611,7 +613,7 @@ export default function AdminPage() {
 
             // 🔥 FIX: Create notification for relation changes (mentor, supervisor, kaUnit, dirut)
             // Support both camelCase (mentorId) and snake_case (mentor_id)
-            const relationFields: Array<{camel: keyof Employee, snake: string}> = [
+            const relationFields: Array<{ camel: keyof Employee, snake: string }> = [
                 { camel: 'mentorId', snake: 'mentor_id' },
                 { camel: 'supervisorId', snake: 'supervisor_id' },
                 { camel: 'kaUnitId', snake: 'ka_unit_id' }

@@ -145,15 +145,25 @@ export default function AdminPage() {
 
                 // ✅ NEW: Load employees with PAGINATION (15 per page)
                 if (process.env.NODE_ENV === "development") console.log(`🔍 Loading employees: page ${page}, search="${searchTerm}", role="${roleFilter}"`);
-                const paginatedResult = await getPaginatedEmployees({
-                    page,
-                    limit: 15, // 15 employees per page
-                    search: searchTerm,
-                    role: roleFilter,
-                    isActive: isActiveFilter
-                });
 
-                if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
+                let paginatedResult;
+                try {
+                    paginatedResult = await getPaginatedEmployees({
+                        page,
+                        limit: 15, // 15 employees per page
+                        search: searchTerm,
+                        role: roleFilter,
+                        isActive: isActiveFilter
+                    });
+                    if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
+                } catch (apiError: any) {
+                    console.error('❌ API Error details:', {
+                        message: apiError.message,
+                        stack: apiError.stack,
+                        cause: apiError.cause
+                    });
+                    throw new Error(`API Error: ${apiError.message}`);
+                }
 
                 // Convert employees to allUsersData format
                 const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};

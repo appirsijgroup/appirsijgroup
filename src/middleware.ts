@@ -29,17 +29,12 @@ export async function middleware(request: NextRequest) {
       // We need to import verifyToken at the top level
       session = await verifyToken(sessionCookie)
     } catch (e) {
-      console.error("Middleware token verification failed", e)
+      if (process.env.NODE_ENV === "development") console.error("Middleware token verification failed", e)
     }
   }
 
   const userId = session?.userId
   const isAuthenticated = !!userId
-
-  // Debug log
-  if (pathname === '/dashboard' || pathname === '/login') {
-    console.log(`🔐 Middleware: ${pathname} - Authenticated: ${isAuthenticated ? '✅ ' + userId : '❌ No'}`)
-  }
 
   // Protect API routes
   if (pathname.startsWith('/api') && !pathname.startsWith('/api/auth/login') && !pathname.startsWith('/api/auth/register') && !pathname.startsWith('/api/auth/verify')) {
@@ -51,13 +46,11 @@ export async function middleware(request: NextRequest) {
 
   // Jika belum login dan bukan di halaman login, redirect ke login
   if (!isAuthenticated && pathname !== '/login' && !pathname.startsWith('/api')) {
-    console.log('➡️ Redirecting to /login (no valid session)')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // Jika sudah login dan di halaman login, redirect ke dashboard
   if (isAuthenticated && pathname === '/login') {
-    console.log('➡️ Redirecting to /dashboard (already logged in)')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

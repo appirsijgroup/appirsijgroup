@@ -61,7 +61,7 @@ export const submitAttendance = async (
   location?: { latitude: number; longitude: number }
 ): Promise<AttendanceRecord> => {
   try {
-    console.log('📤 Submitting attendance to Supabase:', { employeeId, entityId, status, reason, isLateEntry });
+    if (process.env.NODE_ENV === "development") console.log('📤 Submitting attendance to Supabase:', { employeeId, entityId, status, reason, isLateEntry });
 
     // Check if Supabase is configured
     if (!supabase) {
@@ -80,7 +80,7 @@ export const submitAttendance = async (
       location: location ? JSON.stringify(location) : null
     };
 
-    console.log('📦 Record to upsert:', recordToUpsert);
+    if (process.env.NODE_ENV === "development") console.log('📦 Record to upsert:', recordToUpsert);
 
     const { data, error } = await (supabase
       .from('attendance_records') as any)
@@ -89,22 +89,24 @@ export const submitAttendance = async (
       .single();
 
     if (error) {
-      console.error('❌ Supabase upsert error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.error('❌ Supabase upsert error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+      }
       throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
     }
 
     if (!data) {
-      console.error('❌ No data returned from Supabase');
+      if (process.env.NODE_ENV === "development") console.error('❌ No data returned from Supabase');
       throw new Error('No data returned from Supabase after upsert');
     }
 
-    console.log('✅ Attendance submitted successfully:', data);
+    if (process.env.NODE_ENV === "development") console.log('✅ Attendance submitted successfully:', data);
     return data;
   } catch (err: any) {
     console.error('❌ Error in submitAttendance:', err);

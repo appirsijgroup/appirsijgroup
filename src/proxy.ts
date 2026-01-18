@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
   if (publicRoutes.includes(pathname)) {
     // Block test routes in production
     if (testRoutes.includes(pathname) && process.env.NODE_ENV === 'production') {
-      console.warn(`🚫 Test route blocked in production: ${pathname}`);
+      if (process.env.NODE_ENV === "development") console.warn(`🚫 Test route blocked in production: ${pathname}`);
       return NextResponse.redirect(new URL('/login', request.url));
     }
     return NextResponse.next();
@@ -47,7 +47,6 @@ export function proxy(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute && !session) {
-    console.log(`🔒 Unauthenticated access attempt to: ${pathname}`);
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
@@ -62,7 +61,7 @@ export function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     // Block any route containing test, debug, or migrate
     if (pathname.includes('/test') || pathname.includes('/migrate')) {
-      console.warn(`🚫 Test/debug route blocked in production: ${pathname}`);
+      if (process.env.NODE_ENV === "development") console.warn(`🚫 Test/debug route blocked in production: ${pathname}`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

@@ -414,7 +414,7 @@ const MutabaahPerformanceReport: React.FC<{
     }, [allUsers]);
 
     const filteredUsers = useMemo(() => {
-        return allUsers.filter(user => {
+        const result = allUsers.filter(user => {
             if (selectedUserIdFilter && user.id !== selectedUserIdFilter) return false;
             if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
             if (bagianFilter !== 'all' && user.bagian !== bagianFilter) return false;
@@ -426,6 +426,33 @@ const MutabaahPerformanceReport: React.FC<{
             if (genderFilter !== 'all' && user.gender !== genderFilter) return false;
             return true;
         });
+
+        // 🔍 DEBUG: Log filter results
+        console.log('🔍 Mutabaah Performance Filter:', {
+            allUsersCount: allUsers.length,
+            filteredUsersCount: result.length,
+            filters: {
+                selectedUserIdFilter,
+                unitFilter,
+                bagianFilter,
+                kategoriFilter,
+                profesiFilter,
+                genderFilter
+            },
+            firstFewFiltered: result.slice(0, 3).map(u => ({
+                id: u.id,
+                name: u.name,
+                unit: u.unit,
+                bagian: u.bagian,
+                professionCategory: u.professionCategory,
+                profession: u.profession,
+                gender: u.gender,
+                hasMonthlyActivities: !!u.monthlyActivities,
+                    hasMonthlyActivitiesSnake: !!(u as any).monthly_activities
+            }))
+        });
+
+        return result;
     }, [allUsers, selectedUserIdFilter, unitFilter, bagianFilter, kategoriFilter, profesiFilter, genderFilter]);
 
     const { performanceByCategory, groupedPerformanceByActivity } = useMemo(() => {
@@ -492,6 +519,22 @@ const MutabaahPerformanceReport: React.FC<{
             acc[categoryName].push(item);
             return acc;
         }, {} as Record<string, typeof performanceByActivity>);
+
+        // 🔍 DEBUG: Log performance calculation results
+        console.log('📊 Mutabaah Performance Calculation:', {
+            monthKey,
+            filteredUsersCount: filteredUsers.length,
+            performanceByCategory,
+            groupedPerformanceByActivityKeys: Object.keys(groupedPerformanceByActivity),
+            sampleUserHasData: filteredUsers.length > 0 ? {
+                userId: filteredUsers[0].id,
+                userName: filteredUsers[0].name,
+                hasMonthlyActivities: !!filteredUsers[0].monthlyActivities,
+                hasMonthlyActivitiesSnake: !!(filteredUsers[0] as any).monthly_activities,
+                monthlyActivitiesKeys: filteredUsers[0].monthlyActivities ? Object.keys(filteredUsers[0].monthlyActivities) : [],
+                monthlyActivitiesSnakeKeys: (filteredUsers[0] as any).monthly_activities ? Object.keys((filteredUsers[0] as any).monthly_activities) : []
+            } : null
+        });
 
         return { performanceByCategory, groupedPerformanceByActivity };
     }, [filteredUsers, dailyActivitiesConfig, currentMonth]);

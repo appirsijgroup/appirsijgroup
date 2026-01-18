@@ -4,95 +4,132 @@ import bcrypt from 'bcryptjs'
 import { createToken, setSessionCookie } from '@/lib/jwt'
 
 export async function POST(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('❌ Supabase environment variables not configured')
-    return NextResponse.json(
-      { error: 'Server configuration error' },
-      { status: 500 }
-    )
-  }
-
-  const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey)
-
   try {
-    const { identifier, password } = await request.json()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const jwtSecret = process.env.JWT_SECRET
 
-    if (!identifier || !password) {
-      return NextResponse.json({ error: 'ID/NIP/Email dan password wajib diisi' }, { status: 400 })
+    // 1. Initial Diagnostic Check
+    if (!supabaseUrl || !supabaseServiceKey) {
+      const missing = [];
+      if (!supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
+      if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+
+      console.error('❌ Configuration Missing:', missing.join(', '));
+      return NextResponse.json({
+        error: 'Konfigurasi server tidak lengkap',
+        details: `Missing: ${missing.join(', ')}. Check Vercel Environment Variables.`
+      }, { status: 500 });
     }
 
-    console.log(`🔐 Login attempt: ${identifier}`)
+    // JWT Secret check for Production
+    if (!jwtSecret && process.env.NODE_ENV === 'production') {
+      console.error('❌ JWT_SECRET is missing in production environment');
+      return NextResponse.json({
+        error: 'Security Configuration Error',
+        details: 'JWT_SECRET must be set in production environment settings.'
+      }, { status: 500 });
+    }
 
-    // Cari employee by id atau email
-    // id: NIP/NOPEG, email: Alamat email
-    const { data: employee, error } = await supabase
+    // 2. Parse payload safely
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error('❌ Failed to parse login request body');
+      return NextResponse.json({ error: 'Format data tidak valid' }, { status: 400 });
+    }
+
+    const { identifier, password } = body;
+    if (!identifier || !password) {
+      return NextResponse.json({ error: 'NIP/Email dan Password wajib diisi' }, { status: 400 });
+    }
+
+    console.log(`🔐 Login attempt for: "${identifier.substring(0, 4)}..."`);
+
+    // 3. Database operation
+    const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey);
+
+    // We use .maybeSingle() to be more resilient and get a clean null if not found
+    const { data: employee, error: dbError } = await supabase
       .from('employees')
       .select('*')
-      .or(`id.eq.${identifier},email.eq.${identifier}`)
-      .single()
+      .or(`id.eq."${identifier}",email.eq."${identifier}"`)
+      .maybeSingle();
 
-    if (error || !employee) {
-      console.log(`❌ Employee not found (${identifier}):`, error?.message)
-      return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 401 })
+    if (dbError) {
+      console.error('❌ Supabase Query Error:', dbError);
+      return NextResponse.json({
+        error: 'Database connection error',
+        details: dbError.message
+      }, { status: 500 });
     }
 
-    // Cek password
-    const passwordMatch = await bcrypt.compare(password, employee.password)
+    if (!employee) {
+      console.log(`❌ No employee found for identifier: ${identifier}`);
+      return NextResponse.json({ error: 'Karyawan tidak ditemukan. Periksa NIP/Email Anda.' }, { status: 401 });
+    }
+
+    // 4. Password validation
+    let passwordMatch = false;
+    try {
+      passwordMatch = await bcrypt.compare(password, employee.password);
+    } catch (bcryptError) {
+      console.error('❌ Bcrypt comparison failed:', bcryptError);
+      throw new Error(`Auth internal error: ${bcryptError instanceof Error ? bcryptError.message : 'Encryption fail'}`);
+    }
+
     if (!passwordMatch) {
-      console.log('❌ Wrong password')
-      return NextResponse.json({ error: 'Password salah' }, { status: 401 })
+      console.log('❌ Password mismatch for user:', employee.id);
+      return NextResponse.json({ error: 'Password salah' }, { status: 401 });
     }
 
-    // Cek aktif
-    if (!employee.is_active) {
-      return NextResponse.json({ error: 'Akun tidak aktif' }, { status: 403 })
+    // 5. Active status check
+    if (employee.is_active === false) {
+      return NextResponse.json({ error: 'Akun Anda sedang dinonaktifkan. Hubungi Admin.' }, { status: 403 });
     }
 
-    console.log(`✅ Login success: ${employee.name}`)
+    console.log(`✅ Authentication Success for: ${employee.name}`);
 
-    // Create session payload
+    // 6. Token Generation
     const sessionPayload = {
       userId: employee.id,
       email: employee.email,
       name: employee.name,
-      nip: employee.id, // id IS the NIP/NOPEG
+      nip: employee.id,
       role: employee.role,
+    };
+
+    let token;
+    try {
+      token = await createToken(sessionPayload);
+    } catch (jwtError) {
+      console.error('❌ JWT Token generation failed:', jwtError);
+      throw new Error(`Token generation failed: ${jwtError instanceof Error ? jwtError.message : 'Unknown reason'}`);
     }
 
-    // Generate JWT
-    const token = await createToken(sessionPayload)
-
-    // Prepare response
+    // 7. Success Response
     const response = NextResponse.json({
       success: true,
+      message: 'Berhasil masuk',
       employee: {
         id: employee.id,
         name: employee.name,
         email: employee.email,
-        nip: employee.id, // id IS the NIP/NOPEG
         role: employee.role,
       }
-    })
+    });
 
-    // Set secure session cookie
-    setSessionCookie(response, token)
+    // Set cookie
+    setSessionCookie(response, token);
 
-    console.log('🍪 Secure session cookie set for user:', employee.id)
+    return response;
 
-    return response
-
-  } catch (error) {
-    console.error('❌ Login error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : 'N/A',
-      error
-    })
+  } catch (err: any) {
+    console.error('🔥 CRITICAL LOGIN ERROR:', err);
     return NextResponse.json({
-      error: 'Terjadi kesalahan sistem',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+      error: 'Kesalahan internal sistem',
+      details: err?.message || 'Unknown crash'
+    }, { status: 500 });
   }
 }

@@ -230,32 +230,39 @@ export const useNotificationStore = create<NotificationState>()(
         }),
         {
             name: 'notifications-storage',
+            version: 1, // 🔥 Add version to handle future schema changes
             // 🔥 FIX: JANGAN merge state dari localStorage, Supabase adalah source of truth
             merge: (persistedState, currentState) => {
-                console.log('🔄 [Persist Merge] Called:', {
-                    persistedIsHydrated: (persistedState as any)?.isHydrated,
-                    currentIsHydrated: currentState.isHydrated,
-                    persistedNotificationsCount: (persistedState as any)?.notifications?.length || 0,
-                    currentNotificationsCount: currentState.notifications?.length || 0
-                });
+                try {
+                    console.log('🔄 [Persist Merge] Called:', {
+                        persistedIsHydrated: (persistedState as any)?.isHydrated,
+                        currentIsHydrated: currentState.isHydrated,
+                        persistedNotificationsCount: (persistedState as any)?.notifications?.length || 0,
+                        currentNotificationsCount: currentState.notifications?.length || 0
+                    });
 
-                // Jika currentState sudah di-hydrate dari Supabase, gunakan itu
-                if (currentState.isHydrated) {
-                    console.log('✅ [Persist Merge] Using hydrated state from Supabase, ignoring localStorage notifications');
-                    // Bersihkan localStorage yang mungkin masih ada data notifikasi lama
-                    if ((persistedState as any)?.notifications) {
-                        console.log('🧹 [Persist Merge] Cleaning up old notifications from localStorage');
-                        localStorage.removeItem('notifications-storage');
+                    // Jika currentState sudah di-hydrate dari Supabase, gunakan itu
+                    if (currentState.isHydrated) {
+                        console.log('✅ [Persist Merge] Using hydrated state from Supabase, ignoring localStorage notifications');
+                        // Bersihkan localStorage yang mungkin masih ada data notifikasi lama
+                        if ((persistedState as any)?.notifications) {
+                            console.log('🧹 [Persist Merge] Cleaning up old notifications from localStorage');
+                            localStorage.removeItem('notifications-storage');
+                        }
+                        return currentState;
                     }
+
+                    // Jika belum hydrated, gunakan dari localStorage sementara (transitional state)
+                    console.log('⚠️ [Persist Merge] Using localStorage state (not yet hydrated from Supabase)');
+                    return {
+                        ...currentState,
+                        notifications: (persistedState as any)?.notifications || currentState.notifications
+                    };
+                } catch (error) {
+                    console.error('❌ [Persist Merge] Error merging state:', error);
+                    // Return default state on error
                     return currentState;
                 }
-
-                // Jika belum hydrated, gunakan dari localStorage sementara (transitional state)
-                console.log('⚠️ [Persist Merge] Using localStorage state (not yet hydrated from Supabase)');
-                return {
-                    ...currentState,
-                    notifications: (persistedState as any)?.notifications || currentState.notifications
-                };
             },
             // 🔥 FIX: JANGAN persist notifications array ke localStorage
             partialize: (state) => {
@@ -269,6 +276,15 @@ export const useNotificationStore = create<NotificationState>()(
                     isHydrated: state.isHydrated,
                     // JANGAN simpan notifications ke localStorage - ini penting!
                     // Setiap refresh akan load dari Supabase
+                };
+            },
+            // 🔥 FIX: Add migration handler for version changes
+            migrate: (persistedState: any, version: number) => {
+                console.log('🔄 [NotificationStore] Migrating state from version', version);
+                // Always return clean state for notifications - Supabase is source of truth
+                return {
+                    isHydrated: false,
+                    notifications: []
                 };
             },
         }

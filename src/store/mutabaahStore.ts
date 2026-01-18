@@ -96,11 +96,24 @@ export const useMutabaahStore = create<MutabaahState>()(
         {
             name: 'mutabaah-storage', // localStorage key (fallback)
             storage: createJSONStorage(() => localStorage),
+            version: 1, // 🔥 Add version to handle future schema changes
             // 🔥 FIX: Use onRehydrateStorage to always fetch fresh data from Supabase after hydration
             // This ensures localStorage is used as fallback, but Supabase is always the source of truth
             onRehydrateStorage: () => (state) => {
                 console.log('💾 [MutabaahStore] Hydration complete. State from localStorage:', state?.mutabaahLockingMode);
                 // Don't need to do anything here - loadFromSupabase() will be called separately and override this
+            },
+            // 🔥 FIX: Add migration handler for version changes
+            migrate: (persistedState: any, version: number) => {
+                console.log('🔄 [MutabaahStore] Migrating state from version', version);
+                // If version is 0 or undefined, it's old format
+                if (version === 0) {
+                    // Reset to default if old format is incompatible
+                    return {
+                        mutabaahLockingMode: 'weekly'
+                    };
+                }
+                return persistedState as MutabaahState;
             },
         }
     )

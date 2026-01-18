@@ -27,15 +27,15 @@ export async function POST(request: NextRequest) {
     console.log(`🔐 Login attempt: ${identifier}`)
 
     // Cari employee by id atau email
-    // Note: id IS the NIP/NOPEG, there's no separate nip column
+    // id: NIP/NOPEG, email: Alamat email
     const { data: employee, error } = await supabase
       .from('employees')
       .select('*')
-      .or(`id.eq."${identifier}",email.eq.${identifier}`)
+      .or(`id.eq.${identifier},email.eq.${identifier}`)
       .single()
 
     if (error || !employee) {
-      console.log('❌ Employee not found:', error?.message)
+      console.log(`❌ Employee not found (${identifier}):`, error?.message)
       return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 401 })
     }
 
@@ -85,7 +85,14 @@ export async function POST(request: NextRequest) {
     return response
 
   } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: 'Terjadi kesalahan' }, { status: 500 })
+    console.error('❌ Login error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'N/A',
+      error
+    })
+    return NextResponse.json({
+      error: 'Terjadi kesalahan sistem',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

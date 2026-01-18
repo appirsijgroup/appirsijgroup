@@ -334,11 +334,10 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                         <button
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                                currentPage === pageNum
+                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                                     ? 'bg-teal-500 text-white'
                                                     : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                            }`}
+                                                }`}
                                         >
                                             {pageNum}
                                         </button>
@@ -350,11 +349,10 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                         <span className="text-gray-400 px-2">...</span>
                                         <button
                                             onClick={() => setCurrentPage(totalPages)}
-                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                                currentPage === totalPages
+                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                                     ? 'bg-teal-500 text-white'
                                                     : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                            }`}
+                                                }`}
                                         >
                                             {totalPages}
                                         </button>
@@ -420,7 +418,10 @@ const MutabaahPerformanceReport: React.FC<{
             if (selectedUserIdFilter && user.id !== selectedUserIdFilter) return false;
             if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
             if (bagianFilter !== 'all' && user.bagian !== bagianFilter) return false;
-            if (kategoriFilter !== 'all' && user.professionCategory !== kategoriFilter) return false;
+
+            // 🔥 FIXED: Case-insensitive category comparison for consistency
+            if (kategoriFilter !== 'all' && user.professionCategory?.toUpperCase() !== kategoriFilter.toUpperCase()) return false;
+
             if (profesiFilter !== 'all' && user.profession !== profesiFilter) return false;
             if (genderFilter !== 'all' && user.gender !== genderFilter) return false;
             return true;
@@ -435,14 +436,32 @@ const MutabaahPerformanceReport: React.FC<{
             activityTotals[act.id] = { achieved: 0, target: 0 };
         });
 
+        // 🔥 OPTIMIZATION: Process users more efficiently and defensively
         filteredUsers.forEach(user => {
-            // 🔥 FIX: Use monthlyActivities (camelCase) - now consistent across all APIs
-            const monthProgress = user.monthlyActivities?.[monthKey] || {};
+            // Get data from either camelCase or snake_case for maximum resilience
+            const monthlyActivities = user.monthlyActivities || (user as any).monthly_activities;
+            const monthProgress = monthlyActivities?.[monthKey];
+
+            if (!monthProgress || typeof monthProgress !== 'object') {
+                // If no progress data, still count targets for the period
+                dailyActivitiesConfig.forEach(activity => {
+                    activityTotals[activity.id].target += activity.monthlyTarget;
+                });
+                return;
+            }
+
+            const dailyProgressList = Object.values(monthProgress);
+
             dailyActivitiesConfig.forEach(activity => {
                 activityTotals[activity.id].target += activity.monthlyTarget;
-                const achievedCount = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: DailyActivityProgress) => {
+
+                // Count successful days for this activity
+                const achievedCount = dailyProgressList.reduce((dayCount: number, dailyProgress: any) => {
+                    // Defensive check for dailyProgress
+                    if (!dailyProgress || typeof dailyProgress !== 'object') return dayCount;
                     return dayCount + (dailyProgress[activity.id] ? 1 : 0);
                 }, 0);
+
                 activityTotals[activity.id].achieved += achievedCount;
             });
         });
@@ -455,9 +474,11 @@ const MutabaahPerformanceReport: React.FC<{
 
         const categoryTotals: Record<string, { totalPercentage: number; count: number }> = {};
         performanceByActivity.forEach(item => {
-            if (!categoryTotals[item.category]) categoryTotals[item.category] = { totalPercentage: 0, count: 0 };
-            categoryTotals[item.category].totalPercentage += item.percentage;
-            categoryTotals[item.category].count++;
+            // Defensive check for category
+            const categoryName = item.category || 'Lainnya';
+            if (!categoryTotals[categoryName]) categoryTotals[categoryName] = { totalPercentage: 0, count: 0 };
+            categoryTotals[categoryName].totalPercentage += item.percentage;
+            categoryTotals[categoryName].count++;
         });
 
         const performanceByCategory = Object.entries(categoryTotals).map(([name, stats]) => ({
@@ -466,8 +487,9 @@ const MutabaahPerformanceReport: React.FC<{
         }));
 
         const groupedPerformanceByActivity = performanceByActivity.reduce((acc, item) => {
-            if (!acc[item.category]) acc[item.category] = [];
-            acc[item.category].push(item);
+            const categoryName = item.category || 'Lainnya';
+            if (!acc[categoryName]) acc[categoryName] = [];
+            acc[categoryName].push(item);
             return acc;
         }, {} as Record<string, typeof performanceByActivity>);
 

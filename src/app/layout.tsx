@@ -6,6 +6,7 @@ import { QueryProvider } from "@/lib/react-query/QueryProvider";
 import { baseMetadata } from "./metadata";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { Suspense } from "react";
+import BrandedLoader from "@/components/BrandedLoader";
 
 // ⚡ OPTIMIZATION: Use display: 'swap' for faster font rendering
 const inter = Inter({
@@ -78,24 +79,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <SupressHydrationWarning />
         <QueryProvider>
-          <Suspense fallback={
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
-              {/* 🔥 FIX: Better loading indicator with app branding */}
-              <div className="text-center">
-                  <div className="mb-6">
-                      <img
-                          src="/logorsijsp.png"
-                          alt="Logo RSI Jakarta Group"
-                          className="h-24 w-auto mx-auto animate-pulse"
-                      />
-                  </div>
-                  <div className="inline-block">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
-                  </div>
-                  <p className="text-slate-400 mt-4 text-sm">Memuat aplikasi...</p>
-              </div>
-            </div>
-          }>
+          <Suspense fallback={<BrandedLoader message="Memuat aplikasi..." />}>
             {children}
           </Suspense>
         </QueryProvider>

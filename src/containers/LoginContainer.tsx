@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
+import BrandedLoader from '@/components/BrandedLoader';
 import { useAppDataStore } from '@/store/store';
 
 const LoginContainer = () => {
     const router = useRouter();
     const { setLoggedInEmployee } = useAppDataStore();
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('Memuat...');
 
     const handleLogin = async (identifier: string, password: string) => {
         setIsLoading(true);
+        setLoadingMessage('Memproses login...');
 
         try {
             console.log('🔑 Login:', identifier);
@@ -25,6 +28,7 @@ const LoginContainer = () => {
             const data = await response.json();
 
             if (!response.ok) {
+                setIsLoading(false);
                 return { employee: null, error: data.error };
             }
 
@@ -33,11 +37,11 @@ const LoginContainer = () => {
 
             console.log('✅ Success:', data.employee.name);
 
-            // 🔥 FIX: Stop loading SEBELUM redirect agar tidak muncul blank screen
-            setIsLoading(false);
+            // 🔥 ENHANCEMENT: Show branded loading before redirect
+            setLoadingMessage(`Selamat datang, ${data.employee.name}!`);
 
-            // Tunggu sebentar agar UI ter-update dengan isLoading = false
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Tunggu sebentar untuk menampilkan loading dengan logo
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Redirect ke dashboard
             // MainLayoutShell akan memuat data lengkap melalui loadLoggedInEmployee()
@@ -47,19 +51,20 @@ const LoginContainer = () => {
 
         } catch (err) {
             console.error('❌ Error:', err);
+            setIsLoading(false);
             return { employee: null, error: 'Terjadi kesalahan' };
-        } finally {
-            // Pastikan loading di-stop (double protection)
-            if (isLoading) {
-                setIsLoading(false);
-            }
         }
     };
+
+    // 🔥 FIX: Show BrandedLoader overlay when loading, not replacing the entire page
+    if (isLoading) {
+        return <BrandedLoader message={loadingMessage} />;
+    }
 
     return (
         <Login
             onLogin={handleLogin}
-            isAuthenticating={isLoading}
+            isAuthenticating={false}
         />
     );
 };

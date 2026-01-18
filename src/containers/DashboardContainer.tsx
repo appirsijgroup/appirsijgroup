@@ -372,7 +372,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             // Also update monthlyActivities in local state manually
             if (newMonthlyActivities) {
-                setLoggedInEmployee(prev => prev ? { ...prev, monthlyActivities: newMonthlyActivities } : prev);
+                const updatedEmployee = { ...loggedInEmployee, monthlyActivities: newMonthlyActivities };
+                setLoggedInEmployee(updatedEmployee);
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -391,7 +392,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             await submitBookReading(
                 loggedInEmployee.id,
                 bookTitle,
-                pagesRead,
+                parseInt(pagesRead) || 0,
                 dateCompleted
             );
             console.log('✅ Reading history saved to employee_reading_history table');
@@ -470,7 +471,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             // Update local state FIRST to provide immediate feedback
             // 🔥 CRITICAL: Don't send todoList to handleUpdateProfile - update local state manually instead
-            setLoggedInEmployee(prev => prev ? { ...prev, todoList } : prev);
+            const updatedEmployeeWithTodo = { ...loggedInEmployee, todoList };
+            setLoggedInEmployee(updatedEmployeeWithTodo);
             setAllUsersData(prev => ({
                 ...prev,
                 [userId]: {
@@ -484,7 +486,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             // 🔥 FIX: Save to employee_todos table using todoService
             const { bulkUpdateEmployeeTodos } = await import('@/services/todoService');
-            await bulkUpdateEmployeeTodos(userId, todoList);
+            await bulkUpdateEmployeeTodos(userId, todoList || []);
             console.log("✅ Todo list saved to employee_todos table");
 
             addToast('To-Do List berhasil diperbarui!', 'success');
@@ -502,7 +504,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                 // Update local state with fresh data from database
                 if (userId === loggedInEmployee.id) {
-                    setLoggedInEmployee(prev => prev ? { ...prev, todoList: freshTodos } : prev);
+                    const updatedEmployeeWithFreshTodos = { ...loggedInEmployee, todoList: freshTodos };
+                    setLoggedInEmployee(updatedEmployeeWithFreshTodos);
                 }
                 setAllUsersData(prev => ({
                     ...prev,
@@ -529,7 +532,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const freshTodos = await getEmployeeTodos(userId);
 
                 if (userId === loggedInEmployee.id) {
-                    setLoggedInEmployee(prev => prev ? { ...prev, todoList: freshTodos } : prev);
+                    const updatedEmployeeWithRollbackTodos = { ...loggedInEmployee, todoList: freshTodos };
+                    setLoggedInEmployee(updatedEmployeeWithRollbackTodos);
                 }
                 setAllUsersData(prev => ({
                     ...prev,
@@ -560,7 +564,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // Update local state FIRST to provide immediate feedback
                 // 🔥 CRITICAL: Don't send readingHistory to handleUpdateProfile - it will try to save to employees table!
                 // Just update local state manually
-                setLoggedInEmployee(prev => prev ? { ...prev, readingHistory: updatedHistory } : prev);
+                const updatedEmployeeWithReadingHistory = { ...loggedInEmployee, readingHistory: updatedHistory };
+                setLoggedInEmployee(updatedEmployeeWithReadingHistory);
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -613,7 +618,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // Update local state FIRST to provide immediate feedback
                 // 🔥 CRITICAL: Don't send quranReadingHistory to handleUpdateProfile - it will try to save to employees table!
                 // Just update local state manually
-                setLoggedInEmployee(prev => prev ? { ...prev, quranReadingHistory: updatedHistory } : prev);
+                const updatedEmployeeWithQuranHistory = { ...loggedInEmployee, quranReadingHistory: updatedHistory };
+                setLoggedInEmployee(updatedEmployeeWithQuranHistory);
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {

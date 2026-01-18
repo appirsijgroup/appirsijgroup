@@ -7,7 +7,6 @@ export default function PanduanDoaPage() {
     return (
         <PanduanDanDoa
             searchQuery=""
-            clearSearchQuery={() => { }}
             initialTab="panduan"
         />
     );

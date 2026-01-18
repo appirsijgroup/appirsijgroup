@@ -187,7 +187,6 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
 
                 {/* Scrollable container for mobile */}
                 <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
-                    {/* 🔥 DEBUG: Commented out Chart to fix infinite loop
                     <div className="w-full min-w-[700px] md:min-w-0 h-80 min-h-80">
                         <ResponsiveContainer width="100%" height="100%" minHeight={300} minWidth={300}>
                             <BarChart data={performanceData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
@@ -196,16 +195,12 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
                                 <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
                                 <Bar dataKey="Persentase" isAnimationActive={false}>
                                     <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value) => typeof value === 'number' ? `${value}%` : ''} />
-                                    {performanceData.map((entry, index) => (
+                                    {performanceData.map((_entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
-                    </div>
-                    */}
-                    <div className="text-center p-10 text-gray-400 border border-dashed border-gray-600 rounded-lg">
-                        Grafik Kinerja sedang dalam perbaikan
                     </div>
                 </div>
             </div>

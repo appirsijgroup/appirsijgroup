@@ -3,12 +3,12 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState, Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { useAppDataStore, useUIStore, useActivityStore, useSunnahIbadahStore, useDailyActivitiesStore, useJobStructureStore, useAuditLogStore, useAnnouncementStore, useHospitalStore, useMutabaahStore, useNotificationStore } from '@/store/store';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 // 🔥 FIX: Dynamic import untuk AdminDashboard - 200KB akan di-load LAZY!
-const AdminDashboard = dynamic(() => import('@/components/AdminDashboard').then(mod => ({ default: mod.AdminDashboard })), {
+const AdminDashboard = nextDynamic(() => import('@/components/AdminDashboard').then(mod => ({ default: mod.AdminDashboard })), {
     loading: () => (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center">
@@ -20,7 +20,8 @@ const AdminDashboard = dynamic(() => import('@/components/AdminDashboard').then(
     ssr: false // Disable SSR untuk component ini
 });
 import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
-import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmployee as deleteEmployeeSupabase, createEmployee as createEmployeeSupabase } from '@/services/employeeService';
+import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmployee as deleteEmployeeSupabase, createEmployee as createEmployeeSupabase, convertToCamelCase } from '@/services/employeeService';
+import { getPaginatedEmployees } from '@/services/employeeServicePaginated';
 import { getAllHospitals, createHospital as createHospitalSupabase, updateHospital as updateHospitalSupabase, deleteHospital as deleteHospitalSupabase, toggleHospitalStatus as toggleHospitalStatusSupabase } from '@/services/hospitalService';
 import { validateRoleChange, getAssignableRoles, getRoleDisplay } from '@/lib/rolePermissions';
 // import { supabase } from '@/lib/supabase'; // Unused import
@@ -41,6 +42,15 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
+
+    // ✅ NEW: Pagination state
+    const [page, setPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
+    const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
+    const [totalCount, setTotalCount] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+
     const [mutabaahConfirmModal, setMutabaahConfirmModal] = useState<{
         isOpen: boolean;
         mode: MutabaahLockingMode | null;
@@ -74,6 +84,35 @@ export default function AdminPage() {
         setMutabaahConfirmModal({ isOpen: false, mode: null });
     };
 
+    // ✅ NEW: Pagination handlers
+    const handleNextPage = () => {
+        setPage(p => Math.min(p + 1, totalPages));
+    };
+
+    const handlePrevPage = () => {
+        setPage(p => Math.max(p - 1, 1));
+    };
+
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+        setPage(1); // Reset to page 1 when searching
+    };
+
+    const handleRoleFilter = (role: string) => {
+        setRoleFilter(role);
+        setPage(1); // Reset to page 1 when filtering
+    };
+
+    const handleIsActiveFilter = (isActive: boolean | undefined) => {
+        setIsActiveFilter(isActive);
+        setPage(1); // Reset to page 1 when filtering
+    };
+
+    const handleRefresh = () => {
+        // Trigger refetch by keeping same page
+        setPage(p => p);
+    };
+
     // Load employees and hospitals from Supabase
     useEffect(() => {
         const loadData = async () => {
@@ -97,51 +136,74 @@ export default function AdminPage() {
                     console.error('⚠️ Error loading sunnah ibadah from Supabase:', error);
                 }
 
-                // Load employees
-                const employees = await getAllEmployees();
-                console.log(`✅ Loaded ${employees.length} employees`);
+                // ✅ NEW: Load employees with PAGINATION (15 per page)
+                console.log(`🔍 Loading employees: page ${page}, search="${searchTerm}", role="${roleFilter}"`);
+                const paginatedResult = await getPaginatedEmployees({
+                    page,
+                    limit: 15, // 15 employees per page
+                    search: searchTerm,
+                    role: roleFilter,
+                    isActive: isActiveFilter
+                });
 
-                // Load attendance records from Supabase for all employees
-                const { getEmployeeAttendance, getAllAttendanceRecords } = await import('@/services/attendanceService');
-
-                // 🔥 FIX: Load ALL attendance in ONE call instead of per employee
-                let allAttendanceData: Record<string, Attendance> = {};
-                try {
-                    const allRecords = await getAllAttendanceRecords();
-                    console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records in ONE call`);
-
-                    // Convert to per-employee format
-                    Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
-                        allAttendanceData[employeeId] = {};
-                        Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                            if (record && record.status) {
-                                allAttendanceData[employeeId][entityId] = {
-                                    status: record.status,
-                                    reason: record.reason || null,
-                                    timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                    submitted: true,
-                                    isLateEntry: record.is_late_entry || false
-                                };
-                            }
-                        });
-                    });
-                } catch (error) {
-                    console.error('⚠️ Error loading bulk attendance:', error);
-                }
+                console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
 
                 // Convert employees to allUsersData format
                 const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
 
-                for (const emp of employees) {
+                for (const emp of paginatedResult.employees) {
+                    // Convert snake_case to camelCase using utility function
+                    const camelCaseEmp = convertToCamelCase(emp);
+
                     newData[emp.id] = {
-                        employee: emp,
-                        attendance: allAttendanceData[emp.id] || {}, // Use pre-loaded data
+                        employee: camelCaseEmp,
+                        attendance: {}, // Will be loaded separately below
                         history: {}
                     };
                 }
 
                 setAllUsersData(() => newData);
-                console.log('✅ All employees data processed');
+
+                // Update pagination state
+                setTotalCount(paginatedResult.pagination.total);
+                setTotalPages(paginatedResult.pagination.totalPages);
+                console.log(`✅ Page ${paginatedResult.pagination.page}/${paginatedResult.pagination.totalPages}`);
+
+                // Load attendance records for current page employees
+                const { getEmployeeAttendance, getAllAttendanceRecords } = await import('@/services/attendanceService');
+
+                // 🔥 FIX: Load ALL attendance in ONE call instead of per employee
+                try {
+                    const allRecords = await getAllAttendanceRecords();
+                    console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records in ONE call`);
+
+                    // Update attendance for current page employees
+                    setAllUsersData((prev) => {
+                        const updated = { ...prev };
+
+                        Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
+                            // Only update if employee exists in current page
+                            if (updated[employeeId]) {
+                                updated[employeeId].attendance = {};
+                                Object.entries(records).forEach(([entityId, record]: [string, any]) => {
+                                    if (record && record.status) {
+                                        updated[employeeId].attendance[entityId] = {
+                                            status: record.status,
+                                            reason: record.reason || null,
+                                            timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
+                                            submitted: true,
+                                            isLateEntry: record.is_late_entry || false
+                                        };
+                                    }
+                                });
+                            }
+                        });
+
+                        return updated;
+                    });
+                } catch (error) {
+                    console.error('⚠️ Error loading bulk attendance:', error);
+                }
 
                 // Load hospitals
                 const hospitalsData = await getAllHospitals();
@@ -166,7 +228,7 @@ export default function AdminPage() {
         };
 
         loadData();
-    }, [setAllUsersData, loadAnnouncements]);
+    }, [page, searchTerm, roleFilter, isActiveFilter, setAllUsersData, loadAnnouncements]); // ✅ Added pagination dependencies
 
     // Handler functions
     const handleToggleStatus = async (userId: string) => {
@@ -944,6 +1006,23 @@ export default function AdminPage() {
                 onToggleHospitalStatus={handleToggleHospitalStatus}
                 mutabaahLockingMode={mutabaahLockingMode}
                 onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
+                // ✅ NEW: Pagination props
+                pagination={{
+                    currentPage: page,
+                    totalPages: totalPages,
+                    totalCount: totalCount,
+                    hasNext: page < totalPages,
+                    hasPrev: page > 1,
+                    onNext: handleNextPage,
+                    onPrev: handlePrevPage,
+                    onSearch: handleSearch,
+                    onRoleFilter: handleRoleFilter,
+                    onIsActiveFilter: handleIsActiveFilter,
+                    onRefresh: handleRefresh,
+                    searchTerm: searchTerm,
+                    roleFilter: roleFilter,
+                    isActiveFilter: isActiveFilter
+                }}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

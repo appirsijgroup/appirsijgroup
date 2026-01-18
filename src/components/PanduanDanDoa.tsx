@@ -7,7 +7,7 @@ import { SearchIcon, XIcon } from './Icons';
 
 interface PanduanDanDoaProps {
     searchQuery: string;
-    clearSearchQuery: () => void;
+    clearSearchQuery?: () => void; // Made optional - no longer passed from server
     initialTab: 'panduan' | 'doa';
 }
 
@@ -44,9 +44,10 @@ const PanduanDanDoa: React.FC<PanduanDanDoaProps> = ({ searchQuery: initialSearc
     }, [initialSearchQuery, initialTab]);
 
     // Cleanup effect for the prop-based search query
+    // Only calls clearSearchQuery if it's provided
     useEffect(() => {
         return () => {
-            if (initialSearchQuery) {
+            if (initialSearchQuery && clearSearchQuery) {
                 clearSearchQuery();
             }
         };

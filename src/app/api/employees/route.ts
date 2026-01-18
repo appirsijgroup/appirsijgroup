@@ -62,10 +62,34 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('✅ /api/employees - Returning', employees?.length || 0, 'employees')
+    // 🔥 FIX: Fetch all monthly activities to support analytics
+    // Since activities are moved to a separate table, we must fetch and merge them
+    const { data: allActivities, error: activitiesError } = await supabaseService
+      .from('employee_monthly_activities')
+      .select('employee_id, activities')
+
+    if (activitiesError) {
+      console.error('⚠️ Warning: Error fetching monthly activities for all employees:', activitiesError)
+      // Don't fail the whole request, just proceed with basic employee data
+    }
+
+    // Map activities to a lookup object for fast access
+    const activitiesLookup = (allActivities || []).reduce((acc: any, item: any) => {
+      acc[item.employee_id] = item.activities;
+      return acc;
+    }, {});
+
+    // Merge activities into employee objects
+    const mergedEmployees = (employees || []).map(emp => ({
+      ...emp,
+      // Favor data from dedicated table, fallback to legacy field if present
+      monthly_activities: activitiesLookup[emp.id] || emp.monthly_activities || {}
+    }));
+
+    console.log('✅ /api/employees - Returning', mergedEmployees.length, 'employees with merged activities')
 
     return NextResponse.json({
-      employees: employees || []
+      employees: mergedEmployees
     })
 
   } catch (error) {

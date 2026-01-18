@@ -10,7 +10,7 @@ import { Database } from './database.types'; // Corrected import
  */
 
 // Helper function to convert snake_case to camelCase for employee objects
-const convertToCamelCase = (emp: any): Employee => {
+export const convertToCamelCase = (emp: any): Employee => {
     return {
         ...emp,
         lastVisitDate: emp.last_visit_date,

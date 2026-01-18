@@ -27,20 +27,30 @@ export default function AnalyticsPage() {
                 // Check if we already have data loaded
                 const employeeCount = Object.keys(allUsersData).length;
 
-                if (employeeCount > 1) {
+                // 🔥 FIX: Always reload if we have less than 50 employees (likely paginated data)
+                // 15 is the default paginated limit, so anything less than 50 means incomplete data
+                if (employeeCount > 50) {
                     console.log('✅ Analytics data already loaded:', employeeCount, 'employees');
                     setIsLoading(false);
                     return;
                 }
 
-                console.log('🔄 Loading all employees for Analytics...');
+                console.log(`🔄 Loading all employees for Analytics... (currently have ${employeeCount})`);
                 setIsLoading(true);
                 setError(null);
 
-                // Load all employees using store function
+                // 🔥 FIX: Force reload from server to get ALL employees, not paginated data
+                console.log('📊 Force loading ALL employees from server...');
                 await loadAllEmployees();
 
-                console.log('✅ Analytics data loaded successfully');
+                // Verify the load was successful
+                const newCount = Object.keys(useAppDataStore.getState().allUsersData).length;
+                console.log('✅ Analytics data loaded successfully:', newCount, 'employees');
+
+                if (newCount < 50) {
+                    console.warn('⚠️ Warning: Still have less than 50 employees after load. Might be paginated data.');
+                }
+
                 setIsLoading(false);
             } catch (err) {
                 console.error('❌ Error loading analytics data:', err);

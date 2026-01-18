@@ -183,9 +183,20 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     // Load all employees from Supabase
     loadAllEmployees: async () => {
         try {
+            console.log('🔄 Starting loadAllEmployees from store...');
             const { getAllEmployees } = await import('@/services/employeeService');
             const allEmployees = await getAllEmployees();
-            console.log(`✅ Loaded ${allEmployees.length} employees`);
+            console.log(`✅ Loaded ${allEmployees.length} employees from API`);
+
+            // 🔥 DEBUG: Log sample data
+            if (process.env.NODE_ENV === "development") {
+                console.log('📋 Sample employees:', allEmployees.slice(0, 3).map(e => ({
+                    id: e.id,
+                    name: e.name,
+                    email: e.email,
+                    isActive: e.isActive
+                })))
+            }
 
             // Load attendance records for all employees
             const { getEmployeeAttendance } = await import('@/services/attendanceService');

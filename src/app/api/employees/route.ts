@@ -88,6 +88,16 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ /api/employees - Returning', mergedEmployees.length, 'employees with merged activities')
 
+    // 🔥 DEBUG: Log first few employees to verify data
+    if (process.env.NODE_ENV === "development") {
+        console.log('📋 Sample employees:', mergedEmployees.slice(0, 3).map((e: any) => ({
+            id: e.id,
+            name: e.name,
+            email: e.email,
+            isActive: e.is_active
+        })))
+    }
+
     return NextResponse.json({
       employees: mergedEmployees
     })

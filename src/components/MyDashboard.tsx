@@ -1207,7 +1207,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     } = props;
     /* eslint-enable */
 
-    type DashboardTab = 'kinerja' | 'analytics' | 'rapot' | 'aktivitas-pribadi' | 'bimbingan' | 'panel-mentor' | 'persetujuan' | 'presensi-tim';
+    type DashboardTab = 'kinerja' | 'analytics' | 'rapot' | 'aktivitas-pribadi' | 'bimbingan' | 'panel-mentor' | 'persetujuan';
 
     const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab as DashboardTab || 'kinerja');
     const isInitializedRef = useRef(false);
@@ -1375,20 +1375,6 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
                     allUsersData={props.allUsersData}
                 />
-            case 'presensi-tim':
-                if (!canDoTeamAttendance) return null;
-                return <TeamAttendanceView
-                    loggedInEmployee={employee}
-                    allUsersData={allUsersData}
-                    teamAttendanceSessions={teamAttendanceSessions}
-                    onCreateSessions={onCreateTeamAttendanceSessions}
-                    onAddActivity={onAddActivity}
-                    onUpdateAttendance={onUpdateTeamAttendance}
-                    onUpdateSession={props.onUpdateSession}
-                    onDeleteSession={(session) => onDeleteTeamAttendanceSession(session.id)}
-                    onUpdateMonthlyActivities={props.onUpdateMonthlyActivities}
-                    addToast={addToast}
-                />
             default:
                 return null;
         }
@@ -1399,21 +1385,12 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             <nav className="border-b border-white/20">
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
-                        {initialTab === 'aktivitas-pribadi' ? (
-                            <>
-                                <TabButton label="Aktivitas Pribadi" icon={PencilIcon} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                                <TabButton label="Bimbingan Saya" icon={AcademicCapIcon} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
-                                {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheckIcon} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
-                                {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquareIcon} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
-                                {canDoTeamAttendance && <TabButton label="Presensi Tim" icon={UserGroupIcon} active={activeTab === 'presensi-tim'} onClick={() => setActiveTab('presensi-tim')} />}
-                            </>
-                        ) : (
-                            <>
-                                <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                                {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
-                                <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                            </>
-                        )}
+                        {/* Remove Aktivitas Pribadi tab group since it's now in AktivitasSaya component */}
+                        <>
+                            <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
+                            {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
+                            <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
+                        </>
                     </div>
                 </div>
             </nav>

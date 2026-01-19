@@ -109,7 +109,7 @@ const CreateSessionModal: React.FC<{
             } : undefined,
             manualParticipantIds: audienceType === 'manual' ? Array.from(manualParticipantIds) : [],
         };
-
+        
         const sessionsToCreate: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[] = [];
 
         if (!isRecurring) {
@@ -131,7 +131,7 @@ const CreateSessionModal: React.FC<{
                 }
             }
         }
-
+        
         if (sessionsToCreate.length === 0 && isRecurring) {
             alert("Tidak ada hari yang cocok dengan pilihan Anda di sisa bulan ini. Sesi tidak dibuat.");
             return;
@@ -142,7 +142,7 @@ const CreateSessionModal: React.FC<{
     };
 
     if (!isOpen) return null;
-
+    
     const SegmentedControlButton: React.FC<{
         label: string;
         icon: React.FC<{className: string}>;
@@ -158,7 +158,7 @@ const CreateSessionModal: React.FC<{
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
         </button>
     );
-
+    
     const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     return createPortal(
@@ -745,7 +745,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
              </div>
         );
     };
-
+    
     const SubTabButton: React.FC<{
         active: boolean;
         onClick: () => void;
@@ -807,7 +807,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 )}
             </div>
 
-            <CreateSessionModal
+            <CreateSessionModal 
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onCreate={onCreateSessions}

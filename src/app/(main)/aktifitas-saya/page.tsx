@@ -2,8 +2,8 @@
 
 import dynamic from 'next/dynamic';
 
-// ⚡ LAZY LOADING: DashboardContainer will only load when user visits /aktifitas-saya
-const DashboardContainer = dynamic(() => import('@/containers/DashboardContainer').then(mod => ({ default: mod.default })), {
+// ⚡ LAZY LOADING: AktivitasSayaContainer will only load when user visits /aktifitas-saya
+const AktivitasSayaContainer = dynamic(() => import('@/containers/AktivitasSayaContainer'), {
     loading: () => (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center">
@@ -15,5 +15,5 @@ const DashboardContainer = dynamic(() => import('@/containers/DashboardContainer
 });
 
 export default function AktifitasSayaPage() {
-    return <DashboardContainer initialTab="aktivitas-pribadi" />;
+    return <AktivitasSayaContainer />;
 }

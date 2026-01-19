@@ -73,7 +73,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     // Determine if current type is session or activity
     const isSessionType = SESSION_TYPES.includes(type as ActivitySessionType);
     const isActivityType = ACTIVITY_TYPES.includes(type as ActivitySessionType);
-    
+
     useEffect(() => {
         if (isEditing && initialData) {
             const isActivity = 'activityType' in initialData;
@@ -383,43 +383,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </div>
                         </div>
 
-                        {/* Recurring (only for session) */}
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-lg font-semibold text-teal-300">Pengulangan Sesi</h4>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isRecurring}
-                                        onChange={(e) => setIsRecurring(e.target.checked)}
-                                        className="sr-only peer"
-                                        disabled={isEditing}
-                                    />
-                                    <div className={`w-11 h-6 bg-gray-600 rounded-full peer ${isEditing && 'cursor-not-allowed opacity-50'} peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500`}></div>
-                                </label>
-                            </div>
-                            {isRecurring && (
-                                <div>
-                                    <p className="text-sm text-blue-100 mb-2">Pilih hari:</p>
-                                    <div className="flex justify-around bg-black/30 p-2 rounded-lg">
-                                        {weekDays.map((day, index) => (
-                                            <button
-                                                key={index}
-                                                type="button"
-                                                onClick={() => handleDayToggle(index)}
-                                                className={`w-10 h-10 rounded-full font-semibold ${selectedDays.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'}`}
-                                            >
-                                                {day}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
                         {/* Attendance Mode (only for session) */}
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
                             <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
@@ -438,9 +404,76 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                     </div>
 
                     {/* Right Column: Audience & Links */}
-                    <div>
-                        {/* Audience */}
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col mb-4">
+                    <div className="space-y-4">
+                        {/* Links & Recurring (combined in one card) */}
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
+                                    <div className="relative">
+                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                        <input
+                                            type="url"
+                                            value={zoomUrl}
+                                            onChange={(e) => setZoomUrl(e.target.value)}
+                                            placeholder="https://zoom.us/j/..."
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
+                                    <div className="relative">
+                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400" />
+                                        <input
+                                            type="url"
+                                            value={youtubeUrl}
+                                            onChange={(e) => setYoutubeUrl(e.target.value)}
+                                            placeholder="https://youtube.com/watch?v=..."
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Recurring (only for session) - integrated into the same card */}
+                                <div className="pt-4 border-t border-white/10">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-lg font-semibold text-teal-300">Pengulangan Sesi</h4>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={isRecurring}
+                                                onChange={(e) => setIsRecurring(e.target.checked)}
+                                                className="sr-only peer"
+                                                disabled={isEditing}
+                                            />
+                                            <div className={`w-11 h-6 bg-gray-600 rounded-full peer ${isEditing && 'cursor-not-allowed opacity-50'} peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500`}></div>
+                                        </label>
+                                    </div>
+                                    {isRecurring && (
+                                        <div>
+                                            <p className="text-sm text-blue-100 mb-2">Pilih hari:</p>
+                                            <div className="flex justify-around bg-black/30 p-2 rounded-lg">
+                                                {weekDays.map((day, index) => (
+                                                    <button
+                                                        key={index}
+                                                        type="button"
+                                                        onClick={() => handleDayToggle(index)}
+                                                        className={`w-10 h-10 rounded-full font-semibold ${selectedDays.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'}`}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Audience - separate card */}
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
                             <div className="flex items-center gap-4 mb-4">
                                 <SegmentedControlButton
@@ -504,39 +537,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     <p className="text-xs text-blue-200 text-right pt-1">{manualParticipants.size} orang terpilih</p>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Links */}
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
-                                    <div className="relative">
-                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-                                        <input
-                                            type="url"
-                                            value={zoomUrl}
-                                            onChange={(e) => setZoomUrl(e.target.value)}
-                                            placeholder="https://zoom.us/j/..."
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
-                                    <div className="relative">
-                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400" />
-                                        <input
-                                            type="url"
-                                            value={youtubeUrl}
-                                            onChange={(e) => setYoutubeUrl(e.target.value)}
-                                            placeholder="https://youtube.com/watch?v=..."
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

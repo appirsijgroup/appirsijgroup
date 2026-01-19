@@ -263,17 +263,19 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         setError(null);
         setSelectedSurah(null);
         try {
+            console.log(`📖 Loading surah ${surahNumber}...`);
             const detail = await fetchSurahDetail(surahNumber);
             if (detail) {
+                console.log(`✅ Surah ${surahNumber} loaded successfully`);
                 setSelectedSurah(detail);
                 ayahRefs.current = new Array(detail.jumlahAyat + 1);
             } else {
                 console.error(`❌ Failed to fetch surah ${surahNumber}: API returned null`);
-                setError('Gagal memuat detail surah. API mungkin sedang sibuk atau tidak merespons. Silakan coba lagi dalam beberapa saat.');
+                setError('Gagal memuat detail surah. Silakan periksa koneksi internet Anda dan coba lagi. Jika masalah berlanjut, mungkin API sedang sibuk.');
             }
         } catch (err) {
             console.error(`❌ Error in handleSelectSurah:`, err);
-            setError('Terjadi kesalahan saat memuat surah. Pastikan koneksi internet Anda aktif dan coba lagi.');
+            setError('Terjadi kesalahan jaringan. Pastikan koneksi internet Anda aktif dan coba lagi.');
         } finally {
             setIsLoadingDetail(false);
         }

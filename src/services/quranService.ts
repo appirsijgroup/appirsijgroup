@@ -1835,20 +1835,36 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
 };
 
 export const fetchSurahDetail = async (surahNumber: number): Promise<SurahDetail | null> => {
-     try {
-        console.log(`🔍 Fetching surah detail for ${surahNumber} from ${QURAN_API_BASE_URL}/surat/${surahNumber}`);
-        const response = await fetch(`${QURAN_API_BASE_URL}/surat/${surahNumber}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
+    try {
+        // Use our internal API route instead of calling equran.id directly from client
+        const apiUrl = `/api/quran/${surahNumber}`;
+        console.log(`🔍 Fetching surah detail for ${surahNumber} from internal API: ${apiUrl}`);
+
+        const response = await fetch(apiUrl, {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+        });
+
+        clearTimeout(timeoutId);
         console.log(`📡 Response status: ${response.status} ${response.statusText}`);
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`❌ API error response:`, errorData);
+            throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
         }
 
         const data = await response.json();
         console.log(`📦 API Response code: ${data.code}`, data.data ? 'Data found' : 'No data');
+        console.log(`📦 Cache status: ${response.headers.get('X-Cache') || 'N/A'}`);
 
-         if (data.code === 200 && data.data) {
+        if (data.code === 200 && data.data) {
             console.log(`✅ Successfully fetched surah ${surahNumber}`);
             return data.data;
         }
@@ -1856,9 +1872,19 @@ export const fetchSurahDetail = async (surahNumber: number): Promise<SurahDetail
         console.warn(`⚠️ Surah detail API response for ${surahNumber} was not successful:`, data.message || 'Unknown error');
         return null;
     } catch (error) {
-        console.error(`❌ Error fetching surah detail for ${surahNumber}:`, error);
+        clearTimeout(timeoutId);
+
         if (error instanceof Error) {
-            console.error(`Error message: ${error.message}`);
+            if (error.name === 'AbortError') {
+                console.error(`⏱️ Timeout fetching surah detail for ${surahNumber} (20s)`);
+            } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                console.error(`🌐 Network error fetching surah detail for ${surahNumber}:`, error.message);
+                console.error(`💡 Possible causes: offline or server issues`);
+            } else {
+                console.error(`❌ Error fetching surah detail for ${surahNumber}:`, error.message);
+            }
+        } else {
+            console.error(`❌ Unknown error fetching surah detail for ${surahNumber}:`, error);
         }
         return null;
     }

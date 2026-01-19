@@ -73,7 +73,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
               "img-src 'self' data: https: blob: https://lkziomkegmimyiujlbvt.supabase.co;",
               "font-src 'self' data: https://fonts.gstatic.com;",
-              "connect-src 'self' https://lkziomkegmimyiujlbvt.supabase.co wss://lkziomkegmimyiujlbvt.supabase.co https://*.supabase.co wss://*.supabase.co https://cdnjs.cloudflare.com;",
+              "connect-src 'self' https://lkziomkegmimyiujlbvt.supabase.co wss://lkziomkegmimyiujlbvt.supabase.co https://*.supabase.co wss://*.supabase.co https://cdnjs.cloudflare.com https://equran.id https://cdn.equran.id;",
               "frame-src 'self' https://lkziomkegmimyiujlbvt.supabase.co;",
               "object-src 'none';",
               "base-uri 'self';",

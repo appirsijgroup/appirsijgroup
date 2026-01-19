@@ -53,6 +53,8 @@ interface AdminDashboardProps {
     onToggleHospitalStatus: (id: string) => void;
     mutabaahLockingMode: MutabaahLockingMode;
     onUpdateMutabaahLockingMode: (mode: MutabaahLockingMode) => void;
+    onLoadEmployees?: () => Promise<void>; // 🔥 NEW: On-demand employee loading
+    pagination?: any; // TODO: Add proper type
 }
 
 type DestructiveAction = 'delete-user' | 'delete-activity' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
@@ -3519,8 +3521,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     /* eslint-enable */
 
     const [activeView, setActiveView] = useState<AdminView>(
-        isSuperAdmin(loggedInEmployee) ? 'manajemen-pengguna' : 'manajemen-konten'
+        'reports' // 🔥 NEW: Default to Reports tab to avoid loading employee data on page load
     );
+
+    // 🔥 NEW: Load employee data on-demand when switching to Manajemen Pengguna tab
+    useEffect(() => {
+        if (activeView === 'manajemen-pengguna' && onLoadEmployees) {
+            const hasEmployeeData = Object.keys(allUsersData).length > 0;
+            if (!hasEmployeeData) {
+                console.log('🔄 Switching to Employee Management tab - loading employee data...');
+                onLoadEmployees();
+            }
+        }
+    }, [activeView, allUsersData, onLoadEmployees]);
 
     useEffect(() => {
         if (!isSuperAdmin(loggedInEmployee)) {

@@ -50,13 +50,14 @@ export default function AdminPage() {
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
 
-    // ✅ NEW: Pagination state
+    // ✅ Pagination state (for employee management)
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
     const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
     const [totalCount, setTotalCount] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
+    const [employeesLoaded, setEmployeesLoaded] = useState(false); // Track if employees have been loaded
 
     const [mutabaahConfirmModal, setMutabaahConfirmModal] = useState<{
         isOpen: boolean;
@@ -120,14 +121,14 @@ export default function AdminPage() {
         setPage(p => p);
     };
 
-    // Load employees and hospitals from Supabase
+    // Load admin data from Supabase (NOT including employee data - loaded on-demand)
     useEffect(() => {
         const loadData = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
 
-                console.time('⚡ Load Admin Data');
+                console.time('⚡ Load Admin Data (Lightweight)');
 
                 // 🔥 Load sunnah ibadah from Supabase FIRST
                 try {
@@ -143,84 +144,8 @@ export default function AdminPage() {
                     if (process.env.NODE_ENV === "development") console.error('⚠️ Error loading sunnah ibadah from Supabase:', error);
                 }
 
-                // ✅ NEW: Load employees with PAGINATION (15 per page)
-                if (process.env.NODE_ENV === "development") console.log(`🔍 Loading employees: page ${page}, search="${searchTerm}", role="${roleFilter}"`);
-
-                let paginatedResult;
-                try {
-                    paginatedResult = await getPaginatedEmployees({
-                        page,
-                        limit: 15, // 15 employees per page
-                        search: searchTerm,
-                        role: roleFilter,
-                        isActive: isActiveFilter
-                    });
-                    if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
-                } catch (apiError: any) {
-                    console.error('❌ API Error details:', {
-                        message: apiError.message,
-                        stack: apiError.stack,
-                        cause: apiError.cause
-                    });
-                    throw new Error(`API Error: ${apiError.message}`);
-                }
-
-                // Convert employees to allUsersData format
-                const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
-
-                for (const emp of paginatedResult.employees) {
-                    // Convert snake_case to camelCase using utility function
-                    const camelCaseEmp = convertToCamelCase(emp);
-
-                    newData[emp.id] = {
-                        employee: camelCaseEmp,
-                        attendance: {}, // Will be loaded separately below
-                        history: {}
-                    };
-                }
-
-                setAllUsersData(() => newData);
-
-                // Update pagination state
-                setTotalCount(paginatedResult.pagination.total);
-                setTotalPages(paginatedResult.pagination.totalPages);
-                if (process.env.NODE_ENV === "development") console.log(`✅ Page ${paginatedResult.pagination.page}/${paginatedResult.pagination.totalPages}`);
-
-                // Load attendance records for current page employees
-                const { getEmployeeAttendance, getAllAttendanceRecords } = await import('@/services/attendanceService');
-
-                // 🔥 FIX: Load ALL attendance in ONE call instead of per employee
-                try {
-                    const allRecords = await getAllAttendanceRecords();
-                    if (process.env.NODE_ENV === "development") console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records in ONE call`);
-
-                    // Update attendance for current page employees
-                    setAllUsersData((prev) => {
-                        const updated = { ...prev };
-
-                        Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
-                            // Only update if employee exists in current page
-                            if (updated[employeeId]) {
-                                updated[employeeId].attendance = {};
-                                Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                                    if (record && record.status) {
-                                        updated[employeeId].attendance[entityId] = {
-                                            status: record.status,
-                                            reason: record.reason || null,
-                                            timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                            submitted: true,
-                                            isLateEntry: record.is_late_entry || false
-                                        };
-                                    }
-                                });
-                            }
-                        });
-
-                        return updated;
-                    });
-                } catch (error) {
-                    if (process.env.NODE_ENV === "development") console.error('⚠️ Error loading bulk attendance:', error);
-                }
+                // 🔥 REMOVED: Employee data loading - now loaded on-demand in AdminDashboard
+                // This prevents "Failed to load employees" error on page load
 
                 // Load hospitals
                 const hospitalsData = await getAllHospitals();
@@ -245,7 +170,7 @@ export default function AdminPage() {
         };
 
         loadData();
-    }, [page, searchTerm, roleFilter, isActiveFilter, setAllUsersData, loadAnnouncements]); // ✅ Added pagination dependencies
+    }, [setAllUsersData, loadAnnouncements]); // 🔥 Removed pagination deps - employee data loaded on-demand in AdminDashboard
 
     // Handler functions
     const handleToggleStatus = async (userId: string) => {
@@ -983,6 +908,82 @@ export default function AdminPage() {
         );
     }
 
+    // 🔥 NEW: On-demand employee data loading (triggered by AdminDashboard)
+    const loadEmployeesOnDemand = async () => {
+        if (employeesLoaded) {
+            console.log('📦 Employees already loaded, skipping...');
+            return;
+        }
+
+        try {
+            console.log('⚡ Loading employees on-demand for Management tab...');
+
+            // Load employees with PAGINATION
+            const paginatedResult = await getPaginatedEmployees({
+                page,
+                limit: 15,
+                search: searchTerm,
+                role: roleFilter,
+                isActive: isActiveFilter
+            });
+
+            console.log(`✅ Loaded ${paginatedResult.employees.length} of ${paginatedResult.pagination.total} employees`);
+
+            // Convert employees to allUsersData format
+            const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
+
+            for (const emp of paginatedResult.employees) {
+                const camelCaseEmp = convertToCamelCase(emp);
+                newData[emp.id] = {
+                    employee: camelCaseEmp,
+                    attendance: {},
+                    history: {}
+                };
+            }
+
+            setAllUsersData(() => newData);
+            setTotalCount(paginatedResult.pagination.total);
+            setTotalPages(paginatedResult.pagination.totalPages);
+            setEmployeesLoaded(true);
+
+            // Load attendance records
+            try {
+                const allRecords = await getAllAttendanceRecords();
+                console.log(`✅ Loaded ${Object.keys(allRecords).length} total attendance records`);
+
+                setAllUsersData((prev) => {
+                    const updated = { ...prev };
+
+                    Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
+                        if (updated[employeeId]) {
+                            updated[employeeId].attendance = {};
+                            Object.entries(records).forEach(([entityId, record]: [string, any]) => {
+                                if (record && record.status) {
+                                    updated[employeeId].attendance[entityId] = {
+                                        status: record.status,
+                                        reason: record.reason || null,
+                                        timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
+                                        submitted: true,
+                                        isLateEntry: record.is_late_entry || false
+                                    };
+                                }
+                            });
+                        }
+                    });
+
+                    return updated;
+                });
+            } catch (error) {
+                console.error('⚠️ Error loading attendance:', error);
+            }
+
+            console.log('✅ Employee data loaded successfully');
+        } catch (error) {
+            console.error('❌ Error loading employees on-demand:', error);
+            addToast('Gagal memuat data employee. Silakan coba lagi.', 'error');
+        }
+    };
+
     return (
         <>
             <AdminDashboard
@@ -1038,6 +1039,8 @@ export default function AdminPage() {
                     roleFilter: roleFilter,
                     isActiveFilter: isActiveFilter
                 }}
+                // 🔥 NEW: On-demand employee loading
+                onLoadEmployees={loadEmployeesOnDemand}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

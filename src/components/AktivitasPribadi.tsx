@@ -6,6 +6,7 @@ import { CalendarDaysIcon, ClockIcon, CheckIcon, TrashIcon, CheckSquareIcon, Pen
 import ConfirmationModal from './ConfirmationModal';
 import { createPortal } from 'react-dom';
 import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
+import { timeValidationService } from '../services/timeValidationService';
 import type { QuranReadingSubmission } from '../services/quranSubmissionService';
 
 // Helper function to calculate balanced weeks
@@ -68,7 +69,9 @@ const ReadingActivityCard: React.FC<{
         const selectedDateObj = createLocalDate(dateCompleted);
         const monthKey = dateCompleted.slice(0, 7);
 
-        const today = new Date();
+        // Get corrected time from time validation service
+        const correctedNow = timeValidationService.getCorrectedTime();
+        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
         today.setHours(0, 0, 0, 0);
 
         const normalizedSelectedDate = normalizeDate(selectedDateObj);
@@ -157,8 +160,9 @@ const SimpleActivityCard: React.FC<{
         const selectedDateObj = createLocalDate(date);
         const monthKey = date.slice(0, 7);
 
-        // --- Get today's date, normalized to midnight for comparison ---
-        const today = new Date();
+        // --- Get today's corrected date from time validation service, normalized to midnight for comparison ---
+        const correctedNow = timeValidationService.getCorrectedTime();
+        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
         today.setHours(0, 0, 0, 0);
 
         // --- Check if the selected date is in the future ---

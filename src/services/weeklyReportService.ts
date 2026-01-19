@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { WeeklyReportSubmission } from '@/types';
+import { timeValidationService } from './timeValidationService';
 
 // Re-export the type from types.ts to maintain compatibility
 export type { WeeklyReportSubmission };
@@ -92,6 +93,23 @@ export const submitWeeklyReport = async (
   reportData: any
 ): Promise<WeeklyReportSubmission | null> => {
   try {
+    // Validate time before submitting report
+    const timeValidation = timeValidationService.validateTime();
+
+    if (!timeValidation.isValid) {
+      throw new Error('System time appears to be manipulated. Report submission denied.');
+    }
+
+    // Check if the month is in the future compared to validated time
+    const [year, month] = monthKey.split('-').map(Number);
+    const reportDate = new Date(year, month - 1, 1); // First day of the month
+    const correctedTime = timeValidation.correctedTime;
+
+    // If report date is in the future compared to corrected server time, reject
+    if (reportDate > correctedTime) {
+      throw new Error('Cannot submit report for future months.');
+    }
+
     const { data, error } = await (supabase
       .from('weekly_report_submissions') as any)
       .insert({
@@ -99,7 +117,7 @@ export const submitWeeklyReport = async (
         month_key: monthKey,
         week_index: weekIndex,
         report_data: reportData,
-        submitted_at: new Date().toISOString()
+        submitted_at: timeValidation.correctedTime.toISOString()
       })
       .select()
       .single();
@@ -127,11 +145,18 @@ export const updateWeeklyReport = async (
   reportData: any
 ): Promise<boolean> => {
   try {
+    // Validate time before updating report
+    const timeValidation = timeValidationService.validateTime();
+
+    if (!timeValidation.isValid) {
+      throw new Error('System time appears to be manipulated. Report update denied.');
+    }
+
     const { error } = await (supabase
       .from('weekly_report_submissions') as any)
       .update({
         report_data: reportData,
-        updated_at: new Date().toISOString()
+        updated_at: timeValidation.correctedTime.toISOString()
       })
       .eq('id', reportId)
       .eq('mentee_id', userId);  // Changed from user_id to mentee_id
@@ -172,6 +197,13 @@ export const hasSubmittedReport = async (
   weekIndex: number
 ): Promise<boolean> => {
   try {
+    // Validate time before checking report status
+    const timeValidation = timeValidationService.validateTime();
+
+    if (!timeValidation.isValid) {
+      throw new Error('System time appears to be manipulated. Report status check denied.');
+    }
+
     const { data, error } = await supabase
       .from('weekly_report_submissions')
       .select('id')
@@ -197,6 +229,13 @@ export const getMonthlySubmissions = async (
   monthKey: string
 ): Promise<WeeklyReportSubmission[]> => {
   try {
+    // Validate time before getting submissions
+    const timeValidation = timeValidationService.validateTime();
+
+    if (!timeValidation.isValid) {
+      throw new Error('System time appears to be manipulated. Report retrieval denied.');
+    }
+
     const { data, error } = await supabase
       .from('weekly_report_submissions')
       .select('*')

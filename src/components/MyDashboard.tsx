@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
 import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
+import { timeValidationService } from '../services/timeValidationService';
 
 const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b', '#10b981', '#0ea5e9'];
 
@@ -265,7 +266,9 @@ const ReadingActivityCard: React.FC<{
         const selectedDateObj = createLocalDate(dateCompleted);
         const monthKey = dateCompleted.slice(0, 7);
 
-        const today = new Date();
+        // Get corrected time from time validation service
+        const correctedNow = timeValidationService.getCorrectedTime();
+        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
         today.setHours(0, 0, 0, 0);
 
         const normalizedSelectedDate = normalizeDate(selectedDateObj);
@@ -354,8 +357,9 @@ const SimpleActivityCard: React.FC<{
         const selectedDateObj = createLocalDate(date);
         const monthKey = date.slice(0, 7);
 
-        // --- Get today's date, normalized to midnight for comparison ---
-        const today = new Date();
+        // --- Get today's corrected date from time validation service, normalized to midnight for comparison ---
+        const correctedNow = timeValidationService.getCorrectedTime();
+        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
         today.setHours(0, 0, 0, 0);
 
         // --- Check if the selected date is in the future ---

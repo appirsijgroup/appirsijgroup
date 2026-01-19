@@ -3,6 +3,7 @@
 import React from 'react';
 import { MenuIcon, XIcon, BellIcon } from './Icons';
 import type { Employee } from '../types';
+import Clock from './Clock';
 
 interface HeaderProps {
   isMenuOpen: boolean;
@@ -22,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, toggleMenu, employee, title
             {isMenuOpen ? <XIcon className="h-7 w-7"/> : <MenuIcon className="h-7 w-7"/>}
         </button>
       </div>
-      
+
       {/* Center */}
        <div className="text-center col-span-1">
           <h2 className="text-lg font-bold text-white tracking-wide truncate" title={title}>
@@ -34,7 +35,8 @@ const Header: React.FC<HeaderProps> = ({ isMenuOpen, toggleMenu, employee, title
         </div>
 
       {/* Right */}
-      <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-4">
+        <Clock />
         <button
             onClick={onToggleNotifications}
             className="relative p-2 text-white rounded-full hover:bg-white/10 transition-colors"

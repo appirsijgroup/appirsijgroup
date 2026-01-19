@@ -7,6 +7,10 @@ import { CheckIcon, XIcon } from '@/components/Icons';
 import { type PrayerTimesData } from '@/services/prayerTimeService';
 import { getEmployeeById } from '@/services/employeeService';
 import { getAllHospitals } from '@/services/hospitalService';
+import { timeValidationService } from '@/services/timeValidationService';
+
+// Initialize time validation service when the store is loaded
+timeValidationService.startPeriodicSync();
 
 // --- AppDataStore ---
 
@@ -48,6 +52,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     // ⚡ SIMPLIFIED: Single source of truth - session cookie (JWT)
     loadLoggedInEmployee: async () => {
         try {
+            // Initialize time validation service
+            await timeValidationService.syncWithServerTime();
+
             // Call API to verify session and get user data
             const response = await fetch('/api/auth/me', {
                 credentials: 'include', // Important: include cookies
@@ -394,7 +401,7 @@ export const useUIStore = create<UIState>((set, get) => ({
     prayerTimesLoading: true,
     locationStatus: null,
     activePrayerId: null,
-    currentTime: new Date(),
+    currentTime: timeValidationService.getCorrectedTime(),
     userLocation: null,
 
     // Migrated Actions
@@ -402,9 +409,27 @@ export const useUIStore = create<UIState>((set, get) => ({
     setPrayerTimesLoading: (loading) => set({ prayerTimesLoading: loading }),
     setLocationStatus: (status) => set({ locationStatus: status }),
     setActivePrayerId: (id) => set({ activePrayerId: id }),
-    setCurrentTime: (time) => set({ currentTime: time }),
+    setCurrentTime: (time) => {
+      // Validate time before setting
+      const timeValidation = timeValidationService.validateTime();
+      if (!timeValidation.isValid) {
+        console.warn('System time appears to be manipulated. Using corrected time instead.');
+        set({ currentTime: timeValidation.correctedTime });
+      } else {
+        set({ currentTime: time });
+      }
+    },
     setUserLocation: (location) => set({ userLocation: location }),
 }));
+
+// Set up interval to update currentTime with corrected time every second
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    // Update the time to the corrected time
+    const correctedTime = timeValidationService.getCorrectedTime();
+    useUIStore.getState().setCurrentTime(correctedTime);
+  }, 1000);
+}
 
 export * from './activityStore';
 export * from './announcementStore';

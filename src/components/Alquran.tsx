@@ -5,6 +5,7 @@ import type { Bookmark } from '../services/bookmarkService';
 import { fetchSurahs, fetchSurahDetail } from '../services/quranService';
 import { SearchIcon, ArrowLeftIcon, BookmarkIcon, BookmarkSolidIcon, CheckSquareIcon, LockClosedIcon, ShareIcon } from './Icons';
 import { useUIStore } from '../store/store';
+import { timeValidationService } from '../services/timeValidationService';
 
 interface AlquranProps {
     bookmarks: Bookmark[];
@@ -85,7 +86,9 @@ const ReportReadingModal: React.FC<{
         const selectedDateObj = new Date(date + 'T12:00:00Z');
         const monthKey = date.slice(0, 7);
 
-        const today = new Date();
+        // Get corrected time from time validation service
+        const correctedNow = timeValidationService.getCorrectedTime();
+        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
         today.setHours(0, 0, 0, 0);
 
         const normalizedSelectedDate = new Date(selectedDateObj);

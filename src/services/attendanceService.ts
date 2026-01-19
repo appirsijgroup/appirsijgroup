@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from './database.types';
+import { timeValidationService } from './timeValidationService';
 
 // Use centralized Supabase client to avoid multiple instances
 export { supabase };
@@ -59,13 +60,32 @@ export const submitAttendance = async (
   location?: { latitude: number; longitude: number }
 ): Promise<AttendanceRecord> => {
   try {
+    // Validate time before submitting attendance
+    const timeValidation = timeValidationService.validateTime();
+
+    if (!timeValidation.isValid) {
+      throw new Error('System time appears to be manipulated. Attendance submission denied.');
+    }
+
+    // Check if the entity date is in the future compared to validated time
+    // Assuming entityId contains date information in some form (like YYYY-MM-DD)
+    const entityDateMatch = entityId.match(/\d{4}-\d{2}-\d{2}/);
+    if (entityDateMatch) {
+      const entityDate = new Date(entityDateMatch[0]);
+      const correctedTime = timeValidation.correctedTime;
+
+      // If entity date is in the future compared to corrected server time, reject
+      if (entityDate > correctedTime) {
+        throw new Error('Cannot submit attendance for future dates.');
+      }
+    }
 
     // Check if Supabase is configured
     if (!supabase) {
       throw new Error('Supabase client not initialized');
     }
 
-    const timestamp = new Date().toISOString();
+    const timestamp = timeValidation.correctedTime.toISOString();
 
     const recordToUpsert = {
       employee_id: employeeId,
@@ -118,10 +138,17 @@ export const batchUpdateAttendance = async (
   employeeId: string,
   attendanceRecords: Omit<AttendanceRecord, 'id' | 'created_at' | 'updated_at'>[]
 ): Promise<AttendanceRecord[]> => {
+  // Validate time before batch update
+  const timeValidation = timeValidationService.validateTime();
+
+  if (!timeValidation.isValid) {
+    throw new Error('System time appears to be manipulated. Batch attendance update denied.');
+  }
+
   const recordsWithIds = attendanceRecords.map(record => ({
     ...record,
     employee_id: employeeId,
-    timestamp: record.timestamp || new Date().toISOString()
+    timestamp: record.timestamp || timeValidation.correctedTime.toISOString()
   }));
 
   const { data, error } = await (supabase

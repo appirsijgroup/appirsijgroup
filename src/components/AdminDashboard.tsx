@@ -3516,7 +3516,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
         announcements, onCreateAnnouncement, onDeleteAnnouncement, onMarkAsRead, onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
-        mutabaahLockingMode, onUpdateMutabaahLockingMode
+        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees
     } = props;
     /* eslint-enable */
 
@@ -3757,11 +3757,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <div className="mb-6">
                 <nav className="overflow-x-auto overflow-y-hidden touch-pan-x border-b border-white/20">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
+                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
                         {isSuperAdmin(loggedInEmployee) && (
                             <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
                         )}
                         <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
-                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
                         <TabButton active={activeView === 'pengumuman'} onClick={() => setActiveView('pengumuman')} label="Pengumuman" icon={MegaphoneIcon} />
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}

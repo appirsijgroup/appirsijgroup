@@ -207,7 +207,7 @@ export interface AttendanceStatus {
 
 export type Attendance = Record<string, AttendanceStatus>;
 
-export type View = 'presensi' | 'kegiatan' | 'panduan-doa' | 'profile' | 'admin' | 'aktivitas-bulanan' | 'alquran' | 'bookmarks' | 'dashboard-saya' | 'pengumuman' | 'dashboard-binroh' | 'analytics';
+export type View = 'presensi' | 'kegiatan' | 'panduan-doa' | 'profile' | 'admin' | 'aktivitas-bulanan' | 'alquran' | 'bookmarks' | 'dashboard-saya' | 'pengumuman' | 'jadwal-sesi' | 'analytics';
 
 export interface City {
   id: string;

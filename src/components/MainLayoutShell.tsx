@@ -30,7 +30,8 @@ import {
     DocumentDuplicateIcon,
     IdentificationIcon,
     UsersIcon,
-    ClockIcon
+    ClockIcon,
+    CalendarClockIcon
 } from './Icons';
 import type { Notification } from '@/types';
 
@@ -41,6 +42,7 @@ const allNavItemsRaw = [
     { id: 'presensi', label: 'Presensi Harian', icon: ClipboardDocumentIcon, href: '/presensi' },
     { id: 'pengumuman', label: 'Pengumuman', icon: MegaphoneIcon, href: '/pengumuman' },
     { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: UsersIcon, href: '/kegiatan' },
+    { id: 'jadwal-sesi', label: 'Jadwal & Sesi', icon: CalendarClockIcon, href: '/jadwal-sesi' },
     { id: 'alquran', label: 'Al-Qur\'an', icon: QuranIcon, href: '/alquran' },
     { id: 'bookmarks', label: 'Bookmark', icon: DocumentDuplicateIcon, href: '/bookmarks' },
     { id: 'panduan-doa', label: 'Panduan & Doa', icon: PrayerBeadIcon, href: '/panduan-doa' },

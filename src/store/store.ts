@@ -20,6 +20,7 @@ export interface AppDataState {
     hospitalsData: Record<string, Hospital>;
     isHydrated: boolean;
     isLoggingOut: boolean; // Flag to prevent loading flash during logout
+    isLoadingEmployees: boolean; // 🔥 NEW: Flag to prevent concurrent employee loading
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
@@ -38,6 +39,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     hospitalsData: {},
     isHydrated: false,
     isLoggingOut: false, // Start not logging out
+    isLoadingEmployees: false, // 🔥 NEW: Flag to prevent concurrent employee loading
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
     setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
@@ -182,7 +184,14 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     // Load all employees from Supabase
     loadAllEmployees: async () => {
+        // 🔥 NEW: Prevent concurrent loading
+        if (get().isLoadingEmployees) {
+            console.log('⚠️ Already loading employees, skipping...');
+            return;
+        }
+
         try {
+            set({ isLoadingEmployees: true });
             console.log('🔄 Starting loadAllEmployees from store...');
             const { getAllEmployees } = await import('@/services/employeeService');
             const allEmployees = await getAllEmployees();
@@ -231,10 +240,11 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             }
 
             // Update allUsersData
-            set({ allUsersData: newData });
+            set({ allUsersData: newData, isLoadingEmployees: false });
             console.log('✅ All employees data loaded successfully');
         } catch (error) {
             console.error('❌ Error loading all employees:', error);
+            set({ isLoadingEmployees: false }); // 🔥 NEW: Reset flag on error
             throw error;
         }
     },

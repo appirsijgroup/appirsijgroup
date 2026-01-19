@@ -268,10 +268,12 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 setSelectedSurah(detail);
                 ayahRefs.current = new Array(detail.jumlahAyat + 1);
             } else {
-                throw new Error('Data surah tidak ditemukan.');
+                console.error(`❌ Failed to fetch surah ${surahNumber}: API returned null`);
+                setError('Gagal memuat detail surah. API mungkin sedang sibuk atau tidak merespons. Silakan coba lagi dalam beberapa saat.');
             }
-        } catch (_err) {
-            setError('Gagal memuat detail surah. Silakan coba lagi.');
+        } catch (err) {
+            console.error(`❌ Error in handleSelectSurah:`, err);
+            setError('Terjadi kesalahan saat memuat surah. Pastikan koneksi internet Anda aktif dan coba lagi.');
         } finally {
             setIsLoadingDetail(false);
         }

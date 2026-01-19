@@ -186,6 +186,52 @@ export const updateTeamAttendanceSession = async (
     }
 };
 
+// Update full session data (type, date, time, audience, links, etc)
+export const updateTeamAttendanceSessionData = async (
+    sessionId: string,
+    updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>
+): Promise<void> => {
+    try {
+        console.log('📝 Updating team attendance session data:', sessionId, updates);
+
+        const dbUpdates: any = {
+            type: updates.type,
+            date: updates.date,
+            start_time: updates.startTime,
+            end_time: updates.endTime,
+            attendance_mode: updates.attendanceMode,
+            audience_type: updates.audienceType,
+            audience_rules: updates.audienceRules,
+            manual_participant_ids: updates.manualParticipantIds,
+            zoom_url: updates.zoomUrl,
+            youtube_url: updates.youtubeUrl
+        };
+
+        console.log('📝 Sending to Supabase:', dbUpdates);
+
+        const { error } = await (supabase
+            .from('team_attendance_sessions') as any)
+            .update(dbUpdates)
+            .eq('id', sessionId);
+
+        if (error) {
+            console.error('❌ Supabase error updating session data:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code,
+                fullError: error
+            });
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        console.log('✅ Session data updated successfully');
+    } catch (error) {
+        console.error('❌ Error in updateTeamAttendanceSessionData:', error);
+        throw error;
+    }
+};
+
 // Delete session
 export const deleteTeamAttendanceSession = async (sessionId: string): Promise<void> => {
     try {

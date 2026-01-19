@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import MyDashboard from '@/components/MyDashboard';
 import AssignmentLetter from '@/components/AssignmentLetter';
@@ -43,7 +43,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     const { createNotification } = useNotificationStore();
     const { logAudit } = useAuditLogStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
-    const { activities, teamAttendanceSessions, addActivity, addTeamAttendanceSessions, updateTeamAttendanceSession, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
+    const { activities, teamAttendanceSessions, addActivity, addTeamAttendanceSessions, updateTeamAttendanceSession, updateTeamAttendanceSessionData, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
     const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
@@ -57,6 +57,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         previousAssigneeName?: string;
         notificationTimestamp: number;
     } | null>(null);
+
+    // Sync old team attendance data to monthlyActivities
+    const [hasSyncedOldAttendance, setHasSyncedOldAttendance] = useState(false);
+    const isSyncingRef = useRef(false);
 
     // --- Handlers from App.tsx ---
 
@@ -166,12 +170,123 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     };
 
-    const handleUpdateMonthlyActivities = (userId: string, monthKey: string, monthProgress: any) => {
-        if (process.env.NODE_ENV === "development") console.log("🔄 Updating monthly activities for user");
+    const handleUpdateMonthlyActivities = async (userId: string, monthKey: string, monthProgress: any) => {
+        if (process.env.NODE_ENV === "development") {
+            console.log("🔄 Updating monthly activities for user:", userId);
+            console.log("📅 Month key:", monthKey);
+            console.log("📊 Month progress:", monthProgress);
+        }
+
+        // Update local state first (optimistic update)
         const existing = loggedInEmployee?.monthlyActivities || {};
         const newActivity = { ...existing, [monthKey]: monthProgress };
         handleUpdateProfile(userId, { monthlyActivities: newActivity });
+
+        // Then persist to Supabase
+        try {
+            const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
+            await updateService(userId, newActivity);
+            console.log("✅ Monthly activities saved to Supabase");
+        } catch (error) {
+            console.error("❌ Error saving monthly activities to Supabase:", error);
+            // Don't throw - local state is already updated
+        }
     };
+
+    // --- Sync old team attendance data to monthlyActivities ---
+    const syncOldTeamAttendanceData = useCallback(async () => {
+        // Prevent infinite loop with ref
+        if (isSyncingRef.current || hasSyncedOldAttendance || !loggedInEmployee) {
+            console.log('⏸️ Sync skipped (already syncing or already synced or no user)');
+            return;
+        }
+
+        console.log('🔄 Syncing old team attendance data to monthlyActivities...');
+        console.log(`📊 Found ${teamAttendanceSessions.length} team attendance sessions`);
+        console.log(`👤 Logged in employee: ${loggedInEmployee.name} (${loggedInEmployee.id})`);
+
+        // Set syncing flag
+        isSyncingRef.current = true;
+
+        // Mapping session type to activity ID
+        const sessionTypeToActivityId: Record<string, string> = {
+            'Doa Bersama': 'doa_bersama',
+            'KIE': 'tepat_waktu_kie',
+        };
+
+        let updateCount = 0;
+        const syncedActivities: Array<{ date: string; type: string; activityId: string }> = [];
+
+        try {
+            // Process all team attendance sessions
+            for (const session of teamAttendanceSessions) {
+                const { date, type, presentUserIds } = session;
+
+                // Skip if no present users
+                if (!presentUserIds || presentUserIds.length === 0) continue;
+
+                // Get activity ID for this session type
+                const activityId = sessionTypeToActivityId[type];
+                if (!activityId) {
+                    console.warn(`⚠️ Unknown session type: ${type}`);
+                    continue;
+                }
+
+                // Extract month key and day key from date (YYYY-MM-DD)
+                const monthKey = date.substring(0, 7); // YYYY-MM
+                const dayKey = date.substring(8, 10); // DD
+
+                // Update monthlyActivities for each present user
+                for (const userId of presentUserIds) {
+                    // Only update if this user is the logged in employee
+                    if (userId !== loggedInEmployee.id) continue;
+
+                    const currentMonthProgress = loggedInEmployee.monthlyActivities?.[monthKey] || {};
+                    const currentDayProgress = currentMonthProgress[dayKey] || {};
+
+                    // Check if activity is already marked
+                    if (currentDayProgress[activityId]) {
+                        console.log(`ℹ️ Activity ${activityId} already marked for ${date}`);
+                        continue;
+                    }
+
+                    // Update monthlyActivities
+                    const updatedMonthProgress = {
+                        ...currentMonthProgress,
+                        [dayKey]: {
+                            ...currentDayProgress,
+                            [activityId]: true,
+                        }
+                    };
+
+                    await handleUpdateMonthlyActivities(userId, monthKey, updatedMonthProgress);
+                    updateCount++;
+                    syncedActivities.push({ date, type, activityId });
+                }
+            }
+
+            if (updateCount > 0) {
+                console.log(`✅ Synced ${updateCount} attendance records:`, syncedActivities);
+                addToast(`${updateCount} data kehadiran lama berhasil disinkronkan ke dashboard`, 'success');
+            } else {
+                console.log('ℹ️ No old attendance data to sync or all already synced');
+            }
+
+            setHasSyncedOldAttendance(true);
+        } finally {
+            // Always clear the syncing flag
+            isSyncingRef.current = false;
+        }
+    }, [hasSyncedOldAttendance, loggedInEmployee, teamAttendanceSessions, handleUpdateMonthlyActivities, addToast]);
+
+    // Sync old data when team attendance sessions are loaded
+    useEffect(() => {
+        if (teamAttendanceSessions.length > 0 && !hasSyncedOldAttendance && !isSyncingRef.current) {
+            console.log('🚀 Triggering sync from useEffect...');
+            syncOldTeamAttendanceData();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [teamAttendanceSessions.length, hasSyncedOldAttendance]); // Only trigger on count change, not on function reference change
 
     const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
         if (!loggedInEmployee) return;
@@ -951,7 +1066,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             }}
             onAddActivity={(data) => addActivity({ ...data, id: Date.now().toString(), createdBy: loggedInEmployee.id, createdByName: loggedInEmployee.name })}
             onUpdateTeamAttendance={(id, presentUserIds) => updateTeamAttendanceSession(id, { presentUserIds })}
+            onUpdateSession={(id, sessionData) => updateTeamAttendanceSessionData(id, sessionData)}
             onDeleteTeamAttendanceSession={deleteTeamAttendanceSession}
+            onUpdateMonthlyActivities={handleUpdateMonthlyActivities}
             onOpenAssignmentLetter={handleOpenAssignmentLetter}
         />
     );

@@ -1420,7 +1420,9 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     onCreateSessions={onCreateTeamAttendanceSessions}
                     onAddActivity={onAddActivity}
                     onUpdateAttendance={onUpdateTeamAttendance}
+                    onUpdateSession={props.onUpdateSession}
                     onDeleteSession={(session) => onDeleteTeamAttendanceSession(session.id)}
+                    onUpdateMonthlyActivities={props.onUpdateMonthlyActivities}
                     addToast={addToast}
                 />
             default:

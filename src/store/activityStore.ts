@@ -14,6 +14,7 @@ interface ActivityState {
     deleteActivity: (activityId: string) => void;
     addTeamAttendanceSessions: (sessions: TeamAttendanceSession[]) => void;
     updateTeamAttendanceSession: (sessionId: string, updates: Partial<TeamAttendanceSession>) => Promise<void>;
+    updateTeamAttendanceSessionData: (sessionId: string, updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>) => Promise<void>;
     deleteTeamAttendanceSession: (sessionId: string) => Promise<void>;
     loadTeamAttendanceSessionsFromSupabase: () => Promise<void>;
     loadActivitiesFromSupabase: (employeeId?: string) => Promise<void>;
@@ -52,6 +53,23 @@ export const useActivityStore = create<ActivityState>()(
                     }));
                 } catch (error) {
                     console.error('❌ Error updating team attendance session:', error);
+                    throw error;
+                }
+            },
+            updateTeamAttendanceSessionData: async (sessionId, updates) => {
+                try {
+                    // Update to Supabase first
+                    const { updateTeamAttendanceSessionData: updateService } = await import('@/services/teamAttendanceService');
+                    await updateService(sessionId, updates);
+
+                    // Then update local state
+                    set((state) => ({
+                        teamAttendanceSessions: state.teamAttendanceSessions.map(sess =>
+                            sess.id === sessionId ? { ...sess, ...updates } : sess
+                        )
+                    }));
+                } catch (error) {
+                    console.error('❌ Error updating team attendance session data:', error);
                     throw error;
                 }
             },

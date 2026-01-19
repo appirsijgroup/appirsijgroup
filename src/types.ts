@@ -431,6 +431,7 @@ export interface MyDashboardViewProps {
   onCreateTeamAttendanceSessions: (sessionsData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[]) => void;
   onAddActivity: (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
   onUpdateTeamAttendance: (sessionId: string, presentUserIds: string[]) => Promise<void>;
+  onUpdateSession: (sessionId: string, sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>) => Promise<void>;
   onDeleteTeamAttendanceSession: (sessionId: string) => Promise<void>;
   // Missing handlers
   onActivateMonth?: (userId: string, monthKey: string) => void;

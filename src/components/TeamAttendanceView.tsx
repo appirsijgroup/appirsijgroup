@@ -25,7 +25,9 @@ interface TeamAttendanceViewProps {
     onCreateSessions: (sessionsData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[]) => void;
     onAddActivity: (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
     onUpdateAttendance: (sessionId: string, presentUserIds: string[]) => void;
+    onUpdateSession: (sessionId: string, sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>) => void;
     onDeleteSession: (session: TeamAttendanceSession) => void;
+    onUpdateMonthlyActivities?: (userId: string, monthKey: string, monthProgress: Record<string, Record<string, boolean>>) => void;
     addToast: (message: string, type: 'success' | 'error') => void;
 }
 
@@ -33,6 +35,12 @@ const teamActivityOptions: { label: string; value: TeamAttendanceSession['type']
     { label: "Doa bersama mengawali pekerjaan", value: 'Doa Bersama' },
     { label: "Tepat waktu menghadiri KIE", value: 'KIE' },
 ];
+
+// Mapping session type to activity ID for monthlyActivities
+const sessionTypeToActivityId: Record<TeamAttendanceSession['type'], string> = {
+    'Doa Bersama': 'doa_bersama',
+    'KIE': 'tepat_waktu_kie',
+};
 
 const CreateSessionModal: React.FC<{
     isOpen: boolean;
@@ -305,80 +313,260 @@ const CreateSessionModal: React.FC<{
 const ManageAttendanceModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (presentUserIds: string[]) => void;
+    onSave: (sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>, presentUserIds: string[]) => void;
     session: TeamAttendanceSession;
     allUsers: Employee[];
 }> = ({ isOpen, onClose, onSave, session, allUsers }) => {
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [search, setSearch] = useState('');
+    const [type, setType] = useState<TeamAttendanceSession['type']>(session.type);
+    const [date, setDate] = useState(session.date);
+    const [startTime, setStartTime] = useState(session.startTime);
+    const [endTime, setEndTime] = useState(session.endTime);
+    const [attendanceMode, setAttendanceMode] = useState<'leader' | 'self'>(session.attendanceMode);
+    const [audienceType, setAudienceType] = useState<'rules' | 'manual'>(session.audienceType);
+    const [unit, setUnit] = useState(session.audienceRules?.units?.[0] || 'all');
+    const [bagian, setBagian] = useState(session.audienceRules?.bagians?.[0] || 'all');
+    const [manualParticipantIds, setManualParticipantIds] = useState<Set<string>>(new Set(session.manualParticipantIds || []));
+    const [participantSearch, setParticipantSearch] = useState('');
+    const [zoomUrl, setZoomUrl] = useState(session.zoomUrl || '');
+    const [youtubeUrl, setYoutubeUrl] = useState(session.youtubeUrl || '');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(session.presentUserIds));
 
     useEffect(() => {
         if (isOpen) {
+            setType(session.type);
+            setDate(session.date);
+            setStartTime(session.startTime);
+            setEndTime(session.endTime);
+            setAttendanceMode(session.attendanceMode);
+            setAudienceType(session.audienceType);
+            setUnit(session.audienceRules?.units?.[0] || 'all');
+            setBagian(session.audienceRules?.bagians?.[0] || 'all');
+            setManualParticipantIds(new Set(session.manualParticipantIds || []));
+            setZoomUrl(session.zoomUrl || '');
+            setYoutubeUrl(session.youtubeUrl || '');
             setSelectedIds(new Set(session.presentUserIds));
-            setSearch('');
+            setParticipantSearch('');
         }
     }, [isOpen, session]);
 
-    const participants = useMemo(() => {
-        if (session.audienceType === 'manual') {
-            return allUsers.filter(u => session.manualParticipantIds?.includes(u.id));
-        }
-        if (session.audienceType === 'rules') {
-            return allUsers.filter(u => 
-                (!session.audienceRules?.units || session.audienceRules.units.length === 0 || session.audienceRules.units.includes(u.unit)) &&
-                (!session.audienceRules?.bagians || session.audienceRules.bagians.length === 0 || session.audienceRules.bagians.includes(u.bagian))
-            );
-        }
-        return [];
-    }, [session, allUsers]);
+    const uniqueUnits = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.unit))).sort()], [allUsers]);
+    const uniqueBagians = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.bagian))).sort()], [allUsers]);
 
-    const filteredParticipants = useMemo(() => {
-        if (!search) return participants;
-        const lowerSearch = search.toLowerCase();
-        return participants.filter(p => p.name.toLowerCase().includes(lowerSearch) || p.id.includes(lowerSearch));
-    }, [participants, search]);
+    const rulesAudienceCount = useMemo(() => {
+        if (audienceType !== 'rules') return 0;
+        return allUsers.filter(u =>
+            (unit === 'all' || u.unit === unit) &&
+            (bagian === 'all' || u.bagian === bagian)
+        ).length;
+    }, [allUsers, audienceType, unit, bagian]);
 
-    const handleToggle = (id: string) => {
-        setSelectedIds(prev => {
+    const filteredManualParticipants = useMemo(() => {
+        if (!participantSearch) return allUsers;
+        const lowerSearch = participantSearch.toLowerCase();
+        return allUsers.filter(u => u.name.toLowerCase().includes(lowerSearch) || u.id.includes(lowerSearch));
+    }, [allUsers, participantSearch]);
+
+    const handleToggleParticipant = (id: string) => {
+        setManualParticipantIds(prev => {
             const newSet = new Set(prev);
             if (newSet.has(id)) newSet.delete(id);
             else newSet.add(id);
             return newSet;
         });
     };
-    
-    const handleSave = () => {
-        onSave(Array.from(selectedIds));
+
+    const handleSubmit = () => {
+        const sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'> = {
+            type, date, startTime, endTime, attendanceMode, audienceType,
+            zoomUrl: zoomUrl.trim() || undefined,
+            youtubeUrl: youtubeUrl.trim() || undefined,
+            audienceRules: audienceType === 'rules' ? {
+                units: unit !== 'all' ? [unit] : undefined,
+                bagians: bagian !== 'all' ? [bagian] : undefined,
+            } : undefined,
+            manualParticipantIds: audienceType === 'manual' ? Array.from(manualParticipantIds) : [],
+        };
+
+        onSave(sessionData, Array.from(selectedIds));
         onClose();
     };
 
     if (!isOpen) return null;
 
+    const SegmentedControlButton: React.FC<{
+        label: string;
+        icon: React.FC<{className: string}>;
+        isActive: boolean;
+        onClick: () => void;
+    }> = ({ label, icon: Icon, isActive, onClick }) => (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+        >
+            <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
+            <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
+        </button>
+    );
+
+    const participants = useMemo(() => {
+        if (audienceType === 'manual') {
+            return allUsers.filter(u => manualParticipantIds.has(u.id));
+        }
+        if (audienceType === 'rules') {
+            return allUsers.filter(u =>
+                (unit === 'all' || u.unit === unit) &&
+                (bagian === 'all' || u.bagian === bagian)
+            );
+        }
+        return [];
+    }, [allUsers, audienceType, manualParticipantIds, unit, bagian]);
+
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-white/20 flex flex-col h-[90vh]">
-                <h3 className="text-xl font-bold text-white flex-shrink-0 mb-4">Kelola Presensi: {session.type}</h3>
-                <div className="relative mb-4">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama peserta..." className="w-full bg-black/20 border border-white/30 rounded-lg p-2.5 pl-10 text-white" />
-                </div>
-                <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/20 space-y-1">
-                    {filteredParticipants.map(user => (
-                        <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
-                            <input type="checkbox" checked={selectedIds.has(user.id)} onChange={() => handleToggle(user.id)} className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
-                            <div>
-                                <p className="font-semibold text-white">{user.name}</p>
-                                <p className="text-xs text-gray-400">{user.bagian}, {user.unit}</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-pop-in">
+            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 h-[90vh] flex flex-col">
+                <h3 className="text-xl font-bold text-white flex-shrink-0 mb-6">Kelola Sesi Presensi</h3>
+                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column: Session Details & Mode */}
+                    <div className="space-y-6">
+                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Detail Sesi</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Jenis Kegiatan</label>
+                                    <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white">
+                                        {teamActivityOptions.map(opt => <option key={opt.value} value={opt.value} className="text-black bg-white">{opt.label}</option>)}
+                                    </select>
+                                </div>
+                                 <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
+                                    <div className="relative">
+                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }}/>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div>
+                                        <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
+                                         <div className="relative">
+                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                            <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
+                                         <div className="relative">
+                                             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                            <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </label>
-                    ))}
-                </div>
-                <div className="mt-6 flex justify-between items-center">
-                    <p className="text-sm text-blue-200">{selectedIds.size} / {participants.length} hadir</p>
-                    <div className="flex gap-3">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                        <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan Presensi</button>
+                        </div>
+
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
+                             <div className="flex items-center gap-4">
+                                <SegmentedControlButton
+                                    label="Mandiri"
+                                    icon={UserCircleIcon}
+                                    isActive={attendanceMode === 'self'}
+                                    onClick={() => setAttendanceMode('self')}
+                                />
+                                <SegmentedControlButton
+                                    label="Oleh Atasan"
+                                    icon={CheckBadgeIcon}
+                                    isActive={attendanceMode === 'leader'}
+                                    onClick={() => setAttendanceMode('leader')}
+                                />
+                            </div>
+                        </div>
                     </div>
+
+                     {/* Right Column: Audience */}
+                    <div className="space-y-6 flex flex-col">
+                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Tautan Online</h4>
+                             <div className="space-y-4">
+                                 <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
+                                     <div className="relative">
+                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400"/>
+                                        <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    </div>
+                                </div>
+                                 <div>
+                                    <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
+                                     <div className="relative">
+                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400"/>
+                                        <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col">
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Target Peserta & Presensi</h4>
+                             <div className="flex items-center gap-4 mb-4">
+                                 <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
+                                 <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
+                            </div>
+                             {audienceType === 'rules' && (
+                                <div className="space-y-4">
+                                    <select value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white">
+                                        {uniqueUnits.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt === 'all' ? 'Semua Unit' : opt}</option>)}
+                                    </select>
+                                    <select value={bagian} onChange={e => setBagian(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white">
+                                        {uniqueBagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt === 'all' ? 'Semua Bagian' : opt}</option>)}
+                                    </select>
+                                    <p className="text-sm text-center text-blue-200">Estimasi Peserta: <strong>{rulesAudienceCount} orang</strong> | Hadir: <strong>{selectedIds.size} orang</strong></p>
+                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1 max-h-60">
+                                        {participants.map(user => (
+                                            <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(user.id)}
+                                                    onChange={() => {
+                                                        setSelectedIds(prev => {
+                                                            const newSet = new Set(prev);
+                                                            if (newSet.has(user.id)) newSet.delete(user.id);
+                                                            else newSet.add(user.id);
+                                                            return newSet;
+                                                        });
+                                                    }}
+                                                    className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
+                                                />
+                                                <div>
+                                                    <p className="font-semibold text-white">{user.name}</p>
+                                                    <p className="text-xs text-gray-400">{user.bagian}, {user.unit}</p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                             {audienceType === 'manual' && (
+                                <div className="space-y-2 flex-grow flex flex-col">
+                                    <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari nama..." className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white"/>
+                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1">
+                                        {filteredManualParticipants.map(user => (
+                                            <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
+                                                <input type="checkbox" checked={manualParticipantIds.has(user.id)} onChange={() => handleToggleParticipant(user.id)} className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
+                                                <p className="font-semibold text-white">{user.name}</p>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-blue-200 text-right pt-1">{manualParticipantIds.size} orang terpilih | Hadir: {selectedIds.size} orang</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
+                    <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
+                    <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
+                        Simpan Perubahan
+                    </button>
                 </div>
             </div>
         </div>,
@@ -401,7 +589,9 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     teamAttendanceSessions,
     onCreateSessions,
     onUpdateAttendance,
+    onUpdateSession,
     onDeleteSession,
+    onUpdateMonthlyActivities,
     addToast,
     onAddActivity,
 }) => {
@@ -445,13 +635,56 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const handleSelfAttend = async (session: TeamAttendanceSession) => {
         if (!session.presentUserIds.includes(loggedInEmployee.id)) {
             try {
+                console.log('🎯 User clicking hadir:', loggedInEmployee.name, '(', loggedInEmployee.id, ')');
+                console.log('📅 Session date:', session.date);
+                console.log('📋 Session type:', session.type);
+                console.log('👤 Current loggedInEmployee.monthlyActivities:', loggedInEmployee.monthlyActivities);
+
                 const newPresentIds = [...session.presentUserIds, loggedInEmployee.id];
                 await onUpdateAttendance(session.id, newPresentIds);
+
+                // Also save to monthlyActivities for dashboard display
+                if (onUpdateMonthlyActivities) {
+                    const monthKey = session.date.substring(0, 7); // YYYY-MM
+                    const dayKey = session.date.substring(8, 10); // DD (need to check format)
+                    const activityId = sessionTypeToActivityId[session.type];
+
+                    console.log('📊 Saving to monthlyActivities:');
+                    console.log('  - monthKey:', monthKey);
+                    console.log('  - dayKey:', dayKey, '(type:', typeof dayKey, ')');
+                    console.log('  - activityId:', activityId);
+
+                    // Get the FRESHEST data from allUsersData instead of loggedInEmployee
+                    const freshEmployee = allUsersData[loggedInEmployee.id]?.employee || loggedInEmployee;
+                    const currentMonthProgress = freshEmployee.monthlyActivities?.[monthKey] || {};
+                    const currentDayProgress = currentMonthProgress[dayKey] || {};
+
+                    console.log('  - Current month progress:', currentMonthProgress);
+                    console.log('  - Current day progress:', currentDayProgress);
+
+                    const updatedMonthProgress = {
+                        ...currentMonthProgress,
+                        [dayKey]: {
+                            ...currentDayProgress,
+                            [activityId]: true,
+                        }
+                    };
+
+                    console.log('  - Updated month progress:', updatedMonthProgress);
+                    console.log('🔄 Calling onUpdateMonthlyActivities...');
+
+                    await onUpdateMonthlyActivities(loggedInEmployee.id, monthKey, updatedMonthProgress);
+
+                    console.log('✅ onUpdateMonthlyActivities completed');
+                }
+
                 addToast(`Anda berhasil presensi untuk ${session.type}.`, 'success');
             } catch (error) {
                 console.error('❌ Error saat presensi:', error);
                 addToast('Gagal melakukan presensi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             }
+        } else {
+            console.log('ℹ️ User already present in session');
         }
     };
 
@@ -600,7 +833,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 <ManageAttendanceModal
                     isOpen={!!managingAttendanceFor}
                     onClose={() => setManagingAttendanceFor(null)}
-                    onSave={(presentIds) => onUpdateAttendance(managingAttendanceFor.id, presentIds)}
+                    onSave={(sessionData, presentIds) => {
+                        onUpdateSession(managingAttendanceFor.id, sessionData);
+                        onUpdateAttendance(managingAttendanceFor.id, presentIds);
+                    }}
                     session={managingAttendanceFor}
                     allUsers={allUsers}
                 />

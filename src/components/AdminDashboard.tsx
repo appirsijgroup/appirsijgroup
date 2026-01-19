@@ -1614,9 +1614,9 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     const [nameOrNipFilter, setNameOrNipFilter] = useState<string>('');
     const [activationStatusFilter, setActivationStatusFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
 
-
-    const prayerMap = useMemo(() => new Map(PRAYERS.map(p => [p.id, p.name])), []);
-    const activityMap = useMemo(() => new Map(activities.map(a => [a.id, a.name])), [activities]);
+    // 🔥 FIX: Stable activities ID tracking for proper dependency tracking
+    // This ensures useMemo re-runs when activities change
+    const activityIds = useMemo(() => activities.map(a => a.id).sort(), [activities]);
 
     const { allUnits, allProfessions, allYearsWithData, allReportableEntities } = useMemo(() => {
         const units = new Set<string>();
@@ -1632,9 +1632,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         });
         const sortedYears = Array.from(years).sort((a, b) => b - a);
 
+        // 🔥 FIX: Add defensive check for activities
         const reportableEntities = reportType === 'prayer'
             ? PRAYERS.map(p => p.name)
-            : activities.map(a => a.name);
+            : activities.length > 0 ? activities.map(a => a.name) : [];
 
         return {
             allUnits: Array.from(units).sort(),
@@ -1642,7 +1643,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             allYearsWithData: sortedYears,
             allReportableEntities: Array.from(new Set(reportableEntities)).sort(),
         };
-    }, [allUsersData, activities, reportType]);
+    }, [allUsersData, activities, reportType, activityIds]);
 
     useEffect(() => {
         if (allYearsWithData.length > 0 && !yearFilter) {
@@ -1654,16 +1655,20 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const records: AdminReportRecord[] = [];
         const todayStr = new Date().toISOString().split('T')[0];
 
+        // 🔥 FIX: Build maps inside useMemo to ensure fresh data
+        const currentPrayerMap = new Map(PRAYERS.map(p => [p.id, p.name]));
+        const currentActivityMap = new Map(activities.map(a => [a.id, a.name]));
+
         Object.values(allUsersData).forEach(({ employee, attendance, history }) => {
             const processDailyAttendance = (date: string, dailyAttendance: Attendance) => {
                 Object.entries(dailyAttendance).forEach(([entityId, att]) => {
-                    const isPrayerRecord = prayerMap.has(entityId);
-                    const isActivityRecord = activityMap.has(entityId);
+                    const isPrayerRecord = currentPrayerMap.has(entityId);
+                    const isActivityRecord = currentActivityMap.has(entityId);
 
                     if (reportType === 'prayer' && !isPrayerRecord) return;
                     if (reportType === 'activity' && !isActivityRecord) return;
 
-                    const entityName = prayerMap.get(entityId) || activityMap.get(entityId) || 'Data Dihapus';
+                    const entityName = currentPrayerMap.get(entityId) || currentActivityMap.get(entityId) || 'Data Dihapus';
 
                     if (att.submitted && att.status && att.timestamp) {
                         records.push({
@@ -1682,7 +1687,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             processDailyAttendance(todayStr, attendance);
         });
         return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [allUsersData, prayerMap, activityMap, reportType]);
+    }, [allUsersData, activities, reportType, activityIds]); // 🔥 FIX: Use activityIds instead of Map objects
 
     const filteredData = useMemo(() => {
         const userMap = new Map(Object.values(allUsersData).map((d: { employee: Employee }) => [d.employee.id, d.employee]));

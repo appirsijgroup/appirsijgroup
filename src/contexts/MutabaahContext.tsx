@@ -55,11 +55,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   // ⚡ OPTIMIZATION: Quick initialize - just load basic data immediately
   // Heavy operations like attendance sync will run in background
   const initializeFromEmployee = useCallback(async (emp: Employee) => {
-    console.log('🔄 MutabaahContext: Quick initializing from employee object', {
-      employeeId: emp.id,
-      activatedMonths: emp.activatedMonths || emp.activated_months,
-      hasActivities: !!emp.monthlyActivities // 🔥 FIX: Gunakan monthlyActivities (camelCase) - konsisten dengan API
-    });
 
     // Use data directly from employee object (already fresh from Supabase)
     // 🔥 FIX: monthlyActivities sekarang dikonversi ke camelCase oleh /api/auth/me
@@ -76,12 +71,10 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     setMonthlyProgressData(activities);
     setIsCurrentMonthActivated(isActivated);
 
-    console.log('✅ MutabaahContext basic state updated immediately');
 
     // 🚀 DEFER: Run heavy operations in background using setTimeout
     // This allows UI to render immediately without blocking
     setTimeout(async () => {
-      console.log('🔄 Starting background sync...');
 
       // Sync attendance records from Supabase to monthly progress
       try {
@@ -136,13 +129,10 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               onUpdateEmployee(updatedEmployee);
             }
           } catch (error) {
-            console.error('⚠️ Error saving monthly progress to Supabase:', error);
           }
         } else {
-          console.log('ℹ️ No new attendance records to sync');
         }
       } catch (error) {
-        console.error('⚠️ Error in background attendance sync:', error);
         // Continue without attendance sync - not critical
       }
 
@@ -151,12 +141,9 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
         const submissions = await getUserWeeklyReports(emp.id);
         setWeeklyReportSubmissions(submissions);
-        console.log('📊 Loaded weekly reports in background:', submissions.length);
       } catch (error) {
-        console.error('⚠️ Error loading weekly report submissions in background:', error);
       }
 
-      console.log('✅ Background sync completed');
     }, 100); // 100ms delay to allow UI to render first
   }, [onUpdateEmployee]);
 
@@ -166,7 +153,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       // Check if Supabase is configured
       const { isSupabaseConfigured } = await import('@/lib/supabase');
       if (!isSupabaseConfigured()) {
-        console.warn('Supabase not configured, skipping sync');
         return;
       }
 
@@ -179,26 +165,22 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
 
       if (fetchError && fetchError.code !== 'PGRST116') {
         // PGRST116 = not found, which is ok
-        console.warn('Supabase fetch error (non-critical):', fetchError.message);
         return;
       }
 
       // If no record exists, create one
       if (!existingData) {
-        console.log('Creating new employee record in Supabase...');
         // Note: You'll need to implement this based on your actual schema
         // This is a placeholder showing where you'd do it
       }
 
     } catch (err) {
       // Non-critical error, log but don't crash
-      console.warn('Supabase sync warning (non-critical):', err);
     }
   }, []);
 
   // Refresh weekly reports only (don't re-initialize everything to avoid stale data)
   const refreshData = useCallback(async () => {
-    console.log('🔄 refreshData called - refreshing weekly reports only');
     if (employee && employee.id) {
       setIsLoading(true);
       try {
@@ -208,18 +190,14 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         try {
           const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
           submissions = await getUserWeeklyReports(employee.id);
-          console.log('📊 Refreshed weekly reports:', submissions.length);
         } catch (error) {
-          console.error('Error refreshing weekly report submissions:', error);
         }
 
         setWeeklyReportSubmissions(submissions);
       } catch (err) {
-        console.error('Error refreshing data:', err);
         setError('Gagal menyegarkan data');
       } finally {
         setIsLoading(false);
-        console.log('✅ Weekly reports refreshed');
       }
     }
   }, [employee?.id]); // Use employee.id instead of full object
@@ -234,16 +212,13 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
 
   // Activate month for employee
   const activateMonth = useCallback(async (monthKey: string): Promise<boolean> => {
-    console.log('🎯 MutabaahContext: activateMonth called with:', monthKey);
     if (!employee?.id) {
-      console.error('❌ No employee found');
       return false;
     }
 
     try {
       // Check if month is already activated
       if (activatedMonths.includes(monthKey)) {
-        console.warn('⚠️ Month already activated:', monthKey);
         return true;
       }
 
@@ -256,28 +231,23 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         const currentMonth = getCurrentMonthKey();
         if (monthKey !== currentMonth) {
           setError('Tidak dapat mengaktifkan bulan yang telah berlalu');
-          console.error('❌ Cannot activate past month');
           return false;
         }
       }
 
-      console.log('💾 Saving to Supabase...');
       // Use service to activate month in Supabase
       const success = await activateMonthService(employee.id, monthKey);
-      console.log('✅ Supabase save result:', success);
 
       if (success) {
         const newActivatedMonths = [...activatedMonths, monthKey];
 
         // Update local state IMMEDIATELY
         setActivatedMonths(newActivatedMonths);
-        console.log('✅ Updated local activated months:', newActivatedMonths);
 
         // Update current month activation if this is the current month
         const currentMonth = getCurrentMonthKey();
         if (monthKey === currentMonth) {
           setIsCurrentMonthActivated(true);
-          console.log('✅ Updated current month activation to true');
         }
 
         // Update localStorage (backup)
@@ -290,11 +260,9 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               allUsers[employee.id].employee.activatedMonths = newActivatedMonths;
               allUsers[employee.id].employee.activated_months = newActivatedMonths;
               localStorage.setItem('allUsersData', JSON.stringify(allUsers));
-              console.log('✅ Updated localStorage');
             }
           }
         } catch (e) {
-          console.error('⚠️ Failed to update localStorage:', e);
         }
 
         // Update employee in parent store if callback is provided
@@ -304,21 +272,16 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
             activatedMonths: newActivatedMonths,
             activated_months: newActivatedMonths // Update both formats
           };
-          console.log('📤 Calling onUpdateEmployee with:', updatedEmployee);
           onUpdateEmployee(updatedEmployee);
-          console.log('✅ Employee updated in store');
         }
 
-        console.log('✅ Month activation completed successfully!');
         return true;
       } else {
         setError('Gagal mengaktifkan bulan di Supabase');
-        console.error('❌ Failed to activate month in Supabase');
         return false;
       }
 
     } catch (err) {
-      console.error('❌ Error activating month:', err);
       setError('Gagal mengaktifkan lembar mutaba\'ah');
       return false;
     }
@@ -351,7 +314,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               localStorage.setItem('allUsersData', JSON.stringify(allUsers));
             }
           } catch (e) {
-            console.error('Failed to update localStorage:', e);
           }
         }
 
@@ -371,7 +333,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       }
 
     } catch (err) {
-      console.error('Error updating monthly progress:', err);
       setError('Gagal menyimpan progres bulanan');
       return false;
     }
@@ -386,7 +347,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       try {
         const { isSupabaseConfigured } = await import('@/lib/supabase');
         if (!isSupabaseConfigured()) {
-          console.log('Supabase not configured, skipping realtime subscription');
           return;
         }
 
@@ -402,7 +362,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               filter: `id=eq.${employee.id}`
             },
             (payload) => {
-              console.log('Employee data changed via realtime:', payload);
               if (payload.new) {
                 const newEmployee = payload.new as any;
                 setActivatedMonths(newEmployee.activated_months || []);
@@ -422,7 +381,6 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
           supabase.removeChannel(channel);
         };
       } catch (err) {
-        console.warn('Failed to setup realtime subscription (non-critical):', err);
       }
     };
 

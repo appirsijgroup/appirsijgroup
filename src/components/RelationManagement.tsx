@@ -27,7 +27,6 @@ const ToggleSwitch: React.FC<{
                 throw new Error('Update failed');
             }
         } catch (error) {
-            console.error('Error updating toggle:', error);
             alert('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
             setIsUpdating(false);
@@ -48,7 +47,6 @@ const ToggleSwitch: React.FC<{
         </button>
     );
 };
-
 
 const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile }) => {
     const { createNotification } = useNotificationStore();
@@ -87,11 +85,9 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                 onUpdateProfile(user.id, { dirutId: dirutId })
             );
             Promise.all(updatePromises).catch(err => {
-                console.error('Error auto-updating dirut:', err);
             });
         }
     }, [designatedDirut?.id, safeAllUsers, onUpdateProfile]);
-
 
     const filteredUsers = useMemo(() => {
         if (!searchTerm) return safeAllUsers;
@@ -131,7 +127,6 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
     ) => {
         // Defensive check
         if (!userToUpdate || !userToUpdate.id) {
-            console.error('Invalid user in handleRelationChange:', userToUpdate);
             return;
         }
 
@@ -159,9 +154,6 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     }
 
                     // Create notification - SELALU buat untuk setiap assignment/re-assignment
-                    console.log('🔔 Creating assignment notification for user:', userToUpdate.id, userToUpdate.name);
-                    console.log('📊 Assignment type:', assignmentType);
-                    console.log('👤 Previous:', oldRelationName, '→ New:', newRelationName);
 
                     const notificationData = {
                         userId: userToUpdate.id,
@@ -182,14 +174,11 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                             }
                         }
                     };
-                    console.log('📝 Notification data:', notificationData);
                     await createNotification(notificationData);
-                    console.log('✅ Assignment notification created successfully');
                 } else {
                     throw new Error('Update failed');
                 }
             } catch (error) {
-                console.error('Error updating relation:', error);
                 alert('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
         } else {
@@ -223,12 +212,10 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                             }
                         };
                         await createNotification(notificationData);
-                        console.log('✅ Removal notification created successfully');
                     } else {
                         throw new Error('Update failed');
                     }
                 } catch (error) {
-                    console.error('Error removing relation:', error);
                     alert('Gagal menghapus penugasan: ' + (error instanceof Error ? error.message : 'Unknown error'));
                 }
             }

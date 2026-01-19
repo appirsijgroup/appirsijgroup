@@ -33,7 +33,6 @@ const PresensiComponent: React.FC = () => {
         // For now, we'll simulate with an empty object
         setAttendance({});
       } catch (error) {
-        console.error('Error fetching attendance:', error);
       }
     };
 
@@ -71,7 +70,6 @@ const PresensiComponent: React.FC = () => {
               const times = await fetchPrayerTimes(cityId, today);
               setPrayerTimes(times);
             } catch (error) {
-              console.error("Error loading prayer times:", error);
               setPrayerTimes(null);
             } finally {
               setPrayerTimesLoading(false);
@@ -79,7 +77,6 @@ const PresensiComponent: React.FC = () => {
             }
             return;
           } catch (error) {
-            console.error("Geolocation error:", error);
             setLocationStatus('Tidak dapat mendeteksi lokasi. Menggunakan default: Jakarta (1301)');
           }
         }
@@ -93,7 +90,6 @@ const PresensiComponent: React.FC = () => {
         const times = await fetchPrayerTimes(locationId, today);
         setPrayerTimes(times);
       } catch (error) {
-        console.error("Error loading prayer times, will use static data.", error);
         setPrayerTimes(null);
       } finally {
         setPrayerTimesLoading(false);

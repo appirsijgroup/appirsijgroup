@@ -22,13 +22,11 @@ async function checkTableExists(): Promise<boolean> {
       .maybeSingle();
 
     if (error && error.code === '42P01') {
-      console.warn('⚠️ employee_reading_history table does not exist, using fallback');
       return false;
     }
 
     return !error;
   } catch (error) {
-    console.error('Error checking table existence:', error);
     return false;
   }
 }
@@ -83,7 +81,6 @@ export const getReadingHistory = async (userId: string): Promise<ReadingHistoryE
 
     return [];
   } catch (error) {
-    console.error('Error fetching reading history:', error);
     return [];
   }
 };
@@ -117,7 +114,6 @@ export const submitBookReading = async (
         .single();
 
       if (error) throw error;
-
 
       return {
         id: data.id,
@@ -160,7 +156,6 @@ export const submitBookReading = async (
         })
         .eq('id', userId);
 
-
       return {
         id: newEntry.id,
         userId,
@@ -174,7 +169,6 @@ export const submitBookReading = async (
 
     return null;
   } catch (error) {
-    console.error('❌ Error submitting book reading:', error);
     throw error;
   }
 };
@@ -198,7 +192,6 @@ export const deleteReadingHistory = async (entryId: string, userId: string): Pro
 
     return true;
   } catch (error) {
-    console.error('Error deleting reading history:', error);
     return false;
   }
 };
@@ -217,7 +210,6 @@ export const getQuranReadingHistory = async (userId: string) => {
     if (error) {
       // If table doesn't exist, try fallback
       if (error.code === '42P01') {
-        console.warn('⚠️ employee_quran_reading_history table does not exist, using fallback');
         // Fallback: Get from employee's quran_reading_history JSON field
         const { data: employeeData } = await supabase
           .from('employees')
@@ -251,7 +243,6 @@ export const getQuranReadingHistory = async (userId: string) => {
       createdAt: item.created_at
     }));
   } catch (error) {
-    console.error('Error fetching Quran reading history:', error);
     return [];
   }
 };
@@ -284,7 +275,6 @@ export const addQuranReadingHistory = async (
     if (error) {
       // If table doesn't exist, use fallback
       if (error.code === '42P01') {
-        console.warn('⚠️ employee_quran_reading_history table does not exist, using fallback');
         const { data: employeeData } = await supabase
           .from('employees')
           .select('quran_reading_history')
@@ -327,7 +317,6 @@ export const addQuranReadingHistory = async (
       endAyah: data.end_ayah
     };
   } catch (error) {
-    console.error('❌ Error submitting Quran reading history:', error);
     throw error;
   }
 };
@@ -346,7 +335,6 @@ export const deleteQuranReadingHistory = async (entryId: string, userId: string)
     if (error) {
       // If table doesn't exist, use fallback
       if (error.code === '42P01') {
-        console.warn('⚠️ employee_quran_reading_history table does not exist, using fallback');
         const { data: employeeData } = await supabase
           .from('employees')
           .select('quran_reading_history')
@@ -374,7 +362,6 @@ export const deleteQuranReadingHistory = async (entryId: string, userId: string)
 
     return true;
   } catch (error) {
-    console.error('Error deleting Quran reading history:', error);
     return false;
   }
 };
@@ -441,7 +428,6 @@ export const getReadingHistoryByDateRange = async (
 
     return [];
   } catch (error) {
-    console.error('Error fetching reading history by date range:', error);
     return [];
   }
 };

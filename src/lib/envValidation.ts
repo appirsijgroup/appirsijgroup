@@ -72,7 +72,6 @@ function validateEnv(): void {
     );
   }
 
-  console.log('✅ Environment variables validated successfully');
 }
 
 // Run validation immediately when this module is imported (server-side only)
@@ -92,7 +91,6 @@ export function getEnvVar(key: EnvVariable): string | undefined {
   if (!value) {
     // Only warn in development, fail silently in production for client-side
     if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-      console.warn(`⚠️ Environment variable ${key} is not defined. This may cause issues in client-side code.`);
     }
     return undefined;
   }

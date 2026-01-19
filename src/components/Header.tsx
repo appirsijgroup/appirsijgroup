@@ -1,6 +1,5 @@
 
 
-
 import React from 'react';
 import { MenuIcon, XIcon, BellIcon } from './Icons';
 import type { Employee } from '../types';

@@ -16,7 +16,6 @@ export const getEmployeeTodos = async (employeeId: string): Promise<ToDoItem[]> 
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('❌ Error getting employee todos:', error);
             // Return empty array for graceful degradation
             return [];
         }
@@ -34,7 +33,6 @@ export const getEmployeeTodos = async (employeeId: string): Promise<ToDoItem[]> 
             completionNotes: null // Not stored in new table
         }));
     } catch (err) {
-        console.error('❌ Unexpected error in getEmployeeTodos:', err);
         return [];
     }
 };
@@ -45,7 +43,6 @@ export const addEmployeeTodo = async (
     todo: Omit<ToDoItem, 'id'>
 ): Promise<ToDoItem | null> => {
     try {
-        console.log('📝 Adding employee todo:', { employeeId, todo });
 
         const { data, error } = await supabase
             .from('employee_todos')
@@ -64,11 +61,9 @@ export const addEmployeeTodo = async (
             .single();
 
         if (error) {
-            console.error('❌ Error adding employee todo:', error);
             throw error;
         }
 
-        console.log('✅ Employee todo added successfully:', data);
         return {
             id: data.id,
             title: data.title,
@@ -82,7 +77,6 @@ export const addEmployeeTodo = async (
             priority: data.priority
         };
     } catch (err) {
-        console.error('❌ Unexpected error in addEmployeeTodo:', err);
         throw err;
     }
 };
@@ -93,7 +87,6 @@ export const updateEmployeeTodo = async (
     updates: Partial<Omit<ToDoItem, 'id' | 'createdAt'>>
 ): Promise<ToDoItem | null> => {
     try {
-        console.log('📝 Updating employee todo:', { id, updates });
 
         // Transform app format to database format
         const dbUpdates: any = {
@@ -120,11 +113,9 @@ export const updateEmployeeTodo = async (
             .single();
 
         if (error) {
-            console.error('❌ Error updating employee todo:', error);
             throw error;
         }
 
-        console.log('✅ Employee todo updated successfully:', data);
         return {
             id: data.id,
             title: data.title,
@@ -138,7 +129,6 @@ export const updateEmployeeTodo = async (
             priority: data.priority
         };
     } catch (err) {
-        console.error('❌ Unexpected error in updateEmployeeTodo:', err);
         throw err;
     }
 };
@@ -146,7 +136,6 @@ export const updateEmployeeTodo = async (
 // Delete a todo
 export const deleteEmployeeTodo = async (id: string): Promise<boolean> => {
     try {
-        console.log('🗑️ Deleting employee todo:', id);
 
         const { error } = await supabase
             .from('employee_todos')
@@ -154,14 +143,11 @@ export const deleteEmployeeTodo = async (id: string): Promise<boolean> => {
             .eq('id', id);
 
         if (error) {
-            console.error('❌ Error deleting employee todo:', error);
             throw error;
         }
 
-        console.log('✅ Employee todo deleted successfully');
         return true;
     } catch (err) {
-        console.error('❌ Unexpected error in deleteEmployeeTodo:', err);
         throw err;
     }
 };
@@ -172,7 +158,6 @@ export const bulkUpdateEmployeeTodos = async (
     todos: ToDoItem[]
 ): Promise<ToDoItem[]> => {
     try {
-        console.log('📝 Bulk updating employee todos:', { employeeId, count: todos.length });
 
         // Delete all existing todos for this employee
         const { error: deleteError } = await supabase
@@ -181,7 +166,6 @@ export const bulkUpdateEmployeeTodos = async (
             .eq('employee_id', employeeId);
 
         if (deleteError) {
-            console.error('❌ Error deleting old todos:', deleteError);
             throw deleteError;
         }
 
@@ -204,7 +188,6 @@ export const bulkUpdateEmployeeTodos = async (
             .select();
 
         if (error) {
-            console.error('❌ Error inserting new todos:', error);
             throw error;
         }
 
@@ -222,10 +205,8 @@ export const bulkUpdateEmployeeTodos = async (
             priority: item.priority
         }));
 
-        console.log('✅ Bulk employee todos updated successfully:', transformedTodos.length);
         return transformedTodos;
     } catch (err) {
-        console.error('❌ Unexpected error in bulkUpdateEmployeeTodos:', err);
         throw err;
     }
 };

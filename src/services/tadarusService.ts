@@ -11,7 +11,6 @@ import type { TadarusSession, TadarusRequest } from '../types';
 // Get all tadarus sessions
 export const getAllTadarusSessions = async (): Promise<TadarusSession[]> => {
     try {
-        console.log('📖 Fetching all tadarus sessions from Supabase...');
 
         const { data, error } = await supabase
             .from('tadarus_sessions')
@@ -20,21 +19,13 @@ export const getAllTadarusSessions = async (): Promise<TadarusSession[]> => {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('❌ Supabase error fetching tadarus sessions:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
         if (!data || data.length === 0) {
-            console.log('ℹ️ No tadarus sessions found in Supabase');
             return [];
         }
 
-        console.log(`✅ Found ${data.length} tadarus sessions`);
 
         // Convert snake_case to camelCase
         return data.map((session: any) => ({
@@ -54,7 +45,6 @@ export const getAllTadarusSessions = async (): Promise<TadarusSession[]> => {
             createdAt: session.created_at
         }));
     } catch (error) {
-        console.error('❌ Error in getAllTadarusSessions:', error);
         throw error;
     }
 };
@@ -68,7 +58,6 @@ export const getTadarusSessionsForMentor = async (mentorId: string): Promise<Tad
         .order('date', { ascending: false });
 
     if (error) {
-        console.error('Error fetching tadarus sessions for mentor:', error);
         throw error;
     }
 
@@ -95,7 +84,6 @@ export const createTadarusSession = async (
     session: Omit<TadarusSession, 'id' | 'createdAt'>
 ): Promise<TadarusSession> => {
     try {
-        console.log('📖 Creating tadarus session with data:', session);
 
         // Convert camelCase to snake_case for Supabase
         const dbSession = {
@@ -114,7 +102,6 @@ export const createTadarusSession = async (
             created_at: session.createdAt || Date.now()
         };
 
-        console.log('📖 Sending to Supabase:', dbSession);
 
         const { data, error } = await supabase
             .from('tadarus_sessions')
@@ -123,13 +110,6 @@ export const createTadarusSession = async (
             .single() as any;
 
         if (error) {
-            console.error('❌ Supabase error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
@@ -137,7 +117,6 @@ export const createTadarusSession = async (
             throw new Error('No data returned from Supabase after insert');
         }
 
-        console.log('✅ Tadarus session created successfully in Supabase:', data);
 
         // Convert back to camelCase
         return {
@@ -157,7 +136,6 @@ export const createTadarusSession = async (
             createdAt: data.created_at
         };
     } catch (error) {
-        console.error('❌ Error in createTadarusSession:', error);
         throw error;
     }
 };
@@ -187,7 +165,6 @@ export const updateTadarusSession = async (
         .eq('id', sessionId);
 
     if (error) {
-        console.error('Error updating tadarus session:', error);
         throw error;
     }
 };
@@ -195,7 +172,6 @@ export const updateTadarusSession = async (
 // Delete tadarus session
 export const deleteTadarusSession = async (sessionId: string): Promise<void> => {
     try {
-        console.log('🗑️ Attempting to delete tadarus session:', sessionId);
 
         const { data, error } = await supabase
             .from('tadarus_sessions')
@@ -204,19 +180,10 @@ export const deleteTadarusSession = async (sessionId: string): Promise<void> => 
             .select();
 
         if (error) {
-            console.error('❌ Supabase delete error:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
-        console.log('✅ Tadarus session deleted. Deleted rows:', data);
     } catch (error) {
-        console.error('❌ Error in deleteTadarusSession:', error);
         throw error;
     }
 };
@@ -226,7 +193,6 @@ export const deleteTadarusSession = async (sessionId: string): Promise<void> => 
 // Get all tadarus requests
 export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
     try {
-        console.log('📨 Fetching all tadarus requests from Supabase...');
 
         const { data, error } = await supabase
             .from('tadarus_requests')
@@ -234,21 +200,13 @@ export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
             .order('requested_at', { ascending: false });
 
         if (error) {
-            console.error('❌ Supabase error fetching tadarus requests:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
         if (!data || data.length === 0) {
-            console.log('ℹ️ No tadarus requests found in Supabase');
             return [];
         }
 
-        console.log(`✅ Found ${data.length} tadarus requests`);
 
         // Convert snake_case to camelCase
         return data.map((request: any) => ({
@@ -263,7 +221,6 @@ export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
             reviewedAt: request.reviewed_at
         }));
     } catch (error) {
-        console.error('❌ Error in getAllTadarusRequests:', error);
         throw error;
     }
 };
@@ -277,7 +234,6 @@ export const getTadarusRequestsForMentor = async (mentorId: string): Promise<Tad
         .order('requested_at', { ascending: false });
 
     if (error) {
-        console.error('Error fetching tadarus requests for mentor:', error);
         throw error;
     }
 
@@ -299,7 +255,6 @@ export const createTadarusRequest = async (
     request: Omit<TadarusRequest, 'id'>
 ): Promise<TadarusRequest> => {
     try {
-        console.log('📨 Creating tadarus request with data:', request);
 
         // Convert camelCase to snake_case for Supabase
         const dbRequest = {
@@ -312,7 +267,6 @@ export const createTadarusRequest = async (
             status: request.status || 'pending'
         };
 
-        console.log('📨 Sending to Supabase:', dbRequest);
 
         const { data, error } = await supabase
             .from('tadarus_requests')
@@ -321,13 +275,6 @@ export const createTadarusRequest = async (
             .single() as any;
 
         if (error) {
-            console.error('❌ Supabase error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
@@ -335,7 +282,6 @@ export const createTadarusRequest = async (
             throw new Error('No data returned from Supabase after insert');
         }
 
-        console.log('✅ Tadarus request created successfully in Supabase:', data);
 
         // Convert back to camelCase
         return {
@@ -350,7 +296,6 @@ export const createTadarusRequest = async (
             reviewedAt: data.reviewed_at
         };
     } catch (error) {
-        console.error('❌ Error in createTadarusRequest:', error);
         throw error;
     }
 };
@@ -371,7 +316,6 @@ export const updateTadarusRequest = async (
         .eq('id', requestId);
 
     if (error) {
-        console.error('Error updating tadarus request:', error);
         throw error;
     }
 };
@@ -379,7 +323,6 @@ export const updateTadarusRequest = async (
 // Delete tadarus request
 export const deleteTadarusRequest = async (requestId: string): Promise<void> => {
     try {
-        console.log('🗑️ Attempting to delete tadarus request:', requestId);
 
         const { data, error } = await supabase
             .from('tadarus_requests')
@@ -388,19 +331,10 @@ export const deleteTadarusRequest = async (requestId: string): Promise<void> => 
             .select();
 
         if (error) {
-            console.error('❌ Supabase delete error:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
-        console.log('✅ Tadarus request deleted. Deleted rows:', data);
     } catch (error) {
-        console.error('❌ Error in deleteTadarusRequest:', error);
         throw error;
     }
 };

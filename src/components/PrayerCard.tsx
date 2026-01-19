@@ -112,5 +112,4 @@ export const PrayerCardSkeleton: React.FC = () => {
   );
 };
 
-
 export default PrayerCard;

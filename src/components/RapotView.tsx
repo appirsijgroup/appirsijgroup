@@ -68,16 +68,14 @@ const generateTranscriptPdf = (
 
     // 1. Header with LOGO logic
     if (logoBase64) {
-        try {
-            const logoSize = 20;
-            const logoY = headerTopMargin - 5; // Position logo higher
-            const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
-            doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
-            logoBottomY = logoY + logoSize;
+        const logoSize = 20;
+        const logoY = headerTopMargin - 5; // Position logo higher
+        const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
+        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+        logoBottomY = logoY + logoSize;
 
-            const textStartX = logoX + logoSize + 10;
-            headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
-        } catch (e) { console.error("Error adding logo to transcript PDF:", e); }
+        const textStartX = logoX + logoSize + 10;
+        headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
     }
 
     const hospitalNameY = headerTopMargin + 5;
@@ -210,7 +208,6 @@ const generateTranscriptPdf = (
         const imgWidth = 40, imgHeight = 20;
         const x = rightX - (imgWidth / 2);
         const y = currentY - 25;
-        try { doc.addImage(employee.signature, 'PNG', x, y, imgWidth, imgHeight); } catch (e) { console.error("Error adding signature image to PDF:", e); }
     }
 
     // Names
@@ -268,16 +265,14 @@ const generateChecklistPdf = (
     let textBlockBottomY = headerTopMargin;
 
     if (logoBase64) {
-        try {
-            const logoSize = 20;
-            const logoY = headerTopMargin - 5; // Position logo higher
-            const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
-            doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
-            logoBottomY = logoY + logoSize;
+        const logoSize = 20;
+        const logoY = headerTopMargin - 5; // Position logo higher
+        const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
+        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+        logoBottomY = logoY + logoSize;
 
-            const textStartX = logoX + logoSize + 10;
-            headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
-        } catch(e) { console.error("Error adding logo to checklist PDF:", e); }
+        const textStartX = logoX + logoSize + 10;
+        headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
     }
 
     const hospitalNameY = headerTopMargin + 5;
@@ -429,7 +424,6 @@ const generateChecklistPdf = (
             const imgWidth = 40, imgHeight = 20;
             const x = signatureXPositions[index] - (imgWidth / 2);
             const y = yPos - 20;
-             try { doc.addImage(signatures[index] as string, 'PNG', x, y, imgWidth, imgHeight); } catch(e) { console.error("Error adding signature image", e); }
         }
 
         doc.setFont('helvetica', 'bold');
@@ -453,7 +447,6 @@ interface CeklisMutabaahViewProps {
     allUsersData: Record<string, { employee: Employee; [key: string]: Record<string, any>; }>;
     onBack?: () => void;
 }
-
 
 const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack }) => {
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);

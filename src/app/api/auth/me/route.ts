@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('❌ Supabase environment variables not configured')
     return NextResponse.json(
       { error: 'Server configuration error' },
       { status: 500 }
@@ -65,7 +64,6 @@ export async function GET(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
-      console.log('🔍 /api/auth/me - No valid session found')
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -74,7 +72,6 @@ export async function GET(request: NextRequest) {
 
     const userId = session.userId
 
-    console.log('🔍 /api/auth/me - userId:', userId)
 
     // Ambil data employee lengkap berdasarkan id
     const { data: employee, error: employeeError, status } = await supabase
@@ -84,7 +81,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (employeeError || !employee) {
-      console.error('❌ Employee not found:', employeeError?.message)
       return NextResponse.json(
         { error: 'User not found', details: employeeError?.message },
         { status: 404 }
@@ -130,10 +126,6 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Log warnings if any (non-blocking)
-    if (activitiesError && activitiesError.code !== 'PGRST116') console.log('⚠️ Warning: Could not fetch monthly activities:', activitiesError.message)
-    if (readingError && readingError.code !== 'PGRST116') console.log('⚠️ Warning: Could not fetch reading history:', readingError.message)
-    if (quranError && quranError.code !== 'PGRST116') console.log('⚠️ Warning: Could not fetch quran reading history:', quranError.message)
-    if (todosError && todosError.code !== 'PGRST116') console.log('⚠️ Warning: Could not fetch todos:', todosError.message)
 
     // 5. Convert format data dari tabel terpisah ke format camelCase seperti di Employee type
     const convertedReadingHistory = (readingHistoryData || []).map((item: any) => ({
@@ -178,19 +170,10 @@ export async function GET(request: NextRequest) {
     };
 
     // 🔥 DEBUG: Log hasil akhir SEBELUM return
-    console.log('📦 /api/auth/me - Final employee data being returned:', {
-      id: finalEmployeeData.id,
-      name: finalEmployeeData.name,
-      monthlyActivitiesKeys: Object.keys(finalEmployeeData.monthlyActivities || {}).length,
-      readingHistoryCount: finalEmployeeData.readingHistory?.length || 0,
-      quranReadingHistoryCount: finalEmployeeData.quranReadingHistory?.length || 0,
-      todoListCount: finalEmployeeData.todoList?.length || 0,
-    })
 
     return NextResponse.json({ employee: finalEmployeeData })
 
   } catch (error) {
-    console.error('Error /api/auth/me:', error)
     return NextResponse.json(
       { error: 'Failed to get user data', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

@@ -15,7 +15,6 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
     .eq('employee_id', employeeId);
 
   if (error) {
-    console.error('Error fetching attendance:', error);
     throw error;
   }
 
@@ -35,7 +34,6 @@ export const getAllAttendanceRecords = async (): Promise<Record<string, Record<s
     .select('*');
 
   if (error) {
-    console.error('Error fetching all attendance:', error);
     throw error;
   }
 
@@ -61,7 +59,6 @@ export const submitAttendance = async (
   location?: { latitude: number; longitude: number }
 ): Promise<AttendanceRecord> => {
   try {
-    if (process.env.NODE_ENV === "development") console.log('📤 Submitting attendance to Supabase:', { employeeId, entityId, status, reason, isLateEntry });
 
     // Check if Supabase is configured
     if (!supabase) {
@@ -80,7 +77,6 @@ export const submitAttendance = async (
       location: location ? JSON.stringify(location) : null
     };
 
-    if (process.env.NODE_ENV === "development") console.log('📦 Record to upsert:', recordToUpsert);
 
     const { data, error } = await (supabase
       .from('attendance_records') as any)
@@ -90,26 +86,16 @@ export const submitAttendance = async (
 
     if (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error('❌ Supabase upsert error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
       }
       throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
     }
 
     if (!data) {
-      if (process.env.NODE_ENV === "development") console.error('❌ No data returned from Supabase');
       throw new Error('No data returned from Supabase after upsert');
     }
 
-    if (process.env.NODE_ENV === "development") console.log('✅ Attendance submitted successfully:', data);
     return data;
   } catch (err: any) {
-    console.error('❌ Error in submitAttendance:', err);
     throw err;
   }
 };
@@ -123,7 +109,6 @@ export const deleteAttendance = async (employeeId: string, entityId: string): Pr
     .eq('entity_id', entityId);
 
   if (error) {
-    console.error('Error deleting attendance:', error);
     throw error;
   }
 };
@@ -145,7 +130,6 @@ export const batchUpdateAttendance = async (
     .select();
 
   if (error) {
-    console.error('Error batch updating attendance:', error);
     throw error;
   }
 

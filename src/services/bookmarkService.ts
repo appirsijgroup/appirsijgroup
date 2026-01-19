@@ -40,7 +40,6 @@ export const getUserBookmarks = async (userId: string): Promise<Bookmark[]> => {
       ayahText: item.ayah_text || ''
     }));
   } catch (error) {
-    console.error('Error fetching bookmarks:', error);
     return [];
   }
 };
@@ -64,12 +63,10 @@ export const isAyahBookmarked = async (
 
     if (error && error.code !== 'PGRST116') {
       // PGRST116 = not found, which is ok
-      console.error('Error checking bookmark:', error);
     }
 
     return !!data;
   } catch (error) {
-    console.error('Error checking bookmark:', error);
     return false;
   }
 };
@@ -109,7 +106,6 @@ export const addBookmark = async (bookmark: Omit<Bookmark, 'id' | 'createdAt' | 
       ayahText: typedData.ayah_text || ''
     };
   } catch (error) {
-    console.error('Error adding bookmark:', error);
     return null;
   }
 };
@@ -134,7 +130,6 @@ export const removeBookmark = async (
 
     return true;
   } catch (error) {
-    console.error('Error removing bookmark:', error);
     return false;
   }
 };
@@ -189,7 +184,6 @@ export const updateBookmarkNotes = async (
 
     return true;
   } catch (error) {
-    console.error('Error updating bookmark notes:', error);
     return false;
   }
 };
@@ -209,7 +203,6 @@ export const deleteBookmark = async (bookmarkId: string, userId: string): Promis
 
     return true;
   } catch (error) {
-    console.error('Error deleting bookmark:', error);
     return false;
   }
 };

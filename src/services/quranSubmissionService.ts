@@ -26,7 +26,6 @@ export const submitQuranReading = async (
   submissionDate: string
 ): Promise<QuranReadingSubmission | null> => {
   try {
-    console.log("📖 Submitting Quran reading to employee_quran_reading_history");
 
     const { data, error } = await supabase
       .from('employee_quran_reading_history')
@@ -42,11 +41,9 @@ export const submitQuranReading = async (
       .single();
 
     if (error) {
-      console.error('❌ Supabase insert error:', error);
       throw error;
     }
 
-    console.log('✅ Quran reading submission successful:', data);
 
     return {
       id: data.id,
@@ -60,7 +57,6 @@ export const submitQuranReading = async (
     };
 
   } catch (error) {
-    console.error('❌ Error submitting Quran reading:', error);
     throw error;
   }
 };
@@ -91,7 +87,6 @@ export const getQuranSubmissions = async (userId: string): Promise<QuranReadingS
       createdAt: item.created_at
     }));
   } catch (error) {
-    console.error('Error fetching Quran submissions:', error);
     return [];
   }
 };
@@ -111,7 +106,6 @@ export const deleteQuranSubmission = async (submissionId: string, userId: string
 
     return true;
   } catch (error) {
-    console.error('Error deleting Quran submission:', error);
     return false;
   }
 };
@@ -146,7 +140,6 @@ export const getQuranSubmissionsByDateRange = async (
       createdAt: item.created_at
     }));
   } catch (error) {
-    console.error('Error fetching Quran submissions by date range:', error);
     return [];
   }
 };
@@ -168,7 +161,6 @@ export const getTotalAyahsRead = async (
 
     return totalAyahs;
   } catch (error) {
-    console.error('Error calculating total ayahs read:', error);
     return 0;
   }
 };

@@ -1,7 +1,5 @@
 
 
-
-
 import { create } from 'zustand';
 import React from 'react';
 import { type View, type Toast, type Notification, Ayah, SurahDetail, DailyPrayer, Employee, Attendance, Hospital } from '@/types';
@@ -75,16 +73,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                         isHydrated: true
                     });
 
-                    console.log('✅ Logged-in employee loaded from session:', employee.name);
 
                     // 🚀 OPTIMIZATION: Load all employees in background after logged-in user is ready
                     // This prevents blocking the initial render but ensures data is ready for navigation
                     setTimeout(async () => {
                         try {
-                            console.log('🔄 Loading all employees in background...');
                             const { getAllEmployees } = await import('@/services/employeeService');
                             const allEmployees = await getAllEmployees();
-                            console.log(`✅ Loaded ${allEmployees.length} employees in background`);
 
                             // Update allUsersData with all employees
                             set((state) => {
@@ -101,7 +96,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                                 return { allUsersData: newData };
                             });
                         } catch (error) {
-                            console.error('⚠️ Error loading all employees in background:', error);
                             // Don't throw - background load failure is OK, page will handle it
                         }
                     }, 100); // Small delay to not block initial render
@@ -112,7 +106,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 }
             } else {
                 // No valid session - not logged in
-                console.log('❌ No valid session - not logged in');
                 localStorage.removeItem('loggedInUserId');
                 set({ loggedInEmployee: null, isHydrated: true });
                 // Redirect to login page
@@ -121,7 +114,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 }
             }
         } catch (error) {
-            console.error('❌ Error loading employee from session:', error);
             // On error, clear state and mark as hydrated
             localStorage.removeItem('loggedInUserId');
             set({ loggedInEmployee: null, isHydrated: true });
@@ -176,9 +168,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             });
 
             set({ hospitalsData: hospitalsRecord });
-            console.log(`✅ Loaded ${hospitals.length} hospitals`);
         } catch (error) {
-            console.error('❌ Error loading hospitals:', error);
         }
     },
 
@@ -186,25 +176,16 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     loadAllEmployees: async () => {
         // 🔥 NEW: Prevent concurrent loading
         if (get().isLoadingEmployees) {
-            console.log('⚠️ Already loading employees, skipping...');
             return;
         }
 
         try {
             set({ isLoadingEmployees: true });
-            console.log('🔄 Starting loadAllEmployees from store...');
             const { getAllEmployees } = await import('@/services/employeeService');
             const allEmployees = await getAllEmployees();
-            console.log(`✅ Loaded ${allEmployees.length} employees from API`);
 
             // 🔥 DEBUG: Log sample data
             if (process.env.NODE_ENV === "development") {
-                console.log('📋 Sample employees:', allEmployees.slice(0, 3).map(e => ({
-                    id: e.id,
-                    name: e.name,
-                    email: e.email,
-                    isActive: e.isActive
-                })))
             }
 
             // Load attendance records for all employees
@@ -228,7 +209,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                         }
                     });
                 } catch (error) {
-                    if (process.env.NODE_ENV === "development") console.error(`⚠️ Error loading attendance for ${emp.id}:`, error);
                     attendanceData = {};
                 }
 
@@ -241,9 +221,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
             // Update allUsersData
             set({ allUsersData: newData, isLoadingEmployees: false });
-            console.log('✅ All employees data loaded successfully');
         } catch (error) {
-            console.error('❌ Error loading all employees:', error);
             set({ isLoadingEmployees: false }); // 🔥 NEW: Reset flag on error
             throw error;
         }
@@ -271,7 +249,6 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         });
     },
 }));
-
 
 // --- UIStore ---
 

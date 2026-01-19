@@ -3,7 +3,6 @@ import { type Activity, type Attendance, type Employee, type AudienceRules, type
 import { ZoomIcon, YouTubeIcon, CheckIcon, XIcon, PencilIcon, ClockIcon, UserGroupIcon } from './Icons';
 import { getTodayLocalDateString, getCurrentTime } from '../utils/dateUtils';
 
-
 interface ActivityTableProps {
   activities: Activity[];
   teamAttendanceSessions: TeamAttendanceSession[];
@@ -116,7 +115,6 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
         });
 
     }, [activities, teamAttendanceSessions, loggedInEmployee]);
-
 
     if (unifiedSchedule.length === 0) {
         return (

@@ -34,7 +34,6 @@ export function proxy(request: NextRequest) {
   if (publicRoutes.includes(pathname)) {
     // Block test routes in production
     if (testRoutes.includes(pathname) && process.env.NODE_ENV === 'production') {
-      console.warn(`🚫 Test route blocked in production: ${pathname}`);
       return NextResponse.redirect(new URL('/login', request.url));
     }
     return NextResponse.next();
@@ -61,7 +60,6 @@ export function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     // Block any route containing test, debug, or migrate
     if (pathname.includes('/test') || pathname.includes('/migrate')) {
-      console.warn(`🚫 Test/debug route blocked in production: ${pathname}`);
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }

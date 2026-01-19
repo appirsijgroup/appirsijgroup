@@ -5,7 +5,6 @@ import { UserIcon, AcademicCapIcon, SendIcon, TrashIcon, XIcon, MicrophoneIcon }
 import { DAILY_ACTIVITIES } from './monthlyActivities';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
-
 interface MessageRendererProps {
     text: string;
     navLinkMap: Record<string, View>;
@@ -122,7 +121,6 @@ const VirtualMentor: React.FC<VirtualMentorProps> = ({ employee, upcomingActivit
             };
             
             recognition.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
                 let errorMessage = 'Terjadi kesalahan pada pengenalan suara.';
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     errorMessage = 'Izin mikrofon ditolak. Aktifkan di pengaturan browser Anda.';
@@ -156,7 +154,6 @@ const VirtualMentor: React.FC<VirtualMentorProps> = ({ employee, upcomingActivit
                     recognitionRef.current.start();
                     setIsListening(true);
                 } catch (e) {
-                    console.error("Could not start speech recognition:", e);
                     addToast("Gagal memulai pengenalan suara. Periksa izin mikrofon.", 'error');
                 }
             } else {
@@ -164,7 +161,6 @@ const VirtualMentor: React.FC<VirtualMentorProps> = ({ employee, upcomingActivit
             }
         }
     };
-
 
     const systemInstruction = useMemo(() => {
         const today = new Date();
@@ -335,7 +331,6 @@ Ini adalah interaksi **multi-langkah**.
 4.  **PENTING**: Setelah mengeluarkan perintah JSON, Anda juga harus memberikan respons teks konfirmasi yang ramah. Contoh: "Baik, sudah saya catat dalam riwayat bacaan Anda."
 5.  Fungsi yang menangani perintah ini akan secara otomatis mencentang aktivitas 'Membaca Al-Quran dan buku' di Lembar Mutaba'ah. Anda tidak perlu mengeluarkan perintah \`updateDailyActivity\` secara terpisah.
 
-
 --- KEMAMPUAN INTERAKTIF LAINNYA (RESPONS JSON) ---
 - **PENTING**: Jika pengguna meminta beberapa tindakan sekaligus (misalnya, mencentang beberapa aktivitas), Anda **WAJIB** menggunakan perintah \`batch\` yang berisi sebuah array dari perintah-perintah individual dalam satu blok JSON tunggal. Jangan pernah mengeluarkan beberapa objek JSON secara berurutan.
 
@@ -460,7 +455,6 @@ ${analyticsKnowledge}
                     }
                 }
             } catch (e) {
-                console.warn("Could not parse AI command from response", e);
             }
             
             if (command) {

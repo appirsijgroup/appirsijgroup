@@ -47,7 +47,6 @@ const RejectionModal: React.FC<{
     );
 };
 
-
 // Copied MenteeReportDetailView from MentorDashboard
 const MenteeReportDetailView: React.FC<{
     mentee: Employee;
@@ -139,7 +138,6 @@ const MenteeReportDetailView: React.FC<{
     );
 };
 
-
 // Approval tab button component
 interface ApprovalTabButtonProps {
     role: 'supervisor' | 'kaunit';
@@ -217,7 +215,6 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
         }
         return [];
     }, [weeklyReportSubmissions, loggedInEmployee.id, activeApprovalTab]);
-
 
     const availableYears = useMemo(() => {
         const years = new Set(submissionsForRole.map(s => s.monthKey.substring(0, 4)));

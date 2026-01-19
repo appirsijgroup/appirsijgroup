@@ -83,7 +83,6 @@ const AttendanceModal: React.FC = () => {
       }
       addToast(toastMessage, 'success');
     } catch (error) {
-      console.error('Error saving attendance to Supabase:', error);
       addToast('Gagal menyimpan presensi ke database. Silakan coba lagi.', 'error');
     }
   };

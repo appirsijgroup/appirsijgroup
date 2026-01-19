@@ -56,10 +56,8 @@ class Logger {
         }
         break;
       case 'WARN':
-        console.warn(formattedMessage, ...meta);
         break;
       case 'ERROR':
-        console.error(formattedMessage, ...meta);
         break;
     }
   }

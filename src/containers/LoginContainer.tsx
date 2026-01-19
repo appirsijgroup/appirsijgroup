@@ -17,7 +17,6 @@ const LoginContainer = () => {
         setLoadingMessage('Memproses login...');
 
         try {
-            console.log('🔑 Login:', identifier);
 
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -35,7 +34,6 @@ const LoginContainer = () => {
             // Simpan ke localStorage untuk client-side
             localStorage.setItem('loggedInUserId', data.employee.id);
 
-            console.log('✅ Success:', data.employee.name);
 
             // 🔥 ENHANCEMENT: Show branded loading before redirect
             setLoadingMessage(`Selamat datang, ${data.employee.name}!`);
@@ -50,7 +48,6 @@ const LoginContainer = () => {
             return { employee: data.employee };
 
         } catch (err) {
-            console.error('❌ Error:', err);
             setIsLoading(false);
             return { employee: null, error: 'Terjadi kesalahan' };
         }

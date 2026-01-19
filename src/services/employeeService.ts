@@ -64,7 +64,6 @@ export const getAllEmployees = async (): Promise<Employee[]> => {
 
 // Get employee by ID
 export const getEmployeeById = async (id: string): Promise<Employee | null> => {
-    console.log('🔍 Fetching employee from Supabase:', id);
 
     const { data, error } = await supabase
         .from('employees')
@@ -112,34 +111,17 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
 
     if (error) {
         if (error.code === 'PGRST116') {
-            console.log('⚠️ Employee not found in Supabase:', id);
             return null; // Not found
         }
-        console.error('❌ Error fetching employee from Supabase:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            fullError: error
-        });
         throw new Error(error.message || 'Failed to fetch employee');
     }
 
     if (!data) {
-        console.log('⚠️ No data returned for employee:', id);
         return null;
     }
 
     const employeeData = data as any; // Explicitly cast to any or a more specific type if known
 
-    console.log('✅ Successfully fetched employee from Supabase:', {
-        id: employeeData.id,
-        name: employeeData.name,
-        monthlyActivities: employeeData.monthly_activities ? 'present' : 'not present',
-        readingHistory: employeeData.reading_history ? 'present' : 'not present',
-        quranReadingHistory: employeeData.quran_reading_history ? 'present' : 'not present',
-        todoList: employeeData.todo_list ? 'present' : 'not present'
-    });
 
     // Convert snake_case to camelCase
     return convertToCamelCase(employeeData);
@@ -255,19 +237,6 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         gender: employee.gender,
     };
 
-    console.log('📤 Sending to Supabase:', {
-        id: dbEmployee.id,
-        name: dbEmployee.name,
-        email: dbEmployee.email,
-        role: dbEmployee.role,
-        gender: dbEmployee.gender,
-        gender_type: typeof dbEmployee.gender,
-        unit: dbEmployee.unit,
-        bagian: dbEmployee.bagian,
-        profession_category: dbEmployee.profession_category,
-        profession: dbEmployee.profession,
-        hospital_id: dbEmployee.hospital_id
-    });
 
     const { data, error } = await (supabase
         .from('employees') as any)
@@ -276,17 +245,9 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         .single();
 
     if (error) {
-        console.error('❌ Supabase insert error:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            fullError: error
-        });
         throw error;
     }
 
-    console.log('✅ Successfully created employee in Supabase:', data);
     return convertToCamelCase(data);
 };
 
@@ -295,17 +256,6 @@ export const updateEmployee = async (
     id: string,
     updates: Partial<Omit<Employee, 'id'>>
 ): Promise<Employee> => {
-    console.log('🔄 Attempting to update employee in Supabase:', {
-        id,
-        updates: {
-            ...updates,
-            // ❌ Field-field ini TIDAK boleh dikirim ke tabel employees lagi!
-            monthlyActivities: updates.monthlyActivities ? 'IGNORED - use employee_monthly_activities table' : 'not present',
-            readingHistory: updates.readingHistory ? 'IGNORED - use employee_reading_history table' : 'not present',
-            quranReadingHistory: updates.quranReadingHistory ? 'IGNORED - use employee_quran_reading_history table' : 'not present',
-            todoList: updates.todoList ? 'IGNORED - use employee_todos table' : 'not present'
-        }
-    });
 
     // Convert camelCase to snake_case for database
     const dbUpdates: any = {};
@@ -356,21 +306,10 @@ export const updateEmployee = async (
     if (updates.profession !== undefined) dbUpdates.profession = updates.profession;
     if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
 
-    console.log('💾 Sending update to Supabase:', {
-        id,
-        dbUpdates: {
-            ...dbUpdates,
-            reading_history: dbUpdates.reading_history ? 'present' : 'not present',
-            quran_reading_history: dbUpdates.quran_reading_history ? 'present' : 'not present',
-            todo_list: dbUpdates.todo_list ? 'present' : 'not present'
-        }
-    });
 
     // 🔥 CRITICAL: monthly_activities should NEVER be sent to employees table
     // It should always go to employee_monthly_activities table via monthlyActivityService
     if ('monthlyActivities' in dbUpdates || 'monthly_activities' in dbUpdates) {
-        console.error('❌ ERROR: Attempted to save monthly_activities to employees table!');
-        console.error('⚠️ This should NEVER happen. Use monthlyActivityService instead.');
         // Remove it from dbUpdates to prevent saving to wrong table
         delete (dbUpdates as any).monthlyActivities;
         delete (dbUpdates as any).monthly_activities;
@@ -383,14 +322,12 @@ export const updateEmployee = async (
     if (sanitizedUpdates.reading_history !== undefined) {
         // Validate it's a proper array
         if (!Array.isArray(sanitizedUpdates.reading_history)) {
-            console.error('❌ Invalid reading_history:', sanitizedUpdates.reading_history);
             throw new Error('reading_history must be an array');
         }
         // Ensure it's JSON serializable
         try {
             JSON.stringify(sanitizedUpdates.reading_history);
         } catch (e) {
-            console.error('❌ reading_history is not JSON serializable:', e);
             throw new Error('reading_history contains non-serializable data');
         }
     }
@@ -398,7 +335,6 @@ export const updateEmployee = async (
     if (sanitizedUpdates.todo_list !== undefined) {
         // Validate it's a proper array
         if (!Array.isArray(sanitizedUpdates.todo_list)) {
-            console.error('❌ Invalid todo_list:', sanitizedUpdates.todo_list);
             throw new Error('todo_list must be an array');
         }
     }
@@ -406,7 +342,6 @@ export const updateEmployee = async (
     if (sanitizedUpdates.quran_reading_history !== undefined) {
         // Validate it's a proper array
         if (!Array.isArray(sanitizedUpdates.quran_reading_history)) {
-            console.error('❌ Invalid quran_reading_history:', sanitizedUpdates.quran_reading_history);
             throw new Error('quran_reading_history must be an array');
         }
     }
@@ -419,21 +354,12 @@ export const updateEmployee = async (
         .maybeSingle(); // Use maybeSingle() instead of single() to handle cases where no data is returned
 
     if (error) {
-        console.error('❌ Supabase update error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            originalError: error
-        });
         throw new Error(`Failed to update employee: ${error.message || 'Unknown error'} (Code: ${error.code || 'N/A'})`);
     }
 
-    console.log('✅ Supabase update successful, received data:', !!data);
 
     // If no data returned, fetch the updated employee to return
     if (!data) {
-        console.log('🔄 No data returned from update, fetching employee:', id);
         const { data: updatedData, error: fetchError } = await supabase
             .from('employees')
             .select('*')
@@ -441,20 +367,11 @@ export const updateEmployee = async (
             .single();
 
         if (fetchError) {
-            console.error('❌ Supabase fetch after update error:', {
-                message: fetchError.message,
-                code: fetchError.code,
-                details: fetchError.details,
-                hint: fetchError.hint,
-                error: fetchError
-            });
             throw new Error(`Failed to fetch updated employee: ${fetchError.message || 'Unknown error'}`);
         }
-        console.log('🔄 Retrieved updated employee data after update');
         return convertToCamelCase(updatedData);
     }
 
-    console.log('🔄 Returning updated employee data from update operation');
     return convertToCamelCase(data);
 };
 
@@ -672,7 +589,6 @@ export const syncEmployeeToSupabase = async (
             if (historyError) throw historyError;
         }
     } catch (error) {
-        console.error(`Error syncing employee ${employeeId} to Supabase:`, error);
         throw error;
     }
 };

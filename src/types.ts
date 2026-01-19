@@ -327,7 +327,6 @@ export interface DocumentSubmission {
   reviewedAt?: number;
 }
 
-
 // Gamifikasi
 export interface Achievement {
   id: string;
@@ -440,7 +439,6 @@ export interface MyDashboardViewProps {
   // Assignment Letter
   onOpenAssignmentLetter?: (notification: any) => void;
 }
-
 
 export interface TadarusSession {
   id: string;

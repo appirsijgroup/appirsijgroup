@@ -10,14 +10,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
   if (process.env.NODE_ENV === "development") {
-    console.error('❌ MISSING SUPABASE CONFIGURATION:');
-    console.error('   - NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
-    console.error('   - NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
-    console.error('\n⚠️ Please create .env.local file with your Supabase credentials:');
-    console.error('   NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url');
-    console.error('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key');
-    console.error('\n💡 JWT_SECRET is optional - auto-generated for development\n');
-    console.error('Then restart your dev server (Ctrl+C → npm run dev)\n');
   }
 }
 
@@ -30,7 +22,6 @@ export const supabase = createClient<Database>(supabaseUrl || '', supabaseAnonKe
 });
 
 if (supabaseUrl && supabaseAnonKey) {
-  if (process.env.NODE_ENV === "development") console.log('✅ Supabase client initialized');
 }
 
 // Check if Supabase is configured

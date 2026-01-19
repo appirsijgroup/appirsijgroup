@@ -30,28 +30,23 @@ export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
                 const loadPromises = [
                     // Announcements - needed for sidebar badge and admin dashboard
                     loadAnnouncements().catch(err => {
-                        if (process.env.NODE_ENV === "development") console.error('Failed to load announcements:', err);
                         // Don't throw - allow other data to load
                     }),
 
                     // Hospitals - needed for various features
                     loadHospitals().catch(err => {
-                        if (process.env.NODE_ENV === "development") console.error('Failed to load hospitals:', err);
                         // Don't throw - allow other data to load
                     }),
 
                     // All Employees - needed for Analytics page (accessible to all users)
                     loadAllEmployees().catch(err => {
-                        if (process.env.NODE_ENV === "development") console.error('Failed to load all employees:', err);
                         // Don't throw - allow other data to load
                     }),
                 ];
 
                 await Promise.allSettled(loadPromises);
 
-                if (process.env.NODE_ENV === "development") console.log('✅ Essential data loaded in background');
             } catch (err: any) {
-                if (process.env.NODE_ENV === "development") console.error('Error loading essential data:', err);
                 setError(err.message);
                 // Don't block UI - data will load when needed
             } finally {
@@ -82,7 +77,6 @@ export const useReloadData = () => {
             ]);
             return true;
         } catch (error) {
-            if (process.env.NODE_ENV === "development") console.error('Failed to reload data:', error);
             return false;
         }
     };

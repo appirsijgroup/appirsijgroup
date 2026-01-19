@@ -16,7 +16,6 @@ interface MenteeGuidanceViewProps {
     onCreateMissedPrayerRequest?: (data: Omit<MissedPrayerRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => void;
 }
 
-
 const RequestTadarusModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -200,7 +199,6 @@ const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, r
         </div>
     );
 };
-
 
 const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({ 
     employee, 

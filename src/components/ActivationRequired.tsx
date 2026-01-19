@@ -30,7 +30,6 @@ const ActivationRequired: React.FC<ActivationRequiredProps> = ({
             // Parent will update state and trigger re-render
             setIsActivating(false);
         } catch (error) {
-            console.error('Error activating month:', error);
             setIsActivating(false);
         }
     };

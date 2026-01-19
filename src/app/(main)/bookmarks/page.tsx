@@ -52,7 +52,6 @@ export default function BookmarksPage() {
                 notes,
             });
         } catch (error) {
-            console.error('Error toggling bookmark:', error);
             alert('Gagal menyimpan bookmark. Silakan coba lagi.');
         }
     };
@@ -69,7 +68,6 @@ export default function BookmarksPage() {
                 alert('Gagal menghapus bookmark. Silakan coba lagi.');
             }
         } catch (error) {
-            console.error('Error deleting bookmark:', error);
             alert('Terjadi kesalahan saat menghapus bookmark.');
         }
     };

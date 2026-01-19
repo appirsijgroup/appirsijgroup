@@ -52,7 +52,6 @@ export const useActivityStore = create<ActivityState>()(
                         )
                     }));
                 } catch (error) {
-                    console.error('❌ Error updating team attendance session:', error);
                     throw error;
                 }
             },
@@ -69,7 +68,6 @@ export const useActivityStore = create<ActivityState>()(
                         )
                     }));
                 } catch (error) {
-                    console.error('❌ Error updating team attendance session data:', error);
                     throw error;
                 }
             },
@@ -84,7 +82,6 @@ export const useActivityStore = create<ActivityState>()(
                         teamAttendanceSessions: state.teamAttendanceSessions.filter(sess => sess.id !== sessionId)
                     }));
                 } catch (error) {
-                    console.error('❌ Error deleting team attendance session:', error);
                     throw error;
                 }
             },
@@ -102,9 +99,7 @@ export const useActivityStore = create<ActivityState>()(
                         teamAttendanceError: null
                     });
 
-                    console.log(`✅ Loaded ${sessions.length} team attendance sessions from Supabase`);
                 } catch (error) {
-                    console.error('❌ Error loading team attendance sessions:', error);
                     set({
                         teamAttendanceError: error instanceof Error ? error.message : 'Failed to load sessions',
                         isLoadingTeamAttendance: false
@@ -133,13 +128,7 @@ export const useActivityStore = create<ActivityState>()(
                         activitiesError: null
                     });
 
-                    console.log(`✅ Loaded ${activities.length} activities from Supabase`);
                 } catch (error) {
-                    console.error('❌ Error loading activities:', {
-                        message: error instanceof Error ? error.message : 'Unknown error',
-                        error: error,
-                        stack: error instanceof Error ? error.stack : undefined
-                    });
                     set({
                         activitiesError: error instanceof Error ? error.message : 'Failed to load activities',
                         isLoadingActivities: false

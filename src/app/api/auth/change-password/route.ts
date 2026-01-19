@@ -123,7 +123,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Change password API error:', error);
     }
     return NextResponse.json(
       { error: 'Terjadi kesalahan server. Silakan coba lagi.' },

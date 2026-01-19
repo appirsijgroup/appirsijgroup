@@ -72,7 +72,6 @@ export const getAllActivities = async (): Promise<Activity[]> => {
         if (error) throw error;
         return data || [];
     } catch (error) {
-        console.error('Error fetching activities:', error);
         throw error;
     }
 };
@@ -96,7 +95,6 @@ export const getActivitiesByDateRange = async (
         if (error) throw error;
         return data || [];
     } catch (error) {
-        console.error('Error fetching activities by date range:', error);
         throw error;
     }
 };
@@ -163,7 +161,6 @@ export const getActivitiesForEmployee = async (
 
         return filteredActivities;
     } catch (error) {
-        console.error('Error fetching activities for employee:', error);
         throw error;
     }
 };
@@ -224,7 +221,6 @@ export const createActivity = async (
     activity: Omit<Activity, 'id' | 'createdAt'>
 ): Promise<Activity> => {
     try {
-        console.log('📤 Creating activity in Supabase:', activity);
 
         // Prepare data for database (convert camelCase to snake_case)
         const dbData = {
@@ -244,7 +240,6 @@ export const createActivity = async (
             audience_rules: activity.audienceRules || null,
         };
 
-        console.log('📦 Data to insert:', dbData);
 
         const { data, error } = await supabase
             .from('activities')
@@ -253,14 +248,11 @@ export const createActivity = async (
             .single();
 
         if (error) {
-            console.error('❌ Supabase error:', error);
             throw error;
         }
 
-        console.log('✅ Activity created successfully:', data);
         return data;
     } catch (error) {
-        console.error('❌ Error creating activity:', error);
         throw error;
     }
 };
@@ -294,7 +286,6 @@ export const updateActivity = async (
         if (error) throw error;
         return data;
     } catch (error) {
-        console.error('Error updating activity:', error);
         throw error;
     }
 };
@@ -311,7 +302,6 @@ export const deleteActivity = async (id: string): Promise<void> => {
 
         if (error) throw error;
     } catch (error) {
-        console.error('Error deleting activity:', error);
         throw error;
     }
 };
@@ -350,7 +340,6 @@ export const getActivityAttendance = async (
             updatedAt: att.updated_at,
         }));
     } catch (error) {
-        console.error('Error fetching activity attendance:', error);
         throw error;
     }
 };
@@ -393,7 +382,6 @@ export const getEmployeeActivityAttendance = async (
             updatedAt: data.updated_at,
         };
     } catch (error) {
-        console.error('Error fetching employee activity attendance:', error);
         throw error;
     }
 };
@@ -440,7 +428,6 @@ export const getEmployeeScheduledAttendance = async (
             updatedAt: att.updated_at,
         }));
     } catch (error) {
-        console.error('Error fetching employee scheduled attendance:', error);
         throw error;
     }
 };
@@ -458,7 +445,6 @@ export const submitScheduledAttendance = async (
     reason?: string
 ): Promise<ActivityAttendance> => {
     try {
-        console.log('📤 Submitting attendance:', { activityId, employeeId, status, reason });
 
         // 1. Get activity info untuk integrasi dengan monthly activities
         const { data: activity, error: actError } = await supabase
@@ -468,11 +454,9 @@ export const submitScheduledAttendance = async (
             .single();
 
         if (actError) {
-            console.error('❌ Error fetching activity:', actError);
             throw actError;
         }
 
-        console.log('✅ Activity found:', activity);
 
         // 2. Cek apakah activity sudah selesai atau masih berlangsung
         const now = new Date();
@@ -490,7 +474,6 @@ export const submitScheduledAttendance = async (
         let attendanceData;
 
         if (existingAttendance) {
-            console.log('🔄 Updating existing attendance:', existingAttendance.id);
 
             // Update existing
             const { data, error } = await supabase
@@ -506,13 +489,11 @@ export const submitScheduledAttendance = async (
                 .single();
 
             if (error) {
-                console.error('❌ Error updating attendance:', error);
                 throw error;
             }
 
             attendanceData = data;
         } else {
-            console.log('➕ Inserting new attendance');
 
             // Insert new
             const { data, error } = await supabase
@@ -529,14 +510,12 @@ export const submitScheduledAttendance = async (
                 .single();
 
             if (error) {
-                console.error('❌ Error inserting attendance:', error);
                 throw error;
             }
 
             attendanceData = data;
         }
 
-        console.log('✅ Attendance saved:', attendanceData);
 
         // 4. Jika hadir, update monthly activities (integrasi dengan Lembar Mutaba'ah)
         if (status === 'hadir') {
@@ -558,7 +537,6 @@ export const submitScheduledAttendance = async (
             updatedAt: attendanceData.updated_at,
         };
     } catch (error) {
-        console.error('Error submitting scheduled attendance:', error);
         throw error;
     }
 };
@@ -620,9 +598,7 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
 
         if (upsertError) throw upsertError;
 
-        console.log(`✅ Updated monthly activities for ${employeeId}: ${monthKey} -> ${fieldName}`);
     } catch (error) {
-        console.error('Error updating monthly activities from scheduled activity:', error);
         // Don't throw - attendance should still be saved even if monthly activities update fails
     }
 };
@@ -632,7 +608,6 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
  * getScheduledActivitiesForEmployee = getActivitiesForEmployee
  */
 export const getScheduledActivitiesForEmployee = getActivitiesForEmployee;
-
 
 /**
  * Get attendance untuk semua scheduled activities untuk satu employee
@@ -661,7 +636,6 @@ export const getEmployeeActivitiesAttendance = async (
 
         return attendanceMap;
     } catch (error) {
-        console.error('Error fetching employee activities attendance:', error);
         throw error;
     }
 };

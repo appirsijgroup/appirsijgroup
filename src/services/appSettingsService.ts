@@ -22,13 +22,11 @@ export const getAppSetting = async (key: AppSettingsKey): Promise<string | null>
             .single();
 
         if (error) {
-            console.error('❌ Error fetching app setting:', error);
             return null;
         }
 
         return (data as any)?.value || null;
     } catch (error) {
-        console.error('❌ Error fetching app setting:', error);
         return null;
     }
 };
@@ -43,7 +41,6 @@ export const getAllSettings = async (): Promise<Record<string, string>> => {
             .select('key, value');
 
         if (error) {
-            console.error('❌ Error fetching app settings:', error);
             return {};
         }
 
@@ -54,7 +51,6 @@ export const getAllSettings = async (): Promise<Record<string, string>> => {
 
         return settings;
     } catch (error) {
-        console.error('❌ Error fetching app settings:', error);
         return {};
     }
 };
@@ -68,8 +64,6 @@ export const updateAppSetting = async (
     userId?: string
 ): Promise<{ success: boolean; error?: string }> => {
     try {
-        console.log('🔄 [AppSettingsService] Updating app setting:', key, '=', value);
-        console.log('👤 [AppSettingsService] User ID:', userId);
 
         // If userId not provided, try to get from Supabase Auth (fallback)
         let effectiveUserId = userId;
@@ -77,11 +71,9 @@ export const updateAppSetting = async (
         if (!effectiveUserId) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                console.error('❌ [AppSettingsService] User not authenticated');
                 return { success: false, error: 'User not authenticated' };
             }
             effectiveUserId = user.id;
-            console.log('👤 [AppSettingsService] Got user ID from auth:', effectiveUserId);
         }
 
         const { error, data } = await (supabase
@@ -91,15 +83,11 @@ export const updateAppSetting = async (
             .select();
 
         if (error) {
-            console.error('❌ [AppSettingsService] Error updating app setting:', error);
             return { success: false, error: error.message };
         }
 
-        console.log('✅ [AppSettingsService] App setting updated successfully:', key, '=', value);
-        console.log('📊 [AppSettingsService] Updated data:', data);
         return { success: true };
     } catch (error: any) {
-        console.error('❌ [AppSettingsService] Error updating app setting:', error);
         return { success: false, error: error?.message || 'Unknown error' };
     }
 };

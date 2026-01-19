@@ -19,9 +19,7 @@ export default function AktivitasBulananPage() {
         const loadSettings = async () => {
             try {
                 await loadFromSupabase();
-                console.log('✅ Loaded mutabaah locking mode from Supabase');
             } catch (error) {
-                console.error('❌ Error loading mutabaah locking mode:', error);
             }
         };
         loadSettings();
@@ -34,12 +32,10 @@ export default function AktivitasBulananPage() {
             const isEmpty = Object.keys(allUsersData).length === 0;
 
             if (isEmpty && !isLoadingEmployees) {
-                console.log('🔄 allUsersData is empty in aktivitas-bulanan, loading from Supabase...');
                 setIsLoadingEmployees(true);
 
                 try {
                     const employees = await getAllEmployees();
-                    console.log(`✅ Loaded ${employees.length} employees in aktivitas-bulanan`);
 
                     // Load attendance data for all employees
                     const { getAllAttendanceRecords } = await import('@/services/attendanceService');
@@ -47,7 +43,6 @@ export default function AktivitasBulananPage() {
 
                     try {
                         const allRecords = await getAllAttendanceRecords();
-                        console.log(`✅ Loaded attendance data for ${Object.keys(allRecords).length} employees`);
 
                         // Convert to per-employee format
                         Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
@@ -65,7 +60,6 @@ export default function AktivitasBulananPage() {
                             });
                         });
                     } catch (error) {
-                        console.error('⚠️ Error loading bulk attendance:', error);
                     }
 
                     // Build complete users data structure
@@ -79,9 +73,7 @@ export default function AktivitasBulananPage() {
                     }
                     setAllUsersData(() => newData);
 
-                    console.log('✅ Employee data loaded and ready in aktivitas-bulanan');
                 } catch (error) {
-                    console.error('❌ Error loading employees in aktivitas-bulanan:', error);
                 } finally {
                     setIsLoadingEmployees(false);
                 }
@@ -105,22 +97,17 @@ export default function AktivitasBulananPage() {
         // Update via Supabase using context
         const success = await updateMonthlyProgress(monthKey, monthProgress);
         if (!success) {
-            console.error('Gagal menyimpan progres ke Supabase');
             // Fallback to localStorage if needed
             // Anda bisa menambahkan logic fallback di sini jika diperlukan
         }
     };
 
     const handleActivateMonth = async (userId: string, monthKey: string) => {
-        console.log("handleActivateMonth called");
         // Activate via Supabase using context
         // userId parameter is provided by the component but not used since context has access to employee
         const success = await activateMonth(monthKey);
-        console.log('activateMonth result:', success);
         if (!success) {
-            console.error('Gagal mengaktifkan bulan di Supabase');
         } else {
-            console.log('Berhasil mengaktifkan bulan');
             // No need to refresh data here - activateMonth already updates local state correctly
             // Calling refreshData() here can cause race conditions with Supabase data
         }
@@ -164,7 +151,6 @@ export default function AktivitasBulananPage() {
                 alert('Gagal mengirim laporan. Silakan coba lagi.');
             }
         } catch (error) {
-            console.error('Error submitting weekly report:', error);
             alert('Terjadi kesalahan saat mengirim laporan.');
         }
     };

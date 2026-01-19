@@ -73,7 +73,6 @@ export const createAnnouncement = async (
     announcement: Omit<Announcement, 'id' | 'timestamp'>
 ): Promise<Announcement> => {
     const timestamp = Date.now();
-    console.log('Attempting to insert announcement:', { ...announcement, timestamp });
 
     // Convert camelCase to snake_case for database
     const announcementToInsert = toSnakeCase({
@@ -81,7 +80,6 @@ export const createAnnouncement = async (
         timestamp
     });
 
-    console.log('Sending to Supabase:', announcementToInsert);
 
     const { data, error, status } = await (supabase
         .from('announcements') as any)
@@ -89,26 +87,15 @@ export const createAnnouncement = async (
         .select()
         .single();
 
-    console.log('Insert response:', { data, error, status });
 
     if (error) {
-        console.error('Error creating announcement:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            status: status
-        });
         throw error;
     }
 
     if (!data) {
-        console.error('No data returned from insert operation');
         throw new Error('Insert operation completed but no data returned - possible RLS violation');
     }
 
-    console.log('Successfully created announcement in Supabase:', data);
     return data;
 };
 
@@ -130,7 +117,6 @@ export const updateAnnouncement = async (
 
 // Delete announcement
 export const deleteAnnouncement = async (id: string): Promise<void> => {
-    console.log('🗑️ Deleting announcement:', id);
 
     const { data, error, count, status, statusText } = await supabase
         .from('announcements')
@@ -138,26 +124,14 @@ export const deleteAnnouncement = async (id: string): Promise<void> => {
         .eq('id', id)
         .select();
 
-    console.log('Delete response:', { data, error, count, status, statusText });
 
     if (error) {
-        console.error('❌ Error deleting announcement:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            status: status,
-            statusText: statusText
-        });
         throw new Error(`Gagal menghapus pengumuman: ${error.message} (${error.code})`);
     }
 
     if (count === 0) {
-        console.warn('⚠️ No announcement was deleted. ID may not exist or permission denied:', id);
         throw new Error('Pengumuman tidak ditemukan atau Anda tidak memiliki izin untuk menghapusnya');
     } else {
-        console.log('✅ Successfully deleted announcement:', id, `Count: ${count}`);
     }
 };
 

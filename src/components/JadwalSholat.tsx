@@ -24,7 +24,6 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
         return () => clearInterval(timerId);
     }, []);
 
-
     useEffect(() => {
         const getInitialData = async () => {
             setIsLoading(true);
@@ -57,7 +56,6 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                         }
                     }
                 } catch (geoError: unknown) {
-                    console.warn("Could not get location from GPS, falling back to profile location.", geoError);
                     // We can still try to show prayer times from profile, but Qibla might be off.
                     if (!coordsForQibla) {
                         setError("Gagal mendapatkan lokasi GPS. Arah Kiblat mungkin tidak akurat.");
@@ -90,7 +88,6 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                 }
             } catch (fetchError: any) {
                 setError(prev => prev ? `${prev}\n${fetchError.message}` : `Gagal memuat jadwal sholat: ${fetchError.message}.`);
-                console.error(fetchError);
             } finally {
                 setIsLoading(false);
             }
@@ -107,7 +104,6 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                     videoRef.current.srcObject = stream;
                 }
             } catch (err) {
-                console.warn("Kamera tidak tersedia atau izin ditolak.", err);
                 setError(prev => prev ? prev + "\nKamera belakang tidak dapat diakses untuk tampilan AR." : "Kamera belakang tidak dapat diakses untuk tampilan AR.");
             }
         };
@@ -244,7 +240,6 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
     if (!prayerTimes && error) {
         return renderError();
     }
-
 
     return (
         <div className="space-y-8">

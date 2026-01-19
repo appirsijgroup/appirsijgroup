@@ -13,7 +13,6 @@ export const uploadHospitalLogo = async (file: File, hospitalId: string): Promis
     const fileName = `${hospitalId}-${Date.now()}.${fileExt}`;
     const filePath = `${hospitalId}/${fileName}`;
 
-    console.log('📤 Uploading logo:', { fileName, filePath, fileSize: file.size });
 
     const { data, error } = await supabase.storage
       .from('Logo')
@@ -23,7 +22,6 @@ export const uploadHospitalLogo = async (file: File, hospitalId: string): Promis
       });
 
     if (error) {
-      console.error('❌ Upload error:', error);
       throw error;
     }
 
@@ -32,10 +30,8 @@ export const uploadHospitalLogo = async (file: File, hospitalId: string): Promis
       .from('Logo')
       .getPublicUrl(filePath);
 
-    console.log('✅ Logo uploaded:', publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('❌ Failed to upload logo:', error);
     throw error;
   }
 };

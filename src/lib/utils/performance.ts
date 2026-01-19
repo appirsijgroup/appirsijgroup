@@ -11,7 +11,6 @@ export function logWebVitals(metric: any) {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Web Vitals] ${name}:`, Math.round(value), id);
   }
 
   // Send to analytics service (uncomment when ready)
@@ -38,7 +37,6 @@ export function logWebVitals(metric: any) {
  */
 export function logRenderTime(componentName: string, duration: number) {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Render Time] ${componentName}:`, Math.round(duration), 'ms');
   }
 }
 
@@ -47,7 +45,6 @@ export function logRenderTime(componentName: string, duration: number) {
  */
 export function logApiResponse(endpoint: string, duration: number, status: number) {
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[API] ${endpoint}:`, Math.round(duration), 'ms', status);
   }
 }
 

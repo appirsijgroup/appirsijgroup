@@ -24,10 +24,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         // This prevents data inconsistency between allUsersData and loggedInEmployee
         if (loggedInEmployee && loggedInEmployee.id === updatedEmployee.id) {
             setLoggedInEmployee(updatedEmployee);
-            console.log('loggedInEmployee also updated to maintain consistency');
         }
 
-        console.log('Employee data updated in store');
     }, [loggedInEmployee, setAllUsersData, setLoggedInEmployee]);
 
     return (

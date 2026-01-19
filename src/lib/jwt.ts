@@ -30,8 +30,6 @@ function getSecret() {
     // Show warning once if using fallback in development
     if (!process.env.JWT_SECRET && process.env.NODE_ENV !== 'production' && !hasWarned) {
       hasWarned = true;
-      console.warn('⚠️  Using fallback JWT secret for development only!');
-      console.warn('   For better security, set JWT_SECRET in .env.local');
     }
   }
   return JWT_SECRET;

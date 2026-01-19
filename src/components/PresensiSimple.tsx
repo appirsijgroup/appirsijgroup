@@ -29,7 +29,6 @@ const PresensiComponent: React.FC = () => {
       if (!loggedInEmployee?.id) return;
 
       try {
-        console.log("📋 Loading attendance from Supabase");
         const attendanceData = await getEmployeeAttendance(loggedInEmployee.id);
 
         // Update store with fresh attendance data
@@ -46,9 +45,7 @@ const PresensiComponent: React.FC = () => {
           return allDataCopy;
         });
 
-        console.log('✅ Attendance loaded from Supabase:', Object.keys(attendanceData).length, 'records');
       } catch (error) {
-        console.error('❌ Error loading attendance from Supabase:', error);
         // Don't throw - allow page to render with empty attendance
       }
     };
@@ -70,9 +67,7 @@ const PresensiComponent: React.FC = () => {
       try {
         const times = await fetchPrayerTimes(locationId, today);
         setPrayerTimes(times);
-        console.log('✅ Jadwal sholat dimuat');
       } catch (error) {
-        console.error("Error loading prayer times:", error);
         setPrayerTimes(null);
       } finally {
         setPrayerTimesLoading(false);
@@ -94,11 +89,6 @@ const PresensiComponent: React.FC = () => {
     const jakartaTodayEnd = new Date(jakartaNow);
     jakartaTodayEnd.setHours(23, 59, 59, 999);
 
-    console.log('📅 Today (Jakarta):', {
-      now: jakartaNow.toLocaleString('id-ID'),
-      start: jakartaTodayStart.toLocaleString('id-ID'),
-      end: jakartaTodayEnd.toLocaleString('id-ID')
-    });
 
     // Convert AttendanceRecord from Supabase to AttendanceStatus format
     // AttendanceRecord doesn't have 'submitted' field, so we add it
@@ -114,11 +104,6 @@ const PresensiComponent: React.FC = () => {
                         recordTimestamp >= jakartaTodayStart &&
                         recordTimestamp <= jakartaTodayEnd;
 
-        console.log(`🔍 Checking ${key}:`, {
-          timestamp: recordTimestamp?.toLocaleString('id-ID'),
-          isToday,
-          willShow: isToday
-        });
 
         // Only include if it's from today
         if (isToday) {
@@ -129,14 +114,11 @@ const PresensiComponent: React.FC = () => {
             submitted: true,
             isLateEntry: record.is_late_entry || false
           };
-          console.log(`✅ Included ${key} (today):`, convertedAttendance[key]);
         } else {
-          console.log(`❌ Skipped ${key} (not today)`);
         }
       }
     });
 
-    console.log('🔄 Attendance useMemo updated, converted keys:', Object.keys(convertedAttendance));
     return convertedAttendance;
   }, [loggedInEmployee?.id, allUsersData]);
 
@@ -204,7 +186,6 @@ const PresensiComponent: React.FC = () => {
       // Save to Supabase
       const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
       await updateMonthlyProgress(loggedInEmployee.id, currentMonth, updatedMonthActivities);
-      console.log('✅ Synced attendance to monthly activities in Supabase');
 
       // Update employee in store
       const updatedEmployee = {
@@ -222,9 +203,7 @@ const PresensiComponent: React.FC = () => {
         return allDataCopy;
       });
 
-      console.log('✅ Updated employee in BOTH loggedInEmployee and allUsersData');
     } catch (error) {
-      console.error('❌ Error syncing attendance to monthly activities:', error);
     }
   };
 
@@ -254,7 +233,6 @@ const PresensiComponent: React.FC = () => {
 
       // Log HANYA saat active prayer berubah
       if (newActivePrayerId !== activePrayerId) {
-        console.log(`🕌 Active prayer changed: ${activePrayerId} → ${newActivePrayerId}`);
         setActivePrayerId(newActivePrayerId);
       }
     }, 1000);
@@ -279,12 +257,10 @@ const PresensiComponent: React.FC = () => {
           // ❌ Tidak ada location parameter sama sekali
         );
 
-        console.log('✅ Attendance submitted to Supabase');
 
         // 🔄 AUTO-REFRESH: Reload attendance data from Supabase to ensure sync
         try {
           const updatedAttendance = await getEmployeeAttendance(loggedInEmployee.id);
-          console.log('🔄 Refreshed attendance data from Supabase');
 
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -307,7 +283,6 @@ const PresensiComponent: React.FC = () => {
             return allDataCopy;
           });
         } catch (refreshError) {
-          console.error('⚠️ Failed to refresh attendance data:', refreshError);
           // Fallback to using the returned record
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -337,7 +312,6 @@ const PresensiComponent: React.FC = () => {
         // 🔄 AUTO-REFRESH: Reload attendance data from Supabase
         try {
           const updatedAttendance = await getEmployeeAttendance(loggedInEmployee.id);
-          console.log('🔄 Refreshed attendance data from Supabase');
 
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -360,7 +334,6 @@ const PresensiComponent: React.FC = () => {
             return allDataCopy;
           });
         } catch (refreshError) {
-          console.error('⚠️ Failed to refresh attendance data:', refreshError);
           // Fallback to using the returned record
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -379,7 +352,6 @@ const PresensiComponent: React.FC = () => {
         setTimeout(() => setStatusMessage(null), 2000);
       }
     } catch (error) {
-      console.error('❌ Error submitting attendance:', error);
       setStatusMessage('❌ Gagal. Silakan coba lagi.');
       setTimeout(() => setStatusMessage(null), 2000);
     }

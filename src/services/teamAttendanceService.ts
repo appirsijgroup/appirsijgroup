@@ -9,7 +9,6 @@ import type { TeamAttendanceSession } from '../types';
 // Get all team attendance sessions
 export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSession[]> => {
     try {
-        console.log('📅 Fetching all team attendance sessions from Supabase...');
 
         const { data, error } = await supabase
             .from('team_attendance_sessions')
@@ -18,21 +17,13 @@ export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSess
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('❌ Supabase error fetching sessions:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
         if (!data || data.length === 0) {
-            console.log('ℹ️ No team attendance sessions found in Supabase');
             return [];
         }
 
-        console.log(`✅ Found ${data.length} team attendance sessions`);
 
         // Convert snake_case to camelCase
         return data.map((session: any) => ({
@@ -53,7 +44,6 @@ export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSess
             youtubeUrl: session.youtube_url
         }));
     } catch (error) {
-        console.error('❌ Error in getAllTeamAttendanceSessions:', error);
         throw error;
     }
 };
@@ -67,7 +57,6 @@ export const getSessionsByDate = async (date: string): Promise<TeamAttendanceSes
         .order('start_time', { ascending: true });
 
     if (error) {
-        console.error('Error fetching sessions for date:', error);
         throw error;
     }
 
@@ -95,7 +84,6 @@ export const createTeamAttendanceSession = async (
     session: Omit<TeamAttendanceSession, 'id' | 'createdAt'>
 ): Promise<TeamAttendanceSession> => {
     try {
-        console.log('📅 Creating team attendance session with data:', session);
 
         // Convert camelCase to snake_case for Supabase
         const dbSession = {
@@ -115,7 +103,6 @@ export const createTeamAttendanceSession = async (
             // Note: created_at and updated_at are handled by Supabase defaults (NOW())
         };
 
-        console.log('📅 Sending to Supabase:', dbSession);
 
         const { data, error } = await supabase
             .from('team_attendance_sessions')
@@ -124,13 +111,6 @@ export const createTeamAttendanceSession = async (
             .single() as any;
 
         if (error) {
-            console.error('❌ Supabase error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
@@ -138,7 +118,6 @@ export const createTeamAttendanceSession = async (
             throw new Error('No data returned from Supabase after insert');
         }
 
-        console.log('✅ Session created successfully in Supabase:', data);
 
         // Convert back to camelCase
         return {
@@ -159,7 +138,6 @@ export const createTeamAttendanceSession = async (
             youtubeUrl: data.youtube_url
         };
     } catch (error) {
-        console.error('❌ Error in createTeamAttendanceSession:', error);
         throw error;
     }
 };
@@ -181,7 +159,6 @@ export const updateTeamAttendanceSession = async (
         .eq('id', sessionId);
 
     if (error) {
-        console.error('Error updating team attendance session:', error);
         throw error;
     }
 };
@@ -192,7 +169,6 @@ export const updateTeamAttendanceSessionData = async (
     updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>
 ): Promise<void> => {
     try {
-        console.log('📝 Updating team attendance session data:', sessionId, updates);
 
         const dbUpdates: any = {
             type: updates.type,
@@ -207,7 +183,6 @@ export const updateTeamAttendanceSessionData = async (
             youtube_url: updates.youtubeUrl
         };
 
-        console.log('📝 Sending to Supabase:', dbUpdates);
 
         const { error } = await (supabase
             .from('team_attendance_sessions') as any)
@@ -215,19 +190,10 @@ export const updateTeamAttendanceSessionData = async (
             .eq('id', sessionId);
 
         if (error) {
-            console.error('❌ Supabase error updating session data:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
-        console.log('✅ Session data updated successfully');
     } catch (error) {
-        console.error('❌ Error in updateTeamAttendanceSessionData:', error);
         throw error;
     }
 };
@@ -235,7 +201,6 @@ export const updateTeamAttendanceSessionData = async (
 // Delete session
 export const deleteTeamAttendanceSession = async (sessionId: string): Promise<void> => {
     try {
-        console.log('🗑️ Attempting to delete team attendance session:', sessionId);
 
         const { data, error } = await supabase
             .from('team_attendance_sessions')
@@ -244,19 +209,10 @@ export const deleteTeamAttendanceSession = async (sessionId: string): Promise<vo
             .select();
 
         if (error) {
-            console.error('❌ Supabase delete error:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code,
-                fullError: error
-            });
             throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
         }
 
-        console.log('✅ Delete operation completed. Deleted rows:', data);
     } catch (error) {
-        console.error('❌ Error in deleteTeamAttendanceSession:', error);
         throw error;
     }
 };

@@ -100,16 +100,6 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
 
         // Debug log when filter changes
         if (genderFilter !== 'all' || unitFilter !== 'all' || bagianFilter !== 'all') {
-            console.log('🔍 Filter applied:', {
-                genderFilter,
-                unitFilter,
-                bagianFilter,
-                kategoriFilter,
-                profesiFilter,
-                activationFilter,
-                resultCount: filtered.length,
-                sampleGenders: [...new Set(allUsers.map(u => u.gender))].slice(0, 10)
-            });
         }
 
         return filtered;
@@ -438,29 +428,6 @@ const MutabaahPerformanceReport: React.FC<{
         });
 
         // 🔍 DEBUG: Log filter results
-        console.log('🔍 Mutabaah Performance Filter:', {
-            allUsersCount: allUsers.length,
-            filteredUsersCount: result.length,
-            filters: {
-                selectedUserIdFilter,
-                unitFilter,
-                bagianFilter,
-                kategoriFilter,
-                profesiFilter,
-                genderFilter
-            },
-            firstFewFiltered: result.slice(0, 3).map(u => ({
-                id: u.id,
-                name: u.name,
-                unit: u.unit,
-                bagian: u.bagian,
-                professionCategory: u.professionCategory,
-                profession: u.profession,
-                gender: u.gender,
-                hasMonthlyActivities: !!u.monthlyActivities,
-                    hasMonthlyActivitiesSnake: !!(u as any).monthly_activities
-            }))
-        });
 
         return result;
     }, [allUsers, selectedUserIdFilter, unitFilter, bagianFilter, kategoriFilter, profesiFilter, genderFilter]);
@@ -531,20 +498,6 @@ const MutabaahPerformanceReport: React.FC<{
         }, {} as Record<string, typeof performanceByActivity>);
 
         // 🔍 DEBUG: Log performance calculation results
-        console.log('📊 Mutabaah Performance Calculation:', {
-            monthKey,
-            filteredUsersCount: filteredUsers.length,
-            performanceByCategory,
-            groupedPerformanceByActivityKeys: Object.keys(groupedPerformanceByActivity),
-            sampleUserHasData: filteredUsers.length > 0 ? {
-                userId: filteredUsers[0].id,
-                userName: filteredUsers[0].name,
-                hasMonthlyActivities: !!filteredUsers[0].monthlyActivities,
-                hasMonthlyActivitiesSnake: !!(filteredUsers[0] as any).monthly_activities,
-                monthlyActivitiesKeys: filteredUsers[0].monthlyActivities ? Object.keys(filteredUsers[0].monthlyActivities) : [],
-                monthlyActivitiesSnakeKeys: (filteredUsers[0] as any).monthly_activities ? Object.keys((filteredUsers[0] as any).monthly_activities) : []
-            } : null
-        });
 
         return { performanceByCategory, groupedPerformanceByActivity };
     }, [filteredUsers, dailyActivitiesConfig, currentMonth]);
@@ -671,11 +624,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     }, [allUsersData]);
 
     // Debug log
-    console.log('📊 Analytics rendering:', {
-        allUsersDataCount: Object.keys(allUsersData).length,
-        allUsersCount: allUsers.length,
-        firstFewUsers: allUsers.slice(0, 3).map(u => ({ id: u.id, name: u.name, isActive: u.isActive, gender: u.gender }))
-    });
 
     // Show loading state if no data yet
     if (Object.keys(allUsersData).length === 0) {

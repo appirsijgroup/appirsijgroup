@@ -4,7 +4,6 @@ import { type Employee, type MonthlyActivityProgress, type WeeklyReportSubmissio
 import { CheckSquareIcon, SquareIcon, SendIcon, CalendarDaysIcon, LockClosedIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
 
-
 interface MonthlyActivitiesProps {
     employee: Employee;
     allUsers: Employee[];
@@ -50,7 +49,6 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
     
     return weeks.map((days, index) => ({ weekIndex: index, days }));
 };
-
 
 const TabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
@@ -98,12 +96,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         const isActivated = months.includes(monthKey) ?? false;
 
         // Debug log to help diagnose issues
-        console.log('🔍 MonthlyActivities isMonthActivated check:', {
-            employeeId: employee.id,
-            monthKey,
-            activatedMonths: months,
-            isMonthActivated: isActivated
-        });
 
         return isActivated;
     }, [employee.activatedMonths, employee.activated_months, monthKey]);
@@ -246,7 +238,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
             setIsActivating(false);
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (error) {
-            console.error('Error activating month:', error);
             setIsActivating(false);
         }
     };
@@ -446,7 +437,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                         <TabButton active={activeTab === 'monthly'} onClick={() => setActiveTab('monthly')}>Rekap Bulanan</TabButton>
                     </div>
 
-                    
                     {activeTab === 'weekly' && (
                         <div className="animate-view-change">
                             <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">

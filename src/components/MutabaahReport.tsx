@@ -148,12 +148,6 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         // Accumulator untuk mengumpulkan data per employee per year
         const yearlyAccumulator = new Map<string, YearlyAccumulator>();
 
-        // DEBUG: Log untuk cek hospitalId
-        console.log('🔍 DEBUG - Filter RS:', hospitalFilter);
-        console.log('🔍 DEBUG - Total Hospitals:', hospitals.length);
-        console.table(hospitals.map(h => ({ id: h.id, brand: h.brand, name: h.name })));
-        console.log('🔍 DEBUG - Hospitals JSON:', JSON.stringify(hospitals.map(h => ({ id: h.id, brand: h.brand }))));
-
         // Loop 1: Initialize SEMUA employees (tanpa filter RS di sini)
         Object.values(allUsersData).forEach(({ employee }) => {
             const key = `${employee.id}-${yearFilter}`;
@@ -169,7 +163,6 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
 
                 // DEBUG: Log untuk setiap 10 employee
                 if (yearlyAccumulator.size % 100 === 0) {
-                    console.log(`Employee: ${employee.name}, hospitalId:`, employee.hospitalId, `Found hospital:`, hospital ? `${hospital.brand} (id: ${hospital.id})` : 'none');
                 }
 
                 yearlyAccumulator.set(key, {

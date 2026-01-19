@@ -15,7 +15,6 @@ const getAiClient = (): GoogleGenAI => {
     return ai;
 };
 
-
 const model = 'gemini-2.5-flash';
 
 export async function* getAiResponseStream(userPrompt: string, history: ChatMessage[], systemInstruction: string): AsyncGenerator<string> {
@@ -48,7 +47,6 @@ export async function* getAiResponseStream(userPrompt: string, history: ChatMess
         }
 
     } catch (error) {
-        console.error("Error getting streamed response from Gemini API:", error);
         yield "Mohon maaf, terjadi kesalahan saat mencoba menghubungi asisten virtual. Silakan coba lagi nanti.";
     }
 }

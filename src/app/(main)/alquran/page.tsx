@@ -65,7 +65,6 @@ export default function AlquranPage() {
             const data = await getUserWeeklyReports(loggedInEmployee.id);
             setWeeklyReportSubmissions(data);
         } catch (error) {
-            console.error('Error loading weekly reports:', error);
         } finally {
             setLoading(false);
         }
@@ -84,7 +83,6 @@ export default function AlquranPage() {
                 notes: bookmark.notes,
             });
         } catch (error) {
-            console.error('Error toggling bookmark:', error);
             alert('Gagal menyimpan bookmark. Silakan coba lagi.');
         }
     };
@@ -102,7 +100,6 @@ export default function AlquranPage() {
         }
 
         try {
-            console.log('📖 Submitting Quran reading:', details);
 
             const result = await submitQuranReading(
                 loggedInEmployee.id,
@@ -134,16 +131,9 @@ export default function AlquranPage() {
                     [dayKey]: updatedDayProgress,
                 };
 
-                console.log('📊 Updating monthly progress:', {
-                    monthKey,
-                    dayKey,
-                    field: 'baca_alquran_buku',
-                    value: true
-                });
 
                 await updateMonthlyProgress(monthKey, updatedMonthProgress);
 
-                console.log('✅ Monthly progress updated successfully');
 
                 // 🔥 CRITICAL: Reload employee data to refresh quranReadingHistory
                 // This ensures Dashboard shows the updated reading history
@@ -151,7 +141,6 @@ export default function AlquranPage() {
                 const updatedEmployee = await getEmployeeById(loggedInEmployee.id);
                 if (updatedEmployee) {
                     useAppDataStore.setState({ loggedInEmployee: updatedEmployee });
-                    console.log('✅ Employee data refreshed with new Quran history');
                 }
 
                 // Reload data to refresh UI
@@ -160,7 +149,6 @@ export default function AlquranPage() {
                 alert('❌ Gagal menyimpan bacaan. Silakan coba lagi.');
             }
         } catch (error) {
-            console.error('❌ Error submitting Quran reading:', error);
             alert(`❌ Terjadi kesalahan saat menyimpan bacaan: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };

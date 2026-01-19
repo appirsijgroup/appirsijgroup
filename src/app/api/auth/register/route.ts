@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Supabase environment variables not configured')
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -71,7 +70,6 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 1: Create user in Supabase Auth
-    console.log(`📝 Creating Supabase Auth user for: ${email}`)
 
     const { data: authData, error: authError } = await supabaseService.auth.admin.createUser({
       email: email,
@@ -84,7 +82,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
-      console.error('Supabase Auth error:', authError)
 
       // Handle specific errors
       if (authError.message.includes('User already registered')) {
@@ -107,10 +104,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`✅ Supabase Auth user created: ${authData.user.id}`)
 
     // STEP 2: Create employee record manually using service role (bypasses RLS)
-    console.log('📝 Creating employee record...')
 
     const { error: employeeError } = await supabaseService
       .from('employees')
@@ -126,7 +121,6 @@ export async function POST(request: NextRequest) {
       })
 
     if (employeeError) {
-      console.error('Employee creation failed:', employeeError)
 
       // Rollback: Delete auth user if employee creation fails
       await supabaseService.auth.admin.deleteUser(authData.user.id)
@@ -137,7 +131,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('✅ Employee created successfully')
 
     // STEP 3: Return success response
     return NextResponse.json({
@@ -152,7 +145,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Registration API error:', error)
     return NextResponse.json(
       { error: 'Terjadi kesalahan server. Silakan coba lagi.' },
       { status: 500 }

@@ -68,7 +68,6 @@ export const useGuidanceStore = create<GuidanceState>()(
                         )
                     }));
                 } catch (error) {
-                    console.error('❌ Error updating tadarus session:', error);
                     throw error;
                 }
             },
@@ -84,7 +83,6 @@ export const useGuidanceStore = create<GuidanceState>()(
                         tadarusSessions: state.tadarusSessions.filter(s => s.id !== sessionId)
                     }));
                 } catch (error) {
-                    console.error('❌ Error deleting tadarus session:', error);
                     throw error;
                 }
             },
@@ -94,9 +92,7 @@ export const useGuidanceStore = create<GuidanceState>()(
                     const { getAllTadarusSessions } = await import('@/services/tadarusService');
                     const sessions = await getAllTadarusSessions();
                     set({ tadarusSessions: sessions });
-                    console.log(`✅ Loaded ${sessions.length} tadarus sessions from Supabase`);
                 } catch (error) {
-                    console.error('❌ Error loading tadarus sessions:', error);
                     throw error;
                 }
             },
@@ -106,9 +102,7 @@ export const useGuidanceStore = create<GuidanceState>()(
                     const { getAllTadarusRequests } = await import('@/services/tadarusService');
                     const requests = await getAllTadarusRequests();
                     set({ tadarusRequests: requests });
-                    console.log(`✅ Loaded ${requests.length} tadarus requests from Supabase`);
                 } catch (error) {
-                    console.error('❌ Error loading tadarus requests:', error);
                     throw error;
                 }
             },
@@ -147,7 +141,6 @@ export const useGuidanceStore = create<GuidanceState>()(
                         return { tadarusRequests: [...state.tadarusRequests, request] };
                     });
                 } catch (error) {
-                    console.error('❌ Error saving tadarus request:', error);
                     throw error;
                 }
             },

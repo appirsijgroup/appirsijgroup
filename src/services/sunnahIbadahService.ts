@@ -15,15 +15,12 @@ export const getAllSunnahIbadah = async (): Promise<SunnahIbadah[]> => {
     if (error) {
       // If table doesn't exist yet, return empty array gracefully
       if (error.code === '42P01') {
-        console.log('ℹ️ Table sunnah_ibadah_config does not exist yet. Using local defaults only.');
         return [];
       }
       // If permission denied or other RLS error, log and return empty
       if (error.code === '42501') {
-        console.warn('⚠️ Permission denied accessing sunnah_ibadah_config. Using local defaults only.');
         return [];
       }
-      console.error('❌ Supabase error loading sunnah ibadah:', error);
       return [];
     }
 
@@ -40,7 +37,6 @@ export const getAllSunnahIbadah = async (): Promise<SunnahIbadah[]> => {
       createdByName: item.created_by_name,
     }));
   } catch (error: any) {
-    console.error('❌ Unexpected error loading sunnah ibadah:', error?.message || error);
     // Return empty array instead of throwing, so app doesn't crash
     return [];
   }
@@ -85,7 +81,6 @@ export const createSunnahIbadah = async (
       createdByName: data.created_by_name,
     };
   } catch (error) {
-    console.error('Error creating sunnah ibadah:', error);
     throw error;
   }
 };
@@ -111,7 +106,6 @@ export const updateSunnahIbadahInDb = async (
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error updating sunnah ibadah:', error);
     throw error;
   }
 };
@@ -126,7 +120,6 @@ export const deleteSunnahIbadahFromDb = async (id: string): Promise<void> => {
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error deleting sunnah ibadah:', error);
     throw error;
   }
 };

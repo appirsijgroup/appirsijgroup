@@ -49,7 +49,6 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
     return weeks.map((days, index) => ({ weekIndex: index, days }));
 };
 
-
 const ReportReadingModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -207,7 +206,6 @@ const ReportReadingModal: React.FC<{
     );
 };
 
-
 export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goToAyah, clearGoToAyah, onQuranReadingSubmission, weeklyReportSubmissions, loggedInEmployee: _loggedInEmployee, setGoToAyah }) => {
     const [surahs, setSurahs] = useState<Surah[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<SurahDetail | null>(null);
@@ -257,24 +255,19 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         handleGoToAyah();
     }, [goToAyah, clearGoToAyah]);
 
-
     const handleSelectSurah = async (surahNumber: number) => {
         setIsLoadingDetail(true);
         setError(null);
         setSelectedSurah(null);
         try {
-            console.log(`📖 Loading surah ${surahNumber}...`);
             const detail = await fetchSurahDetail(surahNumber);
             if (detail) {
-                console.log(`✅ Surah ${surahNumber} loaded successfully`);
                 setSelectedSurah(detail);
                 ayahRefs.current = new Array(detail.jumlahAyat + 1);
             } else {
-                console.error(`❌ Failed to fetch surah ${surahNumber}: API returned null`);
                 setError('Gagal memuat detail surah. Silakan periksa koneksi internet Anda dan coba lagi. Jika masalah berlanjut, mungkin API sedang sibuk.');
             }
         } catch (err) {
-            console.error(`❌ Error in handleSelectSurah:`, err);
             setError('Terjadi kesalahan jaringan. Pastikan koneksi internet Anda aktif dan coba lagi.');
         } finally {
             setIsLoadingDetail(false);
@@ -307,7 +300,6 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         const ayahNum = parseInt(jumpToAyah, 10);
 
         if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114 || ayahNum < 1) {
-            console.error("Invalid Surah or Ayah number.");
             // Optionally, add a toast message here for user feedback
             return;
         }

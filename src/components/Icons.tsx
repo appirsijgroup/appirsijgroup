@@ -484,7 +484,6 @@ export const IdentificationIcon: IconFC = ({ className }) => (
   </svg>
 );
 
-
 export const iconMap: { [key: string]: IconFC } = {
     SunIcon, MoonIcon, CloudIcon, SparklesIcon, SunsetIcon, MosqueIcon, FastingIcon, GroupIcon, CalendarDaysIcon, UserIcon, MegaphoneIcon
 };

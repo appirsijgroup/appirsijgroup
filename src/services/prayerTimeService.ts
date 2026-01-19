@@ -27,7 +27,6 @@ export const fetchCities = async (): Promise<City[]> => {
         }
         throw new Error(data.message || 'Format data kota tidak valid');
     } catch (error) {
-        console.error("Error fetching cities:", error);
         throw error;
     }
 };
@@ -36,7 +35,6 @@ export const getCityFromCoords = async (lat: number, lon: number): Promise<strin
     try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
         if (!response.ok) {
-            console.error('Nominatim API request failed:', response.statusText);
             return null;
         }
         const data = await response.json();
@@ -45,7 +43,6 @@ export const getCityFromCoords = async (lat: number, lon: number): Promise<strin
         // Remove "Kota " or "Kabupaten " prefix for better search results on myquran API
         return city ? city.replace(/(kota|kabupaten)\s/i, '').trim() : null;
     } catch (error) {
-        console.error("Error reverse geocoding:", error);
         return null;
     }
 };
@@ -54,7 +51,6 @@ export const searchCity = async (cityName: string): Promise<City | null> => {
     try {
         const response = await fetch(`${API_BASE_URL}/sholat/kota/cari/${encodeURIComponent(cityName)}`);
         if (!response.ok) {
-             console.error('MyQuran city search API request failed:', response.statusText);
             return null;
         }
         const data = await response.json();
@@ -63,7 +59,6 @@ export const searchCity = async (cityName: string): Promise<City | null> => {
         }
         return null;
     } catch (error) {
-        console.error("Error searching city:", error);
         return null;
     }
 };
@@ -78,10 +73,8 @@ export const fetchPrayerTimes = async (locationId: string, date: string): Promis
          if (data.status && data.data && data.data.jadwal) {
             return data.data.jadwal;
         }
-        console.warn("Prayer time API response was not successful:", data.message);
         return null;
     } catch (error) {
-        console.error("Error fetching prayer times:", error);
         return null;
     }
 };

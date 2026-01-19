@@ -21,7 +21,6 @@ export function useSessionRefresh(
     // Function to refresh the session
     const refreshSession = async () => {
       try {
-        console.log('🔄 Auto-refreshing session...');
 
         const response = await fetch('/api/auth/refresh', {
           method: 'POST',
@@ -29,17 +28,13 @@ export function useSessionRefresh(
         });
 
         if (response.ok) {
-          console.log('✅ Session refreshed successfully');
         } else {
-          console.warn('⚠️ Failed to refresh session:', response.status);
 
           // If unauthorized, the user will be redirected to login by the middleware
           if (response.status === 401) {
-            console.log('🔒 Session expired, redirecting to login...');
           }
         }
       } catch (error) {
-        console.error('❌ Error refreshing session:', error);
       }
     };
 

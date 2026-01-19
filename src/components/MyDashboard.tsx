@@ -12,7 +12,6 @@ import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
 import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
 
-
 const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b', '#10b981', '#0ea5e9'];
 
 const TabButton: React.FC<{
@@ -70,14 +69,11 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 
 const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyActivity[] }> = ({ employee, dailyActivitiesConfig }) => {
     const { performanceData, monthlyStats } = useMemo(() => {
-        console.info('🔄 KinerjaView useMemo running!');
-        console.info('📊 Employee monthlyActivities:', employee.monthlyActivities);
 
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
 
-        console.info('📅 Current month:', currentMonthKey);
         // 🔥 FIX: Merge manual activities with automation data (Reading & Quran history)
         // This ensures "Membaca Al-Quran dan buku" is synced from history tables
         const enrichedMonthProgress = { ...monthProgress };
@@ -112,7 +108,6 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
             });
         }
 
-        console.info('📚 Enriched Month Progress with Reading History:', enrichedMonthProgress);
 
         const categories: Record<string, { name: string; details: { id: string; title: string; target: number; achieved: number; percentage: number }[] }> = {
             'SIDIQ (Integritas)': { name: 'SIDIQ (Integritas)', details: [] },
@@ -146,7 +141,6 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
 
                 const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((achieved / activity.monthlyTarget) * 100)) : 0;
 
-                console.info(`  ✨ ${activity.title}: achieved=${achieved}, target=${activity.monthlyTarget}, percentage=${percentage}%`);
 
                 categories[activity.category].details.push({
                     id: activity.id,
@@ -169,8 +163,6 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
             return acc;
         }, {} as Record<string, { title: string; achieved: number; target: number }[]>);
 
-        console.info('📈 Final performance data:', categoryResults);
-        console.info('📊 Final monthly stats:', statsForCards);
 
         return { performanceData: categoryResults, monthlyStats: statsForCards };
     }, [employee.monthlyActivities, dailyActivitiesConfig]);
@@ -287,13 +279,6 @@ const ReadingActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            if (process.env.NODE_ENV === "development") console.error('Week calculation error in ReadingActivityCard:', {
-                dateCompleted,
-                selectedDateObj,
-                monthKey,
-                weeksForSelectedMonth,
-                dayOfMonth
-            });
             return [true, "Tanggal tidak valid. Silakan hubungi admin."];
         }
 
@@ -386,13 +371,6 @@ const SimpleActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            if (process.env.NODE_ENV === "development") console.error('Week calculation error:', {
-                date,
-                selectedDateObj,
-                monthKey,
-                weeksForSelectedMonth,
-                dayOfMonth
-            });
             return [true, "Tanggal tidak valid. Silakan hubungi admin."];
         }
 
@@ -420,14 +398,11 @@ const SimpleActivityCard: React.FC<{
     }, [date, submissions]);
 
     const handleSubmit = () => {
-        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] handleSubmit called for activity:', activity.title, 'activity.id:', activity.id, 'date:', date);
         if (!date) {
             alert("Harap pilih tanggal.");
             return;
         }
-        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] Calling onLogManualActivity with:', activity.id, date);
         onLogManualActivity(activity.id, date);
-        if (process.env.NODE_ENV === "development") console.log('🔵 [SimpleActivityCard] onLogManualActivity call completed');
     };
 
     return (
@@ -471,12 +446,6 @@ const RiwayatBacaan: React.FC<{
     const [confirmDelete, setConfirmDelete] = useState<{ type: 'book' | 'quran'; id: string; date: string; detail: string } | null>(null);
 
     const combinedHistory = useMemo(() => {
-        if (process.env.NODE_ENV === "development") console.log('📚 RiwayatBacaan processing history:', {
-            hasBookHistory: !!employee.readingHistory,
-            bookCount: employee.readingHistory?.length || 0,
-            hasQuranHistory: !!employee.quranReadingHistory,
-            quranCount: employee.quranReadingHistory?.length || 0
-        });
 
         const bookHistory = (employee.readingHistory || []).map((r: ReadingHistory) => ({
             id: r.id,
@@ -526,7 +495,6 @@ const RiwayatBacaan: React.FC<{
             setConfirmDelete(null);
         }
     };
-
 
     return (
         <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10">
@@ -680,7 +648,6 @@ const ToDoListView: React.FC<{
             return yearMatch && monthMatch;
         });
     }, [todoList, titleFilter, yearFilter, monthFilter, dateRange]);
-
 
     const handleSetYearFilter = (year: string) => {
         setYearFilter(year);
@@ -861,7 +828,6 @@ const ToDoListView: React.FC<{
                 selectionClasses += ' is-selected-end';
             }
             // --- END FIX ---
-
 
             const cellClasses = [
                 'date-cell w-10 h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors',
@@ -1121,7 +1087,6 @@ const ToDoListView: React.FC<{
     );
 };
 
-
 interface AktivitasPribadiViewProps extends Pick<MyDashboardViewProps, 'dailyActivitiesConfig' | 'onLogBookReading' | 'onLogManualActivity' | 'onDeleteReadingHistory' | 'onUpdateTodoList'> {
     submissions: WeeklyReportSubmission[];
     employee: Employee;
@@ -1221,7 +1186,6 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
         </div>
     );
 };
-
 
 // 🔥 OPTIMIZATION: MyDashboard component - to be memoized
 const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {

@@ -282,7 +282,6 @@ export const PRAYER_GUIDES: PrayerGuide[] = [
     }
 ];
 
-
 export const KUMPULAN_DOA: DailyPrayer[] = [
     { id: 1, title: "Doa Sebelum Tidur", arabic: "بِاسْمِكَ اللّٰهُمَّ أَحْيَا وَبِاسْمِكَ أَمُوْتُ", latin: "Bismika Allahumma ahya wa bismika amut.", translation: "Dengan nama-Mu ya Allah aku hidup dan dengan nama-Mu aku mati." },
     { id: 2, title: "Doa Bangun Tidur", arabic: "اَلْحَمْدُ لِلّٰهِ الَّذِىْ اَحْيَانَا بَعْدَ مَا اَمَاتَنَا وَاِلَيْهِ النُّشُوْرُ", latin: "Alhamdulillahilladzi ahyana ba'da ma amatana wa ilaihin nusyur.", translation: "Segala puji bagi Allah yang telah menghidupkan kami sesudah kami mati (tidur) dan kepada-Nya kami kembali." },

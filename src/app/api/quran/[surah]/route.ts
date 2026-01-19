@@ -9,7 +9,6 @@ const cache = new Map<string, { data: any; timestamp: number }>();
 async function fetchWithRetry(url: string, maxRetries = 3, delay = 1000): Promise<Response> {
     for (let i = 0; i < maxRetries; i++) {
         try {
-            console.log(`🔍 Attempt ${i + 1}/${maxRetries}: Fetching ${url}`);
 
             const response = await fetch(url, {
                 headers: {
@@ -21,12 +20,10 @@ async function fetchWithRetry(url: string, maxRetries = 3, delay = 1000): Promis
             });
 
             if (response.ok) {
-                console.log(`✅ Success on attempt ${i + 1}`);
                 return response;
             }
 
             if (response.status === 503 || response.status >= 500) {
-                console.warn(`⚠️ Attempt ${i + 1} failed with status ${response.status}, retrying...`);
                 if (i < maxRetries - 1) {
                     await new Promise(resolve => setTimeout(resolve, delay * (i + 1))); // Exponential backoff
                     continue;
@@ -35,7 +32,6 @@ async function fetchWithRetry(url: string, maxRetries = 3, delay = 1000): Promis
 
             return response;
         } catch (error) {
-            console.error(`❌ Attempt ${i + 1} failed:`, error);
             if (i < maxRetries - 1) {
                 await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
                 continue;
@@ -70,7 +66,6 @@ export async function GET(
         if (cached) {
             const age = (Date.now() - cached.timestamp) / 1000;
             if (age < CACHE_DURATION) {
-                console.log(`📦 Cache HIT for surah ${surahNum} (${Math.round(age)}s old)`);
                 return NextResponse.json(cached.data, {
                     headers: {
                         'X-Cache': 'HIT',
@@ -83,14 +78,12 @@ export async function GET(
             }
         }
 
-        console.log(`🌐 Cache MISS for surah ${surahNum}, fetching from API...`);
 
         // Fetch from equran.id API with retry
         const apiUrl = `${QURAN_API_BASE_URL}/surat/${surahNum}`;
         const response = await fetchWithRetry(apiUrl);
 
         if (!response.ok) {
-            console.error(`❌ API returned ${response.status}: ${response.statusText}`);
             return NextResponse.json(
                 { error: `Failed to fetch surah: ${response.statusText}` },
                 { status: response.status }
@@ -101,7 +94,6 @@ export async function GET(
 
         // Validate response
         if (!data || data.code !== 200 || !data.data) {
-            console.error(`❌ Invalid API response:`, data);
             return NextResponse.json(
                 { error: 'Invalid API response' },
                 { status: 502 }
@@ -114,7 +106,6 @@ export async function GET(
             timestamp: Date.now(),
         });
 
-        console.log(`✅ Successfully fetched and cached surah ${surahNum}`);
 
         // Return response with cache headers
         return NextResponse.json(data, {
@@ -125,7 +116,6 @@ export async function GET(
         });
 
     } catch (error) {
-        console.error('❌ Error in quran API route:', error);
 
         return NextResponse.json(
             {

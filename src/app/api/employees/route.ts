@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const sessionCookie = request.cookies.get('session')?.value
 
     if (!sessionCookie) {
-      console.log('❌ /api/employees - No session cookie found')
       return NextResponse.json(
         { error: 'Unauthorized - No session' },
         { status: 401 }
@@ -24,21 +23,18 @@ export async function GET(request: NextRequest) {
     const session = await verifyToken(sessionCookie)
 
     if (!session) {
-      console.log('❌ /api/employees - Invalid session token')
       return NextResponse.json(
         { error: 'Unauthorized - Invalid session' },
         { status: 401 }
       )
     }
 
-    console.log('✅ /api/employees - Authenticated userId:', session.userId)
 
     // 🔥 FIX: Add defensive check for environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Supabase environment variables not configured')
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -55,7 +51,6 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true })
 
     if (error) {
-      console.error('Error fetching employees:', error)
       return NextResponse.json(
         { error: 'Failed to fetch employees' },
         { status: 500 }
@@ -69,7 +64,6 @@ export async function GET(request: NextRequest) {
       .select('employee_id, activities')
 
     if (activitiesError) {
-      console.error('⚠️ Warning: Error fetching monthly activities for all employees:', activitiesError)
       // Don't fail the whole request, just proceed with basic employee data
     }
 
@@ -86,16 +80,9 @@ export async function GET(request: NextRequest) {
       monthly_activities: activitiesLookup[emp.id] || emp.monthly_activities || {}
     }));
 
-    console.log('✅ /api/employees - Returning', mergedEmployees.length, 'employees with merged activities')
 
     // 🔥 DEBUG: Log first few employees to verify data
     if (process.env.NODE_ENV === "development") {
-        console.log('📋 Sample employees:', mergedEmployees.slice(0, 3).map((e: any) => ({
-            id: e.id,
-            name: e.name,
-            email: e.email,
-            isActive: e.is_active
-        })))
     }
 
     return NextResponse.json({
@@ -103,7 +90,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

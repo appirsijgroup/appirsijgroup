@@ -11,7 +11,6 @@ import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { uploadSignature, deleteSignature } from '@/services/signatureService';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
-
 interface ProfileProps {
     employee: Employee;
     allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }>;
@@ -61,7 +60,6 @@ const SettingsSection: React.FC<{
         </div>
     );
 };
-
 
 const SignatureModal: React.FC<{
     isOpen: boolean;
@@ -544,7 +542,6 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                             addToast('Gagal menyimpan tanda tangan.', 'error');
                         }
                     } catch (error) {
-                        console.error('Error handling signature:', error);
                         addToast('Gagal mengupload tanda tangan.', 'error');
                     }
                 }}

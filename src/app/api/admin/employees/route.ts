@@ -178,7 +178,6 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 1: Create user in Supabase Auth
-    console.log(`📝 Creating Supabase Auth user for: ${email}`);
 
     // Generate temporary password if not provided
     const tempPassword = password || Math.random().toString(36).slice(-8);
@@ -195,7 +194,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (createAuthError) {
-      console.error('Supabase Auth create user error:', createAuthError);
 
       const userFriendlyError = parseSupabaseError(createAuthError);
 
@@ -212,7 +210,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Supabase Auth user created: ${authData.user.id}`);
 
     // STEP 2: Create employee record
     const employeeRecord = {
@@ -241,7 +238,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Error creating employee:', insertError);
 
       // Rollback: Delete auth user if employee creation fails
       await serviceRoleClient.auth.admin.deleteUser(authData.user.id);
@@ -254,7 +250,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ Employee created: ${newEmployee.name} (${newEmployee.email})`);
 
     // STEP 3: Return success response
     return NextResponse.json({
@@ -265,7 +260,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Unexpected error in employee creation API:', error);
 
     const userFriendlyError = parseSupabaseError(error);
 

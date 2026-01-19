@@ -206,7 +206,6 @@ const drawPattern = (ctx: CanvasRenderingContext2D, W: number, H: number, color:
     ctx.restore();
 };
 
-
 const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, initialImageUrl, type, content }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [imageSrc, setImageSrc] = useState('');
@@ -335,7 +334,6 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
         const totalContentHeight = HEADER_HEIGHT + 40 + calculatedContentHeight + FOOTER_MARGIN_TOP + FOOTER_LINE_MARGIN + FOOTER_HEIGHT + PADDING;
         const H = Math.max(1200, Math.min(2500, totalContentHeight)); // Min 1200px, Max 2500px for social media
 
-        console.log(`📏 Dynamic height calculation: ${H}px (content: ${calculatedContentHeight}px, total: ${totalContentHeight}px)`);
 
         // Calculate aspect ratio for preview
         const aspectRatio = `${W}/${H}`;
@@ -554,7 +552,6 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
             wrapText(ctx, translationLines, W / 2, currentY, translationSize * 1.5);
         }
 
-
         // Separator line above footer
         const footerLineY = footerTopYVal - 20;
         ctx.beginPath();
@@ -602,9 +599,7 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
                         await navigator.share(shareData);
                     } catch (error) {
                         if (error instanceof DOMException && error.name === 'AbortError') {
-                            console.log('Share cancelled by user.');
                         } else {
-                            console.error('Error sharing:', error);
                             addToast('Gagal membagikan gambar.', 'error');
                         }
                     }

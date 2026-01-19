@@ -47,7 +47,6 @@ export const getUserWeeklyReports = async (userId: string): Promise<WeeklyReport
 
     return (data as unknown as WeeklyReportSubmissionDB[]).map(item => mapDbToApp(item));
   } catch (error) {
-    console.error('Error fetching weekly reports:', error);
     return [];
   }
 };
@@ -79,7 +78,6 @@ export const getWeeklyReport = async (
 
     return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
   } catch (error) {
-    console.error('Error fetching weekly report:', error);
     return null;
   }
 };
@@ -109,7 +107,6 @@ export const submitWeeklyReport = async (
     if (error) {
       // Check for unique constraint violation
       if (error.code === '23505') {
-        console.error('Weekly report already submitted for this period');
         return null;
       }
       throw error;
@@ -117,7 +114,6 @@ export const submitWeeklyReport = async (
 
     return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
   } catch (error) {
-    console.error('Error submitting weekly report:', error);
     return null;
   }
 };
@@ -144,7 +140,6 @@ export const updateWeeklyReport = async (
 
     return true;
   } catch (error) {
-    console.error('Error updating weekly report:', error);
     return false;
   }
 };
@@ -164,7 +159,6 @@ export const deleteWeeklyReport = async (reportId: string, userId: string): Prom
 
     return true;
   } catch (error) {
-    console.error('Error deleting weekly report:', error);
     return false;
   }
 };
@@ -187,12 +181,10 @@ export const hasSubmittedReport = async (
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error checking report submission:', error);
     }
 
     return !!data;
   } catch (error) {
-    console.error('Error checking report submission:', error);
     return false;
   }
 };
@@ -216,7 +208,6 @@ export const getMonthlySubmissions = async (
 
     return (data as unknown as WeeklyReportSubmissionDB[]).map(item => mapDbToApp(item));
   } catch (error) {
-    console.error('Error fetching monthly submissions:', error);
     return [];
   }
 };

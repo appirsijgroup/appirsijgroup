@@ -29,7 +29,6 @@ export async function middleware(request: NextRequest) {
       // We need to import verifyToken at the top level
       session = await verifyToken(sessionCookie)
     } catch (e) {
-      if (process.env.NODE_ENV === "development") console.error("Middleware token verification failed", e)
     }
   }
 

@@ -178,7 +178,6 @@ const AnnouncementModal: React.FC<{
     );
 };
 
-
 const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onDelete, onMarkAsRead, hospitals = [] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<Announcement | null>(null);
@@ -235,7 +234,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
             onMarkAsRead();
         }
     }, [filteredAnnouncements, loggedInEmployee, onMarkAsRead]);
-
 
     const handleDelete = () => {
         if (confirmDelete) {

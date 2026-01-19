@@ -39,7 +39,6 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
             const data = await announcementService.getAllAnnouncements();
             set({ announcements: data, isHydrated: true, isLoading: false });
         } catch (error) {
-            console.error('Error loading announcements:', error);
             set({
                 error: error instanceof Error ? error.message : 'Failed to load announcements',
                 isLoading: false
@@ -57,7 +56,6 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
                 isLoading: false
             }));
         } catch (error) {
-            console.error('Error adding announcement:', error);
             set({
                 error: error instanceof Error ? error.message : 'Failed to add announcement',
                 isLoading: false
@@ -75,7 +73,6 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
                 isLoading: false
             }));
         } catch (error) {
-            console.error('Error deleting announcement:', error);
             set({
                 error: error instanceof Error ? error.message : 'Failed to delete announcement',
                 isLoading: false

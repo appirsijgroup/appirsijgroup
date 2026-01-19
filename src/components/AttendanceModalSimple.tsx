@@ -51,7 +51,6 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       setReason('');
       onClose();
     } catch (error) {
-      console.error('Error submitting attendance:', error);
       alert('Gagal menyimpan presensi. Silakan coba lagi.');
     }
   };

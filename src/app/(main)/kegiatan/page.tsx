@@ -63,7 +63,6 @@ export default function KegiatanPage() {
 
             setAttendance(convertedAttendance);
         } catch (error) {
-            console.error('Error loading attendance:', error);
         } finally {
             setLoading(false);
         }
@@ -75,7 +74,6 @@ export default function KegiatanPage() {
             const sessions = await getAllTeamAttendanceSessions();
             setTeamAttendanceSessions(sessions);
         } catch (error) {
-            console.error('Error loading team sessions:', error);
         }
     };
 
@@ -86,7 +84,6 @@ export default function KegiatanPage() {
             // Load activities from store
             await useActivityStore.getState().loadActivitiesFromSupabase(loggedInEmployee.id);
         } catch (error) {
-            console.error('Error loading activities:', error);
         }
     };
 
@@ -145,7 +142,6 @@ export default function KegiatanPage() {
                 }));
             }
         } catch (error) {
-            console.error('Error submitting attendance:', error);
             alert('Gagal menyimpan presensi. Silakan coba lagi.');
         }
     };
@@ -202,14 +198,12 @@ export default function KegiatanPage() {
                 }));
             }
         } catch (error) {
-            console.error('Error submitting attendance:', error);
             alert('Gagal menyimpan presensi. Silakan coba lagi.');
         }
     };
 
     const handleUbah = async (activityId: string) => {
         // TODO: Implement edit functionality
-        console.log('Edit attendance for:', activityId);
     };
 
     if (loading) {

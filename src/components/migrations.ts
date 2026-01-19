@@ -22,7 +22,6 @@ export const migrateAndInitializeData = (usersData: Record<string, any>): Record
             const firstActivityKey = Object.keys(firstEntry)[0];
             // If the structure is { 'month': { 'activityId': { value: ... } } }, it's the old format.
             if (firstActivityKey && typeof firstEntry[firstActivityKey] === 'object' && firstEntry[firstActivityKey] !== null && 'value' in firstEntry[firstActivityKey]) {
-                console.log(`Migrating monthlyActivities for user ${id}. Resetting old data.`);
                 currentUserData.employee.monthlyActivities = {};
             }
         }
@@ -65,7 +64,6 @@ export const migrateAndInitializeData = (usersData: Record<string, any>): Record
             // If neither old nor new field exists, initialize the new one
             currentUserData.employee.managerScope = undefined;
         }
-
 
         // --- MIGRATION for location fields
         if (typeof currentUserData.employee.locationId === 'undefined') {

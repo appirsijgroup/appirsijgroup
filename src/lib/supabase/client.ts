@@ -14,7 +14,6 @@ export function createClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
     // During build time, return a mock client to prevent errors
     if (typeof window === 'undefined') {
-      console.warn('⚠️ Supabase environment variables not found during build')
       return null as any
     }
     throw new Error('Supabase environment variables are not configured')

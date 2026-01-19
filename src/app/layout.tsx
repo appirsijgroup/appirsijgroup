@@ -10,9 +10,6 @@ import BrandedLoader from "@/components/BrandedLoader";
 
 // 🔒 Disable console logs in production for cleaner browser console
 if (process.env.NODE_ENV === 'production') {
-  console.log = () => {};
-  console.warn = () => {};
-  console.info = () => {};
 }
 
 // ⚡ OPTIMIZATION: Use display: 'swap' for faster font rendering

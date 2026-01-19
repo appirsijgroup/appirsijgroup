@@ -38,7 +38,6 @@ export function QueryProvider({ children }: { children: ReactNode }) {
                         // 🔄 RETRY: Retry mutations once
                         retry: 1,
                         onError: (err) => {
-                            console.error('Mutation error:', err);
                         },
                     },
                 },

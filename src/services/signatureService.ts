@@ -12,7 +12,6 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
     const fileName = `${employeeId}-signature.${fileExt}`;
     const filePath = `${employeeId}/${fileName}`;
 
-    console.log('📤 Uploading signature:', { fileName, filePath, fileSize: file.size });
 
     const { data, error } = await supabase.storage
       .from('TTD')
@@ -22,7 +21,6 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
       });
 
     if (error) {
-      console.error('❌ Upload error:', error);
       throw error;
     }
 
@@ -31,10 +29,8 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
       .from('TTD')
       .getPublicUrl(filePath);
 
-    console.log('✅ Signature uploaded:', publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('❌ Failed to upload signature:', error);
     throw error;
   }
 };
@@ -42,7 +38,6 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
 // Delete user signature from Supabase Storage
 export const deleteSignature = async (employeeId: string): Promise<void> => {
   try {
-    console.log('🗑️ Deleting signature for employee:', employeeId);
 
     // List all files in employee's folder
     const { data, error } = await supabase.storage
@@ -50,7 +45,6 @@ export const deleteSignature = async (employeeId: string): Promise<void> => {
       .list(employeeId);
 
     if (error) {
-      console.error('❌ Error listing files:', error);
       throw error;
     }
 
@@ -62,15 +56,12 @@ export const deleteSignature = async (employeeId: string): Promise<void> => {
           .remove([`${employeeId}/${file.name}`]);
 
         if (deleteError) {
-          console.error('❌ Error deleting file:', deleteError);
           throw deleteError;
         }
       }
     }
 
-    console.log('✅ Signature deleted successfully');
   } catch (error) {
-    console.error('❌ Failed to delete signature:', error);
     throw error;
   }
 };
@@ -103,7 +94,6 @@ export const getSignatureUrl = async (employeeId: string): Promise<string | null
 
     return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('❌ Error getting signature URL:', error);
     return null;
   }
 };

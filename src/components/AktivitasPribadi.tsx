@@ -82,13 +82,6 @@ const ReadingActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            console.error('Week calculation error in ReadingActivityCard:', {
-                dateCompleted,
-                selectedDateObj,
-                monthKey,
-                weeksForSelectedMonth,
-                dayOfMonth
-            });
             return [true, "Tanggal tidak valid. Silakan hubungi admin."];
         }
 
@@ -181,13 +174,6 @@ const SimpleActivityCard: React.FC<{
         const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
 
         if (weekIndexOfSelected === -1) {
-            console.error('Week calculation error:', {
-                date,
-                selectedDateObj,
-                monthKey,
-                weeksForSelectedMonth,
-                dayOfMonth
-            });
             return [true, "Tanggal tidak valid. Silakan hubungi admin."];
         }
 
@@ -275,16 +261,13 @@ const RiwayatBacaan: React.FC<{
                 // Load Quran submissions
                 const { getQuranSubmissions } = await import('../services/quranSubmissionService');
                 const submissions = await getQuranSubmissions(employee.id);
-                console.log('📖 Loaded Quran submissions:', submissions.length);
                 setQuranSubmissions(submissions);
 
                 // Load Quran reading history from employee_quran_reading_history table
                 const { getQuranReadingHistory } = await import('../services/readingHistoryService');
                 const history = await getQuranReadingHistory(employee.id);
-                console.log('📖 Loaded Quran reading history:', history.length);
                 setQuranReadingHistory(history);
             } catch (error) {
-                console.error('Error loading Quran data:', error);
             }
         };
 
@@ -361,7 +344,6 @@ const RiwayatBacaan: React.FC<{
             setConfirmDelete(null);
         }
     };
-
 
     return (
         <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10">
@@ -515,7 +497,6 @@ const ToDoListView: React.FC<{
             return yearMatch && monthMatch;
         });
     }, [todoList, titleFilter, yearFilter, monthFilter, dateRange]);
-
 
     const handleSetYearFilter = (year: string) => {
         setYearFilter(year);
@@ -696,7 +677,6 @@ const ToDoListView: React.FC<{
                 selectionClasses += ' is-selected-end';
             }
             // --- END FIX ---
-
 
             const cellClasses = [
                 'date-cell w-10 h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors',
@@ -958,7 +938,6 @@ const ToDoListView: React.FC<{
     );
 };
 
-
 // Define SubTabButton component outside AktivitasPribadiView to avoid creating during render
 const SubTabButton: React.FC<{
     label: string;
@@ -1048,7 +1027,6 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
         </div>
     );
 };
-
 
 export interface AktivitasPribadiViewProps {
     employee: Employee;

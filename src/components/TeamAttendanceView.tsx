@@ -152,7 +152,7 @@ const CreateSessionModal: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+            className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
         >
             <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
@@ -162,7 +162,7 @@ const CreateSessionModal: React.FC<{
     const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-pop-in">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 h-[90vh] flex flex-col">
                 <h3 className="text-xl font-bold text-white flex-shrink-0 mb-6">Buat Sesi Presensi Baru</h3>
                 <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -209,7 +209,7 @@ const CreateSessionModal: React.FC<{
                                 <span className="font-semibold text-white">Ulangi sesi ini setiap minggu?</span>
                                  <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} className="sr-only peer" />
-                                    <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                                    <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500"></div>
                                 </label>
                             </div>
                              {isRecurring && (
@@ -217,7 +217,7 @@ const CreateSessionModal: React.FC<{
                                     <p className="text-sm text-blue-100 mb-2">Pilih hari untuk pengulangan:</p>
                                     <div className="flex justify-around bg-black/30 p-2 rounded-lg">
                                         {weekDays.map((day, index) => (
-                                            <button key={index} type="button" onClick={() => handleDayToggle(index)} className={`w-10 h-10 rounded-full font-semibold transition-colors ${daysOfWeek.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'}`}>{day}</button>
+                                            <button key={index} type="button" onClick={() => handleDayToggle(index)} className={`w-10 h-10 rounded-full font-semibold ${daysOfWeek.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'}`}>{day}</button>
                                         ))}
                                     </div>
                                 </div>
@@ -402,7 +402,7 @@ const ManageAttendanceModal: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+            className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
         >
             <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
@@ -423,7 +423,7 @@ const ManageAttendanceModal: React.FC<{
     }, [allUsers, audienceType, manualParticipantIds, unit, bagian]);
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-pop-in">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 h-[90vh] flex flex-col">
                 <h3 className="text-xl font-bold text-white flex-shrink-0 mb-6">Kelola Sesi Presensi</h3>
                 <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -635,10 +635,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const handleSelfAttend = async (session: TeamAttendanceSession) => {
         if (!session.presentUserIds.includes(loggedInEmployee.id)) {
             try {
-                console.log('🎯 User clicking hadir:', loggedInEmployee.name, '(', loggedInEmployee.id, ')');
-                console.log('📅 Session date:', session.date);
-                console.log('📋 Session type:', session.type);
-                console.log('👤 Current loggedInEmployee.monthlyActivities:', loggedInEmployee.monthlyActivities);
 
                 const newPresentIds = [...session.presentUserIds, loggedInEmployee.id];
                 await onUpdateAttendance(session.id, newPresentIds);
@@ -649,18 +645,12 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     const dayKey = session.date.substring(8, 10); // DD (need to check format)
                     const activityId = sessionTypeToActivityId[session.type];
 
-                    console.log('📊 Saving to monthlyActivities:');
-                    console.log('  - monthKey:', monthKey);
-                    console.log('  - dayKey:', dayKey, '(type:', typeof dayKey, ')');
-                    console.log('  - activityId:', activityId);
 
                     // Get the FRESHEST data from allUsersData instead of loggedInEmployee
                     const freshEmployee = allUsersData[loggedInEmployee.id]?.employee || loggedInEmployee;
                     const currentMonthProgress = freshEmployee.monthlyActivities?.[monthKey] || {};
                     const currentDayProgress = currentMonthProgress[dayKey] || {};
 
-                    console.log('  - Current month progress:', currentMonthProgress);
-                    console.log('  - Current day progress:', currentDayProgress);
 
                     const updatedMonthProgress = {
                         ...currentMonthProgress,
@@ -670,21 +660,16 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                         }
                     };
 
-                    console.log('  - Updated month progress:', updatedMonthProgress);
-                    console.log('🔄 Calling onUpdateMonthlyActivities...');
 
                     await onUpdateMonthlyActivities(loggedInEmployee.id, monthKey, updatedMonthProgress);
 
-                    console.log('✅ onUpdateMonthlyActivities completed');
                 }
 
                 addToast(`Anda berhasil presensi untuk ${session.type}.`, 'success');
             } catch (error) {
-                console.error('❌ Error saat presensi:', error);
                 addToast('Gagal melakukan presensi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             }
         } else {
-            console.log('ℹ️ User already present in session');
         }
     };
 
@@ -695,7 +680,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 addToast('Sesi berhasil dihapus', 'success');
                 setConfirmDelete(null);
             } catch (error) {
-                console.error('❌ Error saat menghapus sesi:', error);
                 addToast('Gagal menghapus sesi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             }
         }

@@ -63,7 +63,6 @@ type DateFilterType = 'range' | 'monthly' | 'yearly' | 'all';
 type UserManagementSubView = 'database' | 'akun' | 'relasi' | 'jabatan';
 type ContentManagementSubView = 'kegiatan' | 'ibadah-sunnah' | 'mutabaah-automation';
 
-
 const DestructiveConfirmationModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -218,7 +217,6 @@ const MultiSelectDropdown: React.FC<{
         </div>
     );
 };
-
 
 // --- Activity Management Modal ---
 const ActivityModal: React.FC<{
@@ -466,7 +464,6 @@ const ActivityModal: React.FC<{
     );
 };
 
-
 // --- Activity Management Component ---
 const ActivityManagement: React.FC<{
     activities: Activity[];
@@ -649,7 +646,6 @@ const KajianManagement: React.FC<{
     );
 };
 
-
 // --- User Modal for Add/Edit ---
 const UserModal: React.FC<{
     isOpen: boolean;
@@ -761,7 +757,6 @@ const UserModal: React.FC<{
         } catch (err) {
             setLoading(false);
             setError('Terjadi kesalahan tak terduga. Silakan coba lagi.');
-            console.error('Error saving user:', err);
         }
     };
 
@@ -1124,7 +1119,6 @@ const UserImportModal: React.FC<{
                 const result = await onImport(usersToProcess);
                 setImportResult(result);
             } catch (err) {
-                console.error("Error parsing file:", err);
                 setError('Gagal memproses file. Pastikan formatnya benar.');
             } finally {
                 setIsProcessing(false);
@@ -1767,7 +1761,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const sections: ReportSection[] = [];
         const sectionProps = { orientation: 'landscape' as const, pageFormat: 'a4' };
 
-
         if (reportType === 'prayer') {
             const reportTitle = `LAPORAN REKAPITULASI PRESENSI SHOLAT`;
             const userMap = new Map(Object.values(allUsersData).map((d: { employee: Employee }) => [d.employee.id, d.employee]));
@@ -2146,9 +2139,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     );
 };
 
-
-
-
 // ... (rest of the components like EditAttendanceModal, SunnahIbadahModal, etc. remain unchanged)
 
 interface EditAttendanceModalProps {
@@ -2209,7 +2199,6 @@ const EditAttendanceModal: React.FC<EditAttendanceModalProps> = ({ isOpen, onClo
         document.body
     );
 };
-
 
 const SunnahIbadahModal: React.FC<{
     isOpen: boolean;
@@ -2320,7 +2309,6 @@ const SunnahIbadahModal: React.FC<{
     );
 };
 
-
 const MutabaahAutomation: React.FC<{
     dailyActivitiesConfig: DailyActivity[];
     onUpdate: (newConfig: DailyActivity[]) => void;
@@ -2417,7 +2405,6 @@ const MutabaahAutomation: React.FC<{
     );
 };
 
-
 const SunnahIbadahManagement: React.FC<{
     sunnahIbadahList: SunnahIbadah[];
     onAdd: (data: Omit<SunnahIbadah, 'id' | 'createdBy' | 'createdByName'>) => void;
@@ -2462,7 +2449,6 @@ const SunnahIbadahManagement: React.FC<{
         </div>
     );
 };
-
 
 const AuditLogView: React.FC<{ log: AuditLogEntry[] }> = ({ log }) => {
     return (
@@ -2744,7 +2730,6 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
         </div>
     );
 };
-
 
 export type BinrohDashboardProps = Pick<AdminDashboardProps,
     'allUsersData' |
@@ -3348,7 +3333,6 @@ const HospitalModal: React.FC<HospitalModalProps> = ({ isOpen, onClose, onSave, 
     );
 };
 
-
 // --- Hospital Management ---
 interface HospitalManagementProps {
     hospitals: Hospital[];
@@ -3528,7 +3512,6 @@ const ManageAdminAccessModal: React.FC<ManageAdminAccessModalProps> = ({ isOpen,
     );
 };
 
-
 const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     /* eslint-disable */
     const {
@@ -3564,7 +3547,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         if (activeView === 'manajemen-pengguna' && onLoadEmployees) {
             const hasEmployeeData = Object.keys(allUsersData).length > 0;
             if (!hasEmployeeData) {
-                console.log('🔄 Switching to Employee Management tab - loading employee data...');
                 onLoadEmployees();
             }
         }

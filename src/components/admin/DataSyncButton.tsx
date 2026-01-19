@@ -31,10 +31,8 @@ export default function DataSyncButton() {
         setSyncResult(null);
 
         try {
-            console.log('🚀 Starting sync to Supabase...');
             const result = await syncAllEmployeesToSupabase(allUsersData);
 
-            console.log('✅ Sync completed:', result);
             setSyncResult(result);
 
             if (result.failed === 0) {
@@ -43,7 +41,6 @@ export default function DataSyncButton() {
                 addToast(`⚠️ Selesai dengan error. Sukses: ${result.success}, Gagal: ${result.failed}`, 'error');
             }
         } catch (error) {
-            console.error('❌ Sync failed:', error);
             addToast('❌ Sinkronisasi gagal. Silakan cek console untuk detail error.', 'error');
         } finally {
             setIsSyncing(false);

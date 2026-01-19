@@ -43,7 +43,6 @@ export async function createNotificationSupabase(data: Omit<Notification, 'id' |
     };
 
     // Store in Supabase
-    console.log('📤 Attempting to insert notification to Supabase:', dbNotification);
     const { data: result, error } = await supabase
         .from('notifications')
         .insert(dbNotification)
@@ -51,17 +50,10 @@ export async function createNotificationSupabase(data: Omit<Notification, 'id' |
         .single();
 
     if (error) {
-        console.error('❌ Supabase insert error:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-        });
         // Throw error so caller knows it failed
         throw new Error(`Failed to create notification: ${error.message}`);
     }
 
-    console.log('✅ Notification created in Supabase:', result);
     return notification; // Return local notification, not DB result
 }
 
@@ -69,7 +61,6 @@ export async function createNotificationSupabase(data: Omit<Notification, 'id' |
  * Get all notifications for a specific user from Supabase
  */
 export async function getUserNotifications(userId: string): Promise<Notification[]> {
-    console.log('🔍 Fetching notifications from Supabase for userId:', userId);
 
     const { data, error } = await supabase
         .from('notifications')
@@ -78,17 +69,9 @@ export async function getUserNotifications(userId: string): Promise<Notification
         .order('timestamp', { ascending: false });
 
     if (error) {
-        console.error('❌ Error fetching notifications from Supabase:', error);
-        console.error('❌ Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-        });
         return [];
     }
 
-    console.log('✅ Supabase returned', data?.length || 0, 'notifications');
 
     // Map from DB format (snake_case) to App format (camelCase)
     const mapped = (data || []).map((row: any) => {
@@ -105,17 +88,10 @@ export async function getUserNotifications(userId: string): Promise<Notification
             expiresAt: row.expires_at,
             dismissOnClick: row.dismiss_on_click,
         };
-        console.log('  📋 Mapped notification:', {
-            id: notification.id,
-            title: notification.title,
-            isRead: notification.isRead,
-            is_read_from_db: row.is_read
-        });
         return notification;
     });
 
     const unreadCount = mapped.filter(n => !n.isRead).length;
-    console.log(`✅ Total mapped notifications: ${mapped.length} (${unreadCount} unread)`);
 
     return mapped;
 }
@@ -124,9 +100,6 @@ export async function getUserNotifications(userId: string): Promise<Notification
  * Mark notification as read in Supabase - USING RPC FUNCTION
  */
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
-    console.log('📤 Supabase: Marking notification as read:', notificationId);
-    console.log('👤 User ID:', userId);
-    console.log('📤 Using RPC function with user_id parameter...');
 
     // 🔥 FIX: Use RPC function with user_id parameter
     // (karena auth.uid() tidak bekerja reliable)
@@ -136,16 +109,8 @@ export async function markNotificationAsRead(notificationId: string, userId: str
             p_user_id: userId  // 🔥 Kirim user_id dari frontend
         });
 
-    console.log('📤 RPC Response:', { data: rpcData, error: rpcError });
 
     if (rpcError) {
-        console.error('❌ RPC failed:', rpcError);
-        console.error('RPC Error details:', {
-            message: rpcError.message,
-            details: rpcError.details,
-            hint: rpcError.hint,
-            code: rpcError.code
-        });
 
         throw new Error(
             `Failed to mark notification as read: ${rpcError.message}\n\n` +
@@ -154,7 +119,6 @@ export async function markNotificationAsRead(notificationId: string, userId: str
     }
 
     if (!rpcData) {
-        console.error('❌ RPC returned no data!');
         throw new Error('RPC function succeeded but returned no data');
     }
 
@@ -162,8 +126,6 @@ export async function markNotificationAsRead(notificationId: string, userId: str
     const result = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
 
     if (!result.success) {
-        console.error('❌ RPC returned failure:', result.message);
-        console.error('Details:', result);
 
         throw new Error(
             `Failed to mark notification as read: ${result.message}\n` +
@@ -173,7 +135,6 @@ export async function markNotificationAsRead(notificationId: string, userId: str
         );
     }
 
-    console.log('✅ RPC Success - Notification marked as read:', result);
 }
 
 /**
@@ -187,7 +148,6 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
         .eq('is_read', false);
 
     if (error) {
-        console.error('❌ Error marking all notifications as read:', error);
         throw error;
     }
 }
@@ -202,7 +162,6 @@ export async function deleteNotificationsSupabase(notificationIds: string[]): Pr
         .in('id', notificationIds);
 
     if (error) {
-        console.error('❌ Error deleting notifications:', error);
         throw error;
     }
 }
@@ -217,7 +176,6 @@ export async function clearAllNotificationsSupabase(userId: string): Promise<voi
         .eq('user_id', userId);
 
     if (error) {
-        console.error('❌ Error clearing all notifications:', error);
         throw error;
     }
 }
@@ -241,7 +199,6 @@ export function subscribeToUserNotifications(
                 filter: `user_id=eq.${userId}`, // Use correct DB column name (snake_case)
             },
             (payload) => {
-                console.log('🔔 Realtime INSERT received:', payload.new);
                 // Map from DB format to App format
                 const notification = {
                     id: payload.new.id,
@@ -269,7 +226,6 @@ export function subscribeToUserNotifications(
                 filter: `user_id=eq.${userId}`,
             },
             (payload) => {
-                console.log('🔔 Realtime UPDATE received:', payload.new);
                 // Map from DB format to App format
                 const notification = {
                     id: payload.new.id,
@@ -288,7 +244,6 @@ export function subscribeToUserNotifications(
             }
         )
         .subscribe((status) => {
-            console.log('🔔 Realtime subscription status:', status);
         });
 
     return channel;

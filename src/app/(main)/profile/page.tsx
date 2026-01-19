@@ -49,7 +49,6 @@ export default function ProfilePage() {
             });
             return true;
         } catch (err) {
-            console.error('❌ Error updating profile:', err);
             addToast('Terjadi kesalahan saat memperbarui profil', 'error');
             return false;
         }
@@ -73,7 +72,6 @@ export default function ProfilePage() {
             const data = await response.json();
 
             if (!response.ok) {
-                console.error('❌ Change password API error:', data.error);
                 return { success: false, error: data.error || 'Gagal mengubah password' };
             }
 
@@ -82,7 +80,6 @@ export default function ProfilePage() {
 
             return { success: true };
         } catch (err) {
-            console.error('❌ Error changing password:', err);
             return { success: false, error: 'Terjadi kesalahan saat mengubah password' };
         }
     };

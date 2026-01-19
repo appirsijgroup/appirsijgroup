@@ -38,13 +38,11 @@ export const useScheduledActivities = (employeeId: string | null) => {
                         attendanceData[act.id] = att;
                     }
                 } catch (err) {
-                    console.error(`Error loading attendance for ${act.id}:`, err);
                 }
             }
 
             setAttendance(attendanceData);
         } catch (err) {
-            console.error('Error loading scheduled activities:', err);
             setError('Gagal memuat kegiatan terjadwal');
         } finally {
             setIsLoading(false);
@@ -73,7 +71,6 @@ export const useScheduledActivities = (employeeId: string | null) => {
 
             return true;
         } catch (err) {
-            console.error('Error submitting attendance:', err);
             alert('Gagal menyimpan presensi. Silakan coba lagi.');
             return false;
         }

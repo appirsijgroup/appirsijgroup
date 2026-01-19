@@ -7,7 +7,6 @@ import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
 
-
 export type MentorDashboardView = 'overview' | 'sessions' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target';
 
 interface MentorDashboardProps {
@@ -113,7 +112,6 @@ const RejectionModal: React.FC<{
         document.body
     );
 };
-
 
 // --- Sub-component for Detailed Mentee Progress Table ---
 const MenteeDetailProgressView: React.FC<{
@@ -318,8 +316,6 @@ const MenteeDetailProgressView: React.FC<{
         </div>
     );
 };
-
-
 
 const TadarusSessionModal: React.FC<{
     isOpen: boolean;
@@ -1254,7 +1250,6 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         setEditingSession(session || null);
         setIsSessionModalOpen(true);
     };
-
 
     const menteeData = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 

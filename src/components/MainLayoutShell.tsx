@@ -255,7 +255,6 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         });
     }, [announcements, notifications, loggedInEmployee]);
 
-
     // --- Filter Nav Items ---
     const filteredNavItems = useMemo(() => {
         if (!loggedInEmployee) return [];
@@ -404,7 +403,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3">
                         {/* Logo Skeleton */}
                         <div className="h-10 w-10 bg-slate-700 rounded-lg animate-pulse flex items-center justify-center">
-                            <Image src="/logorsijsp.png" alt="Logo" width={32} height={32} className="h-8 w-auto opacity-30" />
+                            <Image src="/logorsijsp.png" alt="Logo" width={32} height={32} priority className="h-8 w-auto opacity-30" />
                         </div>
                         <div className="h-8 bg-slate-700 rounded animate-pulse flex-1"></div>
                     </div>

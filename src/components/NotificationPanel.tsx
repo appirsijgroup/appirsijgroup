@@ -66,13 +66,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
             .filter(n => n.userId === loggedInUserId)
             .filter(n => !(n.expiresAt && now > n.expiresAt));
 
-        console.log('📬 NotificationPanel filtered notifications:', {
-            loggedInUserId,
-            totalAll: allNotifications.length,
-            totalFiltered: filtered.length,
-            allUserNotifications: allNotifications.filter(n => n.userId === loggedInUserId).map(n => ({ id: n.id, type: n.type, title: n.title })),
-            filteredNotifications: filtered.map(n => ({ id: n.id, type: n.type, title: n.title }))
-        });
 
         return filtered;
     }, [allNotifications, loggedInUserId]);
@@ -115,18 +108,13 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
     };
     
     const handleItemClick = (notification: Notification) => {
-        console.log('🔔 Notification clicked:', notification.id, notification.title);
 
         if (notification.dismissOnClick) {
-            console.log('🗑️ Dismissing notification:', notification.id);
             dismissNotification(notification.id);
         } else if (!notification.isRead) {
-            console.log('📖 Marking as read:', notification.id);
             // 🔥 FIX: Use await to ensure markAsRead completes before navigation
             markAsRead(notification.id).then(() => {
-                console.log('✅ Mark as read completed for:', notification.id);
             }).catch((error) => {
-                console.error('❌ Failed to mark as read:', error);
             });
         }
 

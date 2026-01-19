@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Verify session API error:', error);
     }
     return NextResponse.json(
       { error: 'Terjadi kesalahan server.' },

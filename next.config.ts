@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   // Suppress hydration mismatch warnings caused by browser extensions
   serverExternalPackages: [],
 
+  // Remove console logs in production
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
 
@@ -70,10 +77,10 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self';",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net;",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com;",
               "img-src 'self' data: https: blob: https://lkziomkegmimyiujlbvt.supabase.co;",
-              "font-src 'self' data: https://fonts.gstatic.com;",
-              "connect-src 'self' https://lkziomkegmimyiujlbvt.supabase.co wss://lkziomkegmimyiujlbvt.supabase.co https://*.supabase.co wss://*.supabase.co https://cdnjs.cloudflare.com https://equran.id https://cdn.equran.id;",
+              "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;",
+              "connect-src 'self' https://lkziomkegmimyiujlbvt.supabase.co wss://lkziomkegmimyiujlbvt.supabase.co https://*.supabase.co wss://*.supabase.co https://cdnjs.cloudflare.com https://equran.id https://cdn.equran.id https://api.myquran.com;",
               "frame-src 'self' https://lkziomkegmimyiujlbvt.supabase.co;",
               "object-src 'none';",
               "base-uri 'self';",

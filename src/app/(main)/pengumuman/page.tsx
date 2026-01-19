@@ -31,7 +31,6 @@ export default function PengumumanPage() {
                     loadHospitals()
                 ]);
             } catch (error) {
-                console.error('Error loading initial data:', error);
             } finally {
                 setInitLoaded(true);
             }
@@ -46,20 +45,12 @@ export default function PengumumanPage() {
             return;
         }
 
-        console.log('Creating announcement with data:', data);
-        console.log('Current user:', {
-            id: loggedInEmployee.id,
-            name: loggedInEmployee.name,
-            role: loggedInEmployee.role,
-            canBeMentor: loggedInEmployee.canBeMentor
-        });
 
         // Check if user has permission to create announcement
         const canCreate = isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor === true;
 
         if (!canCreate) {
             addToast('Anda tidak memiliki izin untuk membuat pengumuman', 'error');
-            console.error('User does not have permission to create announcement');
             return;
         }
 
@@ -74,8 +65,6 @@ export default function PengumumanPage() {
             // Refresh announcements after creation
             await loadAnnouncements();
         } catch (error: any) {
-            console.error('Error creating announcement:', error);
-            console.error('Error details:', error.message, error.code, error.details);
             addToast(`Gagal membuat pengumuman: ${error.message || 'Terjadi kesalahan'}`, 'error');
         }
     };
@@ -85,7 +74,6 @@ export default function PengumumanPage() {
             await removeAnnouncement(id);
             addToast('Pengumuman berhasil dihapus dari database!', 'success');
         } catch (error: any) {
-            console.error('Error deleting announcement:', error);
             addToast(`Gagal menghapus pengumuman: ${error.message || 'Terjadi kesalahan'}`, 'error');
         }
     };

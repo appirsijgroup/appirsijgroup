@@ -46,6 +46,7 @@ const allNavItemsRaw = [
     { id: 'panduan-doa', label: 'Panduan & Doa', icon: PrayerBeadIcon, href: '/panduan-doa' },
     { id: 'profile', label: 'Profil', icon: IdentificationIcon, href: '/profile' },
     { id: 'admin', label: 'Admin Dashboard', icon: AdminIcon, href: '/admin' },
+    { id: 'admin-employees', label: 'Manajemen Employee', icon: UsersIcon, href: '/admin/employees' },
 ];
 
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
@@ -264,6 +265,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             const isAdmin = isAnyAdmin(loggedInEmployee); // 🔥 NOW INCLUDES OWNER!
 
             if (item.id === 'admin' && !isAdmin) return false;
+            if (item.id === 'admin-employees' && !isAdmin) return false;
             return true;
         });
     }, [loggedInEmployee]);

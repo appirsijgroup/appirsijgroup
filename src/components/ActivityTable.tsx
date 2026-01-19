@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Fragment, useMemo } from 'react';
 import { type Activity, type Attendance, type Employee, type AudienceRules, type TeamAttendanceSession } from '../types';
 import { ZoomIcon, YouTubeIcon, CheckIcon, XIcon, PencilIcon, ClockIcon, UserGroupIcon } from './Icons';
+import { getTodayLocalDateString, getCurrentTime } from '../utils/dateUtils';
 
 
 interface ActivityTableProps {
@@ -103,9 +104,15 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                     return true;
             }
         }).sort((a, b) => {
-            const dateComparison = a.date.localeCompare(b.date);
+            // Handle undefined date or startTime
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            const dateComparison = dateA.localeCompare(dateB);
             if (dateComparison !== 0) return dateComparison;
-            return a.startTime.localeCompare(b.startTime);
+
+            const timeA = a.startTime || '';
+            const timeB = b.startTime || '';
+            return timeA.localeCompare(timeB);
         });
 
     }, [activities, teamAttendanceSessions, loggedInEmployee]);
@@ -159,15 +166,40 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                             const attendanceStatus = attendance[item.id];
                             const isSubmitted = !!attendanceStatus?.submitted;
 
-                            const startTime = new Date(`${item.date}T${item.startTime}`);
-                            const endTime = new Date(`${item.date}T${item.endTime}`);
+                            // 🔥 FIX: Use local timezone comparison instead of Date object
+                            const todayStr = getTodayLocalDateString();
+                            const currentTime = getCurrentTime();
+                            const isSessionToday = item.date === todayStr;
 
-                            const diffToStart = startTime.getTime() - now.getTime();
-                            const diffToEnd = endTime.getTime() - now.getTime();
+                            // Calculate time differences only for today's sessions
+                            let diffToStart = 0;
+                            let diffToEnd = 0;
+                            let isOngoing = false;
+                            let isStarted = false;
+                            let isNotFinished = false;
 
-                            const isOngoing = diffToStart <= 0 && diffToEnd > 0;
-                            const isStarted = diffToStart <= 0; // 🔥 FIX: Sudah mulai (bisa presensi)
-                            const isNotFinished = diffToEnd > 0; // 🔥 FIX: Belum selesai
+                            if (isSessionToday) {
+                                // Parse current time to minutes
+                                const [currentHour, currentMin] = currentTime.split(':').map(Number);
+                                const currentTotalMin = currentHour * 60 + currentMin;
+
+                                // Parse start time to minutes
+                                const [startHour, startMin] = item.startTime.split(':').map(Number);
+                                const startTotalMin = startHour * 60 + startMin;
+
+                                // Parse end time to minutes
+                                const [endHour, endMin] = item.endTime.split(':').map(Number);
+                                const endTotalMin = endHour * 60 + endMin;
+
+                                // Calculate differences in milliseconds
+                                diffToStart = (startTotalMin - currentTotalMin) * 60 * 1000;
+                                diffToEnd = (endTotalMin - currentTotalMin) * 60 * 1000;
+
+                                isOngoing = diffToStart <= 0 && diffToEnd > 0;
+                                isStarted = diffToStart <= 0;
+                                isNotFinished = diffToEnd > 0;
+                            }
+
                             const isActionable = isStarted && isNotFinished && !isSubmitted && item.status === 'scheduled';
 
                             const isCreator = item.isTeamSession && (item.originalData as TeamAttendanceSession).creatorId === loggedInEmployee.id;
@@ -216,7 +248,9 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                                             {item.isTeamSession ? 'Tim' : 'Umum'}
                                         </span>
                                     </td>
-                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-mono text-xs hidden sm:table-cell">{item.startTime} - {item.endTime}</td>
+                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-mono text-xs">
+                                        {item.startTime && item.endTime ? `${item.startTime} - ${item.endTime}` : '-'}
+                                    </td>
                                     <td className="px-2 sm:px-4 py-2 sm:py-4 hidden md:table-cell"><span className={`font-bold text-xs ${statusClass}`}>{statusLabel}</span></td>
                                     <td className="px-2 sm:px-4 py-2 sm:py-4 font-mono text-xs font-semibold hidden sm:table-cell">
                                         {countdownLabel && (

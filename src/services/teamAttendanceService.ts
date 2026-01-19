@@ -188,13 +188,29 @@ export const updateTeamAttendanceSession = async (
 
 // Delete session
 export const deleteTeamAttendanceSession = async (sessionId: string): Promise<void> => {
-    const { error } = await supabase
-        .from('team_attendance_sessions')
-        .delete()
-        .eq('id', sessionId);
+    try {
+        console.log('🗑️ Attempting to delete team attendance session:', sessionId);
 
-    if (error) {
-        console.error('Error deleting team attendance session:', error);
+        const { data, error } = await supabase
+            .from('team_attendance_sessions')
+            .delete()
+            .eq('id', sessionId)
+            .select();
+
+        if (error) {
+            console.error('❌ Supabase delete error:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code,
+                fullError: error
+            });
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        console.log('✅ Delete operation completed. Deleted rows:', data);
+    } catch (error) {
+        console.error('❌ Error in deleteTeamAttendanceSession:', error);
         throw error;
     }
 };

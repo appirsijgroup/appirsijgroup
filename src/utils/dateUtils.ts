@@ -11,6 +11,23 @@ export const getTodayLocalDateString = (): string => {
 };
 
 /**
+ * Mendapatkan waktu saat ini dalam format HH:mm berdasarkan timezone lokal
+ */
+export const getCurrentTime = (): string => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+/**
+ * Memeriksa apakah currentTime berada dalam range waktu
+ */
+export const isTimeInRange = (currentTime: string, startTime: string, endTime: string): boolean => {
+    return currentTime >= startTime && currentTime <= endTime;
+};
+
+/**
  * Mendapatkan waktu saat ini dalam format ISO string berdasarkan timezone lokal
  */
 export const getNowLocal = (): Date => {

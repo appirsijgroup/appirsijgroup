@@ -8,18 +8,20 @@ interface GuidanceState {
     tadarusRequests: TadarusRequest[];
     missedPrayerRequests: MissedPrayerRequest[];
     menteeTargets: MenteeTarget[];
-    
+
     // Actions
     addOrUpdateWeeklyReportSubmission: (submission: WeeklyReportSubmission) => void;
-    
+
     addTadarusSessions: (sessions: TadarusSession[]) => void;
-    updateTadarusSession: (sessionId: string, updates: Partial<TadarusSession> | ((session: TadarusSession) => TadarusSession)) => void;
-    deleteTadarusSession: (sessionId: string) => void;
-    
-    addOrUpdateTadarusRequest: (request: TadarusRequest) => void;
-    
+    updateTadarusSession: (sessionId: string, updates: Partial<TadarusSession> | ((session: TadarusSession) => TadarusSession)) => Promise<void>;
+    deleteTadarusSession: (sessionId: string) => Promise<void>;
+    loadTadarusSessionsFromSupabase: () => Promise<void>;
+    loadTadarusRequestsFromSupabase: () => Promise<void>;
+
+    addOrUpdateTadarusRequest: (request: TadarusRequest) => Promise<void>;
+
     addOrUpdateMissedPrayerRequest: (request: MissedPrayerRequest) => void;
-    
+
     addMenteeTarget: (target: MenteeTarget) => void;
     updateMenteeTarget: (targetId: string, updates: Partial<MenteeTarget>) => void;
     deleteMenteeTarget: (targetId: string) => void;
@@ -48,29 +50,107 @@ export const useGuidanceStore = create<GuidanceState>()(
                 tadarusSessions: [...state.tadarusSessions, ...sessions]
             })),
 
-            updateTadarusSession: (sessionId, updates) => set((state) => ({
-                tadarusSessions: state.tadarusSessions.map(session =>
-                    session.id === sessionId
-                        ? typeof updates === 'function'
-                            ? updates(session)
-                            : { ...session, ...updates }
-                        : session
-                )
-            })),
+            updateTadarusSession: async (sessionId, updates) => {
+                try {
+                    // Update to Supabase first
+                    const { updateTadarusSession: updateService } = await import('@/services/tadarusService');
+                    const updateData = typeof updates === 'function' ? updates(null) : updates;
+                    await updateService(sessionId, updateData);
 
-            deleteTadarusSession: (sessionId) => set((state) => ({
-                tadarusSessions: state.tadarusSessions.filter(s => s.id !== sessionId)
-            })),
-            
-            addOrUpdateTadarusRequest: (request) => set((state) => {
-                const index = state.tadarusRequests.findIndex(r => r.id === request.id);
-                 if (index !== -1) {
-                    const newRequests = [...state.tadarusRequests];
-                    newRequests[index] = request;
-                    return { tadarusRequests: newRequests };
+                    // Then update local state
+                    set((state) => ({
+                        tadarusSessions: state.tadarusSessions.map(session =>
+                            session.id === sessionId
+                                ? typeof updates === 'function'
+                                    ? updates(session)
+                                    : { ...session, ...updates }
+                                : session
+                        )
+                    }));
+                } catch (error) {
+                    console.error('❌ Error updating tadarus session:', error);
+                    throw error;
                 }
-                return { tadarusRequests: [...state.tadarusRequests, request] };
-            }),
+            },
+
+            deleteTadarusSession: async (sessionId) => {
+                try {
+                    // Delete from Supabase first
+                    const { deleteTadarusSession: deleteService } = await import('@/services/tadarusService');
+                    await deleteService(sessionId);
+
+                    // Then update local state
+                    set((state) => ({
+                        tadarusSessions: state.tadarusSessions.filter(s => s.id !== sessionId)
+                    }));
+                } catch (error) {
+                    console.error('❌ Error deleting tadarus session:', error);
+                    throw error;
+                }
+            },
+
+            loadTadarusSessionsFromSupabase: async () => {
+                try {
+                    const { getAllTadarusSessions } = await import('@/services/tadarusService');
+                    const sessions = await getAllTadarusSessions();
+                    set({ tadarusSessions: sessions });
+                    console.log(`✅ Loaded ${sessions.length} tadarus sessions from Supabase`);
+                } catch (error) {
+                    console.error('❌ Error loading tadarus sessions:', error);
+                    throw error;
+                }
+            },
+
+            loadTadarusRequestsFromSupabase: async () => {
+                try {
+                    const { getAllTadarusRequests } = await import('@/services/tadarusService');
+                    const requests = await getAllTadarusRequests();
+                    set({ tadarusRequests: requests });
+                    console.log(`✅ Loaded ${requests.length} tadarus requests from Supabase`);
+                } catch (error) {
+                    console.error('❌ Error loading tadarus requests:', error);
+                    throw error;
+                }
+            },
+
+            addOrUpdateTadarusRequest: async (request) => {
+                try {
+                    // Save to Supabase first
+                    const { createTadarusRequest, updateTadarusRequest } = await import('@/services/tadarusService');
+
+                    const existingRequest = await new Promise<any>((resolve) => {
+                        set((state) => {
+                            const found = state.tadarusRequests.find(r => r.id === request.id);
+                            resolve(found);
+                        });
+                    });
+
+                    if (!existingRequest) {
+                        // Create new request
+                        await createTadarusRequest(request);
+                    } else if (existingRequest.status !== request.status) {
+                        // Update status only
+                        await updateTadarusRequest(request.id, {
+                            status: request.status,
+                            reviewedAt: request.reviewedAt
+                        });
+                    }
+
+                    // Then update local state
+                    set((state) => {
+                        const index = state.tadarusRequests.findIndex(r => r.id === request.id);
+                        if (index !== -1) {
+                            const newRequests = [...state.tadarusRequests];
+                            newRequests[index] = request;
+                            return { tadarusRequests: newRequests };
+                        }
+                        return { tadarusRequests: [...state.tadarusRequests, request] };
+                    });
+                } catch (error) {
+                    console.error('❌ Error saving tadarus request:', error);
+                    throw error;
+                }
+            },
 
             addOrUpdateMissedPrayerRequest: (request) => set((state) => {
                 const index = state.missedPrayerRequests.findIndex(r => r.id === request.id);

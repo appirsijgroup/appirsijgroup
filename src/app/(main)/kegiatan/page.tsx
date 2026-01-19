@@ -6,8 +6,9 @@ import { useAppDataStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
 import { getEmployeeAttendance, submitAttendance, type AttendanceRecord } from '@/services/attendanceService';
 import { getEmployeeActivitiesAttendance, submitScheduledAttendance } from '@/services/scheduledActivityService';
-import { supabase } from '@/lib/supabase';
+import { getAllTeamAttendanceSessions } from '@/services/teamAttendanceService';
 import { type Attendance } from '@/types';
+import { getTodayLocalDateString } from '@/utils/dateUtils';
 
 export default function KegiatanPage() {
     const { loggedInEmployee } = useAppDataStore();
@@ -70,14 +71,9 @@ export default function KegiatanPage() {
 
     const loadTeamSessions = async () => {
         try {
-            const { data, error } = await supabase
-                .from('team_attendance_sessions')
-                .select('*')
-                .gte('date', new Date().toISOString().split('T')[0])
-                .order('date', { ascending: true });
-
-            if (error) throw error;
-            setTeamAttendanceSessions(data || []);
+            // 🔥 FIX: Use service to load all sessions (past, present, and future)
+            const sessions = await getAllTeamAttendanceSessions();
+            setTeamAttendanceSessions(sessions);
         } catch (error) {
             console.error('Error loading team sessions:', error);
         }

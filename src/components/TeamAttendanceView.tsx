@@ -3,6 +3,20 @@ import { type Activity, type Employee, type TeamAttendanceSession, type Attendan
 import { UserGroupIcon, CalendarDaysIcon, PlusCircleIcon, PencilIcon, SearchIcon, CheckIcon, TrashIcon, GlobeAltIcon, UserCircleIcon, ClockIcon, CheckBadgeIcon, ZoomIcon, YouTubeIcon } from './Icons';
 import { createPortal } from 'react-dom';
 import ConfirmationModal from './ConfirmationModal';
+import { getTodayLocalDateString } from '../utils/dateUtils';
+
+// Helper function untuk mendapatkan waktu saat ini dalam format HH:mm
+const getCurrentTime = (): string => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+};
+
+// Helper function untuk membandingkan waktu HH:mm
+const isTimeInRange = (currentTime: string, startTime: string, endTime: string): boolean => {
+    return currentTime >= startTime && currentTime <= endTime;
+};
 
 interface TeamAttendanceViewProps {
     loggedInEmployee: Employee;
@@ -397,8 +411,8 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const [activeTab, setActiveTab] = useState<TeamAttendanceSession['type']>('KIE');
 
     const allUsers = useMemo(() => Object.values(allUsersData).map(d => d.employee), [allUsersData]);
-    
-    const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+    const todayStr = useMemo(() => getTodayLocalDateString(), []);
 
     const relevantSessions = useMemo(() => {
         return teamAttendanceSessions.filter(session => {
@@ -428,28 +442,40 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
 
     const sessionsForTab = activeTab === 'KIE' ? otherKieSessions : otherDoaSessions;
 
-    const handleSelfAttend = (session: TeamAttendanceSession) => {
+    const handleSelfAttend = async (session: TeamAttendanceSession) => {
         if (!session.presentUserIds.includes(loggedInEmployee.id)) {
-            const newPresentIds = [...session.presentUserIds, loggedInEmployee.id];
-            onUpdateAttendance(session.id, newPresentIds);
-            addToast(`Anda berhasil presensi untuk ${session.type}.`, 'success');
+            try {
+                const newPresentIds = [...session.presentUserIds, loggedInEmployee.id];
+                await onUpdateAttendance(session.id, newPresentIds);
+                addToast(`Anda berhasil presensi untuk ${session.type}.`, 'success');
+            } catch (error) {
+                console.error('❌ Error saat presensi:', error);
+                addToast('Gagal melakukan presensi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+            }
         }
     };
-    
-    const handleDelete = () => {
+
+    const handleDelete = async () => {
         if (confirmDelete) {
-            onDeleteSession(confirmDelete);
-            setConfirmDelete(null);
+            try {
+                await onDeleteSession(confirmDelete);
+                addToast('Sesi berhasil dihapus', 'success');
+                setConfirmDelete(null);
+            } catch (error) {
+                console.error('❌ Error saat menghapus sesi:', error);
+                addToast('Gagal menghapus sesi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+            }
         }
     };
 
     const SessionCard: React.FC<{session: TeamAttendanceSession}> = ({ session }) => {
         const isCreator = session.creatorId === loggedInEmployee.id;
         const isPresent = session.presentUserIds.includes(loggedInEmployee.id);
-        const now = new Date();
-        const startTime = new Date(`${session.date}T${session.startTime}`);
-        const endTime = new Date(`${session.date}T${session.endTime}`);
-        const isActionable = now >= startTime && now <= endTime;
+
+        // Check if session is today and current time is within the session time range
+        const isSessionToday = session.date === todayStr;
+        const currentTime = getCurrentTime();
+        const isActionable = isSessionToday && isTimeInRange(currentTime, session.startTime, session.endTime);
 
         return (
             <div className="bg-black/20 p-4 rounded-lg border border-white/10 flex flex-col sm:flex-row justify-between items-start gap-4">

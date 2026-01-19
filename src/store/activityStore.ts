@@ -13,8 +13,8 @@ interface ActivityState {
     updateActivity: (activityId: string, updates: Partial<Activity>) => void;
     deleteActivity: (activityId: string) => void;
     addTeamAttendanceSessions: (sessions: TeamAttendanceSession[]) => void;
-    updateTeamAttendanceSession: (sessionId: string, updates: Partial<TeamAttendanceSession>) => void;
-    deleteTeamAttendanceSession: (sessionId: string) => void;
+    updateTeamAttendanceSession: (sessionId: string, updates: Partial<TeamAttendanceSession>) => Promise<void>;
+    deleteTeamAttendanceSession: (sessionId: string) => Promise<void>;
     loadTeamAttendanceSessionsFromSupabase: () => Promise<void>;
     loadActivitiesFromSupabase: (employeeId?: string) => Promise<void>;
 }
@@ -38,14 +38,38 @@ export const useActivityStore = create<ActivityState>()(
             addTeamAttendanceSessions: (sessions) => set((state) => ({
                 teamAttendanceSessions: [...state.teamAttendanceSessions, ...sessions]
             })),
-            updateTeamAttendanceSession: (sessionId, updates) => set((state) => ({
-                teamAttendanceSessions: state.teamAttendanceSessions.map(sess =>
-                    sess.id === sessionId ? { ...sess, ...updates } : sess
-                )
-            })),
-            deleteTeamAttendanceSession: (sessionId) => set((state) => ({
-                teamAttendanceSessions: state.teamAttendanceSessions.filter(sess => sess.id !== sessionId)
-            })),
+            updateTeamAttendanceSession: async (sessionId, updates) => {
+                try {
+                    // Update to Supabase first
+                    const { updateTeamAttendanceSession: updateService } = await import('@/services/teamAttendanceService');
+                    await updateService(sessionId, updates);
+
+                    // Then update local state
+                    set((state) => ({
+                        teamAttendanceSessions: state.teamAttendanceSessions.map(sess =>
+                            sess.id === sessionId ? { ...sess, ...updates } : sess
+                        )
+                    }));
+                } catch (error) {
+                    console.error('❌ Error updating team attendance session:', error);
+                    throw error;
+                }
+            },
+            deleteTeamAttendanceSession: async (sessionId) => {
+                try {
+                    // Delete from Supabase first
+                    const { deleteTeamAttendanceSession: deleteService } = await import('@/services/teamAttendanceService');
+                    await deleteService(sessionId);
+
+                    // Then update local state
+                    set((state) => ({
+                        teamAttendanceSessions: state.teamAttendanceSessions.filter(sess => sess.id !== sessionId)
+                    }));
+                } catch (error) {
+                    console.error('❌ Error deleting team attendance session:', error);
+                    throw error;
+                }
+            },
             loadTeamAttendanceSessionsFromSupabase: async () => {
                 set({ isLoadingTeamAttendance: true, teamAttendanceError: null });
 

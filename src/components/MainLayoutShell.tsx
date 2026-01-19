@@ -385,6 +385,16 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsClient(true);
     }, []);
 
+    // 🔥 Save last visited page to localStorage for post-login redirect
+    useEffect(() => {
+        if (typeof window !== 'undefined' && pathname && loggedInEmployee) {
+            // Don't save login page
+            if (pathname !== '/login' && pathname !== '/register') {
+                localStorage.setItem('lastVisitedPage', pathname);
+            }
+        }
+    }, [pathname, loggedInEmployee]);
+
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
     if (!isClient || !loggedInEmployee) {
         return (

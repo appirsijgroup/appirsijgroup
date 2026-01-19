@@ -2804,7 +2804,23 @@ export const BinrohDashboard: React.FC<BinrohDashboardProps> = (props) => {
 
     type BinrohAdminView = 'manajemen-konten' | 'reports' | 'pengumuman';
 
-    const [activeView, setActiveView] = useState<BinrohAdminView>('manajemen-konten');
+    // 🔥 Load activeView from localStorage to persist across page refreshes
+    const [activeView, setActiveView] = useState<BinrohAdminView>(() => {
+        if (typeof window !== 'undefined') {
+            const savedView = localStorage.getItem('binrohAdminDashboardActiveView');
+            if (savedView && ['manajemen-konten', 'reports', 'pengumuman'].includes(savedView)) {
+                return savedView as BinrohAdminView;
+            }
+        }
+        return 'manajemen-konten'; // Default to Content & Activities for first-time visitors
+    });
+
+    // 🔥 Save activeView to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('binrohAdminDashboardActiveView', activeView);
+        }
+    }, [activeView]);
     const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('kegiatan');
     const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
@@ -3520,11 +3536,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     } = props;
     /* eslint-enable */
 
-    const [activeView, setActiveView] = useState<AdminView>(
-        'reports' // 🔥 NEW: Default to Reports tab to avoid loading employee data on page load
-    );
+    // 🔥 Load activeView from localStorage to persist across page refreshes
+    const [activeView, setActiveView] = useState<AdminView>(() => {
+        if (typeof window !== 'undefined') {
+            const savedView = localStorage.getItem('adminDashboardActiveView');
+            if (savedView && ['manajemen-pengguna', 'manajemen-konten', 'reports', 'pengumuman', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(savedView)) {
+                return savedView as AdminView;
+            }
+        }
+        return 'reports'; // Default to Reports tab for first-time visitors
+    });
 
-    // 🔥 NEW: Load employee data on-demand when switching to Manajemen Pengguna tab
+    // 🔥 Save activeView to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('adminDashboardActiveView', activeView);
+        }
+    }, [activeView]);
+
+    // 🔥 Load employee data on-demand when switching to Manajemen Pengguna tab
     useEffect(() => {
         if (activeView === 'manajemen-pengguna' && onLoadEmployees) {
             const hasEmployeeData = Object.keys(allUsersData).length > 0;

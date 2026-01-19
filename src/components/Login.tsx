@@ -53,8 +53,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
             }
 
             if (data.success) {
-                // Server sets HTTP-only cookie, just redirect
-                router.push('/dashboard');
+                // Server sets HTTP-only cookie, redirect to last visited page or dashboard
+                if (typeof window !== 'undefined') {
+                    const lastPage = localStorage.getItem('lastVisitedPage');
+                    router.push(lastPage || '/dashboard');
+                } else {
+                    router.push('/dashboard');
+                }
             }
         } catch (err: unknown) {
             setError('Terjadi kesalahan saat login. Silakan coba lagi.');

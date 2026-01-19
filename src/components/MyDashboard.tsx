@@ -1272,6 +1272,11 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
         functionalRoles.includes('KEPALA URUSAN') ||
         functionalRoles.includes('KEPALA RUANGAN');
 
+    // 🔥 NEW: Check if user can access Analytics (admin OR has functional roles/assignments)
+    const canAccessAnalytics = employee.role === 'super-admin' ||
+        employee.role === 'admin' ||
+        (employee.role === 'user' && functionalRoles.length > 0);
+
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
 
@@ -1336,6 +1341,10 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             case 'kinerja':
                 return <MemoizedKinerjaView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} />;
             case 'analytics':
+                // 🔥 NEW: Security check - only show Analytics if user has access
+                if (!canAccessAnalytics) {
+                    return <div className="text-center text-white p-8">Anda tidak memiliki akses ke Analytics</div>;
+                }
                 return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
             case 'rapot':
                 return <RapotView employee={employee} dailyActivitiesConfig={props.dailyActivitiesConfig} allUsersData={props.allUsersData} hospitals={props.hospitals} />;
@@ -1435,7 +1444,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                         ) : (
                             <>
                                 <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                                <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+                                {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
                                 <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
                             </>
                         )}

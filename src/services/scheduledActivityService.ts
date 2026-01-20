@@ -70,7 +70,26 @@ export const getAllActivities = async (): Promise<Activity[]> => {
             .order('start_time', { ascending: true });
 
         if (error) throw error;
-        return data || [];
+
+        // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
+        return (data || []).map(dbActivity => ({
+            id: dbActivity.id,
+            name: dbActivity.name,
+            description: dbActivity.description,
+            date: dbActivity.date,
+            startTime: dbActivity.start_time,
+            endTime: dbActivity.end_time,
+            createdBy: dbActivity.created_by,
+            createdByName: dbActivity.created_by_name,
+            participantIds: dbActivity.participant_ids || [],
+            zoomUrl: dbActivity.zoom_url,
+            youtubeUrl: dbActivity.youtube_url,
+            activityType: dbActivity.activity_type,
+            status: dbActivity.status,
+            audienceType: dbActivity.audience_type,
+            audienceRules: dbActivity.audience_rules,
+            createdAt: dbActivity.created_at
+        }));
     } catch (error) {
         throw error;
     }
@@ -93,7 +112,26 @@ export const getActivitiesByDateRange = async (
             .order('start_time', { ascending: true });
 
         if (error) throw error;
-        return data || [];
+
+        // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
+        return (data || []).map(dbActivity => ({
+            id: dbActivity.id,
+            name: dbActivity.name,
+            description: dbActivity.description,
+            date: dbActivity.date,
+            startTime: dbActivity.start_time,
+            endTime: dbActivity.end_time,
+            createdBy: dbActivity.created_by,
+            createdByName: dbActivity.created_by_name,
+            participantIds: dbActivity.participant_ids || [],
+            zoomUrl: dbActivity.zoom_url,
+            youtubeUrl: dbActivity.youtube_url,
+            activityType: dbActivity.activity_type,
+            status: dbActivity.status,
+            audienceType: dbActivity.audience_type,
+            audienceRules: dbActivity.audience_rules,
+            createdAt: dbActivity.created_at
+        }));
     } catch (error) {
         throw error;
     }
@@ -139,8 +177,28 @@ export const getActivitiesForEmployee = async (
 
         if (actError) throw actError;
 
-        // 3. Filter berdasarkan audience_type dan rules
-        const filteredActivities = (allActivities || []).filter(activity => {
+        // 3. Convert snake_case to camelCase dan filter
+        const filteredActivities = (allActivities || []).map(dbActivity => {
+            // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
+            return {
+                id: dbActivity.id,
+                name: dbActivity.name,
+                description: dbActivity.description,
+                date: dbActivity.date,
+                startTime: dbActivity.start_time,
+                endTime: dbActivity.end_time,
+                createdBy: dbActivity.created_by,
+                createdByName: dbActivity.created_by_name,
+                participantIds: dbActivity.participant_ids || [],
+                zoomUrl: dbActivity.zoom_url,
+                youtubeUrl: dbActivity.youtube_url,
+                activityType: dbActivity.activity_type,
+                status: dbActivity.status,
+                audienceType: dbActivity.audience_type,
+                audienceRules: dbActivity.audience_rules,
+                createdAt: dbActivity.created_at
+            };
+        }).filter(activity => {
             // Public: Semua bisa lihat
             if (activity.audienceType === 'public') {
                 return true;
@@ -230,7 +288,7 @@ export const createActivity = async (
             start_time: activity.startTime,
             end_time: activity.endTime,
             created_by: activity.createdBy,
-            created_by_name: '', // Will be filled by trigger or default
+            created_by_name: activity.createdByName || '', // ⚡ FIX: Gunakan createdByName dari parameter
             participant_ids: activity.participantIds || [],
             zoom_url: activity.zoomUrl || null,
             youtube_url: activity.youtubeUrl || null,
@@ -265,26 +323,51 @@ export const updateActivity = async (
     updates: Partial<Activity>
 ): Promise<Activity> => {
     try {
+        // ⚡ FIX: Convert camelCase to snake_case untuk database
+        // JANGAN pakai spread ...updates karena akan kirim field camelCase ke Supabase!
+        const dbData: any = {};
+
+        if (updates.name !== undefined) dbData.name = updates.name;
+        if (updates.description !== undefined) dbData.description = updates.description;
+        if (updates.date !== undefined) dbData.date = updates.date;
+        if (updates.startTime !== undefined) dbData.start_time = updates.startTime;
+        if (updates.endTime !== undefined) dbData.end_time = updates.endTime;
+        if (updates.participantIds !== undefined) dbData.participant_ids = updates.participantIds;
+        if (updates.zoomUrl !== undefined) dbData.zoom_url = updates.zoomUrl;
+        if (updates.youtubeUrl !== undefined) dbData.youtube_url = updates.youtubeUrl;
+        if (updates.activityType !== undefined) dbData.activity_type = updates.activityType;
+        if (updates.status !== undefined) dbData.status = updates.status;
+        if (updates.audienceType !== undefined) dbData.audience_type = updates.audienceType;
+        if (updates.audienceRules !== undefined) dbData.audience_rules = updates.audienceRules;
+
         const { data, error } = await supabase
             .from('activities')
-            .update({
-                ...updates,
-                // Convert camelCase to snake_case untuk database
-                ...(updates.startTime && { start_time: updates.startTime }),
-                ...(updates.endTime && { end_time: updates.endTime }),
-                ...(updates.participantIds && { participant_ids: updates.participantIds }),
-                ...(updates.zoomUrl && { zoom_url: updates.zoomUrl }),
-                ...(updates.youtubeUrl && { youtube_url: updates.youtubeUrl }),
-                ...(updates.activityType && { activity_type: updates.activityType }),
-                ...(updates.audienceType && { audience_type: updates.audienceType }),
-                ...(updates.audienceRules && { audience_rules: updates.audienceRules }),
-            })
+            .update(dbData)
             .eq('id', id)
             .select()
             .single();
 
         if (error) throw error;
-        return data;
+
+        // Convert response back to camelCase
+        return {
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            date: data.date,
+            startTime: data.start_time,
+            endTime: data.end_time,
+            createdBy: data.created_by,
+            createdByName: data.created_by_name,
+            participantIds: data.participant_ids,
+            zoomUrl: data.zoom_url,
+            youtubeUrl: data.youtube_url,
+            activityType: data.activity_type,
+            status: data.status,
+            audienceType: data.audience_type,
+            audienceRules: data.audience_rules,
+            createdAt: data.created_at
+        };
     } catch (error) {
         throw error;
     }
@@ -434,9 +517,8 @@ export const getEmployeeScheduledAttendance = async (
 
 /**
  * Submit attendance untuk satu activity
- * Fungsi ini akan:
- * 1. Menyimpan attendance ke tabel activity_attendance
- * 2. Jika hadir, update monthly activities di Lembar Mutaba'ah
+ * Fungsi ini hanya menyimpan attendance ke tabel activity_attendance
+ * Dashboard & Lembar Mutabaah akan membaca langsung dari tabel attendance ini
  */
 export const submitScheduledAttendance = async (
     activityId: string,
@@ -445,8 +527,7 @@ export const submitScheduledAttendance = async (
     reason?: string
 ): Promise<ActivityAttendance> => {
     try {
-
-        // 1. Get activity info untuk integrasi dengan monthly activities
+        // 1. Get activity info untuk cek late entry
         const { data: activity, error: actError } = await supabase
             .from('activities')
             .select('*')
@@ -456,7 +537,6 @@ export const submitScheduledAttendance = async (
         if (actError) {
             throw actError;
         }
-
 
         // 2. Cek apakah activity sudah selesai atau masih berlangsung
         const now = new Date();
@@ -474,7 +554,6 @@ export const submitScheduledAttendance = async (
         let attendanceData;
 
         if (existingAttendance) {
-
             // Update existing
             const { data, error } = await supabase
                 .from('activity_attendance')
@@ -494,7 +573,6 @@ export const submitScheduledAttendance = async (
 
             attendanceData = data;
         } else {
-
             // Insert new
             const { data, error } = await supabase
                 .from('activity_attendance')
@@ -516,13 +594,7 @@ export const submitScheduledAttendance = async (
             attendanceData = data;
         }
 
-
-        // 4. Jika hadir, update monthly activities (integrasi dengan Lembar Mutaba'ah)
-        if (status === 'hadir') {
-            await updateMonthlyActivitiesFromScheduledActivity(employeeId, activity);
-        }
-
-        // 5. Convert to camelCase
+        // 4. Convert to camelCase
         return {
             id: attendanceData.id,
             activityId: attendanceData.activity_id,
@@ -544,6 +616,7 @@ export const submitScheduledAttendance = async (
 /**
  * Helper: Update monthly activities berdasarkan scheduled activity
  * Integrasi dengan Lembar Mutaba'ah
+ * ⚡ PERBAIKI: Tambahkan ke TANGGAL spesifik, bukan counter bulanan
  */
 const updateMonthlyActivitiesFromScheduledActivity = async (
     employeeId: string,
@@ -559,9 +632,10 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
 
         const fieldName = activityFieldMap[activity.activity_type] || 'kegiatanTerjadwal';
 
-        // Get current month key
+        // Get current date key (YYYY-MM-DD format untuk daily checklist)
         const activityDate = new Date(activity.date);
         const monthKey = `${activityDate.getFullYear()}-${(activityDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        const dayKey = activityDate.getDate().toString().padStart(2, '0'); // DD format
 
         // Get current monthly activities
         const { data: currentData, error: fetchError } = await supabase
@@ -576,17 +650,43 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
 
         const currentActivities = currentData?.activities || {};
 
-        // Update the specific field
-        const updatedActivities = {
-            ...currentActivities,
-            [monthKey]: {
-                ...(currentActivities[monthKey] || {}),
-                [fieldName]: (currentActivities[monthKey]?.[fieldName] || 0) + 1,
-            }
+        // ⚡ PERBAIKI: MERGE dengan benar untuk nested objects
+        // Kita perlu merge di level dayKey, bukan monthKey
+        const updatedActivities = { ...currentActivities };
+
+        // Pastikan monthKey exists
+        if (!updatedActivities[monthKey]) {
+            updatedActivities[monthKey] = {};
+        }
+
+        // Pastikan dayKey exists
+        if (!updatedActivities[monthKey][dayKey]) {
+            updatedActivities[monthKey][dayKey] = {};
+        }
+
+        // Merge existing activities di tanggal tersebut dengan field baru
+        updatedActivities[monthKey][dayKey] = {
+            ...updatedActivities[monthKey][dayKey],
+            [fieldName]: true
         };
 
+        console.log('🔄 Updating monthly activities:', {
+            employeeId,
+            monthKey,
+            dayKey,
+            fieldName,
+            currentActivities,
+            updatedActivities
+        });
+
+        // Simpan ke window untuk debugging
+        if (typeof window !== 'undefined') {
+            (window as any).lastCurrentActivities = currentActivities;
+            (window as any).lastUpdatedActivities = updatedActivities;
+        }
+
         // Upsert monthly activities
-        const { error: upsertError } = await supabase
+        const { data: upsertData, error: upsertError } = await supabase
             .from('employee_monthly_activities')
             .upsert({
                 employee_id: employeeId,
@@ -596,10 +696,24 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
                 onConflict: 'employee_id'
             });
 
-        if (upsertError) throw upsertError;
+        console.log('📊 Upsert result:', {
+            upsertData,
+            upsertError: upsertError ? JSON.stringify(upsertError, null, 2) : null
+        });
+
+        if (upsertError) {
+            console.error('❌ Upsert error:', upsertError);
+            throw upsertError;
+        }
+
+        console.log('✅ Successfully updated monthly activities');
 
     } catch (error) {
-        // Don't throw - attendance should still be saved even if monthly activities update fails
+        // ⚡ FIX: Log error untuk debugging
+        console.error('❌ Failed to update monthly activities for activity attendance:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        // Re-throw agar component bisa handle
+        throw error;
     }
 };
 

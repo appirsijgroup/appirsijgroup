@@ -71,10 +71,27 @@ const ReadingActivityCard: React.FC<{
 
         // Get corrected time from time validation service
         const correctedNow = timeValidationService.getCorrectedTime();
-        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
+
+        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
+        // Buat UTC date dari correctedTime (set hours ke 0 UTC)
+        const today = new Date(Date.UTC(
+            correctedNow.getUTCFullYear(),
+            correctedNow.getUTCMonth(),
+            correctedNow.getUTCDate()
+        ));
         today.setHours(0, 0, 0, 0);
 
-        const normalizedSelectedDate = normalizeDate(selectedDateObj);
+        // Normalize selectedDateObj ke UTC juga (set ke 12:00 UTC)
+        const normalizedSelectedDate = new Date(selectedDateObj);
+        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
+
+        // 🔍 DEBUG: Log values
+        console.log('📅 correctedNow:', correctedNow.toISOString());
+        console.log('📅 today:', today.toISOString());
+        console.log('📅 selectedDateObj:', selectedDateObj.toISOString());
+        console.log('📅 normalizedSelectedDate:', normalizedSelectedDate.toISOString());
+        console.log('📅 Comparison: normalizedSelectedDate > today?', normalizedSelectedDate > today);
+
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
@@ -162,11 +179,20 @@ const SimpleActivityCard: React.FC<{
 
         // --- Get today's corrected date from time validation service, normalized to midnight for comparison ---
         const correctedNow = timeValidationService.getCorrectedTime();
-        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
+
+        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
+        const today = new Date(Date.UTC(
+            correctedNow.getUTCFullYear(),
+            correctedNow.getUTCMonth(),
+            correctedNow.getUTCDate()
+        ));
         today.setHours(0, 0, 0, 0);
 
         // --- Check if the selected date is in the future ---
-        const normalizedSelectedDate = normalizeDate(selectedDateObj);
+        // Normalize selectedDateObj ke UTC juga
+        const normalizedSelectedDate = new Date(selectedDateObj);
+        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
+
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }

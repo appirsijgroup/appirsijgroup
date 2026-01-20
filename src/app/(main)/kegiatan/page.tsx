@@ -11,10 +11,9 @@ import { type Attendance } from '@/types';
 import { getTodayLocalDateString } from '@/utils/dateUtils';
 
 export default function KegiatanPage() {
-    const { loggedInEmployee } = useAppDataStore();
-    const { activities } = useActivityStore();
+    const { loggedInEmployee, refreshActivityStats } = useAppDataStore(); // 🔥 NEW: Import refreshActivityStats untuk real-time update
+    const { activities, teamAttendanceSessions, teamAttendanceRecords } = useActivityStore(); // ⚡ FIX: Ambil juga teamAttendanceRecords
     const [attendance, setAttendance] = useState<Attendance>({});
-    const [teamAttendanceSessions, setTeamAttendanceSessions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Load attendance data, team sessions, and activities on mount
@@ -24,7 +23,9 @@ export default function KegiatanPage() {
             loadTeamSessions();
             loadActivities();
         }
-    }, [loggedInEmployee]);
+        // ⚡ FIX: Only run once, don't depend on functions
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loggedInEmployee?.id]); // Only re-run if employee ID changes
 
     const loadAttendanceData = async () => {
         if (!loggedInEmployee) return;
@@ -61,8 +62,26 @@ export default function KegiatanPage() {
                 };
             });
 
+            // ⚡ FIX: Load team attendance records untuk user yang sedang login
+            const { getAllTeamAttendanceRecordsForUser } = await import('@/services/teamAttendanceService');
+            const teamRecords = await getAllTeamAttendanceRecordsForUser(loggedInEmployee.id);
+
+            // Convert team attendance records
+            teamRecords.forEach(record => {
+                const activityId = `team-${record.sessionId}`;
+                convertedAttendance[activityId] = {
+                    status: 'hadir',
+                    reason: null,
+                    timestamp: record.attendedAt,
+                    submitted: true,
+                    isLateEntry: false
+                };
+            });
+
             setAttendance(convertedAttendance);
+            console.log('✅ Attendance loaded:', Object.keys(convertedAttendance).length, 'items');
         } catch (error) {
+            console.error('❌ Failed to load attendance:', error);
         } finally {
             setLoading(false);
         }
@@ -70,10 +89,12 @@ export default function KegiatanPage() {
 
     const loadTeamSessions = async () => {
         try {
-            // 🔥 FIX: Use service to load all sessions (past, present, and future)
-            const sessions = await getAllTeamAttendanceSessions();
-            setTeamAttendanceSessions(sessions);
+            // ⚡ FIX: Load dari store untuk konsistensi
+            await useActivityStore.getState().loadTeamAttendanceSessionsFromSupabase();
+
+            console.log('✅ Team sessions loaded from Supabase');
         } catch (error) {
+            console.error('❌ Failed to load team sessions:', error);
         }
     };
 
@@ -81,46 +102,85 @@ export default function KegiatanPage() {
         if (!loggedInEmployee) return;
 
         try {
+            console.log('🔍 Loading activities for employee:', loggedInEmployee.id);
             // Load activities from store
             await useActivityStore.getState().loadActivitiesFromSupabase(loggedInEmployee.id);
+
+            // Debug: Cek hasil load
+            const activities = useActivityStore.getState().activities;
+            console.log('✅ Loaded activities:', activities);
+            console.log('📊 Total activities:', activities.length);
+
+            // Debug: Cek team sessions
+            const teamSessions = useActivityStore.getState().teamAttendanceSessions;
+            console.log('📊 Total team sessions:', teamSessions.length);
         } catch (error) {
+            console.error('❌ Failed to load activities:', error);
         }
     };
 
     const handleHadir = async (activityId: string) => {
         if (!loggedInEmployee) return;
 
+        // ⚡ FIX: Check if already attended
+        if (attendance[activityId]?.submitted) {
+            alert('Anda sudah menandai kehadiran untuk kegiatan ini');
+            return;
+        }
+
         // Check if this is a team session or a scheduled activity
         const isTeamSession = activityId.startsWith('team-');
 
         try {
             if (isTeamSession) {
-                // Use existing attendance service for team sessions
-                const teamSession = teamAttendanceSessions.find((s: any) => `team-${s.id}` === activityId);
-                const activityName = teamSession?.type || 'Kegiatan';
+                const sessionId = activityId.replace('team-', '');
+                const teamSession = teamAttendanceSessions.find((s: any) => s.id === sessionId);
 
-                const result = await submitAttendance(
-                    loggedInEmployee.id,
-                    activityId,
-                    'hadir',
-                    activityName
+                if (!teamSession) {
+                    alert('Sesi tidak ditemukan');
+                    return;
+                }
+
+                // ⚡ FIX: Check if user already has record in teamAttendanceRecords
+                const existingRecord = teamAttendanceRecords.find(
+                    r => r.sessionId === sessionId && r.userId === loggedInEmployee.id
                 );
 
-                if (result) {
-                    // Update local state - convert AttendanceRecord to AttendanceStatus
-                    setAttendance(prev => ({
-                        ...prev,
-                        [activityId]: {
-                            status: result.status,
-                            reason: result.reason,
-                            timestamp: result.timestamp ? new Date(result.timestamp).getTime() : null,
-                            submitted: true,
-                            isLateEntry: result.is_late_entry
-                        }
-                    }));
-                } else {
-                    alert('Gagal menyimpan presensi. Silakan coba lagi.');
+                if (existingRecord) {
+                    alert('Anda sudah hadir di sesi ini');
+                    return;
                 }
+
+                // Import dan gunakan createTeamAttendanceRecord
+                const { createTeamAttendanceRecord } = await import('@/services/teamAttendanceService');
+
+                const recordData = {
+                    sessionId: teamSession.id,
+                    userId: loggedInEmployee.id,
+                    userName: loggedInEmployee.name,
+                    attendedAt: Date.now(),
+                    sessionType: teamSession.type,
+                    sessionDate: teamSession.date,
+                    sessionStartTime: teamSession.startTime,
+                    sessionEndTime: teamSession.endTime
+                };
+
+                await createTeamAttendanceRecord(recordData);
+
+                // 🔥 NEW: Trigger Dashboard stats refresh
+                refreshActivityStats();
+
+                // Update local state - tandai sebagai hadir
+                setAttendance(prev => ({
+                    ...prev,
+                    [activityId]: {
+                        status: 'hadir',
+                        reason: null,
+                        timestamp: Date.now(),
+                        submitted: true,
+                        isLateEntry: false
+                    }
+                }));
             } else {
                 // Use scheduled activity service for scheduled activities
                 const result = await submitScheduledAttendance(
@@ -128,6 +188,9 @@ export default function KegiatanPage() {
                     loggedInEmployee.id,
                     'hadir'
                 );
+
+                // 🔥 NEW: Trigger Dashboard stats refresh
+                refreshActivityStats();
 
                 // Update local state
                 setAttendance(prev => ({
@@ -154,29 +217,10 @@ export default function KegiatanPage() {
 
         try {
             if (isTeamSession) {
-                // Use existing attendance service for team sessions
-                const result = await submitAttendance(
-                    loggedInEmployee.id,
-                    activity.id,
-                    'tidak-hadir',
-                    activity.name
-                );
-
-                if (result) {
-                    // Update local state - convert AttendanceRecord to AttendanceStatus
-                    setAttendance(prev => ({
-                        ...prev,
-                        [activity.id]: {
-                            status: result.status,
-                            reason: result.reason,
-                            timestamp: result.timestamp ? new Date(result.timestamp).getTime() : null,
-                            submitted: true,
-                            isLateEntry: result.is_late_entry
-                        }
-                    }));
-                } else {
-                    alert('Gagal menyimpan presensi. Silakan coba lagi.');
-                }
+                // ⚡ NOTE: Untuk team sessions, kita hanya mencatat yang HADIR di team_attendance_records
+                // Yang tidak hadir tidak perlu dicatat
+                alert('Untuk sesi tim (KIE/Doa Bersama), hanya presensi HADIR yang dicatat.');
+                return;
             } else {
                 // Use scheduled activity service for scheduled activities
                 const result = await submitScheduledAttendance(
@@ -184,6 +228,9 @@ export default function KegiatanPage() {
                     loggedInEmployee.id,
                     'tidak-hadir'
                 );
+
+                // 🔥 NEW: Trigger Dashboard stats refresh
+                refreshActivityStats();
 
                 // Update local state
                 setAttendance(prev => ({

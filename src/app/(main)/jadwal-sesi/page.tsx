@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDataStore } from '@/store/store';
@@ -11,19 +11,44 @@ import { CombinedScheduleTable, CombinedScheduleItem } from '@/components/Combin
 
 export default function JadwalSesiPage() {
     const { loggedInEmployee } = useAppDataStore();
-    const { activities, deleteActivity, teamAttendanceSessions, deleteTeamAttendanceSession } = useActivityStore();
+    const { activities, deleteActivity, teamAttendanceSessions, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
     const router = useRouter();
 
+    // ⚡ TAMBAH: Auto-load data dari Supabase saat halaman mount
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                await loadTeamAttendanceSessionsFromSupabase();
+                await loadActivitiesFromSupabase();
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        };
+
+        if (loggedInEmployee) {
+            loadData();
+        }
+    }, [loggedInEmployee, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase]);
+
     const handleEdit = (item: CombinedScheduleItem) => {
-        router.push(`/jadwal-sesi/edit/${item.id}`);
+        // ⚡ FIX: Sertakan kind (activity/session) di URL agar edit page tahu jenis item
+        router.push(`/jadwal-sesi/edit/${item.kind}/${item.id}`);
     };
 
-    const handleDelete = (item: CombinedScheduleItem) => {
+    const handleDelete = async (item: CombinedScheduleItem) => {
         if (window.confirm(`Apakah Anda yakin ingin menghapus "${item.name}"?`)) {
-            if (item.kind === 'activity') {
-                deleteActivity(item.id);
-            } else {
-                deleteTeamAttendanceSession(item.id);
+            try {
+                if (item.kind === 'activity') {
+                    await deleteActivity(item.id);
+                } else {
+                    await deleteTeamAttendanceSession(item.id);
+                }
+                // ⚡ TAMBAH: Reload data dari Supabase setelah delete
+                await loadTeamAttendanceSessionsFromSupabase();
+                await loadActivitiesFromSupabase();
+            } catch (error) {
+                console.error('Failed to delete:', error);
+                alert('Gagal menghapus item. Silakan coba lagi.');
             }
         }
     };
@@ -53,9 +78,15 @@ export default function JadwalSesiPage() {
         }));
 
         return [...activityItems, ...sessionItems].sort((a, b) => {
-            const dateComparison = b.date.localeCompare(a.date);
+            // ⚡ FIX: Handle undefined/null values safely
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            const timeA = a.startTime || '';
+            const timeB = b.startTime || '';
+
+            const dateComparison = dateB.localeCompare(dateA);
             if (dateComparison !== 0) return dateComparison;
-            return a.startTime.localeCompare(b.startTime);
+            return timeA.localeCompare(timeB);
         });
     }, [activities, teamAttendanceSessions]);
 

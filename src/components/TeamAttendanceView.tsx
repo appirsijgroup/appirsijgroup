@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { type Activity, type Employee, type TeamAttendanceSession, type Attendance, AudienceRules } from '../types';
+import { type Activity, type Employee, type TeamAttendanceSession, type Attendance, AudienceRules, type TeamAttendanceRecord } from '../types';
 import { UserGroupIcon, CalendarDaysIcon, PlusCircleIcon, PencilIcon, SearchIcon, CheckIcon, TrashIcon, GlobeAltIcon, UserCircleIcon, ClockIcon, CheckBadgeIcon, ZoomIcon, YouTubeIcon } from './Icons';
 import { createPortal } from 'react-dom';
 import ConfirmationModal from './ConfirmationModal';
@@ -22,10 +22,11 @@ interface TeamAttendanceViewProps {
     loggedInEmployee: Employee;
     allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance>; }>;
     teamAttendanceSessions: TeamAttendanceSession[];
-    onCreateSessions: (sessionsData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[]) => void;
+    teamAttendanceRecords?: TeamAttendanceRecord[]; // ⚡ TAMBAH: Records presensi
+    onCreateSessions: (sessionsData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>[]) => void;
     onAddActivity: (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onUpdateAttendance: (sessionId: string, presentUserIds: string[]) => void;
-    onUpdateSession: (sessionId: string, sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>) => void;
+    onCreateAttendanceRecord: (record: Omit<TeamAttendanceRecord, 'id' | 'createdAt'>) => Promise<void>; // ⚡ UPDATE: Ganti onUpdateAttendance
+    onUpdateSession: (sessionId: string, sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>) => void;
     onDeleteSession: (session: TeamAttendanceSession) => void;
     onUpdateMonthlyActivities?: (userId: string, monthKey: string, monthProgress: Record<string, Record<string, boolean>>) => void;
     addToast: (message: string, type: 'success' | 'error') => void;
@@ -313,7 +314,7 @@ const CreateSessionModal: React.FC<{
 const ManageAttendanceModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>, presentUserIds: string[]) => void;
+    onSave: (sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>) => void;
     session: TeamAttendanceSession;
     allUsers: Employee[];
 }> = ({ isOpen, onClose, onSave, session, allUsers }) => {
@@ -329,7 +330,6 @@ const ManageAttendanceModal: React.FC<{
     const [participantSearch, setParticipantSearch] = useState('');
     const [zoomUrl, setZoomUrl] = useState(session.zoomUrl || '');
     const [youtubeUrl, setYoutubeUrl] = useState(session.youtubeUrl || '');
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(session.presentUserIds));
 
     useEffect(() => {
         if (isOpen) {
@@ -344,7 +344,6 @@ const ManageAttendanceModal: React.FC<{
             setManualParticipantIds(new Set(session.manualParticipantIds || []));
             setZoomUrl(session.zoomUrl || '');
             setYoutubeUrl(session.youtubeUrl || '');
-            setSelectedIds(new Set(session.presentUserIds));
             setParticipantSearch('');
         }
     }, [isOpen, session]);
@@ -376,7 +375,7 @@ const ManageAttendanceModal: React.FC<{
     };
 
     const handleSubmit = () => {
-        const sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'> = {
+        const sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'> = {
             type, date, startTime, endTime, attendanceMode, audienceType,
             zoomUrl: zoomUrl.trim() || undefined,
             youtubeUrl: youtubeUrl.trim() || undefined,
@@ -387,7 +386,8 @@ const ManageAttendanceModal: React.FC<{
             manualParticipantIds: audienceType === 'manual' ? Array.from(manualParticipantIds) : [],
         };
 
-        onSave(sessionData, Array.from(selectedIds));
+        // ⚡ UPDATE: Hanya update session data, presensi dilakukan oleh user sendiri (self-attendance)
+        onSave(sessionData);
         onClose();
     };
 
@@ -587,8 +587,9 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     loggedInEmployee,
     allUsersData,
     teamAttendanceSessions,
+    teamAttendanceRecords = [], // ⚡ TAMBAH: Default empty array
     onCreateSessions,
-    onUpdateAttendance,
+    onCreateAttendanceRecord, // ⚡ UPDATE: Ganti onUpdateAttendance
     onUpdateSession,
     onDeleteSession,
     onUpdateMonthlyActivities,
@@ -633,11 +634,24 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const sessionsForTab = activeTab === 'KIE' ? otherKieSessions : otherDoaSessions;
 
     const handleSelfAttend = async (session: TeamAttendanceSession) => {
-        if (!session.presentUserIds.includes(loggedInEmployee.id)) {
-            try {
+        // ⚡ UPDATE: Cek apakah user sudah hadir menggunakan teamAttendanceRecords
+        const hasAttended = teamAttendanceRecords.some(
+            record => record.sessionId === session.id && record.userId === loggedInEmployee.id
+        );
 
-                const newPresentIds = [...session.presentUserIds, loggedInEmployee.id];
-                await onUpdateAttendance(session.id, newPresentIds);
+        if (!hasAttended) {
+            try {
+                // ⚡ UPDATE: Insert ke team_attendance_records
+                await onCreateAttendanceRecord({
+                    sessionId: session.id,
+                    userId: loggedInEmployee.id,
+                    userName: loggedInEmployee.name,
+                    attendedAt: Date.now(), // ⚡ Waktu klik HADIR
+                    sessionType: session.type,
+                    sessionDate: session.date,
+                    sessionStartTime: session.startTime,
+                    sessionEndTime: session.endTime
+                });
 
                 // Also save to monthlyActivities for dashboard display
                 if (onUpdateMonthlyActivities) {
@@ -669,7 +683,6 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
             } catch (error) {
                 addToast('Gagal melakukan presensi: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             }
-        } else {
         }
     };
 
@@ -687,7 +700,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
 
     const SessionCard: React.FC<{session: TeamAttendanceSession}> = ({ session }) => {
         const isCreator = session.creatorId === loggedInEmployee.id;
-        const isPresent = session.presentUserIds.includes(loggedInEmployee.id);
+        // ⚡ UPDATE: Cek kehadiran dari teamAttendanceRecords
+        const isPresent = teamAttendanceRecords.some(
+            record => record.sessionId === session.id && record.userId === loggedInEmployee.id
+        );
 
         // Check if session is today and current time is within the session time range
         const isSessionToday = session.date === todayStr;
@@ -817,9 +833,9 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 <ManageAttendanceModal
                     isOpen={!!managingAttendanceFor}
                     onClose={() => setManagingAttendanceFor(null)}
-                    onSave={(sessionData, presentIds) => {
+                    onSave={(sessionData) => {
+                        // ⚡ UPDATE: Hanya update session data, tidak ada lagi kelola presensi manual
                         onUpdateSession(managingAttendanceFor.id, sessionData);
-                        onUpdateAttendance(managingAttendanceFor.id, presentIds);
                     }}
                     session={managingAttendanceFor}
                     allUsers={allUsers}

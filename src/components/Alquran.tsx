@@ -88,11 +88,19 @@ const ReportReadingModal: React.FC<{
 
         // Get corrected time from time validation service
         const correctedNow = timeValidationService.getCorrectedTime();
-        const today = new Date(correctedNow.getFullYear(), correctedNow.getMonth(), correctedNow.getDate());
+
+        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
+        const today = new Date(Date.UTC(
+            correctedNow.getUTCFullYear(),
+            correctedNow.getUTCMonth(),
+            correctedNow.getUTCDate()
+        ));
         today.setHours(0, 0, 0, 0);
 
+        // Normalize selectedDateObj ke UTC juga
         const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setHours(0,0,0,0);
+        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
+
         if (normalizedSelectedDate > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }

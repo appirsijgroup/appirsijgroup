@@ -19,6 +19,7 @@ import { useHospitalStore } from '@/store/hospitalStore';
 import { PRAYERS } from '@/data/prayers';
 import { getBalancedWeeks } from '@/utils/dateUtils';
 import { updateEmployee, getEmployeeById } from '@/services/employeeService';
+import { getCurrentMonthStats, type ActivityStats } from '@/services/activityStatsService';
 import type {
     TadarusRequest,
     MissedPrayerRequest,
@@ -33,7 +34,7 @@ interface DashboardContainerProps {
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) => {
     const router = useRouter();
-    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee } = useAppDataStore();
+    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, activityStatsRefreshCounter } = useAppDataStore();
     const { addToast } = useUIStore();
     // Note: Navigation handled by useRouter
 
@@ -168,6 +169,27 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     };
 
+    const handleAddActivity = useCallback(async (data: Omit<any, 'id' | 'createdBy' | 'createdByName'>) => {
+        if (!loggedInEmployee) return;
+
+        try {
+            const newActivity = {
+                ...data,
+                id: '', // ID akan di-generate oleh Supabase (UUID)
+                createdBy: loggedInEmployee.id,
+                createdByName: loggedInEmployee.name
+            };
+
+            // addActivity sekarang sudah handle insert ke Supabase
+            await addActivity(newActivity);
+
+            addToast('Kegiatan berhasil dibuat!', 'success');
+        } catch (error) {
+            console.error('Failed to create activity:', error);
+            addToast('Gagal membuat kegiatan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+        }
+    }, [loggedInEmployee, addActivity, addToast]);
+
     const handleUpdateMonthlyActivities = async (userId: string, monthKey: string, monthProgress: any) => {
         if (process.env.NODE_ENV === "development") {
         }
@@ -271,6 +293,59 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teamAttendanceSessions.length, hasSyncedOldAttendance]); // Only trigger on count change, not on function reference change
+
+    // ✅ NEW: Load activityStats and merge to monthlyActivities
+    useEffect(() => {
+        const loadActivityStats = async () => {
+            if (!loggedInEmployee) return;
+
+            try {
+                console.log('🔄 Loading activity stats from service...');
+
+                // Load stats dari service baru
+                const stats = await getCurrentMonthStats(loggedInEmployee.id);
+
+                console.log('📊 Loaded activity stats:', stats);
+
+                // Merge stats ke dalam monthlyActivities
+                const now = new Date();
+                const monthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                const currentMonthlyActivities = loggedInEmployee.monthlyActivities || {};
+                const currentMonthData = currentMonthlyActivities[monthKey] || {};
+
+                // ⚠️ PERBAIKI: Masukkan activity stats di level bulan (bukan level tanggal)
+                const updatedMonthData = {
+                    kajianSelasa: stats.kajianSelasa,
+                    pengajianPersyarikatan: stats.pengajianPersyarikatan,
+                    kegiatanTerjadwal: stats.kegiatanTerjadwal,
+                    kie: stats.kie,
+                    doaBersama: stats.doaBersama
+                };
+
+                // Update employee object dengan monthlyActivities yang sudah di-merge
+                const updatedEmployee = {
+                    ...loggedInEmployee,
+                    monthlyActivities: {
+                        ...currentMonthlyActivities,
+                        [monthKey]: {
+                            ...currentMonthData,  // Ini data per-tanggal
+                            ...updatedMonthData  // OVERWRITE dengan stats bulanan
+                        }
+                    }
+                };
+
+                // Update store
+                setLoggedInEmployee(updatedEmployee);
+
+                console.log('✅ Activity stats merged to monthlyActivities:', updatedMonthData);
+            } catch (error) {
+                console.error('❌ Failed to load activity stats:', error);
+            }
+        };
+
+        loadActivityStats();
+    }, [loggedInEmployee, setLoggedInEmployee, activityStatsRefreshCounter]); // 🔥 NEW: Trigger refresh when counter changes
 
     const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
         if (!loggedInEmployee) return;
@@ -975,7 +1050,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     addToast('Gagal membuat sesi presensi: ' + errorMessage, 'error');
                 }
             }}
-            onAddActivity={(data) => addActivity({ ...data, id: Date.now().toString(), createdBy: loggedInEmployee.id, createdByName: loggedInEmployee.name })}
+            onAddActivity={handleAddActivity}
             onUpdateTeamAttendance={(id, presentUserIds) => updateTeamAttendanceSession(id, { presentUserIds })}
             onUpdateSession={(id, sessionData) => updateTeamAttendanceSessionData(id, sessionData)}
             onDeleteTeamAttendanceSession={deleteTeamAttendanceSession}

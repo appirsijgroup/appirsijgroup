@@ -92,25 +92,31 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                 return true;
             }
 
-            switch (item.audienceType) {
-                case 'public':
-                    return true;
-                case 'manual':
-                    return item.participantIds.includes(loggedInEmployee.id);
-                case 'rules':
-                    return doesEmployeeMatchRules(loggedInEmployee, item.audienceRules || {});
-                default:
-                    return true;
+            // ⚡ FIX: Default to showing ALL items if audienceType is undefined/null
+            // This prevents items from being hidden due to data issues
+            if (!item.audienceType || item.audienceType === 'public') {
+                return true;
             }
+
+            if (item.audienceType === 'manual') {
+                return item.participantIds.includes(loggedInEmployee.id);
+            }
+
+            if (item.audienceType === 'rules') {
+                return doesEmployeeMatchRules(loggedInEmployee, item.audienceRules || {});
+            }
+
+            // Default: show the item
+            return true;
         }).sort((a, b) => {
-            // Handle undefined date or startTime
+            // ⚡ FIX: Handle undefined/null values safely
             const dateA = a.date || '';
             const dateB = b.date || '';
-            const dateComparison = dateA.localeCompare(dateB);
-            if (dateComparison !== 0) return dateComparison;
-
             const timeA = a.startTime || '';
             const timeB = b.startTime || '';
+
+            const dateComparison = dateA.localeCompare(dateB);
+            if (dateComparison !== 0) return dateComparison;
             return timeA.localeCompare(timeB);
         });
 

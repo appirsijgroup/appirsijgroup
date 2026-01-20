@@ -4,15 +4,18 @@
  */
 
 import { supabase } from './attendanceService';
-import type { TeamAttendanceSession } from '../types';
+import type { TeamAttendanceSession, TeamAttendanceRecord } from '../types';
 
-// Get all team attendance sessions
+// Get all team attendance sessions with attendance count
 export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSession[]> => {
     try {
 
         const { data, error } = await supabase
             .from('team_attendance_sessions')
-            .select('*')
+            .select(`
+                *,
+                attendance_records:team_attendance_records(count)
+            `)
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
@@ -37,11 +40,13 @@ export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSess
             audienceType: session.audience_type,
             audienceRules: session.audience_rules,
             manualParticipantIds: session.manual_participant_ids,
-            presentUserIds: session.present_user_ids || [],
             createdAt: new Date(session.created_at).getTime(),
+            updatedAt: session.updated_at ? new Date(session.updated_at).getTime() : undefined,
             attendanceMode: session.attendance_mode,
             zoomUrl: session.zoom_url,
-            youtubeUrl: session.youtube_url
+            youtubeUrl: session.youtube_url,
+            // ⚡ Hitung jumlah hadir dari attendance_records
+            presentCount: session.attendance_records?.[0]?.count || 0
         }));
     } catch (error) {
         throw error;
@@ -81,7 +86,7 @@ export const getSessionsByDate = async (date: string): Promise<TeamAttendanceSes
 
 // Create new team attendance session
 export const createTeamAttendanceSession = async (
-    session: Omit<TeamAttendanceSession, 'id' | 'createdAt'>
+    session: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'presentCount' | 'updatedAt'>
 ): Promise<TeamAttendanceSession> => {
     try {
 
@@ -96,11 +101,11 @@ export const createTeamAttendanceSession = async (
             audience_type: session.audienceType,
             audience_rules: session.audienceRules,
             manual_participant_ids: session.manualParticipantIds,
-            present_user_ids: session.presentUserIds || [],
             attendance_mode: session.attendanceMode,
             zoom_url: session.zoomUrl,
             youtube_url: session.youtubeUrl
             // Note: created_at and updated_at are handled by Supabase defaults (NOW())
+            // Note: present_user_ids telah DIHAPUS - sekarang pakai team_attendance_records
         };
 
 
@@ -131,34 +136,228 @@ export const createTeamAttendanceSession = async (
             audienceType: data.audience_type,
             audienceRules: data.audience_rules,
             manualParticipantIds: data.manual_participant_ids,
-            presentUserIds: data.present_user_ids || [],
             createdAt: new Date(data.created_at).getTime(),
+            updatedAt: data.updated_at ? new Date(data.updated_at).getTime() : undefined,
             attendanceMode: data.attendance_mode,
             zoomUrl: data.zoom_url,
-            youtubeUrl: data.youtube_url
+            youtubeUrl: data.youtube_url,
+            presentCount: 0 // Sesi baru, belum ada yang hadir
         };
     } catch (error) {
         throw error;
     }
 };
 
-// Update session (add present users, etc)
-export const updateTeamAttendanceSession = async (
-    sessionId: string,
-    updates: Partial<Pick<TeamAttendanceSession, 'presentUserIds'>>
-): Promise<void> => {
-    const dbUpdates: any = {};
+// ============================================================
+// TEAM ATTENDANCE RECORDS FUNCTIONS
+// ============================================================
 
-    if (updates.presentUserIds !== undefined) {
-        dbUpdates.present_user_ids = updates.presentUserIds;
+// Create attendance record (user klik HADIR)
+export const createTeamAttendanceRecord = async (
+    record: Omit<TeamAttendanceRecord, 'id' | 'createdAt'>
+): Promise<TeamAttendanceRecord> => {
+    try {
+        // Convert camelCase to snake_case for Supabase
+        const dbRecord = {
+            session_id: record.sessionId,
+            user_id: record.userId,
+            user_name: record.userName,
+            attended_at: new Date(record.attendedAt).toISOString(),
+            session_type: record.sessionType,
+            session_date: record.sessionDate,
+            session_start_time: record.sessionStartTime,
+            session_end_time: record.sessionEndTime
+            // Note: created_at di-handle oleh Supabase default (NOW())
+        };
+
+        const { data, error } = await supabase
+            .from('team_attendance_records')
+            .insert(dbRecord as any)
+            .select()
+            .single() as any;
+
+        if (error) {
+            // 🔍 DEBUG: Cek error detail
+            console.error('❌ Error insert team_attendance_records:', error);
+
+            // Jika error karena unique constraint (user sudah hadir), beri message yang jelas
+            if (error.code === '23505') {
+                console.warn('⚠️ User sudah presensi sebelumnya untuk sesi ini');
+                throw new Error('Anda sudah melakukan presensi untuk sesi ini. Tidak bisa presensi dua kali.');
+            }
+            // Error 409 Conflict juga bisa karena duplicate
+            if (error.message.includes('duplicate key') || error.message.includes('unique')) {
+                console.warn('⚠️ Duplicate attendance record');
+                throw new Error('Anda sudah hadir dalam sesi ini sebelumnya.');
+            }
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        if (!data) {
+            throw new Error('No data returned from Supabase after insert');
+        }
+
+        console.log('✅ Berhasil insert ke team_attendance_records:', data);
+
+        // Convert back to camelCase
+        return {
+            id: data.id,
+            sessionId: data.session_id,
+            userId: data.user_id,
+            userName: data.user_name,
+            attendedAt: new Date(data.attended_at).getTime(),
+            createdAt: new Date(data.created_at).getTime(),
+            sessionType: data.session_type,
+            sessionDate: data.session_date,
+            sessionStartTime: data.session_start_time,
+            sessionEndTime: data.session_end_time
+        };
+    } catch (error) {
+        throw error;
     }
+};
 
-    const { error } = await (supabase
-        .from('team_attendance_sessions') as any)
-        .update(dbUpdates)
-        .eq('id', sessionId);
+// Get attendance records for a specific session
+export const getAttendanceRecordsForSession = async (sessionId: string): Promise<TeamAttendanceRecord[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('team_attendance_records')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('attended_at', { ascending: true });
 
-    if (error) {
+        if (error) {
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        if (!data || data.length === 0) {
+            return [];
+        }
+
+        return data.map((record: any) => ({
+            id: record.id,
+            sessionId: record.session_id,
+            userId: record.user_id,
+            userName: record.user_name,
+            attendedAt: new Date(record.attended_at).getTime(),
+            sessionType: record.session_type,
+            sessionDate: record.session_date,
+            sessionStartTime: record.session_start_time,
+            sessionEndTime: record.session_end_time,
+            createdAt: new Date(record.created_at).getTime()
+        }));
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * Get all team attendance records for a specific user
+ * ⚡ NEW: Untuk load semua records milik user yang sedang login
+ */
+export const getAllTeamAttendanceRecordsForUser = async (userId: string): Promise<TeamAttendanceRecord[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('team_attendance_records')
+            .select('*')
+            .eq('user_id', userId)
+            .order('attended_at', { ascending: false }); // Terbaru di atas
+
+        if (error) {
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        if (!data || data.length === 0) {
+            return [];
+        }
+
+        return data.map((record: any) => ({
+            id: record.id,
+            sessionId: record.session_id,
+            userId: record.user_id,
+            userName: record.user_name,
+            attendedAt: new Date(record.attended_at).getTime(),
+            sessionType: record.session_type,
+            sessionDate: record.session_date,
+            sessionStartTime: record.session_start_time,
+            sessionEndTime: record.session_end_time,
+            createdAt: new Date(record.created_at).getTime()
+        }));
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Get attendance records for a specific user (riwayat presensi)
+export const getAttendanceRecordsForUser = async (userId: string): Promise<TeamAttendanceRecord[]> => {
+    try {
+        const { data, error } = await supabase
+            .from('team_attendance_records')
+            .select('*')
+            .eq('user_id', userId)
+            .order('attended_at', { ascending: false });
+
+        if (error) {
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        if (!data || data.length === 0) {
+            return [];
+        }
+
+        return data.map((record: any) => ({
+            id: record.id,
+            sessionId: record.session_id,
+            userId: record.user_id,
+            userName: record.user_name,
+            attendedAt: new Date(record.attended_at).getTime(),
+            createdAt: new Date(record.created_at).getTime(),
+            sessionType: record.session_type,
+            sessionDate: record.session_date,
+            sessionStartTime: record.session_start_time,
+            sessionEndTime: record.session_end_time
+        }));
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Delete attendance record (jika salah input)
+export const deleteTeamAttendanceRecord = async (recordId: string): Promise<void> => {
+    try {
+        const { error } = await supabase
+            .from('team_attendance_records')
+            .delete()
+            .eq('id', recordId);
+
+        if (error) {
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Check if user has attended a session
+export const hasUserAttendedSession = async (sessionId: string, userId: string): Promise<boolean> => {
+    try {
+        const { data, error } = await supabase
+            .from('team_attendance_records')
+            .select('id')
+            .eq('session_id', sessionId)
+            .eq('user_id', userId)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // No rows returned = user belum hadir
+                return false;
+            }
+            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        }
+
+        return !!data;
+    } catch (error) {
         throw error;
     }
 };
@@ -180,7 +379,9 @@ export const updateTeamAttendanceSessionData = async (
             audience_rules: updates.audienceRules,
             manual_participant_ids: updates.manualParticipantIds,
             zoom_url: updates.zoomUrl,
-            youtube_url: updates.youtubeUrl
+            youtube_url: updates.youtubeUrl,
+            // ⚡ CRITICAL: Always update updated_at when session data changes
+            updated_at: new Date().toISOString()
         };
 
 

@@ -23,6 +23,7 @@ export interface AppDataState {
     isHydrated: boolean;
     isLoggingOut: boolean; // Flag to prevent loading flash during logout
     isLoadingEmployees: boolean; // 🔥 NEW: Flag to prevent concurrent employee loading
+    activityStatsRefreshCounter: number; // 🔥 NEW: Counter untuk trigger refresh activity stats di Dashboard
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
@@ -33,6 +34,7 @@ export interface AppDataState {
     loadAllEmployees: () => Promise<void>;
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
+    refreshActivityStats: () => void; // 🔥 NEW: Trigger refresh activity stats setelah attendance submission
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -42,11 +44,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     isHydrated: false,
     isLoggingOut: false, // Start not logging out
     isLoadingEmployees: false, // 🔥 NEW: Flag to prevent concurrent employee loading
+    activityStatsRefreshCounter: 0, // 🔥 NEW: Counter untuk trigger refresh
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
     setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
     setHospitalsData: (hospitals) => set({ hospitalsData: hospitals }),
     setHydrated: (isHydrated) => set({ isHydrated }),
+    refreshActivityStats: () => set((state) => ({ activityStatsRefreshCounter: state.activityStatsRefreshCounter + 1 })), // 🔥 NEW: Increment counter
 
     // 🔥 NEW: Load logged-in employee from session
     // ⚡ SIMPLIFIED: Single source of truth - session cookie (JWT)

@@ -26,7 +26,7 @@ const AdminDashboard = dynamicImport(() => import('@/components/AdminDashboard')
     loading: () => <BrandedLoader />,
     ssr: false // Admin Dashboard tidak butuh SEO
 });
-import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
+import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode, type Role, type UnifiedAttendanceRecord } from '@/types';
 import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmployee as deleteEmployeeSupabase, createEmployee as createEmployeeSupabase, convertToCamelCase } from '@/services/employeeService';
 import { getPaginatedEmployees } from '@/services/employeeServicePaginated';
 import { getAllHospitals, createHospital as createHospitalSupabase, updateHospital as updateHospitalSupabase, deleteHospital as deleteHospitalSupabase, toggleHospitalStatus as toggleHospitalStatusSupabase } from '@/services/hospitalService';
@@ -49,6 +49,7 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
+    const [unifiedAttendanceData, setUnifiedAttendanceData] = useState<UnifiedAttendanceRecord[]>([]);
 
     // ✅ Pagination state (for employee management)
     const [page, setPage] = useState(1);
@@ -145,6 +146,15 @@ export default function AdminPage() {
                 // Load hospitals
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
+
+                // 🔥 NEW: Load unified attendance data untuk laporan kegiatan
+                try {
+                    const { getAllUnifiedAttendance } = await import('@/services/unifiedAttendanceService');
+                    const unifiedData = await getAllUnifiedAttendance();
+                    setUnifiedAttendanceData(unifiedData);
+                } catch (error) {
+                    console.error('Failed to load unified attendance:', error);
+                }
 
                 // 🔥 FIX: Load announcements
                 try {
@@ -458,21 +468,61 @@ export default function AdminPage() {
 
     const handleAdminUpdateAttendance = async (payload: { userId: string; date: string; entityId: string; status: "hadir" | "tidak-hadir" | null; reason: string | null; }) => {
         try {
-            // Import the attendance service functions
-            const { submitAttendance, deleteAttendance, getEmployeeAttendance } = await import('@/services/attendanceService');
+            // ⚡ CRITICAL: Cek apakah ini team session atau presensi biasa
+            const isTeamSession = payload.entityId.startsWith('team-');
 
-            if (!payload.status) {
-                // If status is null, delete the attendance record
-                await deleteAttendance(payload.userId, payload.entityId);
+            if (isTeamSession && payload.status === 'hadir') {
+                // ⚡ FIX: Untuk team sessions (KIE/Doa Bersama), gunakan team_attendance_records
+                const sessionId = payload.entityId.replace('team-', '');
+
+                // Import team attendance service
+                const { getAllTeamAttendanceSessions } = await import('@/services/teamAttendanceService');
+
+                // Ambil semua sessions untuk cari session yang sesuai
+                const sessions = await getAllTeamAttendanceSessions();
+                const session = sessions.find(s => s.id === sessionId);
+
+                if (!session) {
+                    throw new Error('Session tidak ditemukan');
+                }
+
+                // Import dan gunakan createTeamAttendanceRecord
+                const { createTeamAttendanceRecord } = await import('@/services/teamAttendanceService');
+
+                // Ambil data user
+                const user = allUsersData[payload.userId]?.employee;
+                if (!user) {
+                    throw new Error('User tidak ditemukan');
+                }
+
+                await createTeamAttendanceRecord({
+                    sessionId: session.id,
+                    userId: payload.userId,
+                    userName: user.name,
+                    attendedAt: Date.now(),
+                    sessionType: session.type,
+                    sessionDate: session.date,
+                    sessionStartTime: session.startTime,
+                    sessionEndTime: session.endTime
+                });
+
             } else {
-                // Otherwise, submit or update attendance (upsert)
-                await submitAttendance(
-                    payload.userId,
-                    payload.entityId,
-                    payload.status,
-                    payload.reason || null,
-                    false // isLateEntry - set to false for admin updates
-                );
+                // ⚡ Untuk presensi biasa (sholat, dll), gunakan attendance_records
+                const { submitAttendance, deleteAttendance, getEmployeeAttendance } = await import('@/services/attendanceService');
+
+                if (!payload.status) {
+                    // If status is null, delete the attendance record
+                    await deleteAttendance(payload.userId, payload.entityId);
+                } else {
+                    // Otherwise, submit or update attendance (upsert)
+                    await submitAttendance(
+                        payload.userId,
+                        payload.entityId,
+                        payload.status,
+                        payload.reason || null,
+                        false // isLateEntry - set to false for admin updates
+                    );
+                }
             }
 
             // Reload attendance data for this user from Supabase
@@ -728,32 +778,22 @@ export default function AdminPage() {
         };
 
         try {
-            // 🔥 Sync to Supabase
-            const { createActivity } = await import('@/services/scheduledActivityService');
-
-            // Prepare activity with creator info
-            const activityWithCreator = {
-                ...activityData,
-                createdBy: creator.id,
-                createdAt: new Date().toISOString()
-            };
-
-            const createdActivity = await createActivity(activityWithCreator as any);
-
-            // Add to local store (convert from service type to store type)
-            addActivity(createdActivity as any);
-
-            addToast('Kegiatan berhasil dibuat!', 'success');
-        } catch (error) {
-            // Still add to local store as fallback
+            // ⚡ UPDATE: addActivity sekarang sudah handle insert ke Supabase
             const newActivity: Activity = {
                 ...activityData,
-                id: Date.now().toString(),
+                id: '', // ID akan di-generate oleh Supabase (UUID)
                 createdBy: creator.id,
                 createdByName: creator.name
             };
-            addActivity(newActivity);
-            addToast('Gagal menyimpan ke database. Data hanya tersimpan lokal.', 'error');
+
+            // addActivity akan insert ke Supabase dan update local store
+            await addActivity(newActivity);
+
+            addToast('Kegiatan berhasil dibuat!', 'success');
+        } catch (error) {
+            // Error handling
+            console.error('Failed to create activity:', error);
+            addToast('Gagal membuat kegiatan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
         }
     };
 
@@ -970,6 +1010,8 @@ export default function AdminPage() {
                 }}
                 // 🔥 NEW: On-demand employee loading
                 onLoadEmployees={loadEmployeesOnDemand}
+                // 🔥 NEW: Unified attendance data untuk laporan kegiatan
+                unifiedAttendanceData={unifiedAttendanceData}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

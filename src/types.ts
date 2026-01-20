@@ -264,6 +264,21 @@ export interface AdminReportRecord {
   timestamp: string;
 }
 
+export interface UnifiedAttendanceRecord {
+  record_id: string;
+  entity_id: string;
+  user_id: string;
+  attendance_type: 'activity' | 'session';
+  status: string;
+  attended_at: string;
+  created_at: string;
+  updated_at: string;
+  entity_name: string;
+  activity_type: string;
+  date: string;
+  field_name: string;
+}
+
 export interface DailyActivity {
   id: string;
   category: 'SIDIQ (Integritas)' | 'TABLIGH (Teamwork)' | 'AMANAH (Disiplin)' | 'FATONAH (Belajar)';
@@ -357,6 +372,7 @@ export interface MenteeTarget {
   completedAt: number | null;
 }
 
+// Team Attendance Session - Jadwal Sesi
 export interface TeamAttendanceSession {
   id: string;
   creatorId: string;
@@ -368,11 +384,27 @@ export interface TeamAttendanceSession {
   audienceType: 'rules' | 'manual';
   audienceRules?: AudienceRules;
   manualParticipantIds?: string[];
-  presentUserIds: string[];
-  createdAt: number;
   attendanceMode?: 'leader' | 'self'; // leader = by creator, self = by participant
   zoomUrl?: string;
   youtubeUrl?: string;
+  createdAt: number;
+  updatedAt?: number; // ⚡ Tambahkan untuk tracking update terakhir
+  presentCount?: number; // ⚡ Derived dari team_attendance_records (jumlah peserta hadir)
+}
+
+// Team Attendance Record - Record Presensi per User di Session
+export interface TeamAttendanceRecord {
+  id: string;
+  sessionId: string; // UUID dari team_attendance_sessions
+  userId: string;
+  userName: string;
+  attendedAt: number; // Unix timestamp - kapan user klik HADIR
+  createdAt: number;
+  // Metadata dari session (denormalized untuk query performance)
+  sessionType: 'KIE' | 'Doa Bersama';
+  sessionDate: string; // YYYY-MM-DD
+  sessionStartTime: string; // HH:MM
+  sessionEndTime: string; // HH:MM
 }
 
 export interface MyDashboardViewProps {

@@ -1591,7 +1591,7 @@ interface AttendanceReportProps {
 }
 
 const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: (string | number)[], defaultLabel: string }> = ({ value, onChange, options, defaultLabel }) => (
-    <select value={value} onChange={onChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
+    <select value={value} onChange={onChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
         <option value="all" className="text-black bg-white">{defaultLabel}</option>
         {options.map(opt => <option key={opt} value={String(opt)} className="text-black bg-white">{opt}</option>)}
     </select>
@@ -1609,9 +1609,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     const [professionFilter, setProfessionFilter] = useState<string>('all');
     const [nameOrNipFilter, setNameOrNipFilter] = useState<string>('');
     const [activationStatusFilter, setActivationStatusFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
-
-    // Flag to prevent unnecessary re-renders while user is interacting with date inputs
-    const isInteractingWithDateInput = useRef(false);
 
     // 🔥 FIX: Stable activities ID tracking for proper dependency tracking
     // This ensures useMemo re-runs when activities change
@@ -1958,11 +1955,11 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="text-xs font-semibold text-blue-200 block mb-1">Dari Tanggal</label>
-                            <input type="date" value={startDate} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
+                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
                         </div>
                         <div>
                             <label className="text-xs font-semibold text-blue-200 block mb-1">Sampai Tanggal</label>
-                            <input type="date" value={endDate} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setEndDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
+                            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
                         </div>
                     </div>
                 );
@@ -1970,7 +1967,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                 return (
                     <div>
                         <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Bulan</label>
-                        <input type="month" value={monthFilter} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
+                        <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
                     </div>
                 );
             case 'yearly':
@@ -1999,9 +1996,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
     // Reset to first page when filters change
     useEffect(() => {
-        if (!isInteractingWithDateInput.current) {
-            setCurrentPage(1);
-        }
+        setCurrentPage(1);
     }, [dateFilterType, monthFilter, yearFilter, startDate, endDate, entityFilter, unitFilter, professionFilter, nameOrNipFilter, activationStatusFilter]);
 
     return (
@@ -2009,7 +2004,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg">
                 <div className="lg:col-span-1">
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Jenis Periode</label>
-                    <select value={dateFilterType} onChange={handleDateFilterTypeChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
+                    <select value={dateFilterType} onChange={handleDateFilterTypeChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                         <option value="range" className="text-black bg-white">Rentang Tanggal</option>
                         <option value="monthly" className="text-black bg-white">Bulanan</option>
                         <option value="yearly" className="text-black bg-white">Tahunan</option>
@@ -2043,7 +2038,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                 {reportType === 'prayer' && dateFilterType === 'monthly' && (
                     <div className="lg:col-span-1">
                         <label className="text-xs font-semibold text-blue-200 block mb-1">Status Aktivasi</label>
-                        <select value={activationStatusFilter} onChange={e => setActivationStatusFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
+                        <select value={activationStatusFilter} onChange={e => setActivationStatusFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                             <option value="all" className="text-black bg-white">Semua Status</option>
                             <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
                             <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>

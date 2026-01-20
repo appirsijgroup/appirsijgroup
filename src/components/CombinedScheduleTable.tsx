@@ -36,25 +36,25 @@ export const CombinedScheduleTable: React.FC<CombinedScheduleTableProps> = ({ it
             <table className="w-full">
                 <thead className="bg-black/20">
                     <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Nama/Jenis</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Tanggal</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Jam</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Tipe</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Mode</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Aksi</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[200px] sm:min-w-[250px]">Nama/Jenis</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Tanggal</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Jam</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Tipe</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Mode</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                     {items.map(item => (
                         <tr key={`${item.kind}-${item.id}`} className="hover:bg-white/5 transition-colors">
                             <td className="px-4 py-3">
-                                <div className="text-sm font-medium text-white truncate max-w-[200px]">{item.name}</div>
+                                <div className="text-sm font-medium text-white break-words">{item.name}</div>
                             </td>
                             <td className="px-4 py-3">
                                 <div className="text-sm text-gray-300">{item.date}</div>
                             </td>
                             <td className="px-4 py-3">
-                                <div className="text-sm text-gray-300">{item.startTime} - {item.endTime}</div>
+                                <div className="text-sm text-gray-300 whitespace-nowrap">{item.startTime} - {item.endTime}</div>
                             </td>
                             <td className="px-4 py-3">
                                 <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ${item.kind === 'activity' ? 'bg-teal-500/20 text-teal-300' : 'bg-purple-500/20 text-purple-300'}`}>

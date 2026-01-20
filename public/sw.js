@@ -13,19 +13,6 @@ const urlsToCache = [
   '/apple-touch-icon.png',
 ];
 
-// Dynamic pages that should always be fetched from network
-const dynamicRoutes = [
-  '/',
-  '/dashboard',
-  '/aktivitas-bulanan',
-  '/alquran',
-  '/presensi',
-  '/panduan-doa',
-  '/kegiatan',
-  '/profile',
-  '/login',
-];
-
 // Install event - cache assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -81,27 +68,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Check if this is a dynamic route
-  const isDynamicRoute = dynamicRoutes.some(route => url.pathname === route || url.pathname.startsWith(route + '/'));
-
-  // For dynamic routes, always use network first (never cache)
-  if (isDynamicRoute) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          return response;
-        })
-        .catch((error) => {
-          console.error('Fetch failed for dynamic route:', error);
-          return new Response('Offline - Tidak ada koneksi internet. Silakan refresh halaman.', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain'
-            })
-          });
-        })
-    );
+  // 🔥 CRITICAL FIX: Skip ALL navigation requests to allow Next.js client-side navigation
+  // This prevents PWA from reloading the entire app on menu changes
+  const isNavigation = event.request.mode === 'navigate';
+  if (isNavigation) {
+    // Let Next.js handle navigation - don't intercept
     return;
   }
 

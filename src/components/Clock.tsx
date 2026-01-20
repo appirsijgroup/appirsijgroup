@@ -29,7 +29,6 @@ const Clock: React.FC = () => {
 
   return (
     <div className="text-right">
-      <div className="text-sm font-semibold text-white">{formattedTime}</div>
       <div className="text-xs text-blue-300">{formattedDate}</div>
     </div>
   );

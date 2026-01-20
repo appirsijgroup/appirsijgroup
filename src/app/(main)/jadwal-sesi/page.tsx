@@ -111,8 +111,8 @@ export default function JadwalSesiPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Jadwal & Sesi Terpadu</h1>
-                    <p className="text-sm text-gray-400">Kelola semua kegiatan dan sesi presensi dalam satu tempat</p>
+                    <h1 className="text-2xl font-bold text-white"></h1>
+                    <p className="text-sm text-gray-400"></p>
                 </div>
                 <Link href="/jadwal-sesi/create" className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-semibold shadow-lg transition-all">
                     <PlusCircleIcon className="w-5 h-5" />

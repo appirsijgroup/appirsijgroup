@@ -155,7 +155,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                 <table className="min-w-full text-xs sm:text-sm text-left text-white">
                     <thead className="bg-black/20 text-xs uppercase text-blue-200">
                         <tr>
-                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 min-w-[120px] whitespace-nowrap">Kegiatan</th>
+                            <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 min-w-[200px] sm:min-w-[250px] whitespace-normal">Kegiatan</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">Jenis</th>
                             <th scope="col" className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap hidden sm:table-cell">Waktu</th>
@@ -239,7 +239,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
 
                             return (
                                 <tr key={item.id} className="hover:bg-white/5 border-b border-gray-800 last:border-b-0">
-                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-semibold text-xs sm:text-sm">{item.name}</td>
+                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-semibold text-xs sm:text-sm break-words">{item.name}</td>
                                     <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs">
                                         {new Date(item.date + 'T00:00:00').toLocaleDateString('id-ID', {
                                             weekday: 'short',

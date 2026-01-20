@@ -26,13 +26,12 @@ interface AktivitasSayaProps {
     onMenteeAttendSession: (sessionId: string) => void;
     missedPrayerRequests: any[];
     onCreateMissedPrayerRequest: (data: any) => void;
-    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => void;
+    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
     onReviewReport: (submissionId: string, status: string, reviewerId: string, reviewerRole: string) => void;
     onCreateTadarusSession: (data: any) => void;
     onUpdateTadarusSession: (sessionId: string, updates: any) => void;
     onDeleteTadarusSession: (sessionId: string) => void;
     onReviewTadarusRequest: (requestId: string, status: string) => void;
-    onCreateMissedPrayerRequest: (data: any) => void;
     onReviewMissedPrayerRequest: (requestId: string, status: string) => void;
     onMentorAttendOwnSession: (sessionId: string) => void;
     onLogAudit: (action: string, details: any) => void;
@@ -40,6 +39,7 @@ interface AktivitasSayaProps {
     onDeleteMenteeTarget: (targetId: string) => void;
     menteeTargets: any[];
     hospitals: any[];
+    addToast?: (message: string, type: 'success' | 'error') => void;
 }
 
 const TabButton: React.FC<{
@@ -181,6 +181,7 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                         onMentorAttendOwnSession={props.onMentorAttendOwnSession}
                         onLogAudit={props.onLogAudit}
                         onDeleteMenteeTarget={handleDeleteMenteeTarget}
+                        addToast={props.addToast}
                         mentorSubView={mentorSubView}
                         setMentorSubView={setMentorSubView}
                         menteesOfMentor={menteesOfMentor}

@@ -12,7 +12,7 @@ export type MentorDashboardView = 'overview' | 'sessions' | 'mentees' | 'progres
 interface MentorDashboardProps {
   employee: Employee;
   allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
-  onUpdateProfile: (userId: string, updates: Partial<Employee>) => void;
+  onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
   weeklyReportSubmissions: WeeklyReportSubmission[];
   onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
   tadarusSessions: TadarusSession[];
@@ -26,6 +26,7 @@ interface MentorDashboardProps {
   onMentorAttendOwnSession: (sessionId: string) => void;
   onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
   onDeleteMenteeTarget: (targetId: string) => void;
+  addToast?: (message: string, type: 'success' | 'error') => void;
 
   mentorSubView: MentorDashboardView;
   setMentorSubView: React.Dispatch<React.SetStateAction<MentorDashboardView>>;
@@ -513,8 +514,9 @@ const MenteeManagement: React.FC<{
     mentees: Employee[];
     allUsers: Employee[];
     mentorId: string;
-    onUpdateProfile: (userId: string, updates: Partial<Employee>) => void;
-}> = ({ mentees, allUsers, mentorId, onUpdateProfile }) => {
+    onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
+    addToast?: (message: string, type: 'success' | 'error') => void;
+}> = ({ mentees, allUsers, mentorId, onUpdateProfile, addToast }) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedToAdd, setSelectedToAdd] = useState<Set<string>>(new Set());
     const [search, setSearch] = useState('');
@@ -541,12 +543,33 @@ const MenteeManagement: React.FC<{
         });
     }, [unassignedUsers, search, unitFilter, professionFilter]);
 
-    const handleAddMentees = () => {
-        selectedToAdd.forEach(id => {
-            onUpdateProfile(id, { mentorId });
-        });
+    const handleAddMentees = async () => {
+        // Show loading state or immediate feedback
+        const selectedIds = Array.from(selectedToAdd);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const id of selectedIds) {
+            const result = await onUpdateProfile(id, { mentorId });
+            if (result) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        }
+
+        // Close modal and reset selection
         setIsAddModalOpen(false);
         setSelectedToAdd(new Set());
+
+        // Show success message
+        if (successCount > 0 && failCount === 0) {
+            addToast?.(`${successCount} anggota bimbingan berhasil ditambahkan!`, 'success');
+        } else if (successCount > 0 && failCount > 0) {
+            addToast?.(`${successCount} berhasil, ${failCount} gagal ditambahkan`, 'error');
+        } else if (failCount > 0) {
+            addToast?.(`Gagal menambahkan ${failCount} anggota bimbingan`, 'error');
+        }
     };
 
     const initiateRemoveMentee = (mentee: Employee) => {
@@ -554,8 +577,8 @@ const MenteeManagement: React.FC<{
             isOpen: true,
             title: 'Konfirmasi Hapus Anggota',
             message: <>Apakah Anda yakin ingin menghapus <strong>{mentee.name}</strong> dari daftar bimbingan Anda?</>,
-            onConfirm: () => {
-                onUpdateProfile(mentee.id, { mentorId: undefined });
+            onConfirm: async () => {
+                await onUpdateProfile(mentee.id, { mentorId: undefined });
                 setConfirmation(null);
             },
         });
@@ -1125,6 +1148,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
   onReviewMissedPrayerRequest,
   onMentorAttendOwnSession,
   onLogAudit,
+  addToast,
   mentorSubView,
   setMentorSubView,
   menteesOfMentor,
@@ -1306,6 +1330,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         allUsers={Object.values(allUsersData).map(d => d.employee)}
                         mentorId={employee.id}
                         onUpdateProfile={onUpdateProfile}
+                        addToast={addToast}
                     />
                 )}
                  {mentorSubView === 'target' && (

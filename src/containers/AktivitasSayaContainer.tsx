@@ -59,10 +59,11 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     const isSyncingRef = useRef(false);
 
     // --- Handlers ---
-    const handleUpdateProfile = useCallback((userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => {
+    const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => {
         const oldUser = allUsersData[userId]?.employee;
         if (!oldUser) return false;
 
+        // Update local state FIRST (optimistic update)
         setAllUsersData(prevData => {
             const allDataCopy: typeof prevData = JSON.parse(JSON.stringify(prevData));
             const userToUpdateData = allDataCopy[userId];
@@ -83,8 +84,56 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
             return allDataCopy;
         });
-        return true;
-    }, [allUsersData, setAllUsersData, loggedInEmployee, setLoggedInEmployee]);
+
+        // 🔥 FIX: Save to Supabase database
+        try {
+            // Use updateEmployee service to persist changes to database
+            const updatedEmployee = await updateEmployee(userId, updates);
+
+            // Force refresh data from Supabase to ensure consistency
+            const freshEmployee = await getEmployeeById(userId);
+            if (freshEmployee) {
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [freshEmployee.id]: {
+                        ...prev[freshEmployee.id],
+                        employee: freshEmployee
+                    }
+                }));
+
+                // Also update loggedInEmployee if it's the same user
+                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                    setLoggedInEmployee(freshEmployee);
+                }
+            }
+
+            return true;
+        } catch (error) {
+            // Rollback the optimistic update on failure
+            console.error('Failed to update profile in database:', error);
+
+            // Restore original data from local state
+            setAllUsersData(prev => {
+                const allDataCopy: typeof prev = JSON.parse(JSON.stringify(prev));
+                allDataCopy[userId].employee = oldUser;
+
+                // Also restore loggedInEmployee if it's the same user
+                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                    setLoggedInEmployee(oldUser);
+                }
+
+                return allDataCopy;
+            });
+
+            // Show error notification
+            addToast(
+                `Gagal menyimpan perubahan: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                'error'
+            );
+
+            return false;
+        }
+    }, [allUsersData, setAllUsersData, loggedInEmployee, setLoggedInEmployee, addToast]);
 
     const handleNavigateToReport = (monthKey: string) => {
         // Use URL params to pass state to the page
@@ -632,6 +681,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             }}
             menteeTargets={menteeTargets}
             hospitals={hospitals}
+            addToast={addToast}
         />
     ) : (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">

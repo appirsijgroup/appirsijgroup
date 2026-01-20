@@ -51,6 +51,7 @@ const SelectFilter: React.FC<{
         value={value}
         onChange={onChange}
         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+        style={{ position: 'relative', zIndex: 50 }}
     >
         <option value="all" className="text-black bg-white">
             {defaultLabel}
@@ -375,10 +376,11 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
     };
 
     return (
-        <div>
+        <div className="mt-8">
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg">
-                <div className="lg:col-span-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg" style={{ position: 'relative', zIndex: 10 }}>
+                {/* Row 1 */}
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">
                         Pilih Tahun
                     </label>
@@ -386,6 +388,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         value={yearFilter}
                         onChange={(e) => setYearFilter(e.target.value)}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        style={{ position: 'relative', zIndex: 50 }}
                     >
                         {allYearsWithData.map((year) => (
                             <option key={year} value={year} className="text-black bg-white">
@@ -394,7 +397,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         ))}
                     </select>
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">
                         Rumah Sakit
                     </label>
@@ -402,6 +405,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         value={hospitalFilter}
                         onChange={(e) => setHospitalFilter(e.target.value)}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        style={{ position: 'relative', zIndex: 50 }}
                     >
                         <option value="all" className="text-black bg-white">Semua RS</option>
                         {hospitals.map((hospital) => (
@@ -411,7 +415,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         ))}
                     </select>
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">
                         Unit Kerja
                     </label>
@@ -422,7 +426,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         defaultLabel="Semua Unit"
                     />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">
                         Profesi
                     </label>
@@ -433,7 +437,9 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         defaultLabel="Semua Profesi"
                     />
                 </div>
-                <div className="lg:col-span-2">
+
+                {/* Row 2 */}
+                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 40 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">
                         Cari Nama atau NIP
                     </label>
@@ -448,7 +454,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                         <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                 </div>
-                <div className="lg:col-span-2 flex items-center justify-end gap-2">
+                <div className="lg:col-span-2 flex items-center justify-end gap-2" style={{ position: 'relative', zIndex: 40 }}>
                     <button onClick={() => {}} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
                         <PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" />
                     </button>

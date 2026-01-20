@@ -2005,9 +2005,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     }, [dateFilterType, monthFilter, yearFilter, startDate, endDate, entityFilter, unitFilter, professionFilter, nameOrNipFilter, activationStatusFilter]);
 
     return (
-        <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg">
-                <div className="lg:col-span-1">
+        <div className="mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg" style={{ position: 'relative', zIndex: 10 }}>
+                {/* Row 1 */}
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Jenis Periode</label>
                     <select value={dateFilterType} onChange={handleDateFilterTypeChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
                         <option value="range" className="text-black bg-white">Rentang Tanggal</option>
@@ -2016,24 +2017,24 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                         <option value="all" className="text-black bg-white">Semua</option>
                     </select>
                 </div>
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-3" style={{ position: 'relative', zIndex: 50 }}>
                     <DateFilterInputs />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">{reportType === 'prayer' ? 'Sholat' : 'Kegiatan'}</label>
                     <SelectFilter value={entityFilter} onChange={e => setEntityFilter(e.target.value)} options={allReportableEntities} defaultLabel={reportType === 'prayer' ? 'Semua Sholat' : 'Semua Kegiatan'} />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Unit Kerja</label>
                     <SelectFilter value={unitFilter} onChange={e => setUnitFilter(e.target.value)} options={allUnits} defaultLabel="Semua Unit" />
                 </div>
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Profesi</label>
                     <SelectFilter value={professionFilter} onChange={e => setProfessionFilter(e.target.value)} options={allProfessions} defaultLabel="Semua Profesi" />
                 </div>
 
                 {/* Row 2 */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 40 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Cari Nama atau NIP</label>
                     <div className="relative">
                         <input type="text" value={nameOrNipFilter} onChange={e => setNameOrNipFilter(e.target.value)} placeholder="Ketik nama atau NIP..." className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
@@ -2041,7 +2042,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </div>
                 </div>
                 {reportType === 'prayer' && dateFilterType === 'monthly' && (
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 40 }}>
                         <label className="text-xs font-semibold text-blue-200 block mb-1">Status Aktivasi</label>
                         <select value={activationStatusFilter} onChange={e => setActivationStatusFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
                             <option value="all" className="text-black bg-white">Semua Status</option>
@@ -2050,7 +2051,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                         </select>
                     </div>
                 )}
-                <div className={`${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-1' : 'lg:col-span-2'} flex items-center justify-end gap-2`}>
+                <div className={`${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-1' : 'lg:col-span-2'} flex items-center justify-end gap-2`} style={{ position: 'relative', zIndex: 40 }}>
                     <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
                     <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><ExcelIcon className="w-5 h-5" /></button>
                 </div>
@@ -3660,6 +3661,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                 <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
                             </div>
                         </div>
+                        <div className="mt-8">
                         {reportSubView === 'sholat' && (
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
@@ -3669,6 +3671,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         {reportSubView === 'mutabaah' && (
                             <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
                         )}
+                        </div>
                     </div>
                 )}
 

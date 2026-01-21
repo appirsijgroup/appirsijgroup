@@ -39,6 +39,9 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = baseMetadata;
 
+// Force dynamic rendering for all pages
+export const dynamic = 'force-dynamic'
+
 export default function RootLayout({
   children,
 }: Readonly<{

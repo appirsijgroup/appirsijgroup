@@ -17,7 +17,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         isActive: emp.is_active,
         notificationEnabled: emp.notification_enabled,
         profilePicture: emp.profile_picture,
-        monthlyActivities: emp.monthly_activities,
+        monthlyActivities: emp.monthly_activities || {}, // Default to empty object if not exists
         activatedMonths: emp.activated_months,
         kaUnitId: emp.ka_unit_id,
         supervisorId: emp.supervisor_id,
@@ -31,9 +31,9 @@ export const convertToCamelCase = (emp: any): Employee => {
         managerScope: emp.manager_scope,
         locationId: emp.location_id,
         locationName: emp.location_name,
-        readingHistory: emp.reading_history,
-        quranReadingHistory: emp.quran_reading_history,
-        todoList: emp.todo_list,
+        readingHistory: emp.reading_history || [], // Default to empty array if not exists
+        quranReadingHistory: emp.quran_reading_history || [], // Default to empty array if not exists
+        todoList: emp.todo_list || [], // Default to empty array if not exists
         signature: emp.signature,
         lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp,
         managedHospitalIds: emp.managed_hospital_ids,
@@ -77,7 +77,6 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             is_active,
             notification_enabled,
             profile_picture,
-            monthly_activities,
             activated_months,
             ka_unit_id,
             supervisor_id,
@@ -89,11 +88,6 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             can_be_dirut,
             functional_roles,
             manager_scope,
-            location_id,
-            location_name,
-            reading_history,
-            quran_reading_history,
-            todo_list,
             signature,
             last_announcement_read_timestamp,
             managed_hospital_ids,
@@ -141,7 +135,6 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             is_active,
             notification_enabled,
             profile_picture,
-            monthly_activities,
             activated_months,
             ka_unit_id,
             supervisor_id,
@@ -153,11 +146,6 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             can_be_dirut,
             functional_roles,
             manager_scope,
-            location_id,
-            location_name,
-            reading_history,
-            quran_reading_history,
-            todo_list,
             signature,
             last_announcement_read_timestamp,
             managed_hospital_ids,
@@ -307,16 +295,16 @@ export const updateEmployee = async (
     if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
 
 
-    // 🔥 CRITICAL: monthly_activities should NEVER be sent to employees table
-    // It should always go to employee_monthly_activities table via monthlyActivityService
-    if ('monthlyActivities' in dbUpdates || 'monthly_activities' in dbUpdates) {
-        // Remove it from dbUpdates to prevent saving to wrong table
-        delete (dbUpdates as any).monthlyActivities;
-        delete (dbUpdates as any).monthly_activities;
-    }
-
     // 🔥 FIX: Validate and sanitize JSONB columns before sending
     const sanitizedUpdates = { ...dbUpdates };
+
+    // 🔥 CRITICAL: monthly_activities should NEVER be sent to employees table
+    // It should always go to employee_monthly_activities table via monthlyActivityService
+    if ('monthlyActivities' in sanitizedUpdates || 'monthly_activities' in sanitizedUpdates) {
+        // Remove it from sanitizedUpdates to prevent saving to wrong table
+        delete (sanitizedUpdates as any).monthlyActivities;
+        delete (sanitizedUpdates as any).monthly_activities;
+    }
 
     // Ensure all JSONB columns are valid JSON (EXCEPT monthly_activities which is removed)
     if (sanitizedUpdates.reading_history !== undefined) {

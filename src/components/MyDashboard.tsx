@@ -12,6 +12,7 @@ import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
 import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
 import { timeValidationService } from '../services/timeValidationService';
+import { useUIStore } from '@/store/store';
 
 const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b', '#10b981', '#0ea5e9'];
 
@@ -69,15 +70,38 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 };
 
 const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyActivity[] }> = ({ employee, dailyActivitiesConfig }) => {
-    const { performanceData, monthlyStats } = useMemo(() => {
-
+    // Memoize the current month data to prevent re-renders
+    const currentMonthData = React.useMemo(() => {
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        // Get monthly reports data once
+        const monthlyReportsData = (employee as any)._monthlyReportsData?.[currentMonthKey] || {};
+
+        return {
+            currentMonthKey,
+            monthlyReportsData
+        };
+    }, [employee?.id, employee?.monthlyActivities]); // Re-compute only when employee ID or monthlyActivities changes
+
+    const { performanceData, monthlyStats } = useMemo(() => {
+
+        const { currentMonthKey, monthlyReportsData } = currentMonthData;
+
         const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
 
         // 🔥 FIX: Merge manual activities with automation data (Reading & Quran history)
         // This ensures "Membaca Al-Quran dan buku" is synced from history tables
         const enrichedMonthProgress = { ...monthProgress };
+
+        // 🔥 NEW: Also include data from employee_monthly_reports table (manual counter activities)
+        // Use the stable monthlyReportsData from outer useMemo
+        Object.entries(monthlyReportsData).forEach(([dayKey, dayData]: [string, any]) => {
+            if (!enrichedMonthProgress[dayKey]) {
+                enrichedMonthProgress[dayKey] = {};
+            }
+            Object.assign(enrichedMonthProgress[dayKey], dayData);
+        });
 
         // 1. Sync Reading History (Books)
         if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
@@ -166,7 +190,12 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
 
 
         return { performanceData: categoryResults, monthlyStats: statsForCards };
-    }, [employee.monthlyActivities, dailyActivitiesConfig]);
+    }, [
+        currentMonthData, // Use memoized data instead of raw employee object
+        dailyActivitiesConfig,
+        employee?.readingHistory,
+        employee?.quranReadingHistory
+    ]);
 
     return (
         <div className="space-y-8">
@@ -242,104 +271,193 @@ const ReadingActivityCard: React.FC<{
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
+    dailyActivitiesConfig: DailyActivity[];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-}> = ({ employee, onLogBookReading, onDeleteReadingHistory, submissions, todayForMaxDate }) => {
+}> = ({ employee, onLogBookReading, onDeleteReadingHistory, submissions, todayForMaxDate, dailyActivitiesConfig }) => {
+    const { addToast } = useUIStore();
+    const [dateCompleted, setDateCompleted] = useState(getTodayLocalDateString());
     const [bookTitle, setBookTitle] = useState('');
     const [pagesRead, setPagesRead] = useState('');
-    const [dateCompleted, setDateCompleted] = useState(getTodayLocalDateString());
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Find the reading activity config to get the target from database
+    const readingActivity = useMemo(() => {
+        return dailyActivitiesConfig.find(d => d.automationTrigger?.type === 'BOOK_READING_REPORT');
+    }, [dailyActivitiesConfig]);
+
+    // Calculate reading count from history
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        let totalCount = 0;
+        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+            totalCount += employee.readingHistory.filter(h => h.dateCompleted.startsWith(currentMonthKey)).length;
+        }
+        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+            totalCount += employee.quranReadingHistory.filter(h => h.date.startsWith(currentMonthKey)).length;
+        }
+        setCount(totalCount);
+    }, [employee.readingHistory, employee.quranReadingHistory]);
+
+    // Get target from database config
+    const target = readingActivity?.monthlyTarget || 20;
+    const isTargetMet = count >= target;
+    const progress = Math.min((count / target) * 100, 100);
+
+    // Check if selected date is already reported
+    const reportedDates = useMemo(() => {
+        const dates: string[] = [];
+        if (employee.readingHistory) {
+            employee.readingHistory.forEach(h => dates.push(h.dateCompleted));
+        }
+        if (employee.quranReadingHistory) {
+            employee.quranReadingHistory.forEach(h => dates.push(h.date));
+        }
+        return dates;
+    }, [employee.readingHistory, employee.quranReadingHistory]);
+
+    const isDateAlreadyReported = reportedDates.includes(dateCompleted);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!bookTitle || !pagesRead || !dateCompleted) {
-            alert("Harap isi semua kolom.");
+        if (isLoading || !dateCompleted) return;
+
+        // Validate: Check if all fields are filled
+        if (!bookTitle || !pagesRead) {
+            addToast("⚠️ Harap isi judul buku dan halaman yang dibaca.", 'error');
             return;
         }
-        onLogBookReading(bookTitle, pagesRead, dateCompleted);
-        setBookTitle('');
-        setPagesRead('');
-        setDateCompleted(getTodayLocalDateString());
+
+        // Validate: Check if date is already reported
+        if (isDateAlreadyReported) {
+            addToast(`⚠️ Aktivitas ini sudah dilaporkan untuk tanggal ${dateCompleted}. Silakan pilih tanggal lain.`, 'error');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            onLogBookReading(bookTitle, pagesRead, dateCompleted);
+            setBookTitle('');
+            setPagesRead('');
+            setDateCompleted(getTodayLocalDateString());
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const [isLocked, lockReason] = useMemo(() => {
-        if (!dateCompleted) return [true, "Pilih tanggal"];
-
-        const selectedDateObj = createLocalDate(dateCompleted);
-        const monthKey = dateCompleted.slice(0, 7);
-
-        // Get corrected time from time validation service
-        const correctedNow = timeValidationService.getCorrectedTime();
-
-        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
-        const today = new Date(Date.UTC(
-            correctedNow.getUTCFullYear(),
-            correctedNow.getUTCMonth(),
-            correctedNow.getUTCDate()
-        ));
-        today.setHours(0, 0, 0, 0);
-
-        // Normalize selectedDateObj ke UTC juga
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
-
-        if (normalizedSelectedDate > today) {
-            return [true, "Tidak bisa mengisi tanggal di masa depan."];
-        }
-
-        const selectedMonthDate = createLocalDate(monthKey + '-02');
-        const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
-        const dayOfMonth = selectedDateObj.getDate();
-        const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
-
-        if (weekIndexOfSelected === -1) {
-            return [true, "Tanggal tidak valid. Silakan hubungi admin."];
-        }
-
-        const currentMonthForToday = new Date(today.getFullYear(), today.getMonth(), 1);
-        const weeksForCurrentMonth = getBalancedWeeks(currentMonthForToday);
-        const currentDay = today.getDate();
-        const currentWeekIndexForToday = weeksForCurrentMonth.findIndex(w => w.days.includes(currentDay));
-
-        const isSameMonthAndYearAsToday = selectedDateObj.getFullYear() === today.getFullYear() && selectedDateObj.getMonth() === today.getMonth();
-        const isCurrentWeek = isSameMonthAndYearAsToday && weekIndexOfSelected === currentWeekIndexForToday;
-
-        if (!isCurrentWeek) {
-            return [true, "Hanya pekan berjalan yang bisa diisi."];
-        }
-
-        const currentWeeklySubmission = submissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndexOfSelected);
-        if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-            return [true, "Pekan ini sudah diajukan."];
-        }
-
-        return [false, ""];
-    }, [dateCompleted, submissions]);
-
     return (
-        <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-3 sm:gap-4">
-            <h4 className="text-base sm:text-lg font-bold text-white">Membaca Al-Quran dan buku</h4>
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                <div>
-                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Judul Buku</label>
-                    <input type="text" value={bookTitle} onChange={e => setBookTitle(e.target.value)} placeholder="Contoh: Fiqih Ibadah" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" />
+        <div className="border border-white/10 p-4 rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                    <h4 className="text-base font-bold text-white mb-1">
+                        Membaca Al-Quran dan buku
+                    </h4>
+                    <p className="text-xs text-blue-200">
+                        Target: {target}x per bulan
+                    </p>
                 </div>
-                <div>
-                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Halaman Dibaca</label>
-                    <input type="text" value={pagesRead} onChange={e => setPagesRead(e.target.value)} placeholder="Contoh: 1-15, 20" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" />
-                </div>
-                <div>
-                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Tanggal Selesai</label>
-                    <input type="date" value={dateCompleted} onChange={e => setDateCompleted(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{ colorScheme: 'dark' }} />
-                </div>
-                {isLocked ? (
-                    <div className="w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed text-sm sm:text-base">
-                        <LockClosedIcon className="w-5 h-5" /> <span className="truncate">{lockReason}</span>
+
+                {/* Status Badge */}
+                {isTargetMet ? (
+                    <div className="flex items-center gap-1 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
+                        <CheckCircleIcon className="w-4 h-4 text-green-400" />
+                        <span className="text-xs font-semibold text-green-400">
+                            Tercapai!
+                        </span>
                     </div>
                 ) : (
-                    <button type="submit" className="w-full bg-teal-500 hover:bg-teal-400 text-white font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors text-base sm:text-sm">
-                        Laporkan
-                    </button>
+                    <div className="px-3 py-1 bg-gray-700/50 border border-gray-600/50 rounded-full">
+                        <span className="text-xs font-semibold text-gray-400">
+                            {count} / {target}
+                        </span>
+                    </div>
                 )}
-            </form>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-4">
+                <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+                    <div
+                        className={`h-full transition-all duration-500 ease-out ${
+                            isTargetMet
+                                ? 'bg-gradient-to-r from-green-500 to-green-400'
+                                : 'bg-gradient-to-r from-teal-500 to-blue-500'
+                        }`}
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+                <p className="text-xs text-gray-400 mt-1 text-right">
+                    {progress.toFixed(0)}% tercapai
+                </p>
+            </div>
+
+            {/* Date Input and Submit Form */}
+            <div className="space-y-3">
+                {/* Book Title Input */}
+                <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                        Judul Buku:
+                    </label>
+                    <input
+                        type="text"
+                        value={bookTitle}
+                        onChange={(e) => setBookTitle(e.target.value)}
+                        placeholder="Contoh: Fiqih Ibadah"
+                        className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Pages Read Input */}
+                <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                        Halaman Dibaca:
+                    </label>
+                    <input
+                        type="text"
+                        value={pagesRead}
+                        onChange={(e) => setPagesRead(e.target.value)}
+                        placeholder="Contoh: 1-15, 20"
+                        className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Date Picker */}
+                <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                        Tanggal Pelaporan:
+                    </label>
+                    <input
+                        type="date"
+                        value={dateCompleted}
+                        onChange={(e) => setDateCompleted(e.target.value)}
+                        max={getTodayLocalDateString()}
+                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${
+                            isDateAlreadyReported
+                                ? 'border-yellow-500/50 bg-yellow-500/10'
+                                : 'border-white/20'
+                        }`}
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                    onClick={handleSubmit}
+                    disabled={isLoading || isDateAlreadyReported}
+                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
+                        isLoading || isDateAlreadyReported
+                            ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                            : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/50'
+                    }`}
+                >
+                    {isLoading ? 'Menyimpan...' : 'Lapor Aktivitas'}
+                </button>
+            </div>
         </div>
     );
 };
@@ -351,7 +469,9 @@ const SimpleActivityCard: React.FC<{
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
 }> = ({ activity, employee, onLogManualActivity, submissions, todayForMaxDate }) => {
+    const { addToast } = useUIStore();
     const [date, setDate] = useState(getTodayLocalDateString());
+    const [isLoading, setIsLoading] = useState(false);
 
     const isDone = useMemo(() => {
         if (!date) return false;
@@ -360,100 +480,83 @@ const SimpleActivityCard: React.FC<{
         return employee.monthlyActivities?.[monthKey]?.[dayKey]?.[activity.id] ?? false;
     }, [date, employee.monthlyActivities, activity.id]);
 
-    const [isLocked, lockReason] = useMemo(() => {
-        if (!date) return [true, "Pilih tanggal"];
+    const handleSubmit = async () => {
+        if (isLoading || !date) return;
 
-        const selectedDateObj = createLocalDate(date);
-        const monthKey = date.slice(0, 7);
-
-        // --- Get today's corrected date from time validation service, normalized to midnight for comparison ---
-        const correctedNow = timeValidationService.getCorrectedTime();
-
-        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
-        const today = new Date(Date.UTC(
-            correctedNow.getUTCFullYear(),
-            correctedNow.getUTCMonth(),
-            correctedNow.getUTCDate()
-        ));
-        today.setHours(0, 0, 0, 0);
-
-        // --- Check if the selected date is in the future ---
-        // Normalize selectedDateObj ke UTC juga
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
-
-        if (normalizedSelectedDate > today) {
-            return [true, "Tidak bisa mengisi tanggal di masa depan."];
-        }
-
-        // --- Determine the week of the selected date ---
-        const selectedMonthDate = createLocalDate(monthKey + '-02');
-        const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
-        const dayOfMonth = selectedDateObj.getDate();
-        const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
-
-        if (weekIndexOfSelected === -1) {
-            return [true, "Tanggal tidak valid. Silakan hubungi admin."];
-        }
-
-        // --- Determine the current week based on today's date ---
-        const currentMonthForToday = new Date(today.getFullYear(), today.getMonth(), 1);
-        const weeksForCurrentMonth = getBalancedWeeks(currentMonthForToday);
-        const currentDay = today.getDate();
-        const currentWeekIndexForToday = weeksForCurrentMonth.findIndex(w => w.days.includes(currentDay));
-
-        // --- Check if the selected date is within the current week ---
-        const isSameMonthAndYearAsToday = selectedDateObj.getFullYear() === today.getFullYear() && selectedDateObj.getMonth() === today.getMonth();
-        const isCurrentWeek = isSameMonthAndYearAsToday && weekIndexOfSelected === currentWeekIndexForToday;
-
-        if (!isCurrentWeek) {
-            return [true, "Hanya pekan berjalan yang bisa diisi."];
-        }
-
-        // --- If it IS the current week and not a future date, check submission status ---
-        const currentWeeklySubmission = submissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndexOfSelected);
-        if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-            return [true, "Pekan ini sudah diajukan."];
-        }
-
-        return [false, ""];
-    }, [date, submissions]);
-
-    const handleSubmit = () => {
-        if (!date) {
-            alert("Harap pilih tanggal.");
+        if (isDone) {
+            addToast(`⚠️ Aktivitas ini sudah dilaporkan untuk tanggal ${date}. Silakan pilih tanggal lain.`, 'error');
             return;
         }
-        onLogManualActivity(activity.id, date);
+
+        setIsLoading(true);
+        try {
+            onLogManualActivity(activity.id, date);
+            setDate(getTodayLocalDateString());
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
-        <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10 flex flex-col justify-between gap-3 sm:gap-4">
-            <h4 className="text-base sm:text-lg font-bold text-white leading-tight">{activity.title}</h4>
-            <div className="space-y-3 sm:space-y-4">
-                <div>
-                    <label className="text-xs sm:text-sm font-medium text-blue-200 block mb-1.5">Pilih Tanggal</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayForMaxDate} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 sm:p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white text-base sm:text-sm" style={{ colorScheme: 'dark' }} />
+        <div className="border border-white/10 p-4 rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                    <h4 className="text-base font-bold text-white mb-1">
+                        {activity.title}
+                    </h4>
+                    <p className="text-xs text-blue-200">
+                        Aktivitas harian
+                    </p>
                 </div>
+
+                {/* Status Badge */}
+                {isDone ? (
+                    <div className="flex items-center gap-1 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
+                        <CheckCircleIcon className="w-4 h-4 text-green-400" />
+                        <span className="text-xs font-semibold text-green-400">
+                            Selesai
+                        </span>
+                    </div>
+                ) : (
+                    <div className="px-3 py-1 bg-gray-700/50 border border-gray-600/50 rounded-full">
+                        <span className="text-xs font-semibold text-gray-400">
+                            Belum
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            {/* Date Input and Submit Form */}
+            <div className="space-y-3">
+                {/* Date Picker */}
+                <div>
+                    <label className="block text-xs text-gray-400 mb-1">
+                        Tanggal Pelaporan:
+                    </label>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        max={getTodayLocalDateString()}
+                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${
+                            isDone ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/20'
+                        }`}
+                        disabled={isLoading}
+                    />
+                </div>
+
+                {/* Submit Button */}
                 <button
                     onClick={handleSubmit}
-                    disabled={isDone || isLocked}
-                    className={`w-full font-semibold py-3 sm:py-2.5 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 text-sm sm:text-base ${isLocked
-                        ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
-                        : isDone
-                            ? 'bg-green-500/80 text-white cursor-not-allowed'
-                            : 'bg-teal-500 hover:bg-teal-400 text-white'
-                        }`}
+                    disabled={isLoading || isDone}
+                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
+                        isLoading || isDone
+                            ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                            : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/50'
+                    }`}
                 >
-                    {isLocked ? (
-                        <>
-                            <LockClosedIcon className="w-5 h-5" /> <span className="truncate">{lockReason}</span>
-                        </>
-                    ) : isDone ? (
-                        <>
-                            <CheckIcon className="w-5 h-5" /> Sudah Dilaporkan
-                        </>
-                    ) : 'Lapor Telah Melakukan'}
+                    {isLoading ? 'Menyimpan...' : isDone ? 'Sudah Dilaporkan' : 'Lapor Aktivitas'}
                 </button>
             </div>
         </div>
@@ -1180,6 +1283,7 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                             onDeleteReadingHistory={onDeleteReadingHistory}
                             submissions={submissions}
                             todayForMaxDate={todayForMaxDate}
+                            dailyActivitiesConfig={dailyActivitiesConfig}
                         />
                         {manualActivities.map(activity => (
                             <SimpleActivityCard

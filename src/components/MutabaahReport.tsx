@@ -71,8 +71,8 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
     const [professionFilter, setProfessionFilter] = useState<string>('all');
     const [nameOrNipFilter, setNameOrNipFilter] = useState<string>('');
 
-    // Get all available filters
-    const { allUnits, allProfessions, allYearsWithData } = useMemo(() => {
+    // Get all available filters - use stable dependency
+    const filtersData = useMemo(() => {
         const units = new Set<string>();
         const professions = new Set<string>();
         const years = new Set<number>();
@@ -100,16 +100,30 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         };
     }, [allUsersData]);
 
+    const { allUnits, allProfessions, allYearsWithData } = filtersData;
+
     useEffect(() => {
         if (allYearsWithData.length > 0 && !yearFilter) {
             setYearFilter(String(allYearsWithData[0]));
         }
     }, [allYearsWithData, yearFilter]);
 
+    // Memoize stable data to prevent infinite re-renders
+    const stableUsersData = useMemo(() => {
+        // Create a stable snapshot of user data
+        const snapshot: Record<string, { employee: Employee }> = {};
+        Object.entries(allUsersData).forEach(([key, value]) => {
+            snapshot[key] = {
+                employee: value.employee
+            };
+        });
+        return snapshot;
+    }, [allUsersData]); // Only re-compute when allUsersData reference changes
+
     // Aggregate mutaba'ah data per YEAR (akumulasi semua bulan dalam tahun)
     const mutabaahData: MutabaahReportRecord[] = useMemo(() => {
         const records: MutabaahReportRecord[] = [];
-        const userMap = new Map(Object.values(allUsersData).map((d) => [d.employee.id, d.employee]));
+        const userMap = new Map(Object.values(stableUsersData).map((d) => [d.employee.id, d.employee]));
 
         // Get activity categories
         const sidiqActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'SIDIQ (Integritas)');
@@ -150,7 +164,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         const yearlyAccumulator = new Map<string, YearlyAccumulator>();
 
         // Loop 1: Initialize SEMUA employees (tanpa filter RS di sini)
-        Object.values(allUsersData).forEach(({ employee }) => {
+        Object.values(stableUsersData).forEach(({ employee }) => {
             const key = `${employee.id}-${yearFilter}`;
 
             if (!yearlyAccumulator.has(key)) {
@@ -191,7 +205,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         });
 
         // Loop 2: Accumulate capaian dari monthlyActivities (untuk employees yang punya data)
-        Object.values(allUsersData).forEach(({ employee }) => {
+        Object.values(stableUsersData).forEach(({ employee }) => {
             // Skip jika tidak ada monthlyActivities (belum aktivasi/isi)
             if (!employee.monthlyActivities) return;
 
@@ -268,7 +282,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         });
 
         return records.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-    }, [allUsersData, yearFilter]);
+    }, [stableUsersData, yearFilter]);
 
     // Apply filters
     const filteredData = useMemo(() => {

@@ -78,11 +78,15 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         // Get monthly reports data once
         const monthlyReportsData = (employee as any)._monthlyReportsData?.[currentMonthKey] || {};
 
+        console.log('🔍 [DEBUG KinerjaView] currentMonthKey:', currentMonthKey);
+        console.log('🔍 [DEBUG KinerjaView] monthlyReportsData:', JSON.stringify(monthlyReportsData, null, 2));
+        console.log('🔍 [DEBUG KinerjaView] employee.monthlyActivities:', JSON.stringify(employee.monthlyActivities?.[currentMonthKey], null, 2));
+
         return {
             currentMonthKey,
             monthlyReportsData
         };
-    }, [employee?.id, employee?.monthlyActivities]); // Re-compute only when employee ID or monthlyActivities changes
+    }, [employee?.id, employee?.monthlyActivities, (employee as any)._monthlyReportsData]); // Re-compute when employee data changes
 
     const { performanceData, monthlyStats } = useMemo(() => {
 

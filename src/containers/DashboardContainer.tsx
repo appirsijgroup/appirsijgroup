@@ -108,6 +108,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 });
             });
 
+            console.log('🔍 [DEBUG] Final mergedActivities for employee', employeeId, ':', JSON.stringify(mergedActivities, null, 2));
+
             // Update both allUsersData and loggedInEmployee
             setAllUsersData(prev => ({
                 ...prev,

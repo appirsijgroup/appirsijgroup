@@ -429,18 +429,23 @@ export const convertTeamAttendanceToActivities = async (
     employeeId: string
 ): Promise<Record<string, Record<string, Record<string, boolean>>>> => {
     try {
+        console.log('🔍 [DEBUG] convertTeamAttendanceToActivities called for employeeId:', employeeId);
+
         // Get all team attendance sessions where this employee attended
         const { data: attendanceRecords, error } = await supabase
             .from('team_attendance_records')
             .select('session_id, team_attendance_sessions!inner(date, type)')
-            .eq('employee_id', employeeId);
+            .eq('user_id', employeeId);
+
+        console.log('📊 [DEBUG] Raw attendanceRecords query result:', { data: attendanceRecords, error });
 
         if (error) {
-            console.error('Error fetching team attendance records:', error);
+            console.error('❌ [DEBUG] Error fetching team attendance records:', error);
             return {};
         }
 
         if (!attendanceRecords || attendanceRecords.length === 0) {
+            console.log('⚠️ [DEBUG] No attendance records found for employee:', employeeId);
             return {};
         }
 
@@ -469,7 +474,7 @@ export const convertTeamAttendanceToActivities = async (
             }
         });
 
-        console.log('✅ [convertTeamAttendanceToActivities] Team attendance data synced:', result);
+        console.log('✅ [DEBUG] Team attendance data synced successfully:', JSON.stringify(result, null, 2));
         return result;
     } catch (error) {
         console.error('Error converting team attendance to activities:', error);

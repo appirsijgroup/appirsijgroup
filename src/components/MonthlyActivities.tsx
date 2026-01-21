@@ -51,18 +51,6 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
     return weeks.map((days, index) => ({ weekIndex: index, days }));
 };
 
-const TabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-    <button
-        onClick={onClick}
-        className={`flex-grow py-3 px-5 text-center font-semibold rounded-lg transition-all duration-300
-            ${active
-                ? 'bg-teal-500 text-white shadow-lg'
-                : 'bg-white/10 text-blue-200 hover:bg-white/20'
-            }`}
-    >
-        {children}
-    </button>
-);
 
 const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUsers, monthlyProgressData, onUpdate, onActivateMonth, weeklyReportSubmissions, onSubmitReport, date, onDateChange, dailyActivitiesConfig, mutabaahLockingMode }) => {
     const { addToast } = useUIStore();
@@ -161,6 +149,23 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         }
 
     }, [monthKey, weeks, date]);
+
+    // Adjust month when year changes to ensure valid month selection
+    useEffect(() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        const selectedYear = date.getFullYear();
+        const selectedMonth = date.getMonth();
+
+        // If selected year is current year and selected month is in the future
+        if (selectedYear === currentYear && selectedMonth > currentMonth) {
+            // Reset to current month
+            const adjustedDate = new Date(date);
+            adjustedDate.setMonth(currentMonth);
+            onDateChange(adjustedDate);
+        }
+    }, [date.getFullYear(), date.getMonth(), onDateChange]);
 
     const handleProgressChange = (day: string, activityId: string, value: boolean) => {
         if(isReadOnlyForWeek) return;
@@ -356,7 +361,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                 label: month,
                 disabled: isDisabled
             };
-        });
+        }).filter(option => !option.disabled); // Filter out future months completely
     }, [date]);
 
     // Generate year options (current year +/- 2 years) - excluding future years
@@ -382,8 +387,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
     return (
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
-            {/* Enterprise-style Month/Year Filter */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-black/20 p-4 rounded-xl">
+            {/* Enterprise-style Filter Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-black/20 p-4 rounded-xl">
                 <div>
                     <label className="text-xs font-semibold text-blue-200 block mb-2">
                         Bulan
@@ -393,18 +398,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                         onChange={(e) => {
                             const newDate = new Date(date);
                             newDate.setMonth(parseInt(e.target.value));
-
-                            // Prevent changing to future months
-                            const today = new Date();
-                            const futureDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                            const selectedDate = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-
-                            if (selectedDate <= futureDate) {
-                                onDateChange(newDate);
-                            } else {
-                                // Show a notification or alert that future months are not allowed
-                                addToast("Tidak dapat memilih bulan yang akan datang.", 'error');
-                            }
+                            onDateChange(newDate);
                         }}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
                     >
@@ -413,9 +407,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 key={month.value}
                                 value={month.value}
                                 className="text-black bg-white"
-                                disabled={month.disabled}
                             >
-                                {month.label} {month.disabled ? '(Tidak Tersedia)' : ''}
+                                {month.label}
                             </option>
                         ))}
                     </select>
@@ -428,17 +421,9 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                         value={date.getFullYear()}
                         onChange={(e) => {
                             const newDate = new Date(date);
-                            newDate.setFullYear(parseInt(e.target.value));
-
-                            // Prevent changing to future years
-                            const currentYear = new Date().getFullYear();
                             const selectedYear = parseInt(e.target.value);
-
-                            if (selectedYear <= currentYear) {
-                                onDateChange(newDate);
-                            } else {
-                                addToast("Tidak dapat memilih tahun yang akan datang.", 'error');
-                            }
+                            newDate.setFullYear(selectedYear);
+                            onDateChange(newDate);
                         }}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
                     >
@@ -447,6 +432,19 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 {year.label}
                             </option>
                         ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-2">
+                        Tipe Laporan
+                    </label>
+                    <select
+                        value={activeTab}
+                        onChange={(e) => setActiveTab(e.target.value as 'weekly' | 'monthly')}
+                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    >
+                        <option value="weekly" className="text-black bg-white">Laporan Mingguan</option>
+                        <option value="monthly" className="text-black bg-white">Rekap Bulanan</option>
                     </select>
                 </div>
             </div>
@@ -476,11 +474,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-                        <TabButton active={activeTab === 'weekly'} onClick={() => setActiveTab('weekly')}>Laporan Mingguan</TabButton>
-                        <TabButton active={activeTab === 'monthly'} onClick={() => setActiveTab('monthly')}>Rekap Bulanan</TabButton>
-                    </div>
-
                     {activeTab === 'weekly' && (
                         <div className="animate-view-change">
                             <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">
@@ -510,18 +503,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 </div>
                             </div>
 
-                            {isReadOnlyForWeek && (
-                                <div className="mb-4 p-3 bg-gray-700/50 text-gray-300 text-center rounded-lg flex items-center justify-center gap-3">
-                                    <LockClosedIcon className="w-5 h-5" />
-                                    <p className="font-semibold text-sm">
-                                        {isPastWeek && !currentWeeklySubmission
-                                            ? "Pekan ini telah terlewat dan dikunci."
-                                            : "Pekan ini telah diajukan dan dikunci."
-                                        }
-                                    </p>
-                                </div>
-                            )}
-                            <div className={`overflow-x-auto rounded-lg border border-white/20 ${isReadOnlyForWeek ? 'opacity-70' : ''}`}>
+                            <div className="overflow-x-auto rounded-lg border border-white/20">
                                 <table className="min-w-full text-sm text-left text-white border-collapse">
                                     <thead>
                                         <tr>
@@ -560,30 +542,12 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                                             {selectedWeekDays.map(day => {
                                                                 const dayKey = (day).toString().padStart(2, '0');
                                                                 const isChecked = progress[dayKey]?.[activity.id] || false;
-                                                                // Determine if the day should be disabled based on locking mode
-                                                                // In 'monthly' mode, allow filling any day from 1st to current day
-                                                                // In 'weekly' mode, only allow days within the current week
-                                                                const isFutureDate = isCurrentMonthView && day > todayDay;
-                                                                const isDayInCurrentWeek = weeks[currentWeekIndex]?.days.includes(day);
-
-                                                                // In weekly mode: disable days not in current week OR days in the future
-                                                                // In monthly mode: disable only days in the future
-                                                                const shouldDisableFutureDayBasedOnMode =
-                                                                    mutabaahLockingMode === 'weekly'
-                                                                        ? !isDayInCurrentWeek || isFutureDate // In weekly mode, disable days not in current week OR future days
-                                                                        : isFutureDate; // In monthly mode, only disable future dates
 
                                                                 return (
-                                                                    <td key={day} className={`text-center border-l border-gray-700 group-hover:bg-white/5 ${isCurrentMonthView && day === todayDay ? 'bg-teal-900/40' : ''}`}>
-                                                                        <button
-                                                                            onClick={() => handleProgressChange(dayKey, activity.id, !isChecked)}
-                                                                            disabled={isAutomated || isReadOnlyForWeek || shouldDisableFutureDayBasedOnMode}
-                                                                            className="w-full h-full flex items-center justify-center py-3 disabled:cursor-not-allowed"
-                                                                            aria-label={`Tandai ${activity.title} pada tanggal ${dayKey}`}
-                                                                            title={isAutomated ? "Diisi otomatis" : isReadOnlyForWeek ? "Dikunci" : shouldDisableFutureDayBasedOnMode ? "Tanggal akan datang" : ""}
-                                                                        >
-                                                                            {isChecked ? <CheckSquareIcon className={`w-6 h-6 ${isAutomated || isReadOnlyForWeek || shouldDisableFutureDayBasedOnMode ? 'text-teal-400/50' : 'text-teal-400 hover:text-teal-300'}`} /> : <SquareIcon className={`w-6 h-6 ${isAutomated || isReadOnlyForWeek || shouldDisableFutureDayBasedOnMode ? 'text-gray-600' : 'text-gray-500 hover:text-white'}`} />}
-                                                                        </button>
+                                                                    <td key={day} className={`text-center border-l border-gray-700 ${isCurrentMonthView && day === todayDay ? 'bg-teal-900/40' : ''}`}>
+                                                                        <div className="w-full h-full flex items-center justify-center py-3">
+                                                                            {isChecked ? <CheckSquareIcon className="w-6 h-6 text-teal-400" /> : <SquareIcon className="w-6 h-6 text-gray-600" />}
+                                                                        </div>
                                                                     </td>
                                                                 );
                                                             })}
@@ -633,29 +597,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                         Status: {statusConfig[currentWeeklySubmission.status].label}
                                     </div>
                                 ) : null}
-
-                                {!isReadOnlyForWeek && (
-                                    <>
-                                        {employee.mentorId && (
-                                            <button
-                                                onClick={handleSubmission}
-                                                disabled={isDirty}
-                                                className="w-full max-w-xs sm:w-auto bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-blue-500 transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                            >
-                                                <SendIcon className="w-5 h-5"/>
-                                                {currentWeeklySubmission?.status.startsWith('rejected') ? 'Ajukan Ulang Laporan Pekan Ini' : 'Ajukan Laporan Pekan Ini'}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={handleSaveChanges}
-                                            disabled={!isDirty}
-                                            className="w-full max-w-xs sm:w-auto bg-teal-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-teal-400 transition-all duration-300 disabled:bg-gray-600 disabled:cursor-not-allowed"
-                                        >
-                                            {isDirty ? 'Simpan Perubahan' : 'Tersimpan'}
-                                        </button>
-                                        {isDirty && <p className="text-xs text-yellow-300">Anda memiliki perubahan yang belum disimpan.</p>}
-                                    </>
-                                )}
                             </div>
                         </div>
                     )}

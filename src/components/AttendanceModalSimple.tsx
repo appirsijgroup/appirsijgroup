@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppDataStore } from '@/store/appDataStore';
+import { useUIStore } from '@/store/store';
 import { submitAttendance } from '@/services/attendanceService';
 
 interface AttendanceModalProps {
@@ -23,6 +24,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
   onSubmit
 }) => {
   const { loggedInEmployee } = useAppDataStore();
+  const { addToast } = useUIStore();
   const [reason, setReason] = useState('');
 
   useEffect(() => {
@@ -51,7 +53,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
       setReason('');
       onClose();
     } catch (error) {
-      alert('Gagal menyimpan presensi. Silakan coba lagi.');
+      addToast('Gagal menyimpan presensi. Silakan coba lagi.', 'error');
     }
   };
 

@@ -19,7 +19,6 @@ import { useHospitalStore } from '@/store/hospitalStore';
 import { PRAYERS } from '@/data/prayers';
 import { getBalancedWeeks } from '@/utils/dateUtils';
 import { updateEmployee, getEmployeeById } from '@/services/employeeService';
-import { getCurrentMonthStats, type ActivityStats } from '@/services/activityStatsService';
 import type {
     TadarusRequest,
     MissedPrayerRequest,
@@ -61,6 +60,78 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     // Sync old team attendance data to monthlyActivities
     const [hasSyncedOldAttendance, setHasSyncedOldAttendance] = useState(false);
     const isSyncingRef = useRef(false);
+
+    // 🔥 NEW: State to track monthly reports data refresh
+    const [monthlyReportsRefreshCounter, setMonthlyReportsRefreshCounter] = useState(0);
+
+    // 🔥 NEW: Function to refresh monthly reports data
+    const refreshMonthlyReportsData = useCallback(async (employeeId: string) => {
+        try {
+            // 1. Load employee_monthly_reports data (manual counter activities)
+            const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
+            const monthlyReportsActivities = await convertMonthlyReportsToActivities(employeeId);
+
+            // 2. Load tadarus sessions data
+            const { convertTadarusSessionsToActivities } = await import('@/services/tadarusService');
+            const tadarusActivities = await convertTadarusSessionsToActivities(employeeId);
+
+            // 3. Load team attendance data (KIE, Doa Bersama)
+            const { convertTeamAttendanceToActivities } = await import('@/services/teamAttendanceService');
+            const teamAttendanceActivities = await convertTeamAttendanceToActivities(employeeId);
+
+            // Merge all data sources
+            const mergedActivities = { ...monthlyReportsActivities };
+
+            // Merge tadarus data
+            Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
+                if (!mergedActivities[monthKey]) {
+                    mergedActivities[monthKey] = {};
+                }
+                Object.entries(monthData).forEach(([dayKey, dayData]) => {
+                    if (!mergedActivities[monthKey][dayKey]) {
+                        mergedActivities[monthKey][dayKey] = {};
+                    }
+                    Object.assign(mergedActivities[monthKey][dayKey], dayData);
+                });
+            });
+
+            // Merge team attendance data
+            Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
+                if (!mergedActivities[monthKey]) {
+                    mergedActivities[monthKey] = {};
+                }
+                Object.entries(monthData).forEach(([dayKey, dayData]) => {
+                    if (!mergedActivities[monthKey][dayKey]) {
+                        mergedActivities[monthKey][dayKey] = {};
+                    }
+                    Object.assign(mergedActivities[monthKey][dayKey], dayData);
+                });
+            });
+
+            // Update both allUsersData and loggedInEmployee
+            setAllUsersData(prev => ({
+                ...prev,
+                [employeeId]: {
+                    ...prev[employeeId],
+                    employee: {
+                        ...prev[employeeId].employee,
+                        _monthlyReportsData: mergedActivities
+                    }
+                }
+            }));
+
+            if (loggedInEmployee && loggedInEmployee.id === employeeId) {
+                setLoggedInEmployee({
+                    ...loggedInEmployee,
+                    _monthlyReportsData: mergedActivities
+                });
+            }
+
+            setMonthlyReportsRefreshCounter(prev => prev + 1);
+        } catch (error) {
+            console.error('Error refreshing monthly reports data:', error);
+        }
+    }, [loggedInEmployee, setAllUsersData, setLoggedInEmployee]);
 
     // --- Handlers from App.tsx ---
 
@@ -243,17 +314,46 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (process.env.NODE_ENV === "development") {
         }
 
+        // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+        // Filter out any foreign fields (kie, doaBersama, etc.) from monthProgress
+        const cleanedMonthProgress: any = {};
+        Object.keys(monthProgress).forEach(key => {
+            // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+            if (key.match(/^\d{2}$/)) {
+                cleanedMonthProgress[key] = monthProgress[key];
+            }
+            // Field asing akan DIHAPUS!
+        });
+
         // Update local state first (optimistic update)
         const existing = loggedInEmployee?.monthlyActivities || {};
-        const newActivity = { ...existing, [monthKey]: monthProgress };
-        handleUpdateProfile(userId, { monthlyActivities: newActivity });
+        const newActivity = { ...existing, [monthKey]: cleanedMonthProgress };
+
+        // 🔥 FIX: JANGAN simpan ke loggedInEmployee - akan simpan data kotor!
+        // Hanya simpan ke allUsersData
+        setAllUsersData(prev => ({
+            ...prev,
+            [userId]: {
+                ...prev[userId],
+                employee: {
+                    ...prev[userId].employee,
+                    monthlyActivities: newActivity
+                }
+            }
+        }));
 
         // Then persist to Supabase
         try {
             const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
             await updateService(userId, newActivity);
+            if (process.env.NODE_ENV === "development") {
+                console.log('✅ [handleUpdateMonthlyActivities] Saved cleaned data to Supabase');
+            }
         } catch (error) {
             // Don't throw - local state is already updated
+            if (process.env.NODE_ENV === "development") {
+                console.error('❌ [handleUpdateMonthlyActivities] Failed to save:', error);
+            }
         }
     };
 
@@ -308,9 +408,20 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         continue;
                     }
 
-                    // Update monthlyActivities
+                    // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+                    // Filter out any foreign fields (kie, doaBersama, etc.) from currentMonthProgress
+                    const cleanedMonthProgress: any = {};
+                    Object.keys(currentMonthProgress).forEach(key => {
+                        // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+                        if (key.match(/^\d{2}$/)) {
+                            cleanedMonthProgress[key] = currentMonthProgress[key];
+                        }
+                        // Field asing akan DIHAPUS!
+                    });
+
+                    // Update monthlyActivities with CLEANED data
                     const updatedMonthProgress = {
-                        ...currentMonthProgress,
+                        ...cleanedMonthProgress,
                         [dayKey]: {
                             ...currentDayProgress,
                             [activityId]: true,
@@ -342,59 +453,6 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teamAttendanceSessions.length, hasSyncedOldAttendance]); // Only trigger on count change, not on function reference change
-
-    // ✅ NEW: Load activityStats and merge to monthlyActivities
-    useEffect(() => {
-        const loadActivityStats = async () => {
-            if (!loggedInEmployee) return;
-
-            try {
-                console.log('🔄 Loading activity stats from service...');
-
-                // Load stats dari service baru
-                const stats = await getCurrentMonthStats(loggedInEmployee.id);
-
-                console.log('📊 Loaded activity stats:', stats);
-
-                // Merge stats ke dalam monthlyActivities
-                const now = new Date();
-                const monthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-
-                const currentMonthlyActivities = loggedInEmployee.monthlyActivities || {};
-                const currentMonthData = currentMonthlyActivities[monthKey] || {};
-
-                // ⚠️ PERBAIKI: Masukkan activity stats di level bulan (bukan level tanggal)
-                const updatedMonthData = {
-                    kajianSelasa: stats.kajianSelasa,
-                    pengajianPersyarikatan: stats.pengajianPersyarikatan,
-                    kegiatanTerjadwal: stats.kegiatanTerjadwal,
-                    kie: stats.kie,
-                    doaBersama: stats.doaBersama
-                };
-
-                // Update employee object dengan monthlyActivities yang sudah di-merge
-                const updatedEmployee = {
-                    ...loggedInEmployee,
-                    monthlyActivities: {
-                        ...currentMonthlyActivities,
-                        [monthKey]: {
-                            ...currentMonthData,  // Ini data per-tanggal
-                            ...updatedMonthData  // OVERWRITE dengan stats bulanan
-                        }
-                    }
-                };
-
-                // Update store
-                setLoggedInEmployee(updatedEmployee);
-
-                console.log('✅ Activity stats merged to monthlyActivities:', updatedMonthData);
-            } catch (error) {
-                console.error('❌ Failed to load activity stats:', error);
-            }
-        };
-
-        loadActivityStats();
-    }, [loggedInEmployee, setLoggedInEmployee, activityStatsRefreshCounter]); // 🔥 NEW: Trigger refresh when counter changes
 
     const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
         if (!loggedInEmployee) return;
@@ -458,23 +516,36 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (!loggedInEmployee) return false;
 
         if (isDateValidForMutabaahUpdate(date, loggedInEmployee)) {
-            const originalMonthlyActivities = loggedInEmployee.monthlyActivities || {};
+            // 🔥 FIX: Get latest data from allUsersData instead of loggedInEmployee to prevent stale data
+            const latestEmployeeData = allUsersData[loggedInEmployee.id]?.employee || loggedInEmployee;
+            const originalMonthlyActivities = latestEmployeeData.monthlyActivities || {};
             try {
                 const dateObj = new Date(date + 'T12:00:00Z');
                 const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
                 const dayKey = dateObj.getDate().toString().padStart(2, '0');
 
-                const monthlyActivities = loggedInEmployee.monthlyActivities || {};
+                const monthlyActivities = latestEmployeeData.monthlyActivities || {};
                 const monthProgress = monthlyActivities[monthKey] || {};
                 const dayProgress = monthProgress[dayKey] || {};
 
                 const newDayProgress = { ...dayProgress, [activityId]: true };
                 const newMonthProgress = { ...monthProgress, [dayKey]: newDayProgress };
-                const newMonthlyActivities = { ...monthlyActivities, [monthKey]: newMonthProgress };
+                let newMonthlyActivities = { ...monthlyActivities, [monthKey]: newMonthProgress };
 
-                // 🔥 CRITICAL: Don't send monthlyActivities to handleUpdateProfile - update local state manually instead
-                // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
+                // 🔥 FIX: HAPUS field asing SEBELUM disimpan ke database!
+                if (newMonthlyActivities[monthKey]) {
+                    const cleanMonthData: any = {};
+                    Object.keys(newMonthlyActivities[monthKey]).forEach(key => {
+                        if (key.match(/^\d{2}$/)) {
+                            cleanMonthData[key] = newMonthlyActivities[monthKey][key];
+                        }
+                    });
+                    newMonthlyActivities = { ...newMonthlyActivities, [monthKey]: cleanMonthData };
+                }
+
+                // 🔥 CRITICAL: HANYA update allUsersData, JANGAN update loggedInEmployee!
                 // Ini untuk mencegah re-render cascade di MainLayoutShell
+                // Dan untuk mencegah data kotor dari loggedInEmployee tersimpan ke database
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -485,6 +556,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         }
                     }
                 }));
+
+                // ⚠️ JANGAN update loggedInEmployee! Biarkan stale karena akan di-refresh dari database
+                // Jika update, data kotor akan tersimpan kembali!
 
                 // 🔥 FIX: Save to employee_monthly_activities table via monthlyActivityService
                 const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
@@ -497,8 +571,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             } catch (error: unknown) {
 
-                // Rollback the optimistic update on failure - update local state manually
-                // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
+                // Rollback the optimistic update on failure
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -509,6 +582,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         }
                     }
                 }));
+
+                // ⚠️ JANGAN rollback loggedInEmployee - biarkan stale
 
                 let errorMessage = 'Unknown error occurred';
                 if (error instanceof Error) {
@@ -523,7 +598,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             addToast('Tidak dapat melaporkan aktivitas karena pekan telah terlewat/terkunci.', 'error');
             return false;
         }
-    }, [loggedInEmployee, handleUpdateProfile, isDateValidForMutabaahUpdate, addToast]);
+    }, [loggedInEmployee, allUsersData, handleUpdateProfile, isDateValidForMutabaahUpdate, addToast]);
 
     const handleLogBookReading = useCallback(async (bookTitle: string, pagesRead: string, dateCompleted: string) => {
         if (!loggedInEmployee) return;
@@ -537,8 +612,11 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             };
             const updatedHistory = [...(loggedInEmployee.readingHistory || []), newHistory];
 
+            // 🔥 FIX: Get latest data from allUsersData instead of loggedInEmployee to prevent stale data
+            const latestEmployeeData = allUsersData[loggedInEmployee.id]?.employee || loggedInEmployee;
+
             const activityIdToUpdate = dailyActivitiesConfig.find(d => d.automationTrigger?.type === 'BOOK_READING_REPORT')?.id;
-            let newMonthlyActivities = loggedInEmployee.monthlyActivities;
+            let newMonthlyActivities = latestEmployeeData.monthlyActivities;
 
             if (activityIdToUpdate) {
                 if (isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
@@ -546,15 +624,23 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
                     const dayKey = date.getDate().toString().padStart(2, '0');
 
-                    const existingProgress = loggedInEmployee.monthlyActivities?.[monthKey] || {};
+                    const existingProgress = latestEmployeeData.monthlyActivities?.[monthKey] || {};
                     const existingDayProgress = existingProgress[dayKey] || {};
 
+                    // 🔥 FIX: Filter existingProgress HANYA ambil tanggal keys
+                    const cleanExistingProgress: any = {};
+                    Object.keys(existingProgress).forEach(key => {
+                        if (key.match(/^\d{2}$/)) {
+                            cleanExistingProgress[key] = existingProgress[key];
+                        }
+                    });
+
                     newMonthlyActivities = {
-                        ...loggedInEmployee.monthlyActivities,
+                        ...latestEmployeeData.monthlyActivities,
                         [monthKey]: {
-                            ...existingProgress,
+                            ...cleanExistingProgress,
                             [dayKey]: {
-                                ...existingDayProgress,
+                                ...(existingDayProgress || {}),
                                 [activityIdToUpdate]: true,
                             }
                         }
@@ -573,8 +659,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             // Also update monthlyActivities in local state manually
             if (newMonthlyActivities) {
-                const updatedEmployee = { ...loggedInEmployee, monthlyActivities: newMonthlyActivities };
-                setLoggedInEmployee(updatedEmployee);
+                // 🔥 FIX: HANYA update allUsersData, JANGAN update loggedInEmployee!
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -585,6 +670,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         }
                     }
                 }));
+                // ⚠️ JANGAN update loggedInEmployee - akan simpan data kotor!
             }
 
             // 🔥 FIX: Save to Supabase database
@@ -606,49 +692,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             if (activityIdToUpdate && isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
                 addToast('Laporan membaca buku berhasil disimpan!', 'success');
             }
-
-            // Force refresh data from Supabase to ensure consistency
-            try {
-                // Small delay to ensure Supabase has processed the update
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                const freshEmployee = await getEmployeeById(loggedInEmployee.id);
-                if (freshEmployee) {
-
-                    setLoggedInEmployee(freshEmployee);
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
-
-                } else {
-                }
-            } catch (refreshError) {
-            }
         } catch (error) {
-
-            // Rollback the local state update in case of failure
-            try {
-                const freshEmployee = await getEmployeeById(loggedInEmployee.id);
-                if (freshEmployee) {
-                    setLoggedInEmployee(freshEmployee);
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
-                }
-            } catch (rollbackError) {
-            }
-
             addToast('Gagal menyimpan laporan buku ke database. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, handleUpdateProfile, dailyActivitiesConfig, isDateValidForMutabaahUpdate, addToast, setLoggedInEmployee, setAllUsersData]);
+    }, [loggedInEmployee, allUsersData, handleUpdateProfile, dailyActivitiesConfig, isDateValidForMutabaahUpdate, addToast]);
 
     const handleUpdateTodoList = useCallback(async (userId: string, todoList: Employee['todoList']) => {
         if (!loggedInEmployee) return;
@@ -868,10 +915,25 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 await loadActivitiesFromSupabase(loggedInEmployee.id);
             } catch (error) {
             }
+
+            // 🔥 NEW: Load employee_monthly_reports data for dashboard chart
+            await refreshMonthlyReportsData(loggedInEmployee.id);
         };
 
         loadImportantData();
     }, [loggedInEmployee]); // Run when loggedInEmployee changes
+
+    // 🔥 NEW: Refresh monthly reports data when activity stats refresh counter changes
+    // This ensures dashboard chart updates when manual activities are reported
+    useEffect(() => {
+        if (!loggedInEmployee || activityStatsRefreshCounter === 0) return;
+
+        const refreshData = async () => {
+            await refreshMonthlyReportsData(loggedInEmployee.id);
+        };
+
+        refreshData();
+    }, [activityStatsRefreshCounter]); // Remove loggedInEmployee and refreshMonthlyReportsData from deps to avoid infinite loops
 
     // Priority 3: Load nice-to-have data in background (longer delay)
     useEffect(() => {

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { type Employee, type MonthlyActivityProgress, type WeeklyReportSubmission, type DailyActivity, type MutabaahLockingMode } from '../types';
 import { CheckSquareIcon, SquareIcon, SendIcon, CalendarDaysIcon, LockClosedIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
+import { useUIStore } from '@/store/store';
 
 interface MonthlyActivitiesProps {
     employee: Employee;
@@ -64,6 +65,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
 );
 
 const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUsers, monthlyProgressData, onUpdate, onActivateMonth, weeklyReportSubmissions, onSubmitReport, date, onDateChange, dailyActivitiesConfig, mutabaahLockingMode }) => {
+    const { addToast } = useUIStore();
     const [isDirty, setIsDirty] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
@@ -214,7 +216,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
     const handleSubmission = () => {
         if (isDirty && !isReadOnlyForWeek) {
-            alert("Harap simpan perubahan Anda terlebih dahulu sebelum mengajukan laporan.");
+            addToast("Harap simpan perubahan Anda terlebih dahulu sebelum mengajukan laporan.", 'error');
             return;
         }
         setSubmissionConfirmation(true);
@@ -401,7 +403,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                 onDateChange(newDate);
                             } else {
                                 // Show a notification or alert that future months are not allowed
-                                alert("Tidak dapat memilih bulan yang akan datang.");
+                                addToast("Tidak dapat memilih bulan yang akan datang.", 'error');
                             }
                         }}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
@@ -435,7 +437,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                             if (selectedYear <= currentYear) {
                                 onDateChange(newDate);
                             } else {
-                                alert("Tidak dapat memilih tahun yang akan datang.");
+                                addToast("Tidak dapat memilih tahun yang akan datang.", 'error');
                             }
                         }}
                         className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"

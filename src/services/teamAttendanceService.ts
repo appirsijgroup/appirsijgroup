@@ -417,3 +417,62 @@ export const deleteTeamAttendanceSession = async (sessionId: string): Promise<vo
         throw error;
     }
 };
+
+/**
+ * 🔥 NEW: Convert team attendance sessions to monthlyActivities format
+ * This syncs team attendance (KIE, Doa Bersama) to the dashboard chart
+ *
+ * Input: employeeId
+ * Output: { "2026-01": { "21": { tepat_waktu_kie: true, doa_bersama: true } } }
+ */
+export const convertTeamAttendanceToActivities = async (
+    employeeId: string
+): Promise<Record<string, Record<string, Record<string, boolean>>>> => {
+    try {
+        // Get all team attendance sessions where this employee attended
+        const { data: attendanceRecords, error } = await supabase
+            .from('team_attendance_records')
+            .select('session_id, team_attendance_sessions!inner(date, type)')
+            .eq('employee_id', employeeId);
+
+        if (error) {
+            console.error('Error fetching team attendance records:', error);
+            return {};
+        }
+
+        if (!attendanceRecords || attendanceRecords.length === 0) {
+            return {};
+        }
+
+        const result: Record<string, Record<string, Record<string, boolean>>> = {};
+
+        attendanceRecords.forEach((record: any) => {
+            const session = record.team_attendance_sessions;
+            const date = session.date; // YYYY-MM-DD
+            const monthKey = date.substring(0, 7); // YYYY-MM
+            const dayKey = date.substring(8, 10); // DD
+            const sessionType = session.type; // 'KIE' or 'Doa Bersama'
+
+            if (!result[monthKey]) {
+                result[monthKey] = {};
+            }
+
+            if (!result[monthKey][dayKey]) {
+                result[monthKey][dayKey] = {};
+            }
+
+            // Map session type to activity ID
+            if (sessionType === 'KIE') {
+                result[monthKey][dayKey]['tepat_waktu_kie'] = true;
+            } else if (sessionType === 'Doa Bersama') {
+                result[monthKey][dayKey]['doa_bersama'] = true;
+            }
+        });
+
+        console.log('✅ [convertTeamAttendanceToActivities] Team attendance data synced:', result);
+        return result;
+    } catch (error) {
+        console.error('Error converting team attendance to activities:', error);
+        return {};
+    }
+};

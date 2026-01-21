@@ -14,6 +14,7 @@ export default function EditActivitySessionPage() {
     const id = params.id as string;
 
     const { loggedInEmployee } = useAppDataStore();
+    const { addToast } = useUIStore();
     const { activities, teamAttendanceSessions, updateActivity, updateTeamAttendanceSessionData } = useActivityStore();
 
     const [initialData, setInitialData] = useState<Activity | TeamAttendanceSession | null>(null);
@@ -68,12 +69,12 @@ export default function EditActivitySessionPage() {
                     setType('activityType' in data ? data.activityType : data.type);
                     setAudienceType(data.audienceType as 'public' | 'rules' | 'manual');
                 } else {
-                    alert('Data tidak ditemukan');
+                    addToast('Data tidak ditemukan', 'error');
                     router.push('/jadwal-sesi');
                 }
             } catch (err) {
                 console.error('Failed to load data:', err);
-                alert('Gagal memuat data');
+                addToast('Gagal memuat data', 'error');
                 router.push('/jadwal-sesi');
             } finally {
                 setLoading(false);
@@ -88,20 +89,20 @@ export default function EditActivitySessionPage() {
 
         // Validate berdasarkan kind
         if (kind === 'activity' && !name.trim()) {
-            alert('Nama kegiatan wajib diisi');
+            addToast('Nama kegiatan wajib diisi', 'error');
             return;
         }
         if (kind === 'session' && !sessionType.trim()) {
-            alert('Jenis sesi wajib diisi');
+            addToast('Jenis sesi wajib diisi', 'error');
             return;
         }
         if (!date || !startTime || !endTime) {
-            alert('Mohon lengkapi semua field wajib');
+            addToast('Mohon lengkapi semua field wajib', 'error');
             return;
         }
 
         if (startTime >= endTime) {
-            alert('Waktu mulai harus sebelum waktu selesai');
+            addToast('Waktu mulai harus sebelum waktu selesai', 'error');
             return;
         }
 
@@ -131,11 +132,11 @@ export default function EditActivitySessionPage() {
                 } as any);
             }
 
-            alert('Data berhasil diupdate!');
+            addToast('Data berhasil diupdate!', 'success');
             router.push('/jadwal-sesi');
         } catch (err) {
             console.error('Failed to update:', err);
-            alert('Gagal mengupdate data. Silakan coba lagi.');
+            addToast('Gagal mengupdate data. Silakan coba lagi.', 'error');
             setIsSubmitting(false);
         }
     };

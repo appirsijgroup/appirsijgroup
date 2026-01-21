@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 import { UnifiedActivitySessionForm } from '@/components/UnifiedActivitySessionForm';
 import { useAppDataStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';

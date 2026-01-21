@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- Form state resets in modals are intentional */
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, AudienceType, AudienceRules, ManagerScope, FailedOperationRecord, type MutabaahLockingMode, type UnifiedAttendanceRecord } from "../types";
+import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, AudienceType, AudienceRules, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
 import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon, PencilIcon, XIcon, UserGroupIcon, ChartBarIcon, DocumentTextIcon, SparklesIcon, availableIconsForSunnah, ChevronDownIcon, ShieldCheckIcon, MegaphoneIcon, MosqueIcon, PlusCircleIcon, TrashIcon } from './Icons';
@@ -12,6 +12,7 @@ import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
 import MutabaahReport from './MutabaahReport';
 import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin } from '@/lib/rolePermissions';
+import { useUIStore } from '@/store/store';
 
 // Lazy load heavy components that are only rendered conditionally
 const RelationManagement = lazy(() => import('./RelationManagement'));
@@ -55,7 +56,6 @@ interface AdminDashboardProps {
     onUpdateMutabaahLockingMode: (mode: MutabaahLockingMode) => void;
     onLoadEmployees?: () => Promise<void>; // 🔥 NEW: On-demand employee loading
     pagination?: any; // TODO: Add proper type
-    unifiedAttendanceData?: UnifiedAttendanceRecord[]; // 🔥 NEW: Unified attendance data untuk laporan kegiatan
 }
 
 type DestructiveAction = 'delete-user' | 'delete-activity' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
@@ -1587,7 +1587,6 @@ interface AttendanceReportProps {
     loggedInEmployee: Employee;
     onEditAttendance: (record: AdminReportRecord) => void;
     onDeleteAttendance: (record: AdminReportRecord) => void;
-    unifiedAttendanceData?: UnifiedAttendanceRecord[]; // 🔥 NEW: Data dari unified_attendance view
 }
 
 const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: (string | number)[], defaultLabel: string }> = ({ value, onChange, options, defaultLabel }) => (
@@ -1597,7 +1596,7 @@ const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HT
     </select>
 );
 
-const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance, unifiedAttendanceData }) => {
+const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance }) => {
     const [dateFilterType, setDateFilterType] = useState<DateFilterType>('monthly');
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
     const [yearFilter, setYearFilter] = useState<string>('');
@@ -1654,33 +1653,6 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const records: AdminReportRecord[] = [];
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // 🔥 NEW: Gunakan unifiedAttendanceData untuk activity report jika tersedia
-        if (reportType === 'activity' && unifiedAttendanceData && unifiedAttendanceData.length > 0) {
-            // Build user map untuk mendapatkan data employee
-            const userMap = new Map(Object.values(allUsersData).map((d: { employee: Employee }) => [d.employee.id, d.employee]));
-
-            unifiedAttendanceData.forEach((attendance) => {
-                const employee = userMap.get(attendance.user_id);
-                if (!employee) return; // Skip jika employee tidak ditemukan
-
-                records.push({
-                    employeeId: employee.id,
-                    employeeName: employee.name,
-                    unit: employee.unit,
-                    professionCategory: employee.professionCategory,
-                    profession: employee.profession,
-                    date: attendance.date,
-                    entityId: attendance.entity_id,
-                    prayerName: attendance.entity_name, // entity_name dari unified_attendance
-                    status: 'Hadir', // unified_attendance hanya berisi yang hadir
-                    detail: 'Tepat Waktu', // Default detail
-                    timestamp: new Date(attendance.attended_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-                });
-            });
-
-            return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-
         // 🔥 ORIGINAL: Gunakan allUsersData untuk prayer report atau fallback
         // 🔥 FIX: Build maps inside useMemo to ensure fresh data
         const currentPrayerMap = new Map(PRAYERS.map(p => [p.id, p.name]));
@@ -1714,7 +1686,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             processDailyAttendance(todayStr, attendance);
         });
         return records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [allUsersData, activities, reportType, activityIds, unifiedAttendanceData]); // 🔥 NEW: Tambah unifiedAttendanceData dependency
+    }, [allUsersData, activities, reportType, activityIds]);
 
     const filteredData = useMemo(() => {
         const userMap = new Map(Object.values(allUsersData).map((d: { employee: Employee }) => [d.employee.id, d.employee]));
@@ -2233,6 +2205,7 @@ const SunnahIbadahModal: React.FC<{
     onUpdate: (id: string, updates: Partial<SunnahIbadah>) => void;
     existingIbadah: SunnahIbadah | null;
 }> = ({ isOpen, onClose, onSave, onUpdate, existingIbadah }) => {
+    const { addToast } = useUIStore();
     const [name, setName] = useState('');
     const [type, setType] = useState<'sholat' | 'puasa'>('sholat');
     const [icon, setIcon] = useState('SparklesIcon');
@@ -2270,7 +2243,7 @@ const SunnahIbadahModal: React.FC<{
 
     const handleSubmit = () => {
         if (!name || !icon) {
-            alert('Nama dan Ikon wajib diisi.');
+            addToast('Nama dan Ikon wajib diisi.', 'error');
             return;
         }
 
@@ -3332,7 +3305,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
         announcements, onCreateAnnouncement, onDeleteAnnouncement, onMarkAsRead, onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
-        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, unifiedAttendanceData
+        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees
     } = props;
     /* eslint-enable */
 
@@ -3666,7 +3639,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'kegiatan' && (
-                            <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} unifiedAttendanceData={unifiedAttendanceData || []} />
+                            <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
                         )}
                         {reportSubView === 'mutabaah' && (
                             <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />

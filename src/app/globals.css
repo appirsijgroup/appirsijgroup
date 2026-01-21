@@ -181,3 +181,36 @@ button, a {
     left: auto !important;
   }
 }
+
+/* --- Date Picker Icon Color (Dark Theme) --- */
+/* Make calendar picker icon white in dark theme */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+/* Invert calendar icon to white for Chrome/Safari/Edge */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+/* Darker icon on hover for better visibility */
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Firefox calendar icon */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="datetime-local"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}

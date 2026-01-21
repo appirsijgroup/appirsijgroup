@@ -4,6 +4,7 @@ import { type Announcement, type Employee, type Hospital } from '../types';
 import { MegaphoneIcon, PlusCircleIcon, TrashIcon, UserGroupIcon, GlobeAltIcon, ChevronDownIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
 import { isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
+import { useUIStore } from '@/store/store';
 
 interface AnnouncementsProps {
     announcements: Announcement[];
@@ -22,6 +23,7 @@ const AnnouncementModal: React.FC<{
     loggedInEmployee: Employee | null;
     hospitals: Hospital[];
 }> = ({ isOpen, onClose, onCreate, loggedInEmployee, hospitals }) => {
+    const { addToast } = useUIStore();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [scope, setScope] = useState<'alliansi' | 'mentor'>('alliansi');
@@ -31,7 +33,7 @@ const AnnouncementModal: React.FC<{
 
     const handleSubmit = () => {
         if (!title.trim() || !content.trim()) {
-            alert("Judul dan isi pengumuman tidak boleh kosong.");
+            addToast("Judul dan isi pengumuman tidak boleh kosong.", 'error');
             return;
         }
 

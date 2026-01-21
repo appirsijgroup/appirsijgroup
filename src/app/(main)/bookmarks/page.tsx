@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import Bookmarks from '@/components/Bookmarks';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
 import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/bookmarkStore';
 
 /**
@@ -19,6 +19,7 @@ import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/book
  */
 export default function BookmarksPage() {
     const { loggedInEmployee } = useAppDataStore();
+    const { addToast } = useUIStore();
     const router = useRouter();
 
     // React Query untuk data fetching (otomatis loading state, error handling, caching)
@@ -52,7 +53,7 @@ export default function BookmarksPage() {
                 notes,
             });
         } catch (error) {
-            alert('Gagal menyimpan bookmark. Silakan coba lagi.');
+            addToast('Gagal menyimpan bookmark. Silakan coba lagi.', 'error');
         }
     };
 
@@ -65,10 +66,10 @@ export default function BookmarksPage() {
                 userId: loggedInEmployee.id,
             });
             if (!success) {
-                alert('Gagal menghapus bookmark. Silakan coba lagi.');
+                addToast('Gagal menghapus bookmark. Silakan coba lagi.', 'error');
             }
         } catch (error) {
-            alert('Terjadi kesalahan saat menghapus bookmark.');
+            addToast('Terjadi kesalahan saat menghapus bookmark.', 'error');
         }
     };
 

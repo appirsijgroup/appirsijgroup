@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Alquran } from '@/components/Alquran';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
 import { useBookmarks, useToggleBookmark } from '@/store/bookmarkStore';
 import type { Bookmark } from '@/types';
 import { submitQuranReading, getQuranSubmissions, type QuranReadingSubmission } from '@/services/quranSubmissionService';
@@ -24,6 +24,7 @@ import { useMutabaah } from '@/contexts/MutabaahContext';
 export default function AlquranPage() {
     const searchParams = useSearchParams();
     const { loggedInEmployee } = useAppDataStore();
+    const { addToast } = useUIStore();
     const { monthlyProgressData, updateMonthlyProgress } = useMutabaah();
     const [goToAyah, setGoToAyah] = useState<{ surah: number; ayah: number } | null>(null);
     const [weeklyReportSubmissions, setWeeklyReportSubmissions] = useState<WeeklyReportSubmission[]>([]);
@@ -83,7 +84,7 @@ export default function AlquranPage() {
                 notes: bookmark.notes,
             });
         } catch (error) {
-            alert('Gagal menyimpan bookmark. Silakan coba lagi.');
+            addToast('Gagal menyimpan bookmark. Silakan coba lagi.', 'error');
         }
     };
 
@@ -95,7 +96,7 @@ export default function AlquranPage() {
         date: string;
     }) => {
         if (!loggedInEmployee) {
-            alert('Anda harus login untuk melaporkan bacaan.');
+            addToast('Anda harus login untuk melaporkan bacaan.', 'error');
             return;
         }
 
@@ -111,7 +112,7 @@ export default function AlquranPage() {
             );
 
             if (result) {
-                alert('✅ Bacaan Al-Qur\'an berhasil disimpan!');
+                addToast('✅ Bacaan Al-Qur\'an berhasil disimpan!', 'success');
 
                 // 🔥 CRITICAL FIX: Update Mutabaah with the CORRECT activity field
                 const monthKey = details.date.substring(0, 7); // "YYYY-MM"
@@ -120,6 +121,17 @@ export default function AlquranPage() {
                 const currentMonthProgress = monthlyProgressData[monthKey] || {};
                 const currentDayProgress = currentMonthProgress[dayKey] || {};
 
+                // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+                // Filter out any foreign fields from current month data
+                const cleanedMonthProgress: any = {};
+                Object.keys(currentMonthProgress).forEach(key => {
+                    // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+                    if (key.match(/^\d{2}$/)) {
+                        cleanedMonthProgress[key] = currentMonthProgress[key];
+                    }
+                    // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+                });
+
                 // ✅ Use the same field as the activity ID: 'baca_alquran_buku'
                 const updatedDayProgress = {
                     ...currentDayProgress,
@@ -127,7 +139,7 @@ export default function AlquranPage() {
                 };
 
                 const updatedMonthProgress = {
-                    ...currentMonthProgress,
+                    ...cleanedMonthProgress,
                     [dayKey]: updatedDayProgress,
                 };
 
@@ -146,10 +158,10 @@ export default function AlquranPage() {
                 // Reload data to refresh UI
                 await loadWeeklyReports();
             } else {
-                alert('❌ Gagal menyimpan bacaan. Silakan coba lagi.');
+                addToast('❌ Gagal menyimpan bacaan. Silakan coba lagi.', 'error');
             }
         } catch (error) {
-            alert(`❌ Terjadi kesalahan saat menyimpan bacaan: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            addToast(`❌ Terjadi kesalahan saat menyimpan bacaan: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
         }
     };
 

@@ -100,5 +100,5 @@ CREATE TRIGGER employee_monthly_activities_updated_at
 -- COMMENTS
 -- ============================================
 
-COMMENT ON TABLE public.employee_monthly_activities IS 'Menyimpan aktivitas bulanan karyawan untuk Lembar Mutaba\'ah';
+COMMENT ON TABLE public.employee_monthly_activities IS 'Menyimpan aktivitas bulanan karyawan untuk Lembar Mutabaah';
 COMMENT ON COLUMN public.employee_monthly_activities.activities IS 'JSON object dengan key format YYYY-MM berisi counter aktivitas';

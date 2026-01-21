@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import MonthlyActivities from '@/components/MonthlyActivities';
-import { useAppDataStore, useDailyActivitiesStore, useMutabaahStore } from '@/store/store';
+import { useAppDataStore, useDailyActivitiesStore, useMutabaahStore, useUIStore } from '@/store/store';
 import { useMutabaah } from '@/contexts/MutabaahContext';
 import { submitWeeklyReport, hasSubmittedReport } from '@/services/weeklyReportService';
 import { getAllEmployees } from '@/services/employeeService';
@@ -10,6 +10,7 @@ import { getAllEmployees } from '@/services/employeeService';
 export default function AktivitasBulananPage() {
     const { loggedInEmployee, allUsersData, setAllUsersData } = useAppDataStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
+    const { addToast } = useUIStore();
     const { mutabaahLockingMode, loadFromSupabase } = useMutabaahStore();
     const [date, setDate] = useState<Date>(new Date());
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
@@ -94,8 +95,19 @@ export default function AktivitasBulananPage() {
     } = useMutabaah();
 
     const handleUpdateMonthlyActivities = async (userId: string, monthKey: string, monthProgress: any) => {
+        // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+        // Filter out any foreign fields from monthProgress
+        const cleanedMonthProgress: any = {};
+        Object.keys(monthProgress).forEach(key => {
+            // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+            if (key.match(/^\d{2}$/)) {
+                cleanedMonthProgress[key] = monthProgress[key];
+            }
+            // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+        });
+
         // Update via Supabase using context
-        const success = await updateMonthlyProgress(monthKey, monthProgress);
+        const success = await updateMonthlyProgress(monthKey, cleanedMonthProgress);
         if (!success) {
             // Fallback to localStorage if needed
             // Anda bisa menambahkan logic fallback di sini jika diperlukan
@@ -115,7 +127,7 @@ export default function AktivitasBulananPage() {
 
     const handleSubmitReport = async (monthKey: string, weekIndex: number) => {
         if (!loggedInEmployee) {
-            alert('User tidak ditemukan');
+            addToast('User tidak ditemukan', 'error');
             return;
         }
 
@@ -128,7 +140,7 @@ export default function AktivitasBulananPage() {
             );
 
             if (alreadySubmitted) {
-                alert('Laporan untuk minggu ini sudah dikirim. Silakan edit jika ingin mengubah.');
+                addToast('Laporan untuk minggu ini sudah dikirim. Silakan edit jika ingin mengubah.', 'error');
                 return;
             }
 
@@ -144,14 +156,14 @@ export default function AktivitasBulananPage() {
             );
 
             if (result) {
-                alert('Laporan mingguan berhasil dikirim!');
+                addToast('Laporan mingguan berhasil dikirim!', 'success');
                 // Refresh data to update the UI
                 await refreshData();
             } else {
-                alert('Gagal mengirim laporan. Silakan coba lagi.');
+                addToast('Gagal mengirim laporan. Silakan coba lagi.', 'error');
             }
         } catch (error) {
-            alert('Terjadi kesalahan saat mengirim laporan.');
+            addToast('Terjadi kesalahan saat mengirim laporan.', 'error');
         }
     };
 

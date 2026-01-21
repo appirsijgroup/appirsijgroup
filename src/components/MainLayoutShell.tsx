@@ -16,6 +16,7 @@ import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } f
 import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
+import { useMutabaah } from '@/contexts/MutabaahContext';
 import { logger } from '@/lib/logger';
 import type { Employee } from '@/types';
 import { isAnyAdmin } from '@/lib/rolePermissions';
@@ -58,6 +59,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
     const { loadFromSupabase, subscribeToRealtime } = useMutabaahStore();
+
+    // 🔥 FIX: Use MutabaahContext as single source of truth for activation status
+    const { isCurrentMonthActivated, isLoading: isMutabaahLoading } = useMutabaah();
 
     // 🔥 AUTO-REFRESH SESSION: Keep user logged in by refreshing token every 10 minutes
     // This prevents the "session expired" issue after 15 minutes
@@ -285,21 +289,32 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             }; // Default to true if no employee
         }
 
+        // 🔥 FIX: Use isCurrentMonthActivated from MutabaahContext instead of calculating from employee data
+        // This ensures consistency and prevents race condition
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-        const activatedMonths = loggedInEmployee.activatedMonths || loggedInEmployee.activated_months || [];
-        const isActivated = activatedMonths.includes(currentMonthKey);
 
         // Don't block on the aktivitas-bulanan page itself (user can still see the activation UI there)
         const isOnAktivitasBulananPage = pathname?.startsWith('/aktivitas-bulanan');
 
+        // 🔥 FIX: Don't show activation prompt while MutabaahContext is still loading
+        // This prevents false positives during initial load
+        if (isMutabaahLoading) {
+            return {
+                isActivated: true, // Assume activated while loading to prevent blocking
+                shouldShowActivationRequired: false,
+                currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
+                currentMonthKey: currentMonthKey || ''
+            };
+        }
+
         return {
-            isActivated,
-            shouldShowActivationRequired: !isActivated && !isOnAktivitasBulananPage,
+            isActivated: isCurrentMonthActivated,
+            shouldShowActivationRequired: !isCurrentMonthActivated && !isOnAktivitasBulananPage,
             currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
             currentMonthKey: currentMonthKey || ''
         };
-    }, [loggedInEmployee, pathname]);
+    }, [loggedInEmployee, pathname, isCurrentMonthActivated, isMutabaahLoading]);
 
     // ⚡ OPTIMIZATION: Direct logout without router.push - logoutEmployee already redirects
     const handleLogout = useCallback(() => {

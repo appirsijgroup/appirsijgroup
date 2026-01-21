@@ -173,8 +173,19 @@ const PresensiComponent: React.FC = () => {
         'shalat_berjamaah': true
       };
 
+      // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+      // Filter out any foreign fields from monthActivities
+      const cleanedMonthActivities: any = {};
+      Object.keys(monthActivities).forEach(key => {
+        // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+        if (key.match(/^\d{2}$/)) {
+          cleanedMonthActivities[key] = monthActivities[key];
+        }
+        // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+      });
+
       const updatedMonthActivities = {
-        ...monthActivities,
+        ...cleanedMonthActivities,
         [dayKey]: updatedDayActivities
       };
 

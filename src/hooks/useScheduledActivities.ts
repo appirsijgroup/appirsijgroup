@@ -54,8 +54,8 @@ export const useScheduledActivities = (employeeId: string | null) => {
         activityId: string,
         status: 'hadir' | 'tidak-hadir' | 'izin' | 'sakit',
         reason?: string
-    ): Promise<boolean> => {
-        if (!employeeId) return false;
+    ): Promise<{ success: boolean; error?: string }> => {
+        if (!employeeId) return { success: false, error: 'Employee ID tidak ditemukan' };
 
         try {
             const result = await submitScheduledAttendance(activityId, employeeId, status, reason);
@@ -69,10 +69,10 @@ export const useScheduledActivities = (employeeId: string | null) => {
             // Reload activities untuk refresh data
             await loadActivities();
 
-            return true;
+            return { success: true };
         } catch (err) {
-            alert('Gagal menyimpan presensi. Silakan coba lagi.');
-            return false;
+            const errorMessage = err instanceof Error ? err.message : 'Gagal menyimpan presensi. Silakan coba lagi.';
+            return { success: false, error: errorMessage };
         }
     }, [employeeId, loadActivities]);
 

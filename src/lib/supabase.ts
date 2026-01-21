@@ -29,6 +29,62 @@ export function isSupabaseConfigured(): boolean {
   return !!(supabaseUrl && supabaseAnonKey);
 }
 
+// Function to create a new Supabase client with user's session token
+export function createSupabaseClientWithToken(token: string) {
+  return createClient<Database>(
+    supabaseUrl || '',
+    supabaseAnonKey || '',
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    }
+  );
+}
+
+// Function to set user session for authenticated requests
+export async function setSupabaseSession(token: string) {
+  // Update the client's auth state with the user's JWT token
+  const { data, error } = await supabase.auth.setSession({
+    access_token: token,
+    refresh_token: '' // You might want to handle refresh tokens separately
+  });
+
+  if (error) {
+    console.error('Error setting Supabase session:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Function to get current user session from Supabase
+export async function getSupabaseSession() {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error('Error getting Supabase session:', error);
+    return null;
+  }
+
+  return data.session;
+}
+
+// Function to sign out from Supabase
+export async function signOutSupabase() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error('Error signing out from Supabase:', error);
+  }
+}
+
 // Helper functions for case conversion (used by services)
 export function toCamelCase(obj: any): any {
   if (obj === null || typeof obj !== 'object') {

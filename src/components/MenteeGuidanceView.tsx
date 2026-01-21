@@ -3,6 +3,7 @@ import { type Employee, type WeeklyReportSubmission, type TadarusRequest, type T
 import { DocumentTextIcon, CalendarDaysIcon, CheckIcon, XIcon, ClockIcon, ChevronDownIcon } from './Icons';
 import { createPortal } from 'react-dom';
 import { PRAYERS } from '../data/prayers';
+import { useUIStore } from '@/store/store';
 
 interface MenteeGuidanceViewProps {
     employee: Employee;
@@ -21,6 +22,7 @@ const RequestTadarusModal: React.FC<{
     onClose: () => void;
     onSubmit: (date: string, notes: string) => void;
 }> = ({ isOpen, onClose, onSubmit }) => {
+    const { addToast } = useUIStore();
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [notes, setNotes] = useState('');
 
@@ -28,7 +30,7 @@ const RequestTadarusModal: React.FC<{
 
     const handleSubmit = () => {
         if (!date) {
-            alert("Tanggal harus diisi.");
+            addToast("Tanggal harus diisi.", 'error');
             return;
         }
         onSubmit(date, notes);
@@ -67,10 +69,11 @@ const MissedPrayerRequestModal: React.FC<{
     onClose: () => void;
     onSubmit: (data: { date: string, prayerId: string, prayerName: string, reason: string }) => void;
 }> = ({ isOpen, onClose, onSubmit }) => {
+    const { addToast } = useUIStore();
     const today = new Date();
     today.setDate(today.getDate() - 1); // Only allow requests for yesterday or before
     const maxDate = today.toISOString().split('T')[0];
-    
+
     const [date, setDate] = useState('');
     const [prayerId, setPrayerId] = useState('');
     const [reason, setReason] = useState('');
@@ -81,7 +84,7 @@ const MissedPrayerRequestModal: React.FC<{
     
     const handleSubmit = () => {
         if (!date || !prayerId || !reason) {
-            alert("Semua kolom wajib diisi.");
+            addToast("Semua kolom wajib diisi.", 'error');
             return;
         }
         const prayerName = wajibPrayers.find(p => p.id === prayerId)?.name || 'Sholat Wajib';

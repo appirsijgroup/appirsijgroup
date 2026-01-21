@@ -3,16 +3,27 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
 import { PlusCircleIcon, CalendarIcon, UsersIcon, ClockIcon } from '@/components/Icons';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import type { Activity, TeamAttendanceSession } from '@/types';
 import { CombinedScheduleTable, CombinedScheduleItem } from '@/components/CombinedScheduleTable';
 
 export default function JadwalSesiPage() {
     const { loggedInEmployee } = useAppDataStore();
+    const { addToast } = useUIStore();
     const { activities, deleteActivity, teamAttendanceSessions, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
     const router = useRouter();
+
+    // State for ConfirmationModal
+    const [deleteModal, setDeleteModal] = useState<{
+        isOpen: boolean;
+        item: CombinedScheduleItem | null;
+    }>({
+        isOpen: false,
+        item: null,
+    });
 
     // ⚡ TAMBAH: Auto-load data dari Supabase saat halaman mount
     useEffect(() => {
@@ -35,22 +46,37 @@ export default function JadwalSesiPage() {
         router.push(`/jadwal-sesi/edit/${item.kind}/${item.id}`);
     };
 
-    const handleDelete = async (item: CombinedScheduleItem) => {
-        if (window.confirm(`Apakah Anda yakin ingin menghapus "${item.name}"?`)) {
-            try {
-                if (item.kind === 'activity') {
-                    await deleteActivity(item.id);
-                } else {
-                    await deleteTeamAttendanceSession(item.id);
-                }
-                // ⚡ TAMBAH: Reload data dari Supabase setelah delete
-                await loadTeamAttendanceSessionsFromSupabase();
-                await loadActivitiesFromSupabase();
-            } catch (error) {
-                console.error('Failed to delete:', error);
-                alert('Gagal menghapus item. Silakan coba lagi.');
+    const handleDeleteClick = (item: CombinedScheduleItem) => {
+        setDeleteModal({
+            isOpen: true,
+            item,
+        });
+    };
+
+    const handleDeleteConfirm = async () => {
+        const item = deleteModal.item;
+        if (!item) return;
+
+        try {
+            if (item.kind === 'activity') {
+                await deleteActivity(item.id);
+            } else {
+                await deleteTeamAttendanceSession(item.id);
             }
+            // ⚡ TAMBAH: Reload data dari Supabase setelah delete
+            await loadTeamAttendanceSessionsFromSupabase();
+            await loadActivitiesFromSupabase();
+            addToast('Item berhasil dihapus', 'success');
+        } catch (error) {
+            console.error('Failed to delete:', error);
+            addToast('Gagal menghapus item. Silakan coba lagi.', 'error');
+        } finally {
+            setDeleteModal({ isOpen: false, item: null });
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteModal({ isOpen: false, item: null });
     };
     
     const combinedItems = useMemo((): CombinedScheduleItem[] => {
@@ -165,12 +191,23 @@ export default function JadwalSesiPage() {
 
             {/* Combined Table */}
             <div className="mt-8">
-                <CombinedScheduleTable 
+                <CombinedScheduleTable
                     items={combinedItems}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteClick}
                 />
             </div>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleDeleteConfirm}
+                title="Hapus Item"
+                message={`Apakah Anda yakin ingin menghapus "${deleteModal.item?.name || 'item'}"?`}
+                confirmText="Ya, Hapus"
+                confirmColorClass="bg-red-600 hover:bg-red-500"
+            />
         </div>
     );
 }

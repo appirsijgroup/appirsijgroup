@@ -5,7 +5,7 @@
 // Data is already fetched client-side via useEffect, so server-side rendering is not needed
 // This provides SPA-like experience with no full page refreshes
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamicImport from 'next/dynamic';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
@@ -14,7 +14,6 @@ import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
 import { useJobStructureStore } from '@/store/jobStructureStore';
 import { useAuditLogStore } from '@/store/auditLogStore';
 import { useAnnouncementStore } from '@/store/announcementStore';
-import { useHospitalStore } from '@/store/hospitalStore';
 import { useMutabaahStore } from '@/store/mutabaahStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -26,11 +25,11 @@ const AdminDashboard = dynamicImport(() => import('@/components/AdminDashboard')
     loading: () => <BrandedLoader />,
     ssr: false // Admin Dashboard tidak butuh SEO
 });
-import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type AttendanceStatus, type FunctionalRole, type MutabaahLockingMode, type Role, type UnifiedAttendanceRecord } from '@/types';
+import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
 import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmployee as deleteEmployeeSupabase, createEmployee as createEmployeeSupabase, convertToCamelCase } from '@/services/employeeService';
 import { getPaginatedEmployees } from '@/services/employeeServicePaginated';
 import { getAllHospitals, createHospital as createHospitalSupabase, updateHospital as updateHospitalSupabase, deleteHospital as deleteHospitalSupabase, toggleHospitalStatus as toggleHospitalStatusSupabase } from '@/services/hospitalService';
-import { validateRoleChange, getAssignableRoles, getRoleDisplay } from '@/lib/rolePermissions';
+import { validateRoleChange } from '@/lib/rolePermissions';
 // import { supabase } from '@/lib/supabase'; // Unused import
 
 export default function AdminPage() {
@@ -49,7 +48,6 @@ export default function AdminPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
-    const [unifiedAttendanceData, setUnifiedAttendanceData] = useState<UnifiedAttendanceRecord[]>([]);
 
     // ✅ Pagination state (for employee management)
     const [page, setPage] = useState(1);
@@ -146,15 +144,6 @@ export default function AdminPage() {
                 // Load hospitals
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
-
-                // 🔥 NEW: Load unified attendance data untuk laporan kegiatan
-                try {
-                    const { getAllUnifiedAttendance } = await import('@/services/unifiedAttendanceService');
-                    const unifiedData = await getAllUnifiedAttendance();
-                    setUnifiedAttendanceData(unifiedData);
-                } catch (error) {
-                    console.error('Failed to load unified attendance:', error);
-                }
 
                 // 🔥 FIX: Load announcements
                 try {
@@ -1010,8 +999,6 @@ export default function AdminPage() {
                 }}
                 // 🔥 NEW: On-demand employee loading
                 onLoadEmployees={loadEmployeesOnDemand}
-                // 🔥 NEW: Unified attendance data untuk laporan kegiatan
-                unifiedAttendanceData={unifiedAttendanceData}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

@@ -179,8 +179,28 @@ export const monthlyActivitiesService = {
     employeeId: string,
     monthlyActivities: Record<string, any>
   ) => {
+    // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+    // Filter out any foreign fields from all months
+    const cleanedActivities: Record<string, any> = {};
+    Object.keys(monthlyActivities).forEach(monthKey => {
+      // Hanya proses jika format YYYY-MM
+      if (monthKey.match(/^\d{4}-\d{2}$/)) {
+        const cleanedMonthData: any = {};
+        if (monthlyActivities[monthKey]) {
+          Object.keys(monthlyActivities[monthKey]).forEach(key => {
+            // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+            if (key.match(/^\d{2}$/)) {
+              cleanedMonthData[key] = monthlyActivities[monthKey][key];
+            }
+            // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+          });
+        }
+        cleanedActivities[monthKey] = cleanedMonthData;
+      }
+    });
+
     // Gunakan monthlyActivityService yang sudah di-update untuk menggunakan tabel employee_monthly_activities
-    await monthlyActivitiesService.updateMonthlyActivities(employeeId, monthlyActivities);
+    await monthlyActivitiesService.updateMonthlyActivities(employeeId, cleanedActivities);
 
     // Return employee data (optional, untuk consistency)
     const { data } = await supabase
@@ -200,14 +220,28 @@ export const monthlyActivitiesService = {
     dayActivities: Record<string, boolean>
   ) => {
     const currentData = await monthlyActivitiesService.getMonthlyActivities(employeeId);
+
+    // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+    // Filter out any foreign fields from current month data
+    const cleanedMonthData: any = {};
+    if (currentData[monthKey]) {
+      Object.keys(currentData[monthKey]).forEach(key => {
+        // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+        if (key.match(/^\d{2}$/)) {
+          cleanedMonthData[key] = currentData[monthKey][key];
+        }
+        // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+      });
+    }
+
     const updatedMonth = {
-      ...currentData[monthKey],
+      ...cleanedMonthData,
       [dayKey]: {
-        ...currentData[monthKey]?.[dayKey],
+        ...cleanedMonthData[dayKey],
         ...dayActivities
       }
     };
-    
+
     const updatedActivities = {
       ...currentData,
       [monthKey]: updatedMonth

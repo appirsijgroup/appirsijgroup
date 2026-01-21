@@ -7,7 +7,7 @@ export const DAILY_ACTIVITIES: DailyActivity[] = [
   { id: 'tanggung_jawab', category: 'SIDIQ (Integritas)', title: 'Tanggung jawab terhadap pekerjaan', monthlyTarget: 1, automationTrigger: { type: 'MANUAL_USER_REPORT' } },
 
   // TABLIGH (Teamwork)
-  { id: 'persyarikatan', category: 'TABLIGH (Teamwork)', title: 'Aktif dalam kegiatan persyarikatan', monthlyTarget: 1, automationTrigger: { type: 'ACTIVITY_TYPE', value: 'Pengajian Persyarikatan' } },
+  { id: 'persyarikatan', category: 'TABLIGH (Teamwork)', title: 'Aktif dalam kegiatan persyarikatan', monthlyTarget: 1, automationTrigger: { type: 'MANUAL_USER_REPORT' } },
   { id: 'doa_bersama', category: 'TABLIGH (Teamwork)', title: 'Doa bersama mengawali pekerjaan', monthlyTarget: 20, automationTrigger: { type: 'TEAM_ATTENDANCE', value: 'Doa Bersama' } },
   { id: 'lima_s', category: 'TABLIGH (Teamwork)', title: '5S (Salam, Senyum, Sapa, Sopan, Santun)', monthlyTarget: 20, automationTrigger: { type: 'MANUAL_USER_REPORT' } },
 
@@ -18,6 +18,6 @@ export const DAILY_ACTIVITIES: DailyActivity[] = [
 
   // FATONAH (Belajar)
   { id: 'tadarus', category: 'FATONAH (Belajar)', title: 'RSIJ bertadarus (berkelompok)', monthlyTarget: 3, automationTrigger: { type: 'TADARUS_SESSION' } },
-  { id: 'kajian_selasa', category: 'FATONAH (Belajar)', title: 'Kajian Selasa', monthlyTarget: 2, automationTrigger: { type: 'ACTIVITY_TYPE', value: 'Kajian Selasa' } },
+  { id: 'kajian_selasa', category: 'FATONAH (Belajar)', title: 'Kajian Selasa', monthlyTarget: 2, automationTrigger: { type: 'MANUAL_USER_REPORT' } },
   { id: 'baca_alquran_buku', category: 'FATONAH (Belajar)', title: 'Membaca Al-Quran dan buku', monthlyTarget: 20, automationTrigger: { type: 'BOOK_READING_REPORT' } },
 ];

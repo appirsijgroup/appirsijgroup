@@ -4,6 +4,7 @@ import { UserGroupIcon, CalendarDaysIcon, PlusCircleIcon, PencilIcon, SearchIcon
 import { createPortal } from 'react-dom';
 import ConfirmationModal from './ConfirmationModal';
 import { getTodayLocalDateString } from '../utils/dateUtils';
+import { useUIStore } from '@/store/store';
 
 // Helper function untuk mendapatkan waktu saat ini dalam format HH:mm
 const getCurrentTime = (): string => {
@@ -49,6 +50,7 @@ const CreateSessionModal: React.FC<{
     onCreate: (data: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[]) => void;
     allUsers: Employee[];
 }> = ({ isOpen, onClose, onCreate, allUsers }) => {
+    const { addToast } = useUIStore();
     const [type, setType] = useState<TeamAttendanceSession['type']>('Doa Bersama');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState('07:30');
@@ -117,7 +119,7 @@ const CreateSessionModal: React.FC<{
             sessionsToCreate.push({ ...baseSessionData, date });
         } else {
             if (daysOfWeek.size === 0) {
-                alert("Pilih setidaknya satu hari untuk sesi berulang.");
+                addToast("Pilih setidaknya satu hari untuk sesi berulang.", 'error');
                 return;
             }
             const startDate = new Date(date + 'T12:00:00Z');
@@ -134,7 +136,7 @@ const CreateSessionModal: React.FC<{
         }
 
         if (sessionsToCreate.length === 0 && isRecurring) {
-            alert("Tidak ada hari yang cocok dengan pilihan Anda di sisa bulan ini. Sesi tidak dibuat.");
+            addToast("Tidak ada hari yang cocok dengan pilihan Anda di sisa bulan ini. Sesi tidak dibuat.", 'error');
             return;
         }
 

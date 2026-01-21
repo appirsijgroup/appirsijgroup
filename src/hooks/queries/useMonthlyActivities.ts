@@ -33,8 +33,28 @@ export function useMonthlyActivities(employeeId: string | undefined) {
     mutationFn: async (activities: Record<string, any>) => {
       if (!employeeId) throw new Error('Employee ID is required');
 
+      // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+      // Filter out any foreign fields from all months
+      const cleanedActivities: Record<string, any> = {};
+      Object.keys(activities).forEach(monthKey => {
+        // Hanya proses jika format YYYY-MM
+        if (monthKey.match(/^\d{4}-\d{2}$/)) {
+          const cleanedMonthData: any = {};
+          if (activities[monthKey]) {
+            Object.keys(activities[monthKey]).forEach(key => {
+              // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+              if (key.match(/^\d{2}$/)) {
+                cleanedMonthData[key] = activities[monthKey][key];
+              }
+              // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+            });
+          }
+          cleanedActivities[monthKey] = cleanedMonthData;
+        }
+      });
+
       const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-      return await updateMonthlyActivities(employeeId, activities);
+      return await updateMonthlyActivities(employeeId, cleanedActivities);
     },
     onMutate: async (newActivities) => {
       // Optimistic update

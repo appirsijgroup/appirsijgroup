@@ -624,13 +624,18 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
 ): Promise<void> => {
     try {
         // Tentukan field mana yang di-update berdasarkan activity_type
+        // HANYA 'Umum' yang dicatat otomatis ke monthly activities
         const activityFieldMap: Record<string, string> = {
-            'Kajian Selasa': 'kajianSelasa',
-            'Pengajian Persyarikatan': 'pengajianPersyarikatan',
             'Umum': 'kegiatanTerjadwal',
         };
 
-        const fieldName = activityFieldMap[activity.activity_type] || 'kegiatanTerjadwal';
+        const fieldName = activityFieldMap[activity.activity_type];
+
+        // Hanya 'Umum' yang dicatat otomatis. Kajian Selasa dan Pengajian Persyarikatan harus manual.
+        if (!fieldName) {
+            console.log('ℹ️ Activity type tidak dicatat otomatis:', activity.activity_type);
+            return;
+        }
 
         // Get current date key (YYYY-MM-DD format untuk daily checklist)
         const activityDate = new Date(activity.date);

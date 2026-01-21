@@ -338,3 +338,56 @@ export const deleteTadarusRequest = async (requestId: string): Promise<void> => 
         throw error;
     }
 };
+
+/**
+ * 🔥 NEW: Convert tadarus sessions to monthlyActivities format
+ * This syncs tadarus attendance to the dashboard chart
+ *
+ * Input: employeeId
+ * Output: { "2026-01": { "21": { tadarus: true } } }
+ */
+export const convertTadarusSessionsToActivities = async (
+    employeeId: string
+): Promise<Record<string, Record<string, Record<string, boolean>>>> => {
+    try {
+        // Get all tadarus sessions where this employee was present
+        const { data: sessions, error } = await supabase
+            .from('tadarus_sessions')
+            .select('*')
+            .contains('present_mentee_ids', [employeeId]);
+
+        if (error) {
+            console.error('Error fetching tadarus sessions:', error);
+            return {};
+        }
+
+        if (!sessions || sessions.length === 0) {
+            return {};
+        }
+
+        const result: Record<string, Record<string, Record<string, boolean>>> = {};
+
+        sessions.forEach((session: any) => {
+            const date = session.date; // YYYY-MM-DD
+            const monthKey = date.substring(0, 7); // YYYY-MM
+            const dayKey = date.substring(8, 10); // DD
+
+            if (!result[monthKey]) {
+                result[monthKey] = {};
+            }
+
+            if (!result[monthKey][dayKey]) {
+                result[monthKey][dayKey] = {};
+            }
+
+            // Mark tadarus activity as completed for this day
+            result[monthKey][dayKey]['tadarus'] = true;
+        });
+
+        console.log('✅ [convertTadarusSessionsToActivities] Tadarus data synced:', result);
+        return result;
+    } catch (error) {
+        console.error('Error converting tadarus sessions to activities:', error);
+        return {};
+    }
+};

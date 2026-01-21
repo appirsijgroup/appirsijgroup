@@ -264,21 +264,6 @@ export interface AdminReportRecord {
   timestamp: string;
 }
 
-export interface UnifiedAttendanceRecord {
-  record_id: string;
-  entity_id: string;
-  user_id: string;
-  attendance_type: 'activity' | 'session';
-  status: string;
-  attended_at: string;
-  created_at: string;
-  updated_at: string;
-  entity_name: string;
-  activity_type: string;
-  date: string;
-  field_name: string;
-}
-
 export interface DailyActivity {
   id: string;
   category: 'SIDIQ (Integritas)' | 'TABLIGH (Teamwork)' | 'AMANAH (Disiplin)' | 'FATONAH (Belajar)';
@@ -297,6 +282,31 @@ export type DailyActivityProgress = Record<string, boolean>;
 // Represents all daily progress for a full month
 // e.g., { '01': { infaq: true }, '02': ... }
 export type MonthlyActivityProgress = Record<string, DailyActivityProgress>;
+
+// Represents monthly report activities (counter-based, not daily checklist)
+// e.g., { "2026-01": { infaq: { count: 2, completedAt: "..." }, jujur: { count: 5, ... } } }
+export interface MonthlyReportActivity {
+    count: number;
+    completedAt?: string;
+    note?: string;
+    entries?: ManualReportEntry[]; // Array untuk aktivitas manual (per-date tracking)
+    bookEntries?: BookReadingEntry[]; // Array untuk aktivitas tipe buku (e.g., "Membaca Al-Quran dan buku")
+}
+
+export interface ManualReportEntry {
+    date: string; // Format: "YYYY-MM-DD"
+    completedAt: string; // ISO timestamp
+    note?: string;
+}
+
+export interface BookReadingEntry {
+    bookTitle: string;
+    pagesRead: string;
+    dateCompleted: string;
+    completedAt: string;
+}
+
+export type MonthlyReports = Record<string, Record<string, MonthlyReportActivity>>;
 
 export type AdminView = 'manajemen-pengguna' | 'manajemen-konten' | 'reports' | 'pengumuman' | 'audit-log' | 'manajemen-admin' | 'manajemen-rs';
 

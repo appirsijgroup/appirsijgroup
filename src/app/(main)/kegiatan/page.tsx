@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ActivityTable } from '@/components/ActivityTable';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
 import { getEmployeeAttendance, submitAttendance, type AttendanceRecord } from '@/services/attendanceService';
 import { getEmployeeActivitiesAttendance, submitScheduledAttendance } from '@/services/scheduledActivityService';
@@ -13,6 +13,7 @@ import { getTodayLocalDateString } from '@/utils/dateUtils';
 export default function KegiatanPage() {
     const { loggedInEmployee, refreshActivityStats } = useAppDataStore(); // 🔥 NEW: Import refreshActivityStats untuk real-time update
     const { activities, teamAttendanceSessions, teamAttendanceRecords } = useActivityStore(); // ⚡ FIX: Ambil juga teamAttendanceRecords
+    const { addToast } = useUIStore();
     const [attendance, setAttendance] = useState<Attendance>({});
     const [loading, setLoading] = useState(true);
 
@@ -124,7 +125,7 @@ export default function KegiatanPage() {
 
         // ⚡ FIX: Check if already attended
         if (attendance[activityId]?.submitted) {
-            alert('Anda sudah menandai kehadiran untuk kegiatan ini');
+            addToast('Anda sudah menandai kehadiran untuk kegiatan ini', 'error');
             return;
         }
 
@@ -137,7 +138,7 @@ export default function KegiatanPage() {
                 const teamSession = teamAttendanceSessions.find((s: any) => s.id === sessionId);
 
                 if (!teamSession) {
-                    alert('Sesi tidak ditemukan');
+                    addToast('Sesi tidak ditemukan', 'error');
                     return;
                 }
 
@@ -147,7 +148,7 @@ export default function KegiatanPage() {
                 );
 
                 if (existingRecord) {
-                    alert('Anda sudah hadir di sesi ini');
+                    addToast('Anda sudah hadir di sesi ini', 'error');
                     return;
                 }
 
@@ -205,7 +206,7 @@ export default function KegiatanPage() {
                 }));
             }
         } catch (error) {
-            alert('Gagal menyimpan presensi. Silakan coba lagi.');
+            addToast('Gagal menyimpan presensi. Silakan coba lagi.', 'error');
         }
     };
 
@@ -219,7 +220,7 @@ export default function KegiatanPage() {
             if (isTeamSession) {
                 // ⚡ NOTE: Untuk team sessions, kita hanya mencatat yang HADIR di team_attendance_records
                 // Yang tidak hadir tidak perlu dicatat
-                alert('Untuk sesi tim (KIE/Doa Bersama), hanya presensi HADIR yang dicatat.');
+                addToast('Untuk sesi tim (KIE/Doa Bersama), hanya presensi HADIR yang dicatat.', 'error');
                 return;
             } else {
                 // Use scheduled activity service for scheduled activities
@@ -245,7 +246,7 @@ export default function KegiatanPage() {
                 }));
             }
         } catch (error) {
-            alert('Gagal menyimpan presensi. Silakan coba lagi.');
+            addToast('Gagal menyimpan presensi. Silakan coba lagi.', 'error');
         }
     };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, setSupabaseSession } from '@/lib/supabase';
 import type { Employee, MonthlyActivityProgress, WeeklyReportSubmission } from '@/types';
 import {
   getEmployeeMonthlyData,
@@ -46,6 +46,33 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Function to get JWT token from cookie
+  const getJwtToken = useCallback((): string | null => {
+    if (typeof document === 'undefined') return null;
+
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'session') {
+        return decodeURIComponent(value);
+      }
+    }
+    return null;
+  }, []);
+
+  // Function to initialize Supabase session with JWT token
+  const initializeSupabaseSession = useCallback(async () => {
+    const token = getJwtToken();
+    if (token) {
+      try {
+        await setSupabaseSession(token);
+        // console.log('Supabase session initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Supabase session:', error);
+      }
+    }
+  }, [getJwtToken]);
+
   // Helper function to get current month key (stable reference, no dependencies)
   const getCurrentMonthKey = useCallback(() => {
     const now = new Date();
@@ -54,7 +81,9 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
 
   // ⚡ OPTIMIZATION: Quick initialize - just load basic data immediately
   // Heavy operations like attendance sync will run in background
-  const initializeFromEmployee = useCallback(async (emp: Employee) => {
+  const initializeFromEmployee = useCallback(async (emp: Employee): Promise<void> => {
+    // Initialize Supabase session with JWT token
+    await initializeSupabaseSession();
 
     // Use data directly from employee object (already fresh from Supabase)
     // 🔥 FIX: monthlyActivities sekarang dikonversi ke camelCase oleh /api/auth/me
@@ -67,6 +96,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     const isActivated = months.includes(currentMonth);
 
     // ⚡ IMMEDIATE: Update state with basic data first (non-blocking)
+    // 🔥 FIX: Use flushSync to ensure state is updated synchronously
     setActivatedMonths(months);
     setMonthlyProgressData(activities);
     setIsCurrentMonthActivated(isActivated);
@@ -111,26 +141,73 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
           }
         });
 
-        if (syncedCount > 0) {
-          // Update state with synced data
-          setMonthlyProgressData(updatedActivities);
+        // 🔥 NEW: Load data from employee_monthly_reports table
+        try {
+          const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
+          const monthlyReportsActivities = await convertMonthlyReportsToActivities(emp.id);
 
-          // Save synced attendance data to Supabase
+          // Merge monthlyReportsActivities into updatedActivities
+          Object.entries(monthlyReportsActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              // Merge all activities from this day
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+        } catch (error) {
+          console.error('Error loading monthly reports data:', error);
+        }
+
+        // 🔥 FIX: Selalu update state dengan updatedActivities (termasuk data dari employee_monthly_reports)
+        // Tidak perlu menunggu syncedCount > 0
+        setMonthlyProgressData(updatedActivities);
+
+        if (syncedCount > 0) {
+          // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+          // Filter out any foreign fields from updatedActivities[currentMonth]
+          const cleanedMonthData: any = {};
+          if (updatedActivities[currentMonth]) {
+            Object.keys(updatedActivities[currentMonth]).forEach(key => {
+              // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+              if (key.match(/^\d{2}$/)) {
+                cleanedMonthData[key] = updatedActivities[currentMonth][key];
+              }
+              // Field asing (kie, doaBersama, dll) akan DIHAPUS!
+            });
+          }
+
+          const finalUpdatedActivities = {
+            ...updatedActivities,
+            [currentMonth]: cleanedMonthData
+          };
+
+          // Update state with cleaned data
+          setMonthlyProgressData(finalUpdatedActivities);
+
+          // Save cleaned data to Supabase
           try {
             const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
-            await updateMonthlyProgress(emp.id, currentMonth, updatedActivities[currentMonth]);
+            await updateMonthlyProgress(emp.id, currentMonth, cleanedMonthData);
 
             // 🔥 FIX: Update monthlyActivities (camelCase) - konsisten dengan API
             if (onUpdateEmployee) {
               const updatedEmployee = {
                 ...emp,
-                monthlyActivities: updatedActivities
+                monthlyActivities: finalUpdatedActivities
               };
               onUpdateEmployee(updatedEmployee);
             }
           } catch (error) {
+            // Log error tapi jangan hentikan aplikasi
+            console.error('❌ [MutabaahContext] Failed to save monthly progress:', error instanceof Error ? error.message : error);
           }
-        } else {
         }
       } catch (error) {
         // Continue without attendance sync - not critical
@@ -145,7 +222,10 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       }
 
     }, 100); // 100ms delay to allow UI to render first
-  }, [onUpdateEmployee]);
+
+    // 🔥 FIX: Return Promise to indicate initialization complete
+    return Promise.resolve();
+  }, [onUpdateEmployee, initializeSupabaseSession]);
 
   // Sync data to Supabase (optional, runs in background)
   const syncToSupabase = useCallback(async (empId: string) => {
@@ -390,13 +470,12 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   // Initialize when employee changes
   useEffect(() => {
     if (employee) {
-      // Short timeout to ensure smooth transition
-      const timeoutId = setTimeout(() => {
-        initializeFromEmployee(employee);
+      // 🔥 FIX: Remove timeout to prevent race condition
+      // Initialize immediately to ensure activation status is available
+      setIsLoading(true);
+      initializeFromEmployee(employee).then(() => {
         setIsLoading(false);
-      }, 100);
-
-      return () => clearTimeout(timeoutId);
+      });
     } else {
       setIsLoading(false);
       setIsCurrentMonthActivated(false);

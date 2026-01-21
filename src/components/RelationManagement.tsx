@@ -3,6 +3,7 @@ import { type Employee } from '../types';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 import { SearchIcon } from './Icons';
 import { useNotificationStore } from '../store/notificationStore';
+import { useUIStore } from '@/store/store';
 
 interface RelationManagementProps {
     allUsers: Employee[];
@@ -15,6 +16,7 @@ const ToggleSwitch: React.FC<{
     onChange: (checked: boolean) => Promise<boolean>;
     disabled?: boolean;
 }> = ({ checked, onChange, disabled }) => {
+    const { addToast } = useUIStore();
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleClick = async () => {
@@ -27,7 +29,7 @@ const ToggleSwitch: React.FC<{
                 throw new Error('Update failed');
             }
         } catch (error) {
-            alert('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'));
+            addToast('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
         } finally {
             setIsUpdating(false);
         }
@@ -179,7 +181,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     throw new Error('Update failed');
                 }
             } catch (error) {
-                alert('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                addToast('Gagal mengupdate profil: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             }
         } else {
             // Handle removal (newId === undefined)
@@ -216,7 +218,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                         throw new Error('Update failed');
                     }
                 } catch (error) {
-                    alert('Gagal menghapus penugasan: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                    addToast('Gagal menghapus penugasan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
                 }
             }
         }

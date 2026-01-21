@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
+import { useUIStore } from '@/store/store';
 
 export type MentorDashboardView = 'overview' | 'sessions' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target';
 
@@ -327,6 +328,7 @@ const TadarusSessionModal: React.FC<{
     mentees: Employee[];
     mentorId: string;
 }> = ({ isOpen, onClose, onSave, onUpdate, existingSession, mentees, mentorId }) => {
+    const { addToast } = useUIStore();
     const [title, setTitle] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState('08:00');
@@ -423,7 +425,7 @@ const TadarusSessionModal: React.FC<{
 
     const handleSubmit = () => {
         if (!title || !date) {
-            alert("Judul dan Tanggal wajib diisi.");
+            addToast("Judul dan Tanggal wajib diisi.", 'error');
             return;
         }
 

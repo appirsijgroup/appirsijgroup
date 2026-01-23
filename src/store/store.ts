@@ -85,17 +85,18 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                     // Update localStorage for client-side convenience
                     localStorage.setItem('loggedInUserId', employee.id);
 
-                    set({
+                    set(state => ({
                         loggedInEmployee: employee,
                         allUsersData: {
+                            ...state.allUsersData,
                             [employee.id]: {
                                 employee,
-                                attendance: {},
-                                history: {}
+                                attendance: state.allUsersData[employee.id]?.attendance || {},
+                                history: state.allUsersData[employee.id]?.history || {}
                             }
                         },
                         isHydrated: true
-                    });
+                    }));
 
 
                     // 🚀 OPTIMIZATION: Load all employees in background after logged-in user is ready
@@ -223,6 +224,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 if (response.ok) {
                     const data = await response.json();
                     allMonthlyActivities = data.allActivities || {};
+                    // console.log('📦 [loadAllEmployees] Bulk activities loaded for', Object.keys(allMonthlyActivities).length, 'users');
+                } else {
+                    console.error('⚠️ [loadAllEmployees] Bulk API error:', response.status);
                 }
             } catch (error) {
                 console.error('⚠️ [loadAllEmployees] Failed to fetch bulk monthly activities:', error);

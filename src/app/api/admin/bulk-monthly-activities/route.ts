@@ -8,11 +8,17 @@ import { createClient } from '@supabase/supabase-js';
  */
 export async function GET(request: NextRequest) {
     try {
-        // Verify admin session
+        // Verify authorization (Admin or Mentor/Supervisor/KaUnit)
         const session = await getSession();
-        if (!session || (session.role !== 'admin' && session.role !== 'super-admin' && session.role !== 'owner')) {
-            return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
+        const isAdmin = session && (session.role === 'admin' || session.role === 'super-admin' || session.role === 'owner');
+        const isMentor = session && (session.canBeMentor || session.canBeSupervisor || session.canBeKaUnit);
+
+        if (!session || (!isAdmin && !isMentor)) {
+            return NextResponse.json({ error: 'Unauthorized - Adequate role required' }, { status: 401 });
         }
+
+        // Get target employee IDs (all if admin, only mentees if mentor)
+        let targetEmployeeIds: string[] | null = null;
 
         // Use service role to bypass RLS
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,26 +35,51 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // 1. Fetch all attendance_records (hadir only)
-        const { data: attendanceData } = await supabase
+        if (!isAdmin) {
+            // Get mentee IDs for this mentor/supervisor/kaunit
+            const { data: mentees } = await supabase
+                .from('employees')
+                .select('id')
+                .or(`mentor_id.eq.${session.userId},supervisor_id.eq.${session.userId},ka_unit_id.eq.${session.userId}`);
+
+            targetEmployeeIds = [session.userId, ...(mentees?.map(m => m.id) || [])];
+        }
+
+        // 1. Fetch attendance_records (hadir only)
+        let attendanceQuery = supabase
             .from('attendance_records')
             .select('employee_id, timestamp, entity_id')
             .eq('status', 'hadir');
 
-        // 2. Fetch all employee_monthly_reports
-        const { data: monthlyReports } = await supabase
+        if (targetEmployeeIds) {
+            attendanceQuery = attendanceQuery.in('employee_id', targetEmployeeIds);
+        }
+        const { data: attendanceData } = await attendanceQuery;
+
+        // 2. Fetch employee_monthly_reports
+        let monthlyReportsQuery = supabase
             .from('employee_monthly_reports')
             .select('employee_id, reports');
 
-        // 3. Fetch all tadarus_sessions
+        if (targetEmployeeIds) {
+            monthlyReportsQuery = monthlyReportsQuery.in('employee_id', targetEmployeeIds);
+        }
+        const { data: monthlyReports } = await monthlyReportsQuery;
+
+        // 3. Fetch tadarus_sessions (all, we'll filter present_mentee_ids in memory)
         const { data: tadarusSessions } = await supabase
             .from('tadarus_sessions')
             .select('date, present_mentee_ids');
 
-        // 4. Fetch all team_attendance_records
-        const { data: teamAttendance } = await supabase
+        // 4. Fetch team_attendance_records
+        let teamAttendanceQuery = supabase
             .from('team_attendance_records')
             .select('user_id, session_type, session_date');
+
+        if (targetEmployeeIds) {
+            teamAttendanceQuery = teamAttendanceQuery.in('user_id', targetEmployeeIds);
+        }
+        const { data: teamAttendance } = await teamAttendanceQuery;
 
         // Merge everything into a map: employee_id -> monthKey -> dayKey -> { [activity_id]: true }
         const allActivitiesMap: Record<string, Record<string, any>> = {};
@@ -140,7 +171,10 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ allActivities: allActivitiesMap });
+        // All filtering done at query level now
+        const finalActivitiesMap = allActivitiesMap;
+
+        return NextResponse.json({ allActivities: finalActivitiesMap });
     } catch (error) {
         console.error('Error in bulk-monthly-activities:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

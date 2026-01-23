@@ -59,7 +59,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     const isSyncingRef = useRef(false);
 
     // --- Handlers ---
-    const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => {
+    const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'password'>>) => {
         const oldUser = allUsersData[userId]?.employee;
         if (!oldUser) return false;
 
@@ -81,7 +81,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             allDataCopy[userId].employee = updatedEmployee;
 
             // 🔥 FIX: ONLY update loggedInEmployee if role changes (affects navigation)
-            if (isLoggedInUser && updates.role) {
+            if (isLoggedInUser && (updates as any).role) {
                 setLoggedInEmployee(updatedEmployee);
             }
 
@@ -105,7 +105,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                 }));
 
                 // 🔥 FIX: ONLY update loggedInEmployee if role changes
-                if (isLoggedInUser && updates.role) {
+                if (isLoggedInUser && (updates as any).role) {
                     setLoggedInEmployee(freshEmployee);
                 }
             }
@@ -121,7 +121,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                 allDataCopy[userId].employee = oldUser;
 
                 // 🔥 FIX: ONLY restore loggedInEmployee if role was changed
-                if (isLoggedInUser && updates.role) {
+                if (isLoggedInUser && (updates as any).role) {
                     setLoggedInEmployee(oldUser);
                 }
 
@@ -220,12 +220,12 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         const syncedActivities: Array<{ date: string; type: string; activityId: string }> = [];
 
         try {
-            // Process all team attendance sessions
-            for (const session of teamAttendanceSessions) {
-                const { date, type, presentUserIds } = session;
+            // Process all team attendance records
+            for (const record of teamAttendanceRecords) {
+                const { sessionDate: date, sessionType: type, userId } = record;
 
-                // Skip if no present users
-                if (!presentUserIds || presentUserIds.length === 0) continue;
+                // Only update if this user is the logged in employee
+                if (userId !== loggedInEmployee.id) continue;
 
                 // Get activity ID for this session type
                 const activityId = sessionTypeToActivityId[type];
@@ -237,84 +237,79 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                 const monthKey = date.substring(0, 7); // YYYY-MM
                 const dayKey = date.substring(8, 10); // DD
 
-                // Update monthlyActivities for each present user
-                for (const userId of presentUserIds) {
-                    // Only update if this user is the logged in employee
-                    if (userId !== loggedInEmployee.id) continue;
+                const currentMonthProgress = loggedInEmployee.monthlyActivities?.[monthKey] || {};
+                const currentDayProgress = currentMonthProgress[dayKey] || {};
 
-                    const currentMonthProgress = loggedInEmployee.monthlyActivities?.[monthKey] || {};
-                    const currentDayProgress = currentMonthProgress[dayKey] || {};
-
-                    // Check if activity is already marked
-                    if (currentDayProgress[activityId]) {
-                        continue;
-                    }
-
-                    // 🔥 FIX: BERSIHKAN data sebelum disimpan!
-                    // Filter out any foreign fields (kie, doaBersama, etc.) from currentMonthProgress
-                    const cleanedMonthProgress: any = {};
-                    Object.keys(currentMonthProgress).forEach(key => {
-                        // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
-                        if (key.match(/^\d{2}$/)) {
-                            cleanedMonthProgress[key] = currentMonthProgress[key];
-                        }
-                        // Field asing akan DIHAPUS!
-                    });
-
-                    // Update monthlyActivities with CLEANED data
-                    const updatedMonthProgress = {
-                        ...cleanedMonthProgress,
-                        [dayKey]: {
-                            ...currentDayProgress,
-                            [activityId]: true,
-                        }
-                    };
-
-                    // 🔥 FIX: JANGAN simpan ke loggedInEmployee - akan simpan data kotor!
-                    // Simpan ke allUsersData dan Supabase saja
-                    const fullMonthlyActivities = {
-                        ...(loggedInEmployee.monthlyActivities || {}),
-                        [monthKey]: updatedMonthProgress
-                    };
-
-                    // Hanya update allUsersData, JANGAN update loggedInEmployee
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [userId]: {
-                            ...prev[userId],
-                            employee: {
-                                ...prev[userId].employee,
-                                monthlyActivities: fullMonthlyActivities
-                            }
-                        }
-                    }));
-
-                    // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
-                    try {
-                        const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
-                        await updateService(userId, fullMonthlyActivities);
-                    } catch (error) {
-                        if (process.env.NODE_ENV === "development") {
-                            console.error('❌ [syncOldTeamAttendanceData] Failed to cache:', error);
-                        }
-                    }
-
-                    updateCount++;
-                    syncedActivities.push({ date, type, activityId });
+                // Check if activity is already marked
+                if (currentDayProgress[activityId]) {
+                    continue;
                 }
+
+                // 🔥 FIX: BERSIHKAN data sebelum disimpan!
+                // Filter out any foreign fields (kie, doaBersama, etc.) from currentMonthProgress
+                const cleanedMonthProgress: any = {};
+                Object.keys(currentMonthProgress).forEach(key => {
+                    // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
+                    if (key.match(/^\d{2}$/)) {
+                        cleanedMonthProgress[key] = currentMonthProgress[key];
+                    }
+                    // Field asing akan DIHAPUS!
+                });
+
+                // Update monthlyActivities with CLEANED data
+                const updatedMonthProgress = {
+                    ...cleanedMonthProgress,
+                    [dayKey]: {
+                        ...currentDayProgress,
+                        [activityId]: true,
+                    }
+                };
+
+                // 🔥 FIX: JANGAN simpan ke loggedInEmployee - akan simpan data kotor!
+                // Simpan ke allUsersData dan Supabase saja
+                const fullMonthlyActivities = {
+                    ...(loggedInEmployee.monthlyActivities || {}),
+                    [monthKey]: updatedMonthProgress
+                };
+
+                // Hanya update allUsersData, JANGAN update loggedInEmployee
+                setAllUsersData(prev => ({
+                    ...prev,
+                    [userId]: {
+                        ...prev[userId],
+                        employee: {
+                            ...prev[userId].employee,
+                            monthlyActivities: fullMonthlyActivities
+                        }
+                    }
+                }));
+
+                // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
+                try {
+                    const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
+                    await updateService(userId, fullMonthlyActivities);
+                } catch (error) {
+                    if (process.env.NODE_ENV === "development") {
+                        console.error('❌ [syncOldTeamAttendanceData] Failed to cache:', error);
+                    }
+                }
+
+                updateCount++;
+                syncedActivities.push({ date, type, activityId });
             }
 
             if (updateCount > 0) {
                 addToast(`${updateCount} data kehadiran lama berhasil disinkronkan ke dashboard`, 'success');
-            } else {
             }
 
             setHasSyncedOldAttendance(true);
+        } catch (error) {
+            console.error('Error syncing old team attendance:', error);
         } finally {
             // Always clear the syncing flag
             isSyncingRef.current = false;
         }
-    }, [hasSyncedOldAttendance, loggedInEmployee, teamAttendanceSessions, setAllUsersData, addToast]);
+    }, [hasSyncedOldAttendance, loggedInEmployee, teamAttendanceRecords, setAllUsersData, addToast]);
 
     // Sync old data when team attendance sessions are loaded
     useEffect(() => {
@@ -389,75 +384,46 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         if (isDateValidForMutabaahUpdate(date, loggedInEmployee)) {
             // 🔥 FIX: Get latest data from allUsersData instead of loggedInEmployee
             const latestEmployeeData = allUsersData[loggedInEmployee.id]?.employee || loggedInEmployee;
-            const originalMonthlyActivities = latestEmployeeData.monthlyActivities || {};
+            // Original data for rollback - use deep copy to avoid reference issues
+            const originalMonthlyActivities = JSON.parse(JSON.stringify(latestEmployeeData.monthlyActivities || {}));
 
             try {
                 const dateObj = new Date(date + 'T12:00:00Z');
                 const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
                 const dayKey = dateObj.getDate().toString().padStart(2, '0');
 
-                const monthlyActivities = latestEmployeeData.monthlyActivities || {};
-                const monthProgress = monthlyActivities[monthKey] || {};
-                const dayProgress = monthProgress[dayKey] || {};
+                // 1. Optimistic Update in allUsersData
+                const monthlyActivities = JSON.parse(JSON.stringify(latestEmployeeData.monthlyActivities || {}));
+                if (!monthlyActivities[monthKey]) monthlyActivities[monthKey] = {};
+                if (!monthlyActivities[monthKey][dayKey]) monthlyActivities[monthKey][dayKey] = {};
+                monthlyActivities[monthKey][dayKey][activityId] = true;
 
-                const newDayProgress = { ...dayProgress, [activityId]: true };
-                const newMonthProgress = { ...monthProgress, [dayKey]: newDayProgress };
-                let newMonthlyActivities = { ...monthlyActivities, [monthKey]: newMonthProgress };
-
-                // 🔥 FIX: HAPUS field asing SEBELUM disimpan ke database!
-                // Data dari allUsersData mungkin kotor, bersihkan dulu!
-                if (newMonthlyActivities[monthKey]) {
-                    const cleanMonthData: any = {};
-                    Object.keys(newMonthlyActivities[monthKey]).forEach(key => {
-                        // HANYA simpan jika key adalah 2 digit angka (tanggal)
-                        if (key.match(/^\d{2}$/)) {
-                            cleanMonthData[key] = newMonthlyActivities[monthKey][key];
-                        }
-                    });
-                    newMonthlyActivities = { ...newMonthlyActivities, [monthKey]: cleanMonthData };
-                }
-
-                if (process.env.NODE_ENV === "development") console.log('🔄 [handleLogManualActivity] Step 1: Updating local state...');
-                if (process.env.NODE_ENV === "development") console.log('📊 [handleLogManualActivity] Data to save:', { monthKey, dayKey, activityId, date });
-                if (process.env.NODE_ENV === "development") console.log('📊 [handleLogManualActivity] newMonthlyActivities (AFTER CLEANING):', JSON.stringify(newMonthlyActivities, null, 2));
-
-                // 🔥 CRITICAL: HANYA update allUsersData, JANGAN update loggedInEmployee!
-                // Ini untuk mencegah re-render cascade di MainLayoutShell
-                // Dan untuk mencegah data kotor dari loggedInEmployee tersimpan ke database
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
                         ...prev[loggedInEmployee.id],
                         employee: {
                             ...prev[loggedInEmployee.id].employee,
-                            monthlyActivities: newMonthlyActivities
+                            monthlyActivities: monthlyActivities
                         }
                     }
                 }));
 
-                // ⚠️ JANGAN update loggedInEmployee! Biarkan stale karena akan di-refresh dari database
-                // Jika update, data kotor akan tersimpan kembali!
+                // 2. Save to database using monthlyReportService (SOURCE OF TRUTH)
+                if (process.env.NODE_ENV === "development") console.log('🔄 [handleLogManualActivity] Saving to database...');
 
-                if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 1 complete: Local state updated (allUsersData only)');
+                const { addManualReportByDate } = await import('@/services/monthlyReportService');
+                await addManualReportByDate(loggedInEmployee.id, monthKey, activityId, date);
 
-                // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
-                // Source of truth adalah attendance_records dan employee_monthly_reports
-                try {
-                    const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-                    await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
-                    if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 2: Cached to DB');
-                } catch (error) {
-                    console.error('❌ [handleLogManualActivity] Failed to cache:', error);
-                    // Non-critical, continue
-                }
+                if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Saved to DB (employee_monthly_reports)');
 
                 addToast('Aktivitas berhasil dilaporkan.', 'success');
                 return true;
 
-            } catch (error: unknown) {
-                if (process.env.NODE_ENV === "development") console.error('❌ [handleLogManualActivity] Error saving to Supabase:', error);
+            } catch (error: any) {
+                if (process.env.NODE_ENV === "development") console.error('❌ [handleLogManualActivity] Error saving:', error);
 
-                // Rollback the optimistic update on failure
+                // Rollback optimistic update
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -469,12 +435,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     }
                 }));
 
-                let errorMessage = 'Unknown error occurred';
-                if (error instanceof Error) {
-                    errorMessage = error.message;
-                } else if (typeof error === 'string') {
-                    errorMessage = error;
-                }
+                const errorMessage = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Gagal menyimpan data');
                 addToast(`Gagal menyimpan: ${errorMessage}`, 'error');
                 return false;
             }
@@ -483,7 +444,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             addToast('Tidak dapat melaporkan aktivitas karena pekan telah terlewat/terkunci.', 'error');
             return false;
         }
-    }, [loggedInEmployee, allUsersData, handleUpdateProfile, isDateValidForMutabaahUpdate, addToast]);
+    }, [loggedInEmployee, allUsersData, isDateValidForMutabaahUpdate, addToast, setAllUsersData]);
 
     const handleLogBookReading = useCallback(async (bookTitle: string, pagesRead: string, dateCompleted: string) => {
         if (!loggedInEmployee) return;
@@ -599,28 +560,29 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         }
     }, [loggedInEmployee?.id, setAllUsersData, addToast]);
 
-    const handleReviewReport = useCallback(async (submissionId: string, status: string, reviewerId: string, reviewerRole: string) => {
+    const handleReviewReport = useCallback(async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => {
         if (!loggedInEmployee) return;
 
         try {
-            // Update local state first (optimistic update)
-            const updatedSubmission = weeklyReportSubmissions.map(sub => 
-                sub.id === submissionId ? { ...sub, status } : sub
-            );
-            
-            // Update store
-            // Note: This assumes there's a function to update weekly report submissions in the store
-            // Since we don't have the exact function name, we'll skip this for now
-            
             // Save to database
-            const { updateWeeklyReportSubmission } = await import('@/services/weeklyReportService');
-            await updateWeeklyReportSubmission(submissionId, { status });
+            const { updateWeeklyReport } = await import('@/services/weeklyReportService');
 
-            addToast(`Status laporan berhasil diperbarui menjadi ${status}`, 'success');
+            let status = '';
+            if (decision === 'approved') {
+                if (reviewerRole === 'mentor') status = 'pending_supervisor';
+                else if (reviewerRole === 'supervisor') status = 'pending_kaunit';
+                else if (reviewerRole === 'kaunit') status = 'approved';
+            } else {
+                status = `rejected_${reviewerRole}`;
+            }
+
+            await updateWeeklyReport(submissionId, loggedInEmployee.id, { status, notes });
+
+            addToast(`Laporan berhasil ${decision === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
         } catch (error) {
             addToast('Gagal memperbarui status laporan. Silakan coba lagi.', 'error');
         }
-    }, [weeklyReportSubmissions, addToast]);
+    }, [loggedInEmployee?.id, addToast]);
 
     const handleOpenAssignmentLetter = (detail: {
         recipient: Employee;
@@ -656,25 +618,59 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             onCreateMissedPrayerRequest={handleCreateMissedPrayerRequest}
             onUpdateProfile={handleUpdateProfile}
             onReviewReport={handleReviewReport}
-            onCreateTadarusSession={(data) => {
+            onCreateTadarusSession={(data: any) => {
                 addTadarusSessions([data]);
             }}
-            onUpdateTadarusSession={(sessionId, updates) => {
+            onUpdateTadarusSession={(sessionId: string, updates: any) => {
                 updateTadarusSession(sessionId, () => updates);
             }}
             onDeleteTadarusSession={deleteTadarusSession}
-            onReviewTadarusRequest={(requestId, status) => {
-                // Implementation would go here
+            onReviewTadarusRequest={async (requestId: string, status: string) => {
+                try {
+                    const existingRequest = (tadarusRequests as any[]).find(r => r.id === requestId);
+                    if (!existingRequest) return;
+
+                    const updatedRequest: TadarusRequest = {
+                        ...existingRequest,
+                        status: status as any,
+                        reviewedAt: Date.now()
+                    };
+
+                    await addOrUpdateTadarusRequest(updatedRequest);
+                    addToast(`Pengajuan tadarus berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+                } catch (error) {
+                    addToast('Gagal memproses pengajuan tadarus.', 'error');
+                }
             }}
-            onReviewMissedPrayerRequest={(requestId, status) => {
-                // Implementation would go here
+            onReviewMissedPrayerRequest={async (requestId: string, status: string, mentorNotes?: string) => {
+                try {
+                    const existingRequest = (missedPrayerRequests as any[]).find(r => r.id === requestId);
+                    if (!existingRequest) return;
+
+                    const updatedRequest: MissedPrayerRequest = {
+                        ...existingRequest,
+                        status: status as any,
+                        reviewedAt: Date.now(),
+                        mentorNotes: mentorNotes
+                    };
+
+                    // Implement saving to database for missed prayer request if service exists
+                    // For now, update local state
+                    addOrUpdateMissedPrayerRequest(updatedRequest);
+                    addToast(`Permohonan presensi berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+                } catch (error) {
+                    addToast('Gagal memproses permohonan presensi.', 'error');
+                }
             }}
-            onMentorAttendOwnSession={(sessionId) => {
-                // Implementation would go here
+            onMentorAttendOwnSession={async (sessionId: string) => {
+                try {
+                    await updateTadarusSession(sessionId, { mentorPresent: true });
+                    addToast('Kehadiran mentor berhasil dicatat', 'success');
+                } catch (error) {
+                    addToast('Gagal mencatat kehadiran mentor.', 'error');
+                }
             }}
-            onLogAudit={(action, details) => {
-                logAudit(action, details);
-            }}
+            onLogAudit={logAudit}
             onCreateMenteeTarget={(target) => {
                 addMenteeTarget(target);
                 addToast('Target baru berhasil ditetapkan!', 'success');

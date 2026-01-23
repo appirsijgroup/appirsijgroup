@@ -99,13 +99,13 @@ export const getMonthlyReports = async (employeeId: string): Promise<MonthlyRepo
 
         return (data as any)?.reports || {};
     } catch (error: any) {
-        // Handle abort errors gracefully (silent fail)
+        // Handle abort errors gracefully but THROW to prevent data overwrite
         if (error.name === 'AbortError' || (error.message && error.message.includes('abort'))) {
             console.warn('⏱️ [monthlyReportService] Request aborted/timed out for employee:', employeeId);
-            return {};
+            throw new Error('Request timed out. Please try again.');
         }
         console.error('❌ [monthlyReportService] Unexpected error getting monthly reports:', error);
-        return {};
+        throw error;
     }
 };
 

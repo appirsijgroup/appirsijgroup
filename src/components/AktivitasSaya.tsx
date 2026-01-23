@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { type Employee, WeeklyReportSubmission, ToDoItem, DailyActivity } from '../types';
+import { type Employee, WeeklyReportSubmission, ToDoItem, DailyActivity, AuditLogEntry } from '../types';
 import { PencilIcon, AcademicCapIcon, ShieldCheckIcon, CheckSquareIcon } from './Icons';
 import { AktivitasPribadiView } from './AktivitasPribadi';
 import MenteeGuidanceView from './MenteeGuidanceView';
@@ -17,7 +17,7 @@ interface AktivitasSayaProps {
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
     onUpdateTodoList: (userId: string, todoList: ToDoItem[]) => void;
     submissions: WeeklyReportSubmission[];
-    allUsersData: Record<string, { employee: Employee }>;
+    allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
     weeklyReportSubmissions: WeeklyReportSubmission[];
     onNavigateToReport: (monthKey: string) => void;
     tadarusRequests: any[];
@@ -26,15 +26,15 @@ interface AktivitasSayaProps {
     onMenteeAttendSession: (sessionId: string) => void;
     missedPrayerRequests: any[];
     onCreateMissedPrayerRequest: (data: any) => void;
-    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
-    onReviewReport: (submissionId: string, status: string, reviewerId: string, reviewerRole: string) => void;
+    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'password'>>) => Promise<boolean>;
+    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
     onCreateTadarusSession: (data: any) => void;
     onUpdateTadarusSession: (sessionId: string, updates: any) => void;
     onDeleteTadarusSession: (sessionId: string) => void;
     onReviewTadarusRequest: (requestId: string, status: string) => void;
-    onReviewMissedPrayerRequest: (requestId: string, status: string) => void;
+    onReviewMissedPrayerRequest: (requestId: string, status: string, mentorNotes?: string) => void;
     onMentorAttendOwnSession: (sessionId: string) => void;
-    onLogAudit: (action: string, details: any) => void;
+    onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
     onCreateMenteeTarget: (target: any) => void;
     onDeleteMenteeTarget: (targetId: string) => void;
     menteeTargets: any[];

@@ -1,4 +1,7 @@
 import { supabase } from '@/lib/supabase';
+import type { Database } from './database.types';
+
+type AttendanceRecord = Database['public']['Tables']['attendance_records']['Row'];
 
 /**
  * Prayer Attendance Service
@@ -27,13 +30,8 @@ export const getAllPrayerAttendance = async (
         // Get all prayer attendance dengan employee data
         const { data: attendanceData, error: attendanceError } = await supabase
             .from('attendance_records')
-            .select(`
-                employee_id,
-                entity_id,
-                status,
-                timestamp
-            `)
-            .in('entity_id', ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'])
+            .select('*')
+            .in('entity_id', ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya', 'jumat'])
             .eq('status', 'hadir')
             .order('timestamp', { ascending: false });
 
@@ -42,12 +40,14 @@ export const getAllPrayerAttendance = async (
             return [];
         }
 
-        if (!attendanceData || attendanceData.length === 0) {
+        if (!attendanceData || (attendanceData as any[]).length === 0) {
             return [];
         }
 
+        const data = attendanceData as AttendanceRecord[];
+
         // Get unique employee IDs
-        const employeeIds = [...new Set(attendanceData.map(r => r.employee_id))];
+        const employeeIds = [...new Set(data.map(r => r.employee_id))];
 
         // Get employee data in one query
         const { data: employeesData, error: employeesError } = await supabase
@@ -55,16 +55,18 @@ export const getAllPrayerAttendance = async (
             .select('id, name, unit, profession_category, profession, activated_months')
             .in('id', employeeIds);
 
-        if (employeesError) {
+        if (employeesError || !employeesData) {
             console.error('Error fetching employees:', employeesError);
             return [];
         }
 
+        const employees = employeesData as any[];
+
         // Create employee map
-        const employeeMap = new Map(employeesData?.map(emp => [emp.id, emp]) || []);
+        const employeeMap = new Map(employees.map(emp => [emp.id, emp]));
 
         // Join attendance with employee data
-        const result: PrayerAttendanceData[] = attendanceData
+        const result: PrayerAttendanceData[] = data
             .filter(record => {
                 if (!startDate && !endDate) return true;
 

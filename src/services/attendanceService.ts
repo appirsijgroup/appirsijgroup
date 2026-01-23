@@ -15,8 +15,7 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
     .from('attendance_records')
     .select('*')
     .eq('employee_id', employeeId)
-    .order('created_at', { ascending: true });
-  // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
+    .order('timestamp', { ascending: true });
 
   if (error) {
     throw error;
@@ -37,8 +36,7 @@ export const getAllAttendanceRecords = async (): Promise<Record<string, Record<s
   const { data, error } = await supabase
     .from('attendance_records')
     .select('*')
-    .order('created_at', { ascending: true });
-  // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
+    .order('timestamp', { ascending: true });
 
   if (error) {
     throw error;
@@ -93,39 +91,33 @@ export const submitAttendance = async (
 
     const timestamp = timeValidation.correctedTime.toISOString();
 
-    // 🔥 UPDATE: Gunakan fungsi insert_attendance (APPEND-ONLY, bukan UPSERT)
-    // Ini membuat record BARU setiap kali, tidak menimpa data lama
-    const { data, error } = await supabase.rpc('insert_attendance', {
-      p_employee_id: employeeId,
-      p_entity_id: entityId,
-      p_status: status,
-      p_reason: reason,
-      p_timestamp: timestamp,
-      p_is_late_entry: isLateEntry,
-      p_location: location ? JSON.stringify(location) : null
-    });
-
-    if (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error('❌ Error submitting attendance:', error);
-      }
-      throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
-    }
-
-    if (!data) {
-      throw new Error('No data returned from Supabase after insert');
-    }
-
-    // Fetch the full record that was just inserted
-    const { data: newRecord, error: fetchError } = await supabase
-      .from('attendance_records')
-      .select('*')
-      .eq('id', data)
+    // 🔥 REVERT: Gunakan upsert langsung ke attendance_records sesuai instruksi user
+    const { data: insertedData, error: upsertError } = await (supabase
+      .from('attendance_records') as any)
+      .upsert({
+        employee_id: employeeId,
+        entity_id: entityId,
+        status: status,
+        reason: reason,
+        timestamp: timestamp,
+        is_late_entry: isLateEntry,
+        location: location ? JSON.stringify(location) : null
+      }, { onConflict: ['employee_id', 'entity_id'] })
+      .select()
       .single();
 
-    if (fetchError) {
-      throw new Error(`Failed to fetch inserted record: ${fetchError.message}`);
+    if (upsertError) {
+      if (process.env.NODE_ENV === "development") {
+        console.error('❌ Error upserting attendance:', upsertError);
+      }
+      throw new Error(`Supabase error: ${upsertError.message} (Code: ${upsertError.code})`);
     }
+
+    if (!insertedData) {
+      throw new Error('No data returned from Supabase after upsert');
+    }
+
+    const newRecord = insertedData;
 
     return newRecord as AttendanceRecord;
   } catch (err: any) {

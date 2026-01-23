@@ -101,8 +101,8 @@ const PresensiComponent: React.FC = () => {
 
         // 🔥 CRITICAL: Check if attendance is from TODAY (Jakarta timezone)
         const isToday = recordTimestamp &&
-                        recordTimestamp >= jakartaTodayStart &&
-                        recordTimestamp <= jakartaTodayEnd;
+          recordTimestamp >= jakartaTodayStart &&
+          recordTimestamp <= jakartaTodayEnd;
 
 
         // Only include if it's from today
@@ -128,13 +128,29 @@ const PresensiComponent: React.FC = () => {
     const now = new Date();
     const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
     const currentDay = jakartaTime.getDay(); // 0=Sunday, 5=Friday, 6=Saturday
+    const isFriday = currentDay === 5;
 
-    // Filter prayers based on day (Friday prayer only on Friday)
+    // Get employee gender
+    const isLakiLaki = loggedInEmployee?.gender === 'Laki-laki';
+
+    // Filter prayers based on day and gender
     const filteredPrayers = PRAYERS.filter(p => {
-      // If it's a Friday-only prayer, only show on Friday (day 5)
-      if (p.isFridayOnly) {
-        return currentDay === 5; // 5 = Friday
+      // 🔥 CRITICAL: Hari Jumat logic
+      if (isFriday) {
+        // Jika hari Jumat dan user laki-laki: tampilkan Jumat, sembunyikan Dzuhur
+        if (isLakiLaki) {
+          if (p.id === 'dzuhur') return false; // Sembunyikan Dzuhur
+          if (p.id === 'jumat') return true; // Tampilkan Jumat
+        } else {
+          // Jika hari Jumat dan user perempuan: tampilkan Dzuhur, sembunyikan Jumat
+          if (p.id === 'jumat') return false; // Sembunyikan Jumat
+          if (p.id === 'dzuhur') return true; // Tampilkan Dzuhur
+        }
+      } else {
+        // Jika bukan hari Jumat: sembunyikan Jumat untuk semua
+        if (p.id === 'jumat') return false;
       }
+
       return true;
     });
 
@@ -151,7 +167,7 @@ const PresensiComponent: React.FC = () => {
       }
       return p;
     });
-  }, [prayerTimes]);
+  }, [prayerTimes, loggedInEmployee?.gender]);
 
   // Helper function to sync attendance to monthlyActivities
   const syncAttendanceToMonthlyActivities = async (entityId: string, status: 'hadir' | 'tidak-hadir') => {
@@ -294,6 +310,7 @@ const PresensiComponent: React.FC = () => {
             return allDataCopy;
           });
         } catch (refreshError) {
+          console.error('Error refreshing attendance:', refreshError);
           // Fallback to using the returned record
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -345,6 +362,7 @@ const PresensiComponent: React.FC = () => {
             return allDataCopy;
           });
         } catch (refreshError) {
+          console.error('Error refreshing attendance:', refreshError);
           // Fallback to using the returned record
           setAllUsersData(prev => {
             const allDataCopy = JSON.parse(JSON.stringify(prev));
@@ -362,9 +380,11 @@ const PresensiComponent: React.FC = () => {
         setStatusMessage('✅ Berhasil dicatat!');
         setTimeout(() => setStatusMessage(null), 2000);
       }
-    } catch (error) {
-      setStatusMessage('❌ Gagal. Silakan coba lagi.');
-      setTimeout(() => setStatusMessage(null), 2000);
+    } catch (error: any) {
+      console.error('❌ Error submitting attendance:', error);
+      const errorMessage = error?.message || 'Terjadi kesalahan';
+      setStatusMessage(`❌ Gagal: ${errorMessage}`);
+      setTimeout(() => setStatusMessage(null), 4000);
     }
   };
 
@@ -485,9 +505,8 @@ const PresensiComponent: React.FC = () => {
                   handleAttendanceSubmission(modalState.entityId, modalState.isLateEntry ? 'hadir' : 'tidak-hadir', reason, modalState.isLateEntry);
                   handleCloseModal();
                 }}
-                className={`flex-1 py-2 px-4 rounded-lg text-white font-semibold transition-colors ${
-                  modalState.isLateEntry ? 'bg-teal-500 hover:bg-teal-400' : 'bg-red-500 hover:bg-red-400'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-lg text-white font-semibold transition-colors ${modalState.isLateEntry ? 'bg-teal-500 hover:bg-teal-400' : 'bg-red-500 hover:bg-red-400'
+                  }`}
               >
                 {modalState.isLateEntry ? 'Ajukan' : 'Kirim'}
               </button>

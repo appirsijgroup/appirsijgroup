@@ -50,7 +50,7 @@ const TabButton: React.FC<{
 }> = ({ label, icon: Icon, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex-grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'

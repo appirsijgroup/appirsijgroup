@@ -83,13 +83,26 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // 6. Token Generation
+    // 6. Token Generation - Include additional role and activation info
     const sessionPayload = {
       userId: employee.id,
       email: employee.email,
       name: employee.name,
       nip: employee.id,
       role: employee.role,
+      // Include additional role information
+      canBeMentor: employee.can_be_mentor,
+      canBeSupervisor: employee.can_be_supervisor,
+      canBeKaUnit: employee.can_be_ka_unit,
+      canBeDirut: employee.can_be_dirut,
+      functionalRoles: employee.functional_roles,
+      // Include activation status
+      activatedMonths: employee.activated_months,
+      // Include assignment information
+      mentorId: employee.mentor_id,
+      supervisorId: employee.supervisor_id,
+      kaUnitId: employee.ka_unit_id,
+      dirutId: employee.dirut_id,
     };
 
     let token;

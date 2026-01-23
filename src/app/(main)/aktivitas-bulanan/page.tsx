@@ -15,6 +15,25 @@ export default function AktivitasBulananPage() {
     const [date, setDate] = useState<Date>(new Date());
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
 
+    // 🔥 DEBUG: Log employee activation status
+    useEffect(() => {
+        if (loggedInEmployee) {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const months = loggedInEmployee.activatedMonths || loggedInEmployee.activated_months || [];
+            const isActivated = months.includes(currentMonth);
+
+            console.log('🔍 [AktivitasBulananPage] Employee status:', {
+                id: loggedInEmployee.id,
+                name: loggedInEmployee.name,
+                role: loggedInEmployee.role,
+                currentMonth,
+                isActivated,
+                activatedMonths: months,
+                activatedMonthsCount: months.length
+            });
+        }
+    }, [loggedInEmployee]);
+
     // 🔥 FIX: Load mutabaah locking mode from Supabase on mount
     useEffect(() => {
         const loadSettings = async () => {
@@ -120,8 +139,9 @@ export default function AktivitasBulananPage() {
         const success = await activateMonth(monthKey);
         if (!success) {
         } else {
-            // No need to refresh data here - activateMonth already updates local state correctly
-            // Calling refreshData() here can cause race conditions with Supabase data
+            // 🔥 CRITICAL FIX: Refresh data after successful activation to ensure UI updates immediately
+            // This ensures that the activation status propagates to all components that depend on it
+            await refreshData();
         }
     };
 
@@ -169,7 +189,7 @@ export default function AktivitasBulananPage() {
 
     if (!loggedInEmployee || isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
@@ -180,7 +200,7 @@ export default function AktivitasBulananPage() {
 
     if (isLoadingEmployees) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>

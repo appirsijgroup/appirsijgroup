@@ -7,11 +7,11 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-2xl p-8 text-center">
         {/* 404 Icon */}
         <div className="mb-6">
-          <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">
+          <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-linear-to-r from-teal-400 to-blue-500">
             404
           </h1>
         </div>

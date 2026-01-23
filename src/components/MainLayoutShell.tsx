@@ -89,7 +89,12 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const { addToast } = useUIStore();
 
     const handleActivation = useCallback(async (monthKey: string): Promise<boolean> => {
+        console.log('🔍 [handleActivation] Called with monthKey:', monthKey);
+        console.log('🔍 [handleActivation] loggedInEmployee:', loggedInEmployee);
+        console.log('🔍 [handleActivation] loggedInEmployee?.id:', loggedInEmployee?.id);
+
         if (!loggedInEmployee?.id) {
+            console.error('❌ [handleActivation] loggedInEmployee or loggedInEmployee.id is null/undefined!');
             addToast('Data user belum dimuat. Silakan coba lagi.', 'error');
             return false;
         }
@@ -262,16 +267,30 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [announcements, notifications, loggedInEmployee]);
 
     // --- Filter Nav Items ---
+    // 🔥 FIX: Extract role to a stable variable to prevent unnecessary recalculations
+    const userRole = loggedInEmployee?.role;
+    const userId = loggedInEmployee?.id;
+    const isAdmin = useMemo(() => isAnyAdmin(loggedInEmployee), [userRole]); // Only depend on role
+
     const filteredNavItems = useMemo(() => {
         if (!loggedInEmployee) return [];
 
         return allNavItemsRaw.filter(item => {
-            const isAdmin = isAnyAdmin(loggedInEmployee); // 🔥 NOW INCLUDES OWNER!
-
             if (item.id === 'admin' && !isAdmin) return false;
             return true;
         });
-    }, [loggedInEmployee]);
+    }, [userId, userRole]); // 🔥 CRITICAL FIX: Only depend on ID and role, not entire object
+
+    // 🔥 DEBUG: Log when filtered nav items change
+    React.useEffect(() => {
+        console.log('🔍 [MainLayoutShell] Filtered nav items updated:', {
+            employeeId: loggedInEmployee?.id,
+            role: loggedInEmployee?.role,
+            isAdmin: isAdmin,
+            navItemCount: filteredNavItems.length,
+            hasAdminMenu: filteredNavItems.some(item => item.id === 'admin')
+        });
+    }, [filteredNavItems, userId, userRole, isAdmin]);
 
     const activeTitle = useMemo(() =>
         allNavItemsRaw.find(item => pathname?.startsWith(item.href))?.label || 'Dashboard',
@@ -280,17 +299,22 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
     // --- Check if current month is activated for Mutaba'ah ---
     const activationStatus = useMemo(() => {
-        if (!loggedInEmployee) {
+        // 🔥 CRITICAL FIX: Check both for null/undefined AND invalid employee objects
+        if (!loggedInEmployee || !loggedInEmployee.id) {
+            // Only log if we are hydrated and not logging out to reduce noise during initial mount
+            if (isHydrated && !isLoggingOut) {
+                console.log('⚠️ [MainLayoutShell] No valid employee, hiding activation prompt');
+            }
             return {
                 isActivated: true,
                 shouldShowActivationRequired: false,
                 currentMonthName: '',
                 currentMonthKey: ''
-            }; // Default to true if no employee
+            }; // Default to true if no valid employee
         }
 
-        // 🔥 FIX: Use isCurrentMonthActivated from MutabaahContext instead of calculating from employee data
-        // This ensures consistency and prevents race condition
+        // 🔥 FIX: Admin dan super-admin JUGA karyawan yang perlu mengaktifkan bulan
+        // Tidak ada bypass - semua user diperlakukan sama
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
@@ -308,13 +332,23 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             };
         }
 
-        return {
+        const status = {
             isActivated: isCurrentMonthActivated,
             shouldShowActivationRequired: !isCurrentMonthActivated && !isOnAktivitasBulananPage,
             currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
             currentMonthKey: currentMonthKey || ''
         };
-    }, [loggedInEmployee, pathname, isCurrentMonthActivated, isMutabaahLoading]);
+
+        // 🔥 DEBUG: Log activation status changes
+        console.log('🔍 [MainLayoutShell] Activation status:', {
+            employeeId: loggedInEmployee.id,
+            isCurrentMonthActivated,
+            shouldShow: status.shouldShowActivationRequired,
+            isLoading: isMutabaahLoading
+        });
+
+        return status;
+    }, [loggedInEmployee?.id, pathname, isCurrentMonthActivated, isMutabaahLoading, loggedInEmployee?.role]); // 🔥 CRITICAL FIX: Add role to dependencies for admin check
 
     // ⚡ OPTIMIZATION: Direct logout without router.push - logoutEmployee already redirects
     const handleLogout = useCallback(() => {
@@ -412,9 +446,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [pathname, loggedInEmployee]);
 
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
-    if (!isClient || !loggedInEmployee) {
+    if (!isClient || !isHydrated || !loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800" suppressHydrationWarning>
+            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800" suppressHydrationWarning>
                 {/* Skeleton Navigation Sidebar */}
                 <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
                     <div className="p-6 border-b border-slate-800 flex items-center gap-3">
@@ -470,7 +504,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 onLogout={handleLogout}
             />
 
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-gradient-to-br from-slate-900 to-indigo-800">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-linear-to-br from-slate-900 to-indigo-800">
                 <Header
                     isMenuOpen={isMenuOpen}
                     toggleMenu={handleToggleMenu}
@@ -501,15 +535,15 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             </div>
 
             {/* Toasts - kept globally here if not using a Provider */}
-            <div className="fixed top-20 right-4 z-[100] space-y-3 w-full max-w-sm">
+            <div className="fixed top-20 right-4 z-100 space-y-3 w-full max-w-sm">
                 {toasts.map(toast => (
                     <div
                         key={toast.id}
                         className="bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-xl overflow-hidden animate-toast-in flex border border-slate-700"
                     >
-                        <div className={`w-1.5 flex-shrink-0 ${toast.type === 'success' ? 'bg-teal-400' : 'bg-red-500'}`}></div>
+                        <div className={`w-1.5 shrink-0 ${toast.type === 'success' ? 'bg-teal-400' : 'bg-red-500'}`}></div>
                         <div className="flex items-start gap-4 p-4">
-                            <div className="flex-grow">
+                            <div className="grow">
                                 <p className={`font-bold ${toast.type === 'success' ? 'text-teal-300' : 'text-red-400'}`}>
                                     {toast.title}
                                 </p>

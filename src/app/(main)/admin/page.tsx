@@ -515,6 +515,7 @@ export default function AdminPage() {
             }
 
             // Reload attendance data for this user from Supabase
+            const { getEmployeeAttendance } = await import('@/services/attendanceService');
             const records = await getEmployeeAttendance(payload.userId);
             const convertedAttendance: Attendance = {};
 
@@ -839,7 +840,7 @@ export default function AdminPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
                 </div>
@@ -849,7 +850,7 @@ export default function AdminPage() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center bg-red-500/20 p-8 rounded-lg border border-red-500">
                     <p className="text-white mb-4">{error}</p>
                     <button
@@ -865,7 +866,7 @@ export default function AdminPage() {
 
     if (!loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-white text-xl">Silakan login terlebih dahulu</p>
                 </div>
@@ -910,6 +911,7 @@ export default function AdminPage() {
 
             // Load attendance records
             try {
+                const { getAllAttendanceRecords } = await import('@/services/attendanceService');
                 const allRecords = await getAllAttendanceRecords();
 
                 setAllUsersData((prev) => {

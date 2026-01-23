@@ -63,6 +63,9 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         const oldUser = allUsersData[userId]?.employee;
         if (!oldUser) return false;
 
+        // 🔥 FIX: Check if this is the logged-in user BEFORE updating
+        const isLoggedInUser = loggedInEmployee?.id === userId;
+
         // Update local state FIRST (optimistic update)
         setAllUsersData(prevData => {
             const allDataCopy: typeof prevData = JSON.parse(JSON.stringify(prevData));
@@ -77,8 +80,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             };
             allDataCopy[userId].employee = updatedEmployee;
 
-            // CRITICAL FIX: Also update loggedInEmployee if it's the same user
-            if (loggedInEmployee && loggedInEmployee.id === userId) {
+            // 🔥 FIX: ONLY update loggedInEmployee if role changes (affects navigation)
+            if (isLoggedInUser && updates.role) {
                 setLoggedInEmployee(updatedEmployee);
             }
 
@@ -101,8 +104,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     }
                 }));
 
-                // Also update loggedInEmployee if it's the same user
-                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                // 🔥 FIX: ONLY update loggedInEmployee if role changes
+                if (isLoggedInUser && updates.role) {
                     setLoggedInEmployee(freshEmployee);
                 }
             }
@@ -117,8 +120,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                 const allDataCopy: typeof prev = JSON.parse(JSON.stringify(prev));
                 allDataCopy[userId].employee = oldUser;
 
-                // Also restore loggedInEmployee if it's the same user
-                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                // 🔥 FIX: ONLY restore loggedInEmployee if role was changed
+                if (isLoggedInUser && updates.role) {
                     setLoggedInEmployee(oldUser);
                 }
 
@@ -133,7 +136,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
             return false;
         }
-    }, [allUsersData, setAllUsersData, loggedInEmployee, setLoggedInEmployee, addToast]);
+    }, [allUsersData, setAllUsersData, loggedInEmployee?.id, setLoggedInEmployee, addToast]);
 
     const handleNavigateToReport = (monthKey: string) => {
         // Use URL params to pass state to the page
@@ -286,15 +289,16 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                         }
                     }));
 
-                    // Simpan ke Supabase
+                    // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
                     try {
                         const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
                         await updateService(userId, fullMonthlyActivities);
                     } catch (error) {
                         if (process.env.NODE_ENV === "development") {
-                            console.error('❌ [syncOldTeamAttendanceData] Failed to save:', error);
+                            console.error('❌ [syncOldTeamAttendanceData] Failed to cache:', error);
                         }
                     }
+
                     updateCount++;
                     syncedActivities.push({ date, type, activityId });
                 }
@@ -436,15 +440,16 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
                 if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 1 complete: Local state updated (allUsersData only)');
 
-                if (process.env.NODE_ENV === "development") console.log('🔄 [handleLogManualActivity] Step 2: Saving to Supabase...');
-                // 🔥 FIX: Save to employee_monthly_activities table via monthlyActivityService
-                const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-                if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 2a: monthlyActivityService imported');
-
-                await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
-
-                if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 2b: updateMonthlyActivities completed');
-                if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Manual activity saved to Supabase:', { activityId, date, monthKey, dayKey });
+                // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
+                // Source of truth adalah attendance_records dan employee_monthly_reports
+                try {
+                    const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                    await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                    if (process.env.NODE_ENV === "development") console.log('✅ [handleLogManualActivity] Step 2: Cached to DB');
+                } catch (error) {
+                    console.error('❌ [handleLogManualActivity] Failed to cache:', error);
+                    // Non-critical, continue
+                }
 
                 addToast('Aktivitas berhasil dilaporkan.', 'success');
                 return true;
@@ -536,10 +541,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         if (!loggedInEmployee) return;
 
         try {
-            // Update local state FIRST to provide immediate feedback
-            // 🔥 CRITICAL: Don't send todoList to handleUpdateProfile - update local state manually instead
-            const updatedEmployeeWithTodo = { ...loggedInEmployee, todoList };
-            setLoggedInEmployee(updatedEmployeeWithTodo);
+            // 🔥 FIX: DON'T update loggedInEmployee - only update allUsersData
+            // This prevents unnecessary re-renders of MainLayoutShell
             setAllUsersData(prev => ({
                 ...prev,
                 [userId]: {
@@ -564,7 +567,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
                 const freshEmployee = await getEmployeeById(loggedInEmployee.id);
                 if (freshEmployee) {
-                    setLoggedInEmployee(freshEmployee);
+                    // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                     setAllUsersData(prev => ({
                         ...prev,
                         [freshEmployee.id]: {
@@ -572,7 +575,6 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                             employee: freshEmployee
                         }
                     }));
-                } else {
                 }
             } catch (refreshError) {
             }
@@ -581,7 +583,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             try {
                 const freshEmployee = await getEmployeeById(loggedInEmployee.id);
                 if (freshEmployee) {
-                    setLoggedInEmployee(freshEmployee);
+                    // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                     setAllUsersData(prev => ({
                         ...prev,
                         [freshEmployee.id]: {
@@ -595,7 +597,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
             addToast('Gagal menyimpan To-Do List ke database. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, handleUpdateProfile, addToast, setLoggedInEmployee, setAllUsersData]);
+    }, [loggedInEmployee?.id, setAllUsersData, addToast]);
 
     const handleReviewReport = useCallback(async (submissionId: string, status: string, reviewerId: string, reviewerRole: string) => {
         if (!loggedInEmployee) return;
@@ -686,7 +688,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             addToast={addToast}
         />
     ) : (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
                 <p className="mt-4 text-white">Memuat data...</p>

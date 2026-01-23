@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAppDataStore } from '@/store/appDataStore';
+import { useAppDataStore } from '@/store/store';
 import PrayerCard, { PrayerCardSkeleton } from '@/components/PrayerCard';
 import AttendanceSummary from '@/components/AttendanceSummary';
 import IbadahCard from '@/components/IbadahCard';

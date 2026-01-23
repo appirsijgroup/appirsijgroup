@@ -104,7 +104,7 @@ export default function DataSyncButton() {
                                 <p className="font-medium mb-1">Error Details:</p>
                                 <div className="max-h-32 overflow-y-auto space-y-1">
                                     {syncResult.errors.map((error, idx) => (
-                                        <p key={idx} className="text-red-600 break-words">
+                                        <p key={idx} className="text-red-600 wrap-break-word">
                                             {error}
                                         </p>
                                     ))}

@@ -148,7 +148,7 @@ const CreateSessionModal: React.FC<{
 
     const SegmentedControlButton: React.FC<{
         label: string;
-        icon: React.FC<{className: string}>;
+        icon: React.FC<{ className: string }>;
         isActive: boolean;
         onClick: () => void;
     }> = ({ label, icon: Icon, isActive, onClick }) => (
@@ -157,7 +157,7 @@ const CreateSessionModal: React.FC<{
             onClick={onClick}
             className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
         >
-            <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
+            <Icon className={`w-6 h-6 shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
         </button>
     );
@@ -167,11 +167,11 @@ const CreateSessionModal: React.FC<{
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 h-[90vh] flex flex-col">
-                <h3 className="text-xl font-bold text-white flex-shrink-0 mb-6">Buat Sesi Presensi Baru</h3>
-                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <h3 className="text-xl font-bold text-white shrink-0 mb-6">Buat Sesi Presensi Baru</h3>
+                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column: Session Details & Mode */}
                     <div className="space-y-6">
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Detail Sesi</h4>
                             <div className="space-y-4">
                                 <div>
@@ -180,25 +180,25 @@ const CreateSessionModal: React.FC<{
                                         {teamActivityOptions.map(opt => <option key={opt.value} value={opt.value} className="text-black bg-white">{opt.label}</option>)}
                                     </select>
                                 </div>
-                                 <div>
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">{isRecurring ? 'Tanggal Mulai' : 'Tanggal'}</label>
                                     <div className="relative">
-                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
-                                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }}/>
+                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                     <div>
+                                    <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
-                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                        <div className="relative">
+                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
-                                         <div className="relative">
-                                             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                        <div className="relative">
+                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
@@ -206,16 +206,16 @@ const CreateSessionModal: React.FC<{
                             </div>
                         </div>
 
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Pengulangan Sesi</h4>
-                             <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between">
                                 <span className="font-semibold text-white">Ulangi sesi ini setiap minggu?</span>
-                                 <label className="relative inline-flex items-center cursor-pointer">
+                                <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} className="sr-only peer" />
                                     <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500"></div>
                                 </label>
                             </div>
-                             {isRecurring && (
+                            {isRecurring && (
                                 <div className="mt-4">
                                     <p className="text-sm text-blue-100 mb-2">Pilih hari untuk pengulangan:</p>
                                     <div className="flex justify-around bg-black/30 p-2 rounded-lg">
@@ -229,7 +229,7 @@ const CreateSessionModal: React.FC<{
 
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
-                             <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
                                     icon={UserCircleIcon}
@@ -246,34 +246,34 @@ const CreateSessionModal: React.FC<{
                         </div>
                     </div>
 
-                     {/* Right Column: Audience */}
+                    {/* Right Column: Audience */}
                     <div className="space-y-6 flex flex-col">
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Tautan Online</h4>
-                             <div className="space-y-4">
-                                 <div>
+                            <div className="space-y-4">
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
-                                     <div className="relative">
-                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400"/>
-                                        <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    <div className="relative">
+                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                        <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" />
                                     </div>
                                 </div>
-                                 <div>
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
-                                     <div className="relative">
-                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400"/>
-                                        <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    <div className="relative">
+                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400" />
+                                        <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Target Peserta</h4>
-                             <div className="flex items-center gap-4 mb-4">
-                                 <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
-                                 <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
+                            <div className="flex items-center gap-4 mb-4">
+                                <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
+                                <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
                             </div>
-                             {audienceType === 'rules' && (
+                            {audienceType === 'rules' && (
                                 <div className="space-y-4">
                                     <select value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white">
                                         {uniqueUnits.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt === 'all' ? 'Semua Unit' : opt}</option>)}
@@ -284,10 +284,10 @@ const CreateSessionModal: React.FC<{
                                     <p className="text-sm text-center text-blue-200">Estimasi Peserta: <strong>{rulesAudienceCount} orang</strong></p>
                                 </div>
                             )}
-                             {audienceType === 'manual' && (
-                                <div className="space-y-2 flex-grow flex flex-col">
-                                    <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari nama..." className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white"/>
-                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1">
+                            {audienceType === 'manual' && (
+                                <div className="space-y-2 grow flex flex-col">
+                                    <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari nama..." className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white" />
+                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1">
                                         {filteredManualParticipants.map(user => (
                                             <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                                 <input type="checkbox" checked={manualParticipantIds.has(user.id)} onChange={() => handleToggleParticipant(user.id)} className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
@@ -301,7 +301,7 @@ const CreateSessionModal: React.FC<{
                         </div>
                     </div>
                 </div>
-                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
+                <div className="mt-6 flex justify-end space-x-3 shrink-0">
                     <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
                     <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
                         Buat Sesi
@@ -319,13 +319,15 @@ const ManageAttendanceModal: React.FC<{
     onSave: (sessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>) => void;
     session: TeamAttendanceSession;
     allUsers: Employee[];
-}> = ({ isOpen, onClose, onSave, session, allUsers }) => {
+    records: TeamAttendanceRecord[];
+}> = ({ isOpen, onClose, onSave, session, allUsers, records }) => {
     const [type, setType] = useState<TeamAttendanceSession['type']>(session.type);
     const [date, setDate] = useState(session.date);
     const [startTime, setStartTime] = useState(session.startTime);
     const [endTime, setEndTime] = useState(session.endTime);
-    const [attendanceMode, setAttendanceMode] = useState<'leader' | 'self'>(session.attendanceMode);
-    const [audienceType, setAudienceType] = useState<'rules' | 'manual'>(session.audienceType);
+    const [attendanceMode, setAttendanceMode] = useState<'leader' | 'self'>(session.attendanceMode || 'self');
+    const [audienceType, setAudienceType] = useState<'rules' | 'manual'>(session.audienceType || 'rules');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [unit, setUnit] = useState(session.audienceRules?.units?.[0] || 'all');
     const [bagian, setBagian] = useState(session.audienceRules?.bagians?.[0] || 'all');
     const [manualParticipantIds, setManualParticipantIds] = useState<Set<string>>(new Set(session.manualParticipantIds || []));
@@ -339,16 +341,19 @@ const ManageAttendanceModal: React.FC<{
             setDate(session.date);
             setStartTime(session.startTime);
             setEndTime(session.endTime);
-            setAttendanceMode(session.attendanceMode);
-            setAudienceType(session.audienceType);
+            setAttendanceMode(session.attendanceMode || 'self');
+            setAudienceType(session.audienceType || 'rules');
             setUnit(session.audienceRules?.units?.[0] || 'all');
             setBagian(session.audienceRules?.bagians?.[0] || 'all');
             setManualParticipantIds(new Set(session.manualParticipantIds || []));
             setZoomUrl(session.zoomUrl || '');
             setYoutubeUrl(session.youtubeUrl || '');
             setParticipantSearch('');
+
+            const sessionRecords = records.filter(r => r.sessionId === session.id);
+            setSelectedIds(new Set(sessionRecords.map(r => r.userId)));
         }
-    }, [isOpen, session]);
+    }, [isOpen, session, records]);
 
     const uniqueUnits = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.unit))).sort()], [allUsers]);
     const uniqueBagians = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.bagian))).sort()], [allUsers]);
@@ -397,7 +402,7 @@ const ManageAttendanceModal: React.FC<{
 
     const SegmentedControlButton: React.FC<{
         label: string;
-        icon: React.FC<{className: string}>;
+        icon: React.FC<{ className: string }>;
         isActive: boolean;
         onClick: () => void;
     }> = ({ label, icon: Icon, isActive, onClick }) => (
@@ -406,7 +411,7 @@ const ManageAttendanceModal: React.FC<{
             onClick={onClick}
             className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
         >
-            <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
+            <Icon className={`w-6 h-6 shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
         </button>
     );
@@ -427,11 +432,11 @@ const ManageAttendanceModal: React.FC<{
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl border border-white/20 h-[90vh] flex flex-col">
-                <h3 className="text-xl font-bold text-white flex-shrink-0 mb-6">Kelola Sesi Presensi</h3>
-                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <h3 className="text-xl font-bold text-white shrink-0 mb-6">Kelola Sesi Presensi</h3>
+                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column: Session Details & Mode */}
                     <div className="space-y-6">
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Detail Sesi</h4>
                             <div className="space-y-4">
                                 <div>
@@ -440,25 +445,25 @@ const ManageAttendanceModal: React.FC<{
                                         {teamActivityOptions.map(opt => <option key={opt.value} value={opt.value} className="text-black bg-white">{opt.label}</option>)}
                                     </select>
                                 </div>
-                                 <div>
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
                                     <div className="relative">
-                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
-                                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }}/>
+                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                     <div>
+                                    <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
-                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                        <div className="relative">
+                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
-                                         <div className="relative">
-                                             <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"/>
+                                        <div className="relative">
+                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
@@ -468,7 +473,7 @@ const ManageAttendanceModal: React.FC<{
 
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
-                             <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
                                     icon={UserCircleIcon}
@@ -485,34 +490,34 @@ const ManageAttendanceModal: React.FC<{
                         </div>
                     </div>
 
-                     {/* Right Column: Audience */}
+                    {/* Right Column: Audience */}
                     <div className="space-y-6 flex flex-col">
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Tautan Online</h4>
-                             <div className="space-y-4">
-                                 <div>
+                            <div className="space-y-4">
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
-                                     <div className="relative">
-                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400"/>
-                                        <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    <div className="relative">
+                                        <ZoomIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                                        <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" />
                                     </div>
                                 </div>
-                                 <div>
+                                <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
-                                     <div className="relative">
-                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400"/>
-                                        <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"/>
+                                    <div className="relative">
+                                        <YouTubeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400" />
+                                        <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Target Peserta & Presensi</h4>
-                             <div className="flex items-center gap-4 mb-4">
-                                 <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
-                                 <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
+                            <div className="flex items-center gap-4 mb-4">
+                                <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
+                                <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
                             </div>
-                             {audienceType === 'rules' && (
+                            {audienceType === 'rules' && (
                                 <div className="space-y-4">
                                     <select value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white">
                                         {uniqueUnits.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt === 'all' ? 'Semua Unit' : opt}</option>)}
@@ -521,7 +526,7 @@ const ManageAttendanceModal: React.FC<{
                                         {uniqueBagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt === 'all' ? 'Semua Bagian' : opt}</option>)}
                                     </select>
                                     <p className="text-sm text-center text-blue-200">Estimasi Peserta: <strong>{rulesAudienceCount} orang</strong> | Hadir: <strong>{selectedIds.size} orang</strong></p>
-                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1 max-h-60">
+                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1 max-h-60">
                                         {participants.map(user => (
                                             <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                                 <input
@@ -546,10 +551,10 @@ const ManageAttendanceModal: React.FC<{
                                     </div>
                                 </div>
                             )}
-                             {audienceType === 'manual' && (
-                                <div className="space-y-2 flex-grow flex flex-col">
-                                    <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari nama..." className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white"/>
-                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1">
+                            {audienceType === 'manual' && (
+                                <div className="space-y-2 grow flex flex-col">
+                                    <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari nama..." className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white" />
+                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1">
                                         {filteredManualParticipants.map(user => (
                                             <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                                 <input type="checkbox" checked={manualParticipantIds.has(user.id)} onChange={() => handleToggleParticipant(user.id)} className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
@@ -564,7 +569,7 @@ const ManageAttendanceModal: React.FC<{
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
+                <div className="mt-6 flex justify-end space-x-3 shrink-0">
                     <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
                     <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
                         Simpan Perubahan
@@ -623,11 +628,11 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     }, [teamAttendanceSessions, loggedInEmployee]);
 
     const sessionsForToday = useMemo(() => {
-        return relevantSessions.filter(s => s.date === todayStr).sort((a,b) => a.startTime.localeCompare(b.startTime));
+        return relevantSessions.filter(s => s.date === todayStr).sort((a, b) => a.startTime.localeCompare(b.startTime));
     }, [relevantSessions, todayStr]);
 
     const otherSessions = useMemo(() => {
-        return relevantSessions.filter(s => s.date !== todayStr).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return relevantSessions.filter(s => s.date !== todayStr).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [relevantSessions, todayStr]);
 
     const otherKieSessions = useMemo(() => otherSessions.filter(s => s.type === 'KIE'), [otherSessions]);
@@ -700,7 +705,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
         }
     };
 
-    const SessionCard: React.FC<{session: TeamAttendanceSession}> = ({ session }) => {
+    const SessionCard: React.FC<{ session: TeamAttendanceSession }> = ({ session }) => {
         const isCreator = session.creatorId === loggedInEmployee.id;
         // ⚡ UPDATE: Cek kehadiran dari teamAttendanceRecords
         const isPresent = teamAttendanceRecords.some(
@@ -729,38 +734,38 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     </p>
                     {(session.zoomUrl || session.youtubeUrl) && (
                         <div className="flex items-center gap-2 mt-2">
-                            {session.zoomUrl && <a href={session.zoomUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-blue-600 rounded-md"><ZoomIcon className="w-4 h-4"/> Zoom</a>}
-                            {session.youtubeUrl && <a href={session.youtubeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-red-600 rounded-md"><YouTubeIcon className="w-4 h-4"/> YouTube</a>}
+                            {session.zoomUrl && <a href={session.zoomUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-blue-600 rounded-md"><ZoomIcon className="w-4 h-4" /> Zoom</a>}
+                            {session.youtubeUrl && <a href={session.youtubeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-1 text-xs bg-red-600 rounded-md"><YouTubeIcon className="w-4 h-4" /> YouTube</a>}
                         </div>
                     )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center w-full sm:w-auto">
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center w-full sm:w-auto">
                     {isCreator ? (
                         <>
                             <button onClick={() => setManagingAttendanceFor(session)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-md">
                                 <PencilIcon className="w-4 h-4" /> Kelola Presensi
                             </button>
                             <button onClick={() => setConfirmDelete(session)} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus Sesi">
-                                <TrashIcon className="w-5 h-5"/>
+                                <TrashIcon className="w-5 h-5" />
                             </button>
                         </>
                     ) : session.attendanceMode === 'self' ? (
                         isPresent ? (
                             <div className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-green-500/30 text-green-300 rounded-md">
-                                <CheckBadgeIcon className="w-4 h-4"/> Anda Sudah Hadir
+                                <CheckBadgeIcon className="w-4 h-4" /> Anda Sudah Hadir
                             </div>
                         ) : (
                             <button onClick={() => handleSelfAttend(session)} disabled={!isActionable} className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-green-600 hover:bg-green-500 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed">
-                                <CheckIcon className="w-4 h-4"/> Konfirmasi Hadir
+                                <CheckIcon className="w-4 h-4" /> Konfirmasi Hadir
                             </button>
                         )
                     ) : (
-                         <div className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-gray-600/50 text-gray-300 rounded-md">
+                        <div className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-gray-600/50 text-gray-300 rounded-md">
                             Presensi oleh Atasan
                         </div>
                     )}
                 </div>
-             </div>
+            </div>
         );
     };
 
@@ -771,18 +776,18 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     }> = ({ active, onClick, label }) => (
         <button
             onClick={onClick}
-            className={`flex-grow sm:flex-grow-0 py-2 px-5 rounded-full font-semibold transition-all duration-300 ease-in-out text-sm
+            className={`grow sm:grow-0 py-2 px-5 rounded-full font-semibold transition-all duration-300 ease-in-out text-sm
             ${active
-                ? 'bg-teal-500 text-white shadow-md'
-                : 'bg-white/10 text-blue-200 hover:bg-white/20'
-            }`}
+                    ? 'bg-teal-500 text-white shadow-md'
+                    : 'bg-white/10 text-blue-200 hover:bg-white/20'
+                }`}
         >
             {label}
         </button>
     );
 
     return (
-         <div className="space-y-8 -mx-2 sm:mx-0 px-2 sm:px-0">
+        <div className="space-y-8 -mx-2 sm:mx-0 px-2 sm:px-0">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
@@ -790,7 +795,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                         Manajemen Presensi Tim
                     </h3>
                 </div>
-                <button onClick={() => setIsCreateModalOpen(true)} className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
+                <button onClick={() => setIsCreateModalOpen(true)} className="shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
                     <PlusCircleIcon className="w-5 h-5" /> Buat Sesi Baru
                 </button>
             </div>
@@ -841,6 +846,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     }}
                     session={managingAttendanceFor}
                     allUsers={allUsers}
+                    records={teamAttendanceRecords}
                 />
             )}
             <ConfirmationModal

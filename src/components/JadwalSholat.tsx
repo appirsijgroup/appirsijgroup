@@ -244,7 +244,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
     return (
         <div className="space-y-8">
             {renderError()}
-            <div className="relative p-6 bg-gradient-to-br from-gray-800 to-gray-900/50 rounded-2xl border border-white/10 shadow-2xl text-center">
+            <div className="relative p-6 bg-linear-to-br from-gray-800 to-gray-900/50 rounded-2xl border border-white/10 shadow-2xl text-center">
                 <div className="absolute top-0 left-0 w-full h-full bg-grid-pattern opacity-5"></div>
                 <p className="text-blue-300 font-semibold">{locationName || "Lokasi tidak diketahui"}</p>
                 <p className="text-white text-lg">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>

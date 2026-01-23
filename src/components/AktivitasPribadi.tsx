@@ -47,7 +47,7 @@ const ReadingActivityCard: React.FC<{
     submissions: WeeklyReportSubmission[];
     todayForMaxDate: string;
     dailyActivitiesConfig: DailyActivity[];
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
 }> = ({ employee, onLogBookReading, onDeleteReadingHistory, submissions, todayForMaxDate, dailyActivitiesConfig }) => {
     const { addToast } = useUIStore();
     const [dateCompleted, setDateCompleted] = useState(getTodayLocalDateString());
@@ -123,7 +123,7 @@ const ReadingActivityCard: React.FC<{
     };
 
     return (
-        <div className="border border-white/10 p-4 rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+        <div className="border border-white/10 p-4 rounded-lg bg-linear-to-br from-gray-800/50 to-gray-900/50">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -156,11 +156,10 @@ const ReadingActivityCard: React.FC<{
             <div className="mb-4">
                 <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
                     <div
-                        className={`h-full transition-all duration-500 ease-out ${
-                            isTargetMet
-                                ? 'bg-gradient-to-r from-green-500 to-green-400'
-                                : 'bg-gradient-to-r from-teal-500 to-blue-500'
-                        }`}
+                        className={`h-full transition-all duration-500 ease-out ${isTargetMet
+                                ? 'bg-linear-to-r from-green-500 to-green-400'
+                                : 'bg-linear-to-r from-teal-500 to-blue-500'
+                            }`}
                         style={{ width: `${progress}%` }}
                     />
                 </div>
@@ -211,11 +210,10 @@ const ReadingActivityCard: React.FC<{
                         value={dateCompleted}
                         onChange={(e) => setDateCompleted(e.target.value)}
                         max={getTodayLocalDateString()}
-                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${
-                            isDateAlreadyReported
+                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${isDateAlreadyReported
                                 ? 'border-yellow-500/50 bg-yellow-500/10'
                                 : 'border-white/20'
-                        }`}
+                            }`}
                         disabled={isLoading}
                     />
                 </div>
@@ -224,11 +222,10 @@ const ReadingActivityCard: React.FC<{
                 <button
                     onClick={handleSubmit}
                     disabled={isLoading || isDateAlreadyReported}
-                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
-                        isLoading || isDateAlreadyReported
+                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${isLoading || isDateAlreadyReported
                             ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
                             : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/50'
-                    }`}
+                        }`}
                 >
                     {isLoading ? 'Menyimpan...' : 'Lapor Aktivitas'}
                 </button>
@@ -273,7 +270,7 @@ const SimpleActivityCard: React.FC<{
     };
 
     return (
-        <div className="border border-white/10 p-4 rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+        <div className="border border-white/10 p-4 rounded-lg bg-linear-to-br from-gray-800/50 to-gray-900/50">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -314,9 +311,8 @@ const SimpleActivityCard: React.FC<{
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         max={getTodayLocalDateString()}
-                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${
-                            isDone ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/20'
-                        }`}
+                        className={`w-full bg-white/5 border rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none ${isDone ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-white/20'
+                            }`}
                         disabled={isLoading}
                     />
                 </div>
@@ -325,11 +321,10 @@ const SimpleActivityCard: React.FC<{
                 <button
                     onClick={handleSubmit}
                     disabled={isLoading || isDone}
-                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${
-                        isLoading || isDone
+                    className={`w-full py-2 px-4 rounded-lg font-semibold transition-all ${isLoading || isDone
                             ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
                             : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/50'
-                    }`}
+                        }`}
                 >
                     {isLoading ? 'Menyimpan...' : isDone ? 'Sudah Dilaporkan' : 'Lapor Aktivitas'}
                 </button>
@@ -490,7 +485,7 @@ const RiwayatBacaan: React.FC<{
                 </table>
             </div>
             {confirmDelete && (
-                 <ConfirmationModal
+                <ConfirmationModal
                     isOpen={!!confirmDelete}
                     onClose={() => setConfirmDelete(null)}
                     onConfirm={handleDelete}
@@ -498,7 +493,7 @@ const RiwayatBacaan: React.FC<{
                     message={<>Apakah Anda yakin ingin menghapus riwayat bacaan: <strong className="block mt-2">{confirmDelete.detail}</strong>?</>}
                     confirmText="Ya, Hapus"
                     confirmColorClass="bg-red-600 hover:bg-red-500"
-                 />
+                />
             )}
         </div>
     );
@@ -812,19 +807,19 @@ const ToDoListView: React.FC<{
                     <ListBulletIcon className="w-6 h-6 text-teal-300" />
                     To-Do List Pribadi
                 </h3>
-                <button onClick={() => setIsAddModalOpen(true)} className="flex-shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
+                <button onClick={() => setIsAddModalOpen(true)} className="shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
                     <PlusCircleIcon className="w-5 h-5" /> Tambah Tugas
                 </button>
             </div>
 
             <div className="space-y-4 p-4 bg-black/20 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-                    <input type="text" placeholder="Cari berdasarkan judul..." value={titleFilter} onChange={e => setTitleFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400"/>
+                    <input type="text" placeholder="Cari berdasarkan judul..." value={titleFilter} onChange={e => setTitleFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400" />
                     <div className="relative" ref={calendarRef}>
-                         <label className="text-xs font-medium text-blue-100 block mb-1">Filter Rentang Tanggal</label>
+                        <label className="text-xs font-medium text-blue-100 block mb-1">Filter Rentang Tanggal</label>
                         <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white text-left flex justify-between items-center">
                             <span>{dateRange.start ? `${formatDateForDisplay(dateRange.start)} - ${formatDateForDisplay(dateRange.end)}` : 'Pilih Tanggal'}</span>
-                            <CalendarDaysIcon className="w-5 h-5 text-gray-400"/>
+                            <CalendarDaysIcon className="w-5 h-5 text-gray-400" />
                         </button>
                         {isCalendarOpen && (
                             <div className="absolute z-10 top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-xl" onMouseLeave={() => setHoverDate(null)}>
@@ -845,10 +840,10 @@ const ToDoListView: React.FC<{
                             <option value="all" className="bg-white text-black">Semua Tahun</option>
                             {availableYears.map(year => <option key={year} value={year} className="bg-white text-black">{year}</option>)}
                         </select>
-                         <select value={monthFilter} onChange={e => handleSetMonthFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400">
+                        <select value={monthFilter} onChange={e => handleSetMonthFilter(e.target.value)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-teal-400">
                             <option value="all" className="bg-white text-black">Semua Bulan</option>
-                            {Array.from({length: 12}, (_, i) =>
-                                <option key={i+1} value={i+1} className="bg-white text-black">{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                            {Array.from({ length: 12 }, (_, i) =>
+                                <option key={i + 1} value={i + 1} className="bg-white text-black">{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
                             )}
                         </select>
                     </div>
@@ -871,7 +866,7 @@ const ToDoListView: React.FC<{
                 {activeTab === 'active' ? (
                     activeTasks.length > 0 ? activeTasks.map(task => (
                         <div key={task.id} className="bg-gray-700/50 p-3 rounded-lg flex items-center gap-3 animate-fade-in-up">
-                            <div className="flex-grow">
+                            <div className="grow">
                                 <p className="font-semibold text-white">{task.title}</p>
                                 {(task.date || task.time) && (
                                     <p className="text-xs text-blue-200 mt-1 flex items-center gap-1.5">
@@ -880,25 +875,25 @@ const ToDoListView: React.FC<{
                                     </p>
                                 )}
                             </div>
-                            <div className="flex-shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><CheckIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
+                            <div className="shrink-0 flex items-center gap-1">
+                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><CheckIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif</p>
                 ) : (
                     completedTasks.length > 0 ? completedTasks.map(task => (
-                         <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
-                            <div className="flex-grow">
+                        <div key={task.id} className="bg-black/40 p-3 rounded-lg flex items-center gap-3 animate-fade-in">
+                            <div className="grow">
                                 <p className="font-semibold text-gray-400">{task.title}</p>
                                 <p className="text-xs text-gray-500 mt-1">Selesai: {formatDateTime(task.completedAt)}</p>
                             </div>
-                             <div className="flex-shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><ArrowUturnLeftIcon className="w-5 h-5"/></button>
-                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><PencilIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
+                            <div className="shrink-0 flex items-center gap-1">
+                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><ArrowUturnLeftIcon className="w-5 h-5" /></button>
+                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><PencilIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai</p>
@@ -907,14 +902,14 @@ const ToDoListView: React.FC<{
 
             {/* Modals */}
             {isAddModalOpen && createPortal(
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-70">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                         <h3 className="text-lg font-bold text-white mb-4">Tambah Tugas Baru</h3>
                         <form onSubmit={handleAddTask} className="space-y-4">
-                            <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Judul Kegiatan" required className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white"/>
+                            <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Judul Kegiatan" required className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" />
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }}/>
-                                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }}/>
+                                <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }} />
+                                <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white" style={{ colorScheme: 'dark' }} />
                             </div>
                             <textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Catatan (opsional)" rows={3} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 text-white"></textarea>
                             <div className="flex justify-end gap-3 pt-4">
@@ -927,8 +922,8 @@ const ToDoListView: React.FC<{
             )}
 
             {viewingTodo && createPortal(
-                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
-                     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-white/20 animate-pop-in">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-70">
+                    <div className="bg-linear-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-white/20 animate-pop-in">
                         <div className="p-6 border-b border-white/10">
                             <h3 className="text-2xl font-bold text-teal-300 leading-tight">{viewingTodo.title}</h3>
                         </div>
@@ -936,21 +931,21 @@ const ToDoListView: React.FC<{
                         <div className="p-6 space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                                 <div className="flex items-start gap-3">
-                                    {viewingTodo.completed ? <CheckCircleIcon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" /> : <InformationCircleIcon className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />}
+                                    {viewingTodo.completed ? <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0 mt-0.5" /> : <InformationCircleIcon className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />}
                                     <div>
                                         <p className="text-blue-200">Status</p>
                                         <p className={`font-semibold text-lg ${viewingTodo.completed ? 'text-green-300' : 'text-yellow-300'}`}>{viewingTodo.completed ? 'Selesai' : 'Aktif'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <CalendarDaysIcon className="w-5 h-5 text-blue-300 flex-shrink-0 mt-0.5" />
+                                    <CalendarDaysIcon className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-blue-200">Jadwal</p>
                                         <p className="font-semibold text-white text-lg">{formatDate(viewingTodo.date) || 'Tidak diatur'} {viewingTodo.time}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <ClockIcon className="w-5 h-5 text-blue-300 flex-shrink-0 mt-0.5" />
+                                    <ClockIcon className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-blue-200">Dibuat pada</p>
                                         <p className="font-semibold text-white text-base">{formatDateTime(viewingTodo.createdAt)}</p>
@@ -958,7 +953,7 @@ const ToDoListView: React.FC<{
                                 </div>
                                 {viewingTodo.completed && (
                                     <div className="flex items-start gap-3">
-                                        <CheckSquareIcon className="w-5 h-5 text-green-300 flex-shrink-0 mt-0.5" />
+                                        <CheckSquareIcon className="w-5 h-5 text-green-300 shrink-0 mt-0.5" />
                                         <div>
                                             <p className="text-blue-200">Diselesaikan pada</p>
                                             <p className="font-semibold text-white text-base">{formatDateTime(viewingTodo.completedAt)}</p>
@@ -977,7 +972,7 @@ const ToDoListView: React.FC<{
                             )}
 
                             {viewingTodo.completionNotes && (
-                                 <div>
+                                <div>
                                     <h4 className="font-semibold text-teal-300 mb-2">Catatan Penyelesaian</h4>
                                     <p className="text-white bg-black/20 p-3 rounded-lg border border-white/10 whitespace-pre-wrap">{viewingTodo.completionNotes}</p>
                                 </div>
@@ -992,7 +987,7 @@ const ToDoListView: React.FC<{
             )}
 
             {confirmingAction && confirmingAction.type === 'complete' && createPortal(
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-70">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                         <h3 className="text-lg font-bold text-white">Selesaikan Tugas</h3>
                         <p className="text-blue-200 my-2">Apakah Anda yakin ingin menyelesaikan tugas: <strong className="text-white">&quot;{confirmingAction.todo.title}&quot;</strong>?</p>
@@ -1005,8 +1000,8 @@ const ToDoListView: React.FC<{
                 </div>, document.body
             )}
 
-             {editingTodo && createPortal(
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+            {editingTodo && createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-70">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                         <h3 className="text-lg font-bold text-white">Edit Catatan Selesai</h3>
                         <p className="text-blue-200 my-2">Ubah catatan untuk tugas: <strong className="text-white">&quot;{editingTodo.title}&quot;</strong>.</p>
@@ -1043,9 +1038,8 @@ const SubTabButton: React.FC<{
 }> = ({ label, tab, isActive, onClick }) => (
     <button
         onClick={() => onClick(tab)}
-        className={`py-3 px-5 font-semibold transition-colors duration-200 border-b-2 ${
-            isActive ? 'border-teal-400 text-teal-300' : 'border-transparent text-gray-400 hover:text-white'
-        }`}
+        className={`py-3 px-5 font-semibold transition-colors duration-200 border-b-2 ${isActive ? 'border-teal-400 text-teal-300' : 'border-transparent text-gray-400 hover:text-white'
+            }`}
     >
         {label}
     </button>
@@ -1061,7 +1055,7 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
         return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     }, []);
 
-     const manualActivities = useMemo(() => {
+    const manualActivities = useMemo(() => {
         return dailyActivitiesConfig.filter(act => {
             // Hanya MANUAL_USER_REPORT
             if (act.automationTrigger?.type !== 'MANUAL_USER_REPORT') {
@@ -1125,7 +1119,7 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                     <RiwayatBacaan employee={employee} onDeleteReadingHistory={onDeleteReadingHistory} />
                 </div>
             )}
-             {activeSubTab === 'todolist' && (
+            {activeSubTab === 'todolist' && (
                 <div className="animate-view-change">
                     <ToDoListView employee={employee} onUpdateTodoList={onUpdateTodoList} />
                 </div>

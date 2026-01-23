@@ -102,6 +102,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                                 onChange={(e) => setEmployeeId(e.target.value)}
                                 placeholder="Masukkan NIP atau Email"
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 pl-12 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors"
+                                suppressHydrationWarning
                             />
                         </div>
                     </div>
@@ -125,6 +126,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                             type="submit"
                             disabled={isAuthenticating || propIsAuthenticating}
                             className="w-full bg-teal-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg shadow-teal-500/20 hover:bg-teal-400 disabled:bg-teal-700 disabled:cursor-not-allowed transition-all duration-300 mt-4 flex items-center justify-center"
+                            suppressHydrationWarning
                         >
                             {(isAuthenticating || propIsAuthenticating) && (
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

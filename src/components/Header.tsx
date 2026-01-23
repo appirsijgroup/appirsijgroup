@@ -16,7 +16,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ isMenuOpen, toggleMenu, employee, title, unreadNotificationsCount, onToggleNotifications }) => {
   return (
-    <header className="flex-shrink-0 bg-gray-900/50 backdrop-blur-sm h-20 grid grid-cols-3 items-center px-4 sm:px-6 lg:px-8 border-b border-white/10 sticky top-0 z-20">
+    <header className="shrink-0 bg-gray-900/50 backdrop-blur-sm h-20 grid grid-cols-3 items-center px-4 sm:px-6 lg:px-8 border-b border-white/10 sticky top-0 z-20">
       {/* Left */}
       <div className="flex justify-start">
         <button onClick={toggleMenu} className="lg:hidden p-2 -ml-2 text-white" aria-label="Toggle Menu">

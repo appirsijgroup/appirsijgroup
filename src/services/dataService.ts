@@ -170,7 +170,7 @@ export const attendanceService = {
 export const monthlyActivitiesService = {
   // Get monthly activities for an employee
   getMonthlyActivities: async (employeeId: string) => {
-    // Gunakan monthlyActivityService yang sudah di-update untuk menggunakan tabel employee_monthly_activities
+    // 🔥 FIX: NO CACHE - Data is now merged from multiple tables via /api/monthly-activities
     return await monthlyActivityService.getMonthlyActivities(employeeId);
   },
 
@@ -199,7 +199,7 @@ export const monthlyActivitiesService = {
       }
     });
 
-    // Gunakan monthlyActivityService yang sudah di-update untuk menggunakan tabel employee_monthly_activities
+    // 🔥 FIX: NO CACHE - updateMonthlyActivities is now a no-op for backward compatibility
     await monthlyActivitiesService.updateMonthlyActivities(employeeId, cleanedActivities);
 
     // Return employee data (optional, untuk consistency)

@@ -69,7 +69,7 @@ const RealtimeClock: React.FC<RealtimeClockProps> = ({
   }
 
   return (
-    <div className={`bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl ${className}`}>
+    <div className={`bg-linear-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-xl ${className}`}>
       <div className="space-y-4">
         {/* Main Time Display */}
         <div className="text-center">

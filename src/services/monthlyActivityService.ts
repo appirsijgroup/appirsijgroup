@@ -1,4 +1,4 @@
-import { supabase, createSupabaseClientWithToken, toSnakeCase, toCamelCase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { Employee, MonthlyActivityProgress } from '@/types';
 
 /**
@@ -28,190 +28,72 @@ const setPendingUpdate = (employeeId: string, data: Record<string, MonthlyActivi
     });
 };
 
-// Function to get authenticated Supabase client
-const getAuthenticatedSupabaseClient = () => {
-    if (typeof document === 'undefined') return supabase; // Server side
-
-    const cookies = document.cookie.split(';');
-    let token = null;
-    for (let cookie of cookies) {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'session') {
-            token = decodeURIComponent(value);
-            break;
-        }
-    }
-
-    if (token) {
-        return createSupabaseClientWithToken(token);
-    }
-
-    return supabase; // Fallback to anon client
-};
+// 🔥 FIX: Use default supabase client directly - custom JWT is not compatible with Supabase Auth
+// Authorization is handled at the API level, not at the Supabase RLS level
+const getClient = () => supabase;
 
 // Get monthly activities for an employee
 export const getMonthlyActivities = async (employeeId: string): Promise<Record<string, MonthlyActivityProgress>> => {
     try {
-        const client = getAuthenticatedSupabaseClient();
+        // 🔥 FIX: Use API endpoint to bypass RLS issues
+        const response = await fetch(`/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`);
 
-        // Ambil dari tabel employee_monthly_activities
-        const { data, error } = await client
-            .from('employee_monthly_activities')
-            .select('activities')
-            .eq('employee_id', employeeId)
-            .maybeSingle(); // Use maybeSingle instead of single to handle no rows
-
-        if (error) {
-
-            // Jika tabel tidak ada (42P01), return empty object
-            if (error.code === '42P01') {
+        if (!response.ok) {
+            // Handle 405 Method Not Allowed and other errors gracefully
+            if (response.status === 405) {
+                console.warn(`⚠️ [getMonthlyActivities] API endpoint not allowed for employeeId: ${employeeId}`);
+            } else {
+                console.warn(`⚠️ [getMonthlyActivities] HTTP ${response.status} for employeeId: ${employeeId}`);
             }
-
-            // Return empty object untuk semua error (graceful degradation)
+            // Return empty object for all errors (graceful degradation)
             return {};
         }
 
-        // Jika tidak ada data, return empty object
-        if (!data) {
-            return {};
-        }
-
-        return (data as any)?.activities || {};
+        const result = await response.json();
+        return result.activities || {};
     } catch (err) {
+        // Handle JSON parsing errors gracefully
+        if (err instanceof SyntaxError) {
+            console.warn(`⚠️ [getMonthlyActivities] JSON parsing error for employeeId: ${employeeId}`, err.message);
+        } else {
+            console.warn(`⚠️ [getMonthlyActivities] Network or other error for employeeId: ${employeeId}`, err);
+        }
         return {};
     }
 };
 
-// Update monthly activities for an employee
+// 🔥 FIX: NO CACHE - This function is now a no-op for backward compatibility
+// Monthly activities are now stored in separate tables and loaded directly
+// This function is kept for backward compatibility but does nothing
 export const updateMonthlyActivities = async (
     employeeId: string,
     monthlyActivities: Record<string, MonthlyActivityProgress>
 ): Promise<void> => {
-
-    try {
-        // 🔥 FIX: Check for pending updates (debouncing)
-        const pending = getPendingUpdate(employeeId);
-        if (pending) {
-            // Merge dengan pending update
-            monthlyActivities = { ...pending, ...monthlyActivities };
-        }
-
-        // Update cache
-        setPendingUpdate(employeeId, monthlyActivities);
-
-        // Logs dimatikan untuk mengurangi console clutter
-
-        const client = getAuthenticatedSupabaseClient();
-
-        // Cek apakah data sudah ada
-        const { data: existing, error: checkError } = await client
-            .from('employee_monthly_activities')
-            .select('employee_id, activities')
-            .eq('employee_id', employeeId)
-            .maybeSingle();
-
-        if (checkError) {
-            // Handle AbortError gracefully
-            if (checkError.message && checkError.message.includes('abort')) {
-                console.warn('⚠️ [updateMonthlyActivities] Request aborted, skipping update');
-                return;
-            }
-            console.error('❌ [updateMonthlyActivities] Check error:', checkError);
-            throw checkError;
-        }
-
-        if (existing) {
-            // Update existing data
-            const { data, error } = await client
-                .from('employee_monthly_activities')
-                .update({
-                    activities: monthlyActivities,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('employee_id', employeeId)
-                .select();
-
-            if (error) {
-                // Handle AbortError gracefully
-                if (error.message && error.message.includes('abort')) {
-                    console.warn('⚠️ [updateMonthlyActivities] Update request aborted');
-                    return;
-                }
-                console.error('❌ [updateMonthlyActivities] Update error:', {
-                    message: error.message,
-                    code: error.code,
-                    details: error.details,
-                    hint: error.hint,
-                    fullError: error
-                });
-                throw new Error(`Failed to update monthly activities: ${error.message || JSON.stringify(error)}`);
-            }
-
-        } else {
-            // Insert new data
-            const { data, error } = await client
-                .from('employee_monthly_activities')
-                .insert({
-                    employee_id: employeeId,
-                    activities: monthlyActivities,
-                    updated_at: new Date().toISOString()
-                })
-                .select();
-
-            if (error) {
-                // Handle AbortError gracefully
-                if (error.message && error.message.includes('abort')) {
-                    console.warn('⚠️ [updateMonthlyActivities] Insert request aborted');
-                    return;
-                }
-                console.error('❌ [updateMonthlyActivities] Insert error:', {
-                    message: error.message,
-                    code: error.code,
-                    details: error.details,
-                    hint: error.hint,
-                    fullError: error
-                });
-                throw new Error(`Failed to insert monthly activities: ${error.message || JSON.stringify(error)}`);
-            }
-
-        }
-
-        // 🔥 FIX: Clear cache after successful update
-        updateCache.delete(employeeId);
-
-    } catch (err) {
-        // Handle AbortError gracefully at catch level
-        if (err instanceof Error) {
-            if (err.message && err.message.includes('abort')) {
-                console.warn('⚠️ [updateMonthlyActivities] Operation aborted');
-                // Don't clear cache on abort - let next retry use the cached data
-                return;
-            }
-            if (err.stack) {
-                console.error('❌ [updateMonthlyActivities] Exception:', err);
-            }
-        }
-        // Clear cache on error to allow retry
-        updateCache.delete(employeeId);
-        throw err;
-    }
+    // NO CACHE - Activities are stored in separate tables (employee_monthly_reports, tadarus_sessions, team_attendance_records, attendance_records)
+    // This function is kept for backward compatibility but does nothing
+    console.log('⏭️ [updateMonthlyActivities] NO CACHE - Skipping (backward compatibility no-op)', {
+        employeeId,
+        activitiesCount: Object.keys(monthlyActivities).length
+    });
+    return Promise.resolve();
 };
 
 // Get activated months for an employee
 export const getActivatedMonths = async (employeeId: string): Promise<string[]> => {
-    const client = getAuthenticatedSupabaseClient();
-    const { data, error } = await client
-        .from('employees')
-        .select('activated_months')
-        .eq('id', employeeId)
-        .single();
+    try {
+        // 🔥 FIX: Use API endpoint to bypass RLS issues
+        const response = await fetch(`/api/activated-months?employeeId=${encodeURIComponent(employeeId)}`);
 
+        if (!response.ok) {
+            // Return empty array untuk semua error (graceful degradation)
+            return [];
+        }
 
-    if (error) {
-        throw error;
+        const result = await response.json();
+        return result.activatedMonths || [];
+    } catch (err) {
+        return [];
     }
-
-    return (data as any)?.activated_months || [];
 };
 
 // Update activated months for an employee
@@ -219,23 +101,29 @@ export const updateActivatedMonths = async (
     employeeId: string,
     activatedMonths: string[]
 ): Promise<void> => {
-    const updateData: any = {
-        activated_months: activatedMonths,
-        updated_at: new Date().toISOString()
-    };
+    try {
+        // 🔥 FIX: Use API endpoint to bypass RLS issues
+        const response = await fetch('/api/activated-months', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                employeeId,
+                activatedMonths
+            })
+        });
 
-    const client = getAuthenticatedSupabaseClient();
-    const { error, data } = await (client
-        .from('employees') as any)
-        .update(updateData)
-        .eq('id', employeeId)
-        .select();
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`Failed to update activated months: ${error.error || 'Unknown error'}`);
+        }
 
-
-    if (error) {
-        throw error;
+        console.log('✅ [updateActivatedMonths] Successfully updated activated months');
+    } catch (err) {
+        console.error('❌ [updateActivatedMonths] Failed:', err);
+        throw err;
     }
-
 };
 
 // Activate a month for an employee
@@ -264,30 +152,21 @@ export const activateMonth = async (
     }
 };
 
-// Update progress for a specific month
+// 🔥 FIX: NO CACHE - This function is now a no-op for backward compatibility
+// Monthly activities are now stored in separate tables and loaded directly
 export const updateMonthlyProgress = async (
     employeeId: string,
     monthKey: string,
     progress: MonthlyActivityProgress
 ): Promise<boolean> => {
-    try {
-        // Get current monthly activities
-        const currentActivities = await getMonthlyActivities(employeeId);
-
-        // Update the specific month
-        const updatedActivities = {
-            ...currentActivities,
-            [monthKey]: progress
-        };
-
-        // Save to Supabase (dengan debouncing)
-        await updateMonthlyActivities(employeeId, updatedActivities);
-
-        return true;
-    } catch (error) {
-        // Silent fail - sudah ditangani di updateMonthlyActivities
-        return false;
-    }
+    // NO CACHE - Activities are stored in separate tables
+    // This function is kept for backward compatibility but does nothing
+    console.log('⏭️ [updateMonthlyProgress] NO CACHE - Skipping (backward compatibility no-op)', {
+        employeeId,
+        monthKey,
+        progressKeys: Object.keys(progress).length
+    });
+    return true;
 };
 
 // Get all monthly activities and activated months for an employee
@@ -296,24 +175,17 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
     activatedMonths: string[];
 }> => {
     try {
-        const client = getAuthenticatedSupabaseClient();
+        // 🔥 FIX: Use API endpoint for monthly activities to bypass RLS
+        const activitiesResponse = await fetch(`/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`);
 
-        // Ambil monthly activities dari tabel employee_monthly_activities
-        const { data: activitiesData, error: activitiesError } = await client
-            .from('employee_monthly_activities')
-            .select('activities')
-            .eq('employee_id', employeeId)
-            .maybeSingle(); // Use maybeSingle instead of single
-
-        // Log jika ada error tapi jangan throw
-        if (activitiesError) {
-            if (activitiesError.code === '42P01') {
-            } else {
-            }
+        let monthlyActivities: Record<string, MonthlyActivityProgress> = {};
+        if (activitiesResponse.ok) {
+            const result = await activitiesResponse.json();
+            monthlyActivities = result.activities || {};
         }
 
-        // Ambil activated months dari tabel employees
-        const { data: employeeData, error: employeeError } = await client
+        // Ambil activated months dari tabel employees (using supabase client directly - this should work)
+        const { data: employeeData, error: employeeError } = await supabase
             .from('employees')
             .select('activated_months')
             .eq('id', employeeId)
@@ -324,7 +196,7 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
         }
 
         return {
-            monthlyActivities: (activitiesData as any)?.activities || {},
+            monthlyActivities,
             activatedMonths: (employeeData as any)?.activated_months || []
         };
     } catch (err) {

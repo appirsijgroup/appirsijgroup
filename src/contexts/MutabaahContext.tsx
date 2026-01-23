@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, setSupabaseSession } from '@/lib/supabase';
+import { useAppDataStore } from '@/store/store';
 import type { Employee, MonthlyActivityProgress, WeeklyReportSubmission } from '@/types';
 import {
   getEmployeeMonthlyData,
@@ -46,6 +47,19 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 🔥 CRITICAL FIX: Use refs to avoid infinite loops from stale closures
+  const employeeRef = useRef(employee);
+  const activatedMonthsRef = useRef(activatedMonths);
+
+  // Keep refs in sync
+  useEffect(() => {
+    employeeRef.current = employee;
+  }, [employee]);
+
+  useEffect(() => {
+    activatedMonthsRef.current = activatedMonths;
+  }, [activatedMonths]);
+
   // Function to get JWT token from cookie
   const getJwtToken = useCallback((): string | null => {
     if (typeof document === 'undefined') return null;
@@ -82,21 +96,82 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   // ⚡ OPTIMIZATION: Quick initialize - just load basic data immediately
   // Heavy operations like attendance sync will run in background
   const initializeFromEmployee = useCallback(async (emp: Employee): Promise<void> => {
-    // Initialize Supabase session with JWT token
+    // 🔥 CRITICAL FIX: Guard against undefined/null employee
+    if (!emp || !emp.id) {
+      console.warn('⚠️ [MutabaahContext] initializeFromEmployee called with invalid employee:', emp);
+      // Reset state to safe defaults
+      setIsCurrentMonthActivated(false);
+      setActivatedMonths([]);
+      setMonthlyProgressData({});
+      return Promise.resolve();
+    }
+
+    // 🔥 CRITICAL FIX: Initialize Supabase session FIRST and WAIT for it to complete
+    // This prevents RLS policy violations when inserting data
+    console.log('🔐 [MutabaahContext] Initializing for user:', emp.id, emp.name);
+
+    // 🔥 DEBUG: Log all available properties
+    console.log('🔍 [MutabaahContext] Employee object keys:', Object.keys(emp));
+    console.log('🔍 [MutabaahContext] Employee activatedMonths:', emp.activatedMonths);
+    console.log('🔍 [MutabaahContext] Employee activated_months:', emp.activated_months);
+
     await initializeSupabaseSession();
+
+    // 🔥 CRITICAL: Wait a bit longer to ensure session is fully propagated
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     // Use data directly from employee object (already fresh from Supabase)
     // 🔥 FIX: monthlyActivities sekarang dikonversi ke camelCase oleh /api/auth/me
     const months = emp.activatedMonths || emp.activated_months || [];
     const activities = emp.monthlyActivities || emp.monthly_activities || {}; // Gunakan monthlyActivities (camelCase) dulu
 
+    console.log('🔍 [MutabaahContext] Extracted months:', months);
+
     // 🔥 Define currentMonth
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    // 🔥 FIX: ALL users (including admin/super-admin) must activate month
+    // Admin dan super-admin juga karyawan yang kinerjanya dihitung
     const isActivated = months.includes(currentMonth);
 
+    console.log('🔍 [MutabaahContext] Is current month activated?', {
+      currentMonth,
+      months,
+      isActivated,
+      includes: months.includes(currentMonth)
+    });
+
+    // 🔥 FIX: Only check if activated_months changed - always update if it differs!
+    // This ensures that when user activates a month, the state updates immediately
+    const currentMonthsStr = JSON.stringify(months.sort());
+    const existingMonthsStr = JSON.stringify([...(activatedMonths || [])].sort());
+
+    if (currentMonthsStr === existingMonthsStr) {
+      // activated_months belum berubah, tapi mungkin activities berubah
+      // Cek apakah activities perlu di-sync ulang (skip untuk performa jika sama)
+      const currentActivitiesStr = JSON.stringify(activities);
+      const existingActivitiesStr = JSON.stringify(monthlyProgressData);
+
+      if (
+        currentActivitiesStr === existingActivitiesStr &&
+        isActivated === isCurrentMonthActivated
+      ) {
+        // No actual changes, skip initialization
+        console.log('⏭️ [MutabaahContext] Skipping initialization - no changes detected');
+        return Promise.resolve();
+      }
+    }
+
+    console.log('🔄 [MutabaahContext] Initializing with data:', {
+      employeeId: emp.id,
+      role: emp.role,
+      isActivated,
+      activatedMonths: months.length,
+      activatedMonthsList: months
+    });
+
     // ⚡ IMMEDIATE: Update state with basic data first (non-blocking)
-    // 🔥 FIX: Use flushSync to ensure state is updated synchronously
     setActivatedMonths(months);
     setMonthlyProgressData(activities);
     setIsCurrentMonthActivated(isActivated);
@@ -105,49 +180,92 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     // 🚀 DEFER: Run heavy operations in background using setTimeout
     // This allows UI to render immediately without blocking
     setTimeout(async () => {
+      // 🔥 CRITICAL: Double-check that employee still exists before proceeding
+      // This prevents race conditions where employee gets cleared during async operations
+      if (!employeeRef.current || !employeeRef.current.id) {
+        console.log('⏭️ [MutabaahContext] Employee cleared during background sync, aborting');
+        return;
+      }
 
-      // Sync attendance records from Supabase to monthly progress
+      // 🔥 FIX: Load ALL data from database and sync properly
       try {
-        const { getEmployeeAttendance } = await import('@/services/attendanceService');
-        const attendanceRecords = await getEmployeeAttendance(emp.id);
+        const updatedActivities: Record<string, any> = { ...activities };
 
-        // Sync attendance to monthly progress for current month
-        const updatedActivities = { ...activities };
-        if (!updatedActivities[currentMonth]) {
-          updatedActivities[currentMonth] = {};
-        }
+        // 1. Sync ALL attendance records from Supabase to monthly progress
+        try {
+          const { getEmployeeAttendance } = await import('@/services/attendanceService');
+          const attendanceRecords = await getEmployeeAttendance(emp.id);
 
-        // For each attendance record, sync to the corresponding day in monthly progress
-        let syncedCount = 0;
-        Object.entries(attendanceRecords).forEach(([entityId, record]) => {
-          // Parse timestamp to get day of month
-          const attendanceDate = new Date(record.timestamp);
-          const dayOfMonth = attendanceDate.getDate();
-          const dayKey = dayOfMonth.toString().padStart(2, '0');
+          // For each attendance record, sync to the corresponding day and month
+          Object.entries(attendanceRecords).forEach(([entityId, record]) => {
+            if (record.status !== 'hadir') return;
 
-          // Get the month key from attendance timestamp
-          const recordMonthKey = `${attendanceDate.getFullYear()}-${(attendanceDate.getMonth() + 1).toString().padStart(2, '0')}`;
+            // Parse timestamp to get day and month
+            const attendanceDate = new Date(record.timestamp);
+            const year = attendanceDate.getFullYear();
+            const month = (attendanceDate.getMonth() + 1).toString().padStart(2, '0');
+            const dayOfMonth = attendanceDate.getDate();
+            const dayKey = dayOfMonth.toString().padStart(2, '0');
+            const monthKey = `${year}-${month}`;
 
-          // Only sync if attendance is from current month
-          if (recordMonthKey === currentMonth && record.status === 'hadir') {
-            // Initialize day progress if not exists
-            if (!updatedActivities[currentMonth][dayKey]) {
-              updatedActivities[currentMonth][dayKey] = {};
+            // Initialize month if not exists
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            // Initialize day if not exists
+            if (!updatedActivities[monthKey][dayKey]) {
+              updatedActivities[monthKey][dayKey] = {};
             }
 
             // Mark shalat_berjamaah as done for this day
-            updatedActivities[currentMonth][dayKey]['shalat_berjamaah'] = true;
-            syncedCount++;
-          }
-        });
+            updatedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
+          });
 
-        // 🔥 NEW: Load data from employee_monthly_reports table
+          console.log('✅ [MutabaahContext] Synced attendance records:', Object.keys(attendanceRecords).length);
+        } catch (error) {
+          console.error('❌ [MutabaahContext] Error syncing attendance:', error);
+        }
+
+        // 2. Load data from employee_monthly_reports table
         try {
           const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
-          const monthlyReportsActivities = await convertMonthlyReportsToActivities(emp.id);
 
-          // Merge monthlyReportsActivities into updatedActivities
-          Object.entries(monthlyReportsActivities).forEach(([monthKey, monthData]) => {
+          // 🔥 CRITICAL: Only proceed if employee ID is valid
+          if (emp.id) {
+            const monthlyReportsActivities = await convertMonthlyReportsToActivities(emp.id);
+
+            // Merge monthlyReportsActivities into updatedActivities
+            Object.entries(monthlyReportsActivities).forEach(([monthKey, monthData]) => {
+              if (!updatedActivities[monthKey]) {
+                updatedActivities[monthKey] = {};
+              }
+
+              Object.entries(monthData).forEach(([dayKey, dayData]) => {
+                if (!updatedActivities[monthKey][dayKey]) {
+                  updatedActivities[monthKey][dayKey] = {};
+                }
+
+                // Merge all activities from this day
+                Object.assign(updatedActivities[monthKey][dayKey], dayData);
+              });
+            });
+
+            console.log('✅ [MutabaahContext] Synced monthly reports:', Object.keys(monthlyReportsActivities).length);
+          } else {
+            console.log('⏭️ [MutabaahContext] Skipping monthly reports sync - no employee ID');
+          }
+        } catch (error) {
+          console.error('❌ [MutabaahContext] Error loading monthly reports:', error);
+        }
+
+        // 3. Load data from tadarus_sessions table (RSIJ bertadarus)
+        try {
+          const { convertTadarusSessionsToActivities } = await import('@/services/tadarusService');
+          const tadarusActivities = await convertTadarusSessionsToActivities(emp.id);
+
+          // Merge tadarusActivities into updatedActivities
+          Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
             if (!updatedActivities[monthKey]) {
               updatedActivities[monthKey] = {};
             }
@@ -161,56 +279,47 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
               Object.assign(updatedActivities[monthKey][dayKey], dayData);
             });
           });
+
+          console.log('✅ [MutabaahContext] Synced tadarus sessions:', Object.keys(tadarusActivities).length);
         } catch (error) {
-          console.error('Error loading monthly reports data:', error);
+          console.error('❌ [MutabaahContext] Error loading tadarus sessions:', error);
         }
 
-        // 🔥 FIX: Selalu update state dengan updatedActivities (termasuk data dari employee_monthly_reports)
-        // Tidak perlu menunggu syncedCount > 0
+        // 4. Load data from team_attendance_records table (KIE & Doa Bersama)
+        try {
+          const { convertTeamAttendanceToActivities } = await import('@/services/teamAttendanceService');
+          const teamAttendanceActivities = await convertTeamAttendanceToActivities(emp.id);
+
+          // Merge teamAttendanceActivities into updatedActivities
+          Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              // Merge all activities from this day
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+
+          console.log('✅ [MutabaahContext] Synced team attendance (KIE & Doa Bersama):', Object.keys(teamAttendanceActivities).length);
+        } catch (error) {
+          console.error('❌ [MutabaahContext] Error loading team attendance:', error);
+        }
+
+        // 5. Update state with ALL synced data
         setMonthlyProgressData(updatedActivities);
 
-        if (syncedCount > 0) {
-          // 🔥 FIX: BERSIHKAN data sebelum disimpan!
-          // Filter out any foreign fields from updatedActivities[currentMonth]
-          const cleanedMonthData: any = {};
-          if (updatedActivities[currentMonth]) {
-            Object.keys(updatedActivities[currentMonth]).forEach(key => {
-              // HANYA simpan jika key adalah 2 digit angka (tanggal 01-31)
-              if (key.match(/^\d{2}$/)) {
-                cleanedMonthData[key] = updatedActivities[currentMonth][key];
-              }
-              // Field asing (kie, doaBersama, dll) akan DIHAPUS!
-            });
-          }
+        // 🔥 FIX: NO CACHE - Don't save to employee_monthly_activities anymore
+        // Data is now stored in separate tables and loaded on-demand
+        console.log('✅ [MutabaahContext] Successfully synced data from all sources (NO CACHE)');
 
-          const finalUpdatedActivities = {
-            ...updatedActivities,
-            [currentMonth]: cleanedMonthData
-          };
-
-          // Update state with cleaned data
-          setMonthlyProgressData(finalUpdatedActivities);
-
-          // Save cleaned data to Supabase
-          try {
-            const { updateMonthlyProgress } = await import('@/services/monthlyActivityService');
-            await updateMonthlyProgress(emp.id, currentMonth, cleanedMonthData);
-
-            // 🔥 FIX: Update monthlyActivities (camelCase) - konsisten dengan API
-            if (onUpdateEmployee) {
-              const updatedEmployee = {
-                ...emp,
-                monthlyActivities: finalUpdatedActivities
-              };
-              onUpdateEmployee(updatedEmployee);
-            }
-          } catch (error) {
-            // Log error tapi jangan hentikan aplikasi
-            console.error('❌ [MutabaahContext] Failed to save monthly progress:', error instanceof Error ? error.message : error);
-          }
-        }
       } catch (error) {
-        // Continue without attendance sync - not critical
+        console.error('❌ [MutabaahContext] Error in background sync:', error);
       }
 
       // Load weekly report submissions in background (low priority)
@@ -259,32 +368,144 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     }
   }, []);
 
-  // Refresh weekly reports only (don't re-initialize everything to avoid stale data)
+  // Refresh monthly activities data from all sources
   const refreshData = useCallback(async () => {
-    if (employee && employee.id) {
-      setIsLoading(true);
-      try {
-        // Only refresh weekly report submissions, not the entire employee data
-        // Employee data is already fresh from AppDataProvider
-        let submissions: WeeklyReportSubmission[] = [];
-        try {
-          const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
-          submissions = await getUserWeeklyReports(employee.id);
-        } catch (error) {
-        }
-
-        setWeeklyReportSubmissions(submissions);
-      } catch (err) {
-        setError('Gagal menyegarkan data');
-      } finally {
-        setIsLoading(false);
-      }
+    // 🔥 CRITICAL: Only proceed if employee exists and has a valid ID
+    if (!employee || !employee.id) {
+      console.log('⏭️ [MutabaahContext] Skipping refresh - no valid employee');
+      return;
     }
-  }, [employee?.id]); // Use employee.id instead of full object
+
+    setIsLoading(true);
+    try {
+      // Start with current monthly activities
+      const currentActivities = monthlyProgressData || {};
+      const updatedActivities: Record<string, any> = { ...currentActivities };
+
+      // 1. Load data from employee_monthly_reports table
+      try {
+        const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
+
+        // 🔥 CRITICAL: Only proceed if employee ID is valid
+        if (employee.id) {
+          const monthlyReportsActivities = await convertMonthlyReportsToActivities(employee.id);
+
+          Object.entries(monthlyReportsActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+
+          console.log('✅ [MutabaahContext] Refreshed monthly reports');
+        } else {
+          console.log('⏭️ [MutabaahContext] Skipping monthly reports refresh - no employee ID');
+        }
+      } catch (error) {
+        console.error('❌ [MutabaahContext] Error refreshing monthly reports:', error);
+      }
+
+      // 2. Load data from tadarus_sessions table (RSIJ bertadarus)
+      try {
+        const { convertTadarusSessionsToActivities } = await import('@/services/tadarusService');
+
+        // 🔥 CRITICAL: Only proceed if employee ID is valid
+        if (employee.id) {
+          const tadarusActivities = await convertTadarusSessionsToActivities(employee.id);
+
+          Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+
+          console.log('✅ [MutabaahContext] Refreshed tadarus sessions');
+        } else {
+          console.log('⏭️ [MutabaahContext] Skipping tadarus sessions refresh - no employee ID');
+        }
+      } catch (error) {
+        console.error('❌ [MutabaahContext] Error refreshing tadarus sessions:', error);
+      }
+
+      // 3. Load data from team_attendance_records table (KIE & Doa Bersama)
+      try {
+        const { convertTeamAttendanceToActivities } = await import('@/services/teamAttendanceService');
+
+        // 🔥 CRITICAL: Only proceed if employee ID is valid
+        if (employee.id) {
+          const teamAttendanceActivities = await convertTeamAttendanceToActivities(employee.id);
+
+          Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+
+          console.log('✅ [MutabaahContext] Refreshed team attendance');
+        } else {
+          console.log('⏭️ [MutabaahContext] Skipping team attendance refresh - no employee ID');
+        }
+      } catch (error) {
+        console.error('❌ [MutabaahContext] Error refreshing team attendance:', error);
+      }
+
+      // 4. Update state with refreshed data
+      setMonthlyProgressData(updatedActivities);
+
+      // 🔥 FIX: NO CACHE - Don't save to employee_monthly_activities anymore
+      console.log('✅ [MutabaahContext] Successfully refreshed data from all sources (NO CACHE)');
+
+      // 5. Refresh weekly report submissions
+      let submissions: WeeklyReportSubmission[] = [];
+      try {
+        const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
+
+        // 🔥 CRITICAL: Only proceed if employee ID is valid
+        if (employee.id) {
+          submissions = await getUserWeeklyReports(employee.id);
+        } else {
+          console.log('⏭️ [MutabaahContext] Skipping weekly reports refresh - no employee ID');
+        }
+      } catch (error) {
+      }
+
+      setWeeklyReportSubmissions(submissions);
+    } catch (err) {
+      setError('Gagal menyegarkan data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [employee?.id, employee?.id, monthlyProgressData]); // Use employee.id and monthlyProgressData
 
   // Check current month activation status
   const checkCurrentMonthActivation = useCallback(() => {
     const currentMonth = getCurrentMonthKey();
+
+    // 🔥 FIX: ALL users (including admin/super-admin) must check activation
+    // Admin dan super-admin juga karyawan yang kinerjanya dihitung
     const isActivated = activatedMonths.includes(currentMonth);
     setIsCurrentMonthActivated(isActivated);
     return isActivated;
@@ -292,13 +513,17 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
 
   // Activate month for employee
   const activateMonth = useCallback(async (monthKey: string): Promise<boolean> => {
-    if (!employee?.id) {
+    // 🔥 CRITICAL FIX: Use refs to avoid stale closure issues
+    const currentEmployee = employeeRef.current;
+    const currentActivatedMonths = activatedMonthsRef.current;
+
+    if (!currentEmployee?.id) {
       return false;
     }
 
     try {
       // Check if month is already activated
-      if (activatedMonths.includes(monthKey)) {
+      if (currentActivatedMonths.includes(monthKey)) {
         return true;
       }
 
@@ -316,10 +541,10 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       }
 
       // Use service to activate month in Supabase
-      const success = await activateMonthService(employee.id, monthKey);
+      const success = await activateMonthService(currentEmployee.id, monthKey);
 
       if (success) {
-        const newActivatedMonths = [...activatedMonths, monthKey];
+        const newActivatedMonths = [...currentActivatedMonths, monthKey];
 
         // Update local state IMMEDIATELY
         setActivatedMonths(newActivatedMonths);
@@ -335,10 +560,10 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
           const storedUsers = localStorage.getItem('allUsersData');
           if (storedUsers) {
             const allUsers = JSON.parse(storedUsers);
-            if (allUsers[employee.id]) {
+            if (allUsers[currentEmployee.id]) {
               // Handle both camelCase and snake_case
-              allUsers[employee.id].employee.activatedMonths = newActivatedMonths;
-              allUsers[employee.id].employee.activated_months = newActivatedMonths;
+              allUsers[currentEmployee.id].employee.activatedMonths = newActivatedMonths;
+              allUsers[currentEmployee.id].employee.activated_months = newActivatedMonths;
               localStorage.setItem('allUsersData', JSON.stringify(allUsers));
             }
           }
@@ -346,9 +571,9 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         }
 
         // Update employee in parent store if callback is provided
-        if (onUpdateEmployee && employee) {
+        if (onUpdateEmployee && currentEmployee) {
           const updatedEmployee = {
-            ...employee,
+            ...currentEmployee,
             activatedMonths: newActivatedMonths,
             activated_months: newActivatedMonths // Update both formats
           };
@@ -365,46 +590,51 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       setError('Gagal mengaktifkan lembar mutaba\'ah');
       return false;
     }
-  }, [employee?.id, employee, activatedMonths, getCurrentMonthKey, onUpdateEmployee]);
+  }, [getCurrentMonthKey, onUpdateEmployee]); // 🔥 CRITICAL FIX: Only stable dependencies
 
   // Update monthly progress
   const updateMonthlyProgress = useCallback(async (monthKey: string, progress: MonthlyActivityProgress): Promise<boolean> => {
-    if (!employee?.id) return false;
+    // 🔥 CRITICAL FIX: Use ref to avoid infinite loop
+    const currentEmployee = employeeRef.current;
+
+    if (!currentEmployee?.id) return false;
 
     try {
       // Use service to update monthly progress in Supabase
-      const success = await updateMonthlyProgressService(employee.id, monthKey, progress);
+      const success = await updateMonthlyProgressService(currentEmployee.id, monthKey, progress);
 
       if (success) {
-        const newMonthlyActivities = {
-          ...monthlyProgressData,
-          [monthKey]: progress
-        };
-
-        // Always update local state
-        setMonthlyProgressData(newMonthlyActivities);
-
-        // Update localStorage
-        const storedUsers = localStorage.getItem('allUsersData');
-        if (storedUsers) {
-          try {
-            const allUsers = JSON.parse(storedUsers);
-            if (allUsers[employee.id]) {
-              allUsers[employee.id].employee.monthlyActivities = newMonthlyActivities;
-              localStorage.setItem('allUsersData', JSON.stringify(allUsers));
-            }
-          } catch (e) {
-          }
-        }
-
-        // Update employee in parent store if callback is provided
-        if (onUpdateEmployee && employee) {
-          const updatedEmployee = {
-            ...employee,
-            monthlyActivities: newMonthlyActivities
+        // 🔥 FIX: Use functional update to get latest state
+        setMonthlyProgressData(prev => {
+          const newMonthlyActivities = {
+            ...prev,
+            [monthKey]: progress
           };
-          onUpdateEmployee(updatedEmployee);
-        }
+
+          // Update localStorage
+          const storedUsers = localStorage.getItem('allUsersData');
+          if (storedUsers) {
+            try {
+              const allUsers = JSON.parse(storedUsers);
+              if (allUsers[currentEmployee.id]) {
+                allUsers[currentEmployee.id].employee.monthlyActivities = newMonthlyActivities;
+                localStorage.setItem('allUsersData', JSON.stringify(allUsers));
+              }
+            } catch (e) {
+            }
+          }
+
+          // Update employee in parent store if callback is provided
+          if (onUpdateEmployee && currentEmployee) {
+            const updatedEmployee = {
+              ...currentEmployee,
+              monthlyActivities: newMonthlyActivities
+            };
+            onUpdateEmployee(updatedEmployee);
+          }
+
+          return newMonthlyActivities;
+        });
 
         return true;
       } else {
@@ -416,7 +646,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       setError('Gagal menyimpan progres bulanan');
       return false;
     }
-  }, [employee?.id, monthlyProgressData]);
+  }, [onUpdateEmployee]); // 🔥 CRITICAL FIX: Only stable dependencies
 
   // Setup realtime subscription (optional, only if Supabase is configured)
   useEffect(() => {
@@ -469,7 +699,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
 
   // Initialize when employee changes
   useEffect(() => {
-    if (employee) {
+    if (employee && employee.id) {
       // 🔥 FIX: Remove timeout to prevent race condition
       // Initialize immediately to ensure activation status is available
       setIsLoading(true);
@@ -477,15 +707,34 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         setIsLoading(false);
       });
     } else {
-      setIsLoading(false);
-      setIsCurrentMonthActivated(false);
-      setActivatedMonths([]);
-      setMonthlyProgressData({});
-      setWeeklyReportSubmissions([]);
-    }
-  }, [employee?.id, initializeFromEmployee]); // Add initializeFromEmployee to deps to fix stale closure
+      // 🔥 CRITICAL FIX: Don't reset activation state if employee is null/undefined
+      // This happens during initial load before loadLoggedInEmployee() completes
+      // We should keep the existing state or set to loading, NOT to false/empty
+      const { isLoggingOut } = useAppDataStore.getState();
+      const { isHydrated } = useAppDataStore.getState();
 
-  const value: MutabaahContextType = {
+      if (isHydrated && !isLoggingOut) {
+        console.log('⚠️ [MutabaahContext] Employee is null/undefined, skipping initialization');
+      }
+      setIsLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employee?.id, employee?.activatedMonths, employee?.activated_months]); // 🔥 FIX: Also watch activated_months changes
+
+  // 🔥 NEW: Effect to sync activation status when activatedMonths changes
+  useEffect(() => {
+    if (employee) {
+      const currentMonth = getCurrentMonthKey();
+
+      // 🔥 FIX: ALL users (including admin/super-admin) must check activation
+      // Admin dan super-admin juga karyawan yang kinerjanya dihitung
+      const isActivated = activatedMonths.includes(currentMonth);
+      setIsCurrentMonthActivated(isActivated);
+    }
+  }, [activatedMonths, employee, getCurrentMonthKey]);
+
+  // 🔥 CRITICAL FIX: Memoize context value to prevent unnecessary re-renders
+  const value: MutabaahContextType = React.useMemo(() => ({
     isCurrentMonthActivated,
     activatedMonths,
     monthlyProgressData,
@@ -496,7 +745,18 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     updateMonthlyProgress,
     checkCurrentMonthActivation,
     refreshData
-  };
+  }), [
+    isCurrentMonthActivated,
+    activatedMonths,
+    monthlyProgressData,
+    weeklyReportSubmissions,
+    isLoading,
+    error,
+    activateMonth,
+    updateMonthlyProgress,
+    checkCurrentMonthActivation,
+    refreshData
+  ]);
 
   return (
     <MutabaahContext.Provider value={value}>

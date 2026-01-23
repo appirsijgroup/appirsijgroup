@@ -168,20 +168,11 @@ export default function KegiatanPage() {
 
                 await createTeamAttendanceRecord(recordData);
 
+                // 🔥 FIX: Reload attendance data dari Supabase untuk sinkronisasi
+                await loadAttendanceData();
+
                 // 🔥 NEW: Trigger Dashboard stats refresh
                 refreshActivityStats();
-
-                // Update local state - tandai sebagai hadir
-                setAttendance(prev => ({
-                    ...prev,
-                    [activityId]: {
-                        status: 'hadir',
-                        reason: null,
-                        timestamp: Date.now(),
-                        submitted: true,
-                        isLateEntry: false
-                    }
-                }));
             } else {
                 // Use scheduled activity service for scheduled activities
                 const result = await submitScheduledAttendance(
@@ -190,20 +181,11 @@ export default function KegiatanPage() {
                     'hadir'
                 );
 
+                // 🔥 FIX: Reload attendance data dari Supabase untuk sinkronisasi
+                await loadAttendanceData();
+
                 // 🔥 NEW: Trigger Dashboard stats refresh
                 refreshActivityStats();
-
-                // Update local state
-                setAttendance(prev => ({
-                    ...prev,
-                    [activityId]: {
-                        status: (result.status === 'hadir' || result.status === 'tidak-hadir') ? result.status : null,
-                        reason: result.reason,
-                        timestamp: result.submittedAt ? new Date(result.submittedAt).getTime() : null,
-                        submitted: true,
-                        isLateEntry: result.isLateEntry
-                    }
-                }));
             }
         } catch (error) {
             addToast('Gagal menyimpan presensi. Silakan coba lagi.', 'error');
@@ -230,20 +212,11 @@ export default function KegiatanPage() {
                     'tidak-hadir'
                 );
 
+                // 🔥 FIX: Reload attendance data dari Supabase untuk sinkronisasi
+                await loadAttendanceData();
+
                 // 🔥 NEW: Trigger Dashboard stats refresh
                 refreshActivityStats();
-
-                // Update local state
-                setAttendance(prev => ({
-                    ...prev,
-                    [activity.id]: {
-                        status: (result.status === 'hadir' || result.status === 'tidak-hadir') ? result.status : null,
-                        reason: result.reason,
-                        timestamp: result.submittedAt ? new Date(result.submittedAt).getTime() : null,
-                        submitted: true,
-                        isLateEntry: result.isLateEntry
-                    }
-                }));
             }
         } catch (error) {
             addToast('Gagal menyimpan presensi. Silakan coba lagi.', 'error');

@@ -110,7 +110,7 @@ const DestructiveConfirmationModal: React.FC<{
         const ringColor = isDestructive ? 'focus:ring-red-400' : 'focus:ring-yellow-400';
 
         return createPortal(
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
                 <div className={`bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border ${borderColor}`}>
                     <h3 className={`text-lg font-bold ${titleColor} mb-2`}>{title}</h3>
                     <div className="text-blue-200 mb-4">{message}</div>
@@ -334,9 +334,9 @@ const ActivityModal: React.FC<{
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-pop-in">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl border border-white/20 h-[90vh] flex flex-col">
-                <h3 className="text-xl font-bold mb-4 text-white flex-shrink-0">{existingActivity ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}</h3>
+                <h3 className="text-xl font-bold mb-4 text-white shrink-0">{existingActivity ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}</h3>
 
-                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Column: Activity Details */}
                     <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-teal-300 border-b border-white/10 pb-2">Detail Kegiatan</h4>
@@ -393,9 +393,9 @@ const ActivityModal: React.FC<{
                             <button onClick={() => setAudienceType('manual')} className={`flex-1 text-center py-2 px-4 rounded-full font-semibold transition-all duration-300 text-sm ${audienceType === 'manual' ? 'bg-teal-500 text-white shadow-md' : 'text-blue-200 hover:bg-white/20'}`}>Pilih Manual</button>
                         </div>
 
-                        <div className="flex-grow overflow-hidden flex flex-col">
+                        <div className="grow overflow-hidden flex flex-col">
                             {audienceType === 'public' && (
-                                <div className="flex-grow flex items-center justify-center p-4 bg-black/20 rounded-lg text-center">
+                                <div className="grow flex items-center justify-center p-4 bg-black/20 rounded-lg text-center">
                                     <p className="text-blue-200">Kegiatan ini akan dapat dilihat oleh <br /> <strong className="text-white">semua karyawan di seluruh rumah sakit</strong>.</p>
                                 </div>
                             )}
@@ -431,12 +431,12 @@ const ActivityModal: React.FC<{
                             )}
 
                             {audienceType === 'manual' && (
-                                <div className="space-y-2 flex-grow flex flex-col">
-                                    <div className="relative flex-shrink-0">
+                                <div className="space-y-2 grow flex flex-col">
+                                    <div className="relative shrink-0">
                                         <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                         <input type="text" placeholder="Cari nama atau NIP..." value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                                     </div>
-                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 space-y-1 bg-black/20">
+                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 space-y-1 bg-black/20">
                                         {filteredEmployees.map(emp => (
                                             <label key={emp.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                                 <input type="checkbox" checked={selectedParticipants.has(emp.id)} onChange={() => handleParticipantToggle(emp.id)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
@@ -445,14 +445,14 @@ const ActivityModal: React.FC<{
                                         ))}
                                         {filteredEmployees.length === 0 && <p className="text-center text-sm text-gray-400 p-4">Karyawan tidak ditemukan.</p>}
                                     </div>
-                                    <p className="text-xs text-blue-200 text-right flex-shrink-0 pt-1">Terpilih: {selectedParticipants.size} orang</p>
+                                    <p className="text-xs text-blue-200 text-right shrink-0 pt-1">Terpilih: {selectedParticipants.size} orang</p>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 flex-shrink-0">
+                <div className="mt-6 shrink-0">
                     {error && <p className="text-red-400 text-sm text-center mb-3">{error}</p>}
                     <div className="flex justify-end space-x-3">
                         <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
@@ -769,7 +769,7 @@ const UserModal: React.FC<{
                 <h3 className="text-lg font-bold mb-4 text-white">{existingUser ? 'Edit Data Karyawan' : 'Tambah Karyawan Baru'}</h3>
 
                 {/* Two-column layout for desktop */}
-                <div className="flex-grow overflow-y-auto pr-2">
+                <div className="grow overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Left column - 5 fields */}
                         <div className="space-y-4">
@@ -898,7 +898,7 @@ const UserModal: React.FC<{
                 {error && (
                     <div className="mt-4 p-4 bg-red-500/10 border-l-4 border-red-500 rounded-r-lg">
                         <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
+                            <div className="shrink-0">
                                 <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                                 </svg>
@@ -909,7 +909,7 @@ const UserModal: React.FC<{
                             </div>
                             <button
                                 onClick={() => setError('')}
-                                className="flex-shrink-0 text-red-400 hover:text-red-300 transition-colors"
+                                className="shrink-0 text-red-400 hover:text-red-300 transition-colors"
                                 title="Tutup pesan error"
                             >
                                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -932,7 +932,7 @@ const UserModal: React.FC<{
                     </div>
                 )}
 
-                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
+                <div className="mt-6 flex justify-end space-x-3 shrink-0">
                     <button
                         onClick={onClose}
                         disabled={loading}
@@ -1347,8 +1347,8 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -1362,8 +1362,8 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}
@@ -1540,8 +1540,8 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -1555,8 +1555,8 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}
@@ -2099,8 +2099,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -2114,8 +2114,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}
@@ -2680,8 +2680,8 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -2695,8 +2695,8 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}
@@ -2957,8 +2957,8 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -2972,8 +2972,8 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}
@@ -3264,7 +3264,7 @@ const ManageAdminAccessModal: React.FC<ManageAdminAccessModalProps> = ({ isOpen,
     };
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                 <h3 className="text-lg font-bold text-white">Kelola Akses Rumah Sakit</h3>
                 <p className="text-blue-200 mb-4">Pilih rumah sakit yang dapat dikelola oleh <strong className="text-teal-300">{user.name}</strong>.</p>
@@ -3635,15 +3635,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             </div>
                         </div>
                         <div className="mt-8">
-                        {reportSubView === 'sholat' && (
-                            <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
-                        )}
-                        {reportSubView === 'kegiatan' && (
-                            <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
-                        )}
-                        {reportSubView === 'mutabaah' && (
-                            <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
-                        )}
+                            {reportSubView === 'sholat' && (
+                                <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                            )}
+                            {reportSubView === 'kegiatan' && (
+                                <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                            )}
+                            {reportSubView === 'mutabaah' && (
+                                <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
+                            )}
                         </div>
                     </div>
                 )}

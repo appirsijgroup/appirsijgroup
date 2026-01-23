@@ -48,7 +48,7 @@ export const CombinedScheduleTable: React.FC<CombinedScheduleTableProps> = ({ it
                     {items.map(item => (
                         <tr key={`${item.kind}-${item.id}`} className="hover:bg-white/5 transition-colors">
                             <td className="px-4 py-3">
-                                <div className="text-sm font-medium text-white break-words">{item.name}</div>
+                                <div className="text-sm font-medium text-white wrap-break-word">{item.name}</div>
                             </td>
                             <td className="px-4 py-3">
                                 <div className="text-sm text-gray-300">{item.date}</div>

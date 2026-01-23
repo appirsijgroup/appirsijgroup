@@ -48,7 +48,7 @@ const KumpulanDoa: React.FC<KumpulanDoaProps> = ({ searchQuery }) => {
                                 <ShareIcon className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="flex-grow space-y-6">
+                        <div className="grow space-y-6">
                             <p dir="rtl" className="text-3xl sm:text-4xl text-right text-white font-serif leading-loose">{doa.arabic}</p>
                             <p className="text-blue-200 italic text-base">{doa.latin}</p>
                             <div>

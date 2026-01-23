@@ -152,7 +152,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                 role="dialog"
                 aria-labelledby="notification-panel-title"
             >
-                <header className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+                <header className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
                     {isManageMode ? (
                         <div className="flex items-center justify-between w-full">
                             <label className="flex items-center gap-2 text-sm text-white font-semibold">
@@ -187,7 +187,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                         </>
                     )}
                 </header>
-                <div className="flex-grow overflow-y-auto">
+                <div className="grow overflow-y-auto">
                     {notifications.length > 0 ? (
                         <ul>
                             {notifications.map(notif => (
@@ -201,7 +201,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                                                 className="w-5 h-5 rounded mt-3 bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
                                             />
                                             <NotificationIcon type={notif.type} />
-                                            <div className="flex-grow">
+                                            <div className="grow">
                                                 <p className="font-semibold text-white">{notif.title}</p>
                                                 <p className="text-sm text-blue-200">{notif.message}</p>
                                                 <p className="text-xs text-gray-500 mt-1">{new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
@@ -213,10 +213,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                                             className={`w-full text-left p-4 flex items-start gap-4 transition-colors ${!notif.isRead ? 'bg-teal-500/10' : ''} ${notif.linkTo ? 'hover:bg-white/10' : 'cursor-default'}`}
                                         >
                                             {!notif.isRead && (
-                                                <div className="w-2.5 h-2.5 bg-teal-400 rounded-full flex-shrink-0 mt-1.5 animate-pulse"></div>
+                                                <div className="w-2.5 h-2.5 bg-teal-400 rounded-full shrink-0 mt-1.5 animate-pulse"></div>
                                             )}
                                             <NotificationIcon type={notif.type} />
-                                            <div className={`flex-grow ${notif.isRead ? 'pl-5' : ''}`}>
+                                            <div className={`grow ${notif.isRead ? 'pl-5' : ''}`}>
                                                 <p className={`font-semibold ${!notif.isRead ? 'text-white' : 'text-gray-300'}`}>{notif.title}</p>
                                                 <p className={`text-sm ${!notif.isRead ? 'text-blue-200' : 'text-gray-400'}`}>{notif.message}</p>
                                                 <p className="text-xs text-gray-500 mt-1">{new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
@@ -235,7 +235,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                     )}
                 </div>
                 {notifications.length > 0 && (
-                    <footer className="p-2 border-t border-white/10 flex-shrink-0">
+                    <footer className="p-2 border-t border-white/10 shrink-0">
                          {isManageMode ? (
                             <div className="p-2">
                                 <button 

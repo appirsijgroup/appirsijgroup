@@ -8,12 +8,14 @@ export { supabase };
 // Types
 export type AttendanceRecord = Database['public']['Tables']['attendance_records']['Row'];
 
-// Get attendance records for an employee
+// Get attendance records for an employee (hanya yang TERBARA per hari)
 export const getEmployeeAttendance = async (employeeId: string): Promise<Record<string, AttendanceRecord>> => {
+  // 🔥 FIX: Kolom is_latest belum ada di database, sementara ambil semua data
   const { data, error } = await supabase
     .from('attendance_records')
     .select('*')
     .eq('employee_id', employeeId);
+  // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
 
   if (error) {
     throw error;
@@ -28,11 +30,13 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
   return attendanceMap;
 };
 
-// 🔥 NEW: Get ALL attendance records in ONE call (for admin dashboard)
+// 🔥 UPDATED: Get ALL attendance records (hanya yang TERBARA) - for admin dashboard
 export const getAllAttendanceRecords = async (): Promise<Record<string, Record<string, AttendanceRecord>>> => {
+  // 🔥 FIX: Kolom is_latest belum ada di database, sementara ambil semua data
   const { data, error } = await supabase
     .from('attendance_records')
     .select('*');
+  // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
 
   if (error) {
     throw error;
@@ -50,7 +54,7 @@ export const getAllAttendanceRecords = async (): Promise<Record<string, Record<s
   return attendanceMap;
 };
 
-// Submit attendance record
+// Submit attendance record (APPEND-ONLY - tidak menimpa data lama)
 export const submitAttendance = async (
   employeeId: string,
   entityId: string,
@@ -87,34 +91,41 @@ export const submitAttendance = async (
 
     const timestamp = timeValidation.correctedTime.toISOString();
 
-    const recordToUpsert = {
-      employee_id: employeeId,
-      entity_id: entityId,
-      status,
-      reason,
-      timestamp,
-      is_late_entry: isLateEntry,
-      location: location ? JSON.stringify(location) : null
-    };
-
-
-    const { data, error } = await (supabase
-      .from('attendance_records') as any)
-      .upsert(recordToUpsert, { onConflict: ['employee_id', 'entity_id'] })
-      .select()
-      .single();
+    // 🔥 UPDATE: Gunakan fungsi insert_attendance (APPEND-ONLY, bukan UPSERT)
+    // Ini membuat record BARU setiap kali, tidak menimpa data lama
+    const { data, error } = await supabase.rpc('insert_attendance', {
+      p_employee_id: employeeId,
+      p_entity_id: entityId,
+      p_status: status,
+      p_reason: reason,
+      p_timestamp: timestamp,
+      p_is_late_entry: isLateEntry,
+      p_location: location ? JSON.stringify(location) : null
+    });
 
     if (error) {
       if (process.env.NODE_ENV === "development") {
+        console.error('❌ Error submitting attendance:', error);
       }
       throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
     }
 
     if (!data) {
-      throw new Error('No data returned from Supabase after upsert');
+      throw new Error('No data returned from Supabase after insert');
     }
 
-    return data;
+    // Fetch the full record that was just inserted
+    const { data: newRecord, error: fetchError } = await supabase
+      .from('attendance_records')
+      .select('*')
+      .eq('id', data)
+      .single();
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch inserted record: ${fetchError.message}`);
+    }
+
+    return newRecord as AttendanceRecord;
   } catch (err: any) {
     throw err;
   }

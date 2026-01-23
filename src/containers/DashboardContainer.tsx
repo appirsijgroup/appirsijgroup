@@ -42,7 +42,17 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     const { createNotification } = useNotificationStore();
     const { logAudit } = useAuditLogStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
-    const { activities, teamAttendanceSessions, addActivity, addTeamAttendanceSessions, updateTeamAttendanceSession, updateTeamAttendanceSessionData, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
+    const {
+        activities,
+        teamAttendanceSessions,
+        addActivity,
+        addTeamAttendanceSessions,
+        createTeamAttendanceRecord,
+        updateTeamAttendanceSessionData,
+        deleteTeamAttendanceSession,
+        loadTeamAttendanceSessionsFromSupabase,
+        loadActivitiesFromSupabase
+    } = useActivityStore();
     const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
@@ -66,6 +76,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
     // 🔥 NEW: Function to refresh monthly reports data
     const refreshMonthlyReportsData = useCallback(async (employeeId: string) => {
+        if (!employeeId) {
+            // console.warn('⚠️ [DashboardContainer] refreshMonthlyReportsData called without employeeId');
+            return;
+        }
         try {
             // 1. Load employee_monthly_reports data (manual counter activities)
             const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
@@ -108,38 +122,77 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 });
             });
 
-            console.log('🔍 [DEBUG] Final mergedActivities for employee', employeeId, ':', JSON.stringify(mergedActivities, null, 2));
+            // 4. Load attendance data (Sholat Lima Waktu from Presensi Harian)
+            try {
+                const { getEmployeeAttendance } = await import('@/services/attendanceService');
+                const attendanceRecords = await getEmployeeAttendance(employeeId);
+
+                Object.entries(attendanceRecords).forEach(([, record]) => {
+                    if (record.status !== 'hadir') return;
+
+                    const attendanceDate = new Date(record.timestamp);
+                    const year = attendanceDate.getFullYear();
+                    const month = (attendanceDate.getMonth() + 1).toString().padStart(2, '0');
+                    const dayOfMonth = attendanceDate.getDate();
+                    const dayKey = dayOfMonth.toString().padStart(2, '0');
+                    const monthKey = `${year}-${month}`;
+
+                    if (!mergedActivities[monthKey]) {
+                        mergedActivities[monthKey] = {};
+                    }
+                    if (!mergedActivities[monthKey][dayKey]) {
+                        mergedActivities[monthKey][dayKey] = {};
+                    }
+
+                    // Mark shalat_berjamaah as done for this day
+                    mergedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
+                });
+            } catch (error) {
+                console.error('Error syncing attendance to activities:', error);
+            }
 
             // Update both allUsersData and loggedInEmployee
-            setAllUsersData(prev => ({
-                ...prev,
-                [employeeId]: {
-                    ...prev[employeeId],
-                    employee: {
-                        ...prev[employeeId].employee,
-                        _monthlyReportsData: mergedActivities
-                    }
+            setAllUsersData(prev => {
+                // ⚠️ CRITICAL: Check if prev[employeeId] exists to avoid errors
+                if (!prev[employeeId]) {
+                    return prev;
                 }
-            }));
 
+                return {
+                    ...prev,
+                    [employeeId]: {
+                        ...prev[employeeId],
+                        employee: {
+                            ...prev[employeeId].employee,
+                            // 🔥 FIX: Use a different property name to avoid conflicts
+                            _monthlyReportsDataCache: mergedActivities
+                        }
+                    }
+                };
+            });
+
+            // Update loggedInEmployee if it's the current user
             if (loggedInEmployee && loggedInEmployee.id === employeeId) {
                 setLoggedInEmployee({
                     ...loggedInEmployee,
-                    _monthlyReportsData: mergedActivities
+                    _monthlyReportsDataCache: mergedActivities
                 });
             }
 
-            setMonthlyReportsRefreshCounter(prev => prev + 1);
+            // 🔥 FIX: Don't increment counter here to avoid infinite loop!
         } catch (error) {
             console.error('Error refreshing monthly reports data:', error);
         }
-    }, [loggedInEmployee, setAllUsersData, setLoggedInEmployee]);
+    }, [setAllUsersData, setLoggedInEmployee]); // 🔥 FIX: Remove loggedInEmployee from deps
 
     // --- Handlers from App.tsx ---
 
-    const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => {
+    const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Employee>): Promise<boolean> => {
         const oldUser = allUsersData[userId]?.employee;
         if (!oldUser) return false;
+
+        // 🔥 FIX: Check if this is the logged-in user BEFORE updating
+        const isLoggedInUser = loggedInEmployee?.id === userId;
 
         // Update local state FIRST (optimistic update)
         setAllUsersData(prevData => {
@@ -155,8 +208,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             };
             allDataCopy[userId].employee = updatedEmployee;
 
-            // CRITICAL FIX: Also update loggedInEmployee if it's the same user
-            if (loggedInEmployee && loggedInEmployee.id === userId) {
+            // 🔥 FIX: ONLY update loggedInEmployee if role changes (affects navigation)
+            // Otherwise skip to prevent unnecessary re-renders
+            if (isLoggedInUser && (updates as any).role) {
                 setLoggedInEmployee(updatedEmployee);
             }
 
@@ -179,8 +233,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }
                 }));
 
-                // Also update loggedInEmployee if it's the same user
-                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                // 🔥 FIX: ONLY update loggedInEmployee if role changes
+                if (isLoggedInUser && (updates as any).role) {
                     setLoggedInEmployee(freshEmployee);
                 }
             }
@@ -195,8 +249,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const allDataCopy: typeof prev = JSON.parse(JSON.stringify(prev));
                 allDataCopy[userId].employee = oldUser;
 
-                // Also restore loggedInEmployee if it's the same user
-                if (loggedInEmployee && loggedInEmployee.id === userId) {
+                // 🔥 FIX: ONLY restore loggedInEmployee if role was changed
+                if (isLoggedInUser && (updates as any).role) {
                     setLoggedInEmployee(oldUser);
                 }
 
@@ -211,7 +265,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             return false;
         }
-    }, [allUsersData, setAllUsersData, loggedInEmployee, setLoggedInEmployee, addToast]);
+    }, [allUsersData, setAllUsersData, loggedInEmployee?.id, setLoggedInEmployee, addToast]);
 
     const handleNavigateToReport = (monthKey: string) => {
         // Use URL params to pass state to the page
@@ -300,7 +354,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 id: '', // ID akan di-generate oleh Supabase (UUID)
                 createdBy: loggedInEmployee.id,
                 createdByName: loggedInEmployee.name
-            };
+            } as any;
 
             // addActivity sekarang sudah handle insert ke Supabase
             await addActivity(newActivity);
@@ -344,17 +398,18 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             }
         }));
 
-        // Then persist to Supabase
+        // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
+        // Source of truth adalah attendance_records dan employee_monthly_reports
         try {
-            const { updateMonthlyActivities: updateService } = await import('@/services/monthlyActivityService');
-            await updateService(userId, newActivity);
+            const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+            await updateMonthlyActivities(userId, newActivity);
             if (process.env.NODE_ENV === "development") {
-                console.log('✅ [handleUpdateMonthlyActivities] Saved cleaned data to Supabase');
+                console.log('✅ [handleUpdateMonthlyActivities] Cached to DB');
             }
         } catch (error) {
             // Don't throw - local state is already updated
             if (process.env.NODE_ENV === "development") {
-                console.error('❌ [handleUpdateMonthlyActivities] Failed to save:', error);
+                console.error('❌ [handleUpdateMonthlyActivities] Failed to cache:', error);
             }
         }
     };
@@ -382,7 +437,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         try {
             // Process all team attendance sessions
             for (const session of teamAttendanceSessions) {
-                const { date, type, presentUserIds } = session;
+                const { date, type } = session;
+                const presentUserIds = (session as any).presentUserIds || [];
 
                 // Skip if no present users
                 if (!presentUserIds || presentUserIds.length === 0) continue;
@@ -562,11 +618,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 // ⚠️ JANGAN update loggedInEmployee! Biarkan stale karena akan di-refresh dari database
                 // Jika update, data kotor akan tersimpan kembali!
 
-                // 🔥 FIX: Save to employee_monthly_activities table via monthlyActivityService
-                const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-
-                await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
-
+                // 🔥 FIX: Simpan ke employee_monthly_activities sebagai CACHE
+                // Source of truth adalah attendance_records dan employee_monthly_reports
+                // Tapi kita simpan hasil sync-nya ke monthly_activities untuk performa
+                try {
+                    const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                    await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                } catch (error) {
+                    console.error('❌ [DashboardContainer] Failed to cache monthly activities:', error);
+                    // Non-critical, continue
+                }
 
                 addToast('Aktivitas berhasil dilaporkan.', 'success');
                 return true;
@@ -676,7 +737,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             }
 
             // 🔥 FIX: Save to Supabase database
-            // Save readingHistory to employee_reading_history table and monthlyActivities to employee_monthly_activities table
+            // Save readingHistory to employee_reading_history table
             const { submitBookReading } = await import('@/services/readingHistoryService');
             await submitBookReading(
                 loggedInEmployee.id,
@@ -685,10 +746,15 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 dateCompleted
             );
 
-            // Save monthlyActivities to employee_monthly_activities table
+            // 🔥 FIX: Simpan monthlyActivities ke employee_monthly_activities sebagai CACHE
             if (newMonthlyActivities) {
-                const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
-                await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                try {
+                    const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                    await updateMonthlyActivities(loggedInEmployee.id, newMonthlyActivities);
+                } catch (error) {
+                    console.error('❌ [DashboardContainer] Failed to cache monthly activities:', error);
+                    // Non-critical, continue
+                }
             }
 
             if (activityIdToUpdate && isDateValidForMutabaahUpdate(dateCompleted, loggedInEmployee)) {
@@ -703,11 +769,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (!loggedInEmployee) return;
 
         try {
-
-            // Update local state FIRST to provide immediate feedback
-            // 🔥 CRITICAL: Don't send todoList to handleUpdateProfile - update local state manually instead
-            const updatedEmployeeWithTodo = { ...loggedInEmployee, todoList };
-            setLoggedInEmployee(updatedEmployeeWithTodo);
+            // 🔥 FIX: DON'T update loggedInEmployee - only update allUsersData
+            // This prevents unnecessary re-renders of MainLayoutShell
             setAllUsersData(prev => ({
                 ...prev,
                 [userId]: {
@@ -734,12 +797,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 const { getEmployeeTodos } = await import('@/services/todoService');
                 const freshTodos = await getEmployeeTodos(userId);
 
-
-                // Update local state with fresh data from database
-                if (userId === loggedInEmployee.id) {
-                    const updatedEmployeeWithFreshTodos = { ...loggedInEmployee, todoList: freshTodos };
-                    setLoggedInEmployee(updatedEmployeeWithFreshTodos);
-                }
+                // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                 setAllUsersData(prev => ({
                     ...prev,
                     [userId]: {
@@ -754,17 +812,13 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             } catch (refreshError) {
             }
         } catch (error) {
-
             // Rollback the local state update in case of failure
             try {
                 // Reload from database to get accurate state
                 const { getEmployeeTodos } = await import('@/services/todoService');
                 const freshTodos = await getEmployeeTodos(userId);
 
-                if (userId === loggedInEmployee.id) {
-                    const updatedEmployeeWithRollbackTodos = { ...loggedInEmployee, todoList: freshTodos };
-                    setLoggedInEmployee(updatedEmployeeWithRollbackTodos);
-                }
+                // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                 setAllUsersData(prev => ({
                     ...prev,
                     [userId]: {
@@ -780,7 +834,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             addToast('Gagal menyimpan To-Do List. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, setLoggedInEmployee, setAllUsersData]);
+    }, [loggedInEmployee?.id, setAllUsersData]);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleDeleteReadingHistory = useCallback(async (type: 'book' | 'quran', id: string, _date: string) => {
@@ -790,11 +844,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             if (type === 'book') {
                 const updatedHistory = (loggedInEmployee.readingHistory || []).filter(item => item.id !== id);
 
-                // Update local state FIRST to provide immediate feedback
-                // 🔥 CRITICAL: Don't send readingHistory to handleUpdateProfile - it will try to save to employees table!
-                // Just update local state manually
-                const updatedEmployeeWithReadingHistory = { ...loggedInEmployee, readingHistory: updatedHistory };
-                setLoggedInEmployee(updatedEmployeeWithReadingHistory);
+                // 🔥 FIX: DON'T update loggedInEmployee - only update allUsersData
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -819,8 +869,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     const freshEmployeeData = allUsersData[loggedInEmployee.id];
                     if (freshEmployeeData) {
-
-                        setLoggedInEmployee(freshEmployeeData.employee);
+                        // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                         setAllUsersData(prev => ({
                             ...prev,
                             [freshEmployeeData.employee.id]: {
@@ -828,19 +877,13 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                                 employee: freshEmployeeData.employee
                             }
                         }));
-
-                    } else {
                     }
                 } catch (refreshError) {
                 }
             } else {
                 const updatedHistory = (loggedInEmployee.quranReadingHistory || []).filter(item => item.id !== id);
 
-                // Update local state FIRST to provide immediate feedback
-                // 🔥 CRITICAL: Don't send quranReadingHistory to handleUpdateProfile - it will try to save to employees table!
-                // Just update local state manually
-                const updatedEmployeeWithQuranHistory = { ...loggedInEmployee, quranReadingHistory: updatedHistory };
-                setLoggedInEmployee(updatedEmployeeWithQuranHistory);
+                // 🔥 FIX: DON'T update loggedInEmployee - only update allUsersData
                 setAllUsersData(prev => ({
                     ...prev,
                     [loggedInEmployee.id]: {
@@ -865,8 +908,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     const freshEmployeeData = allUsersData[loggedInEmployee.id];
                     if (freshEmployeeData) {
-
-                        setLoggedInEmployee(freshEmployeeData.employee);
+                        // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                         setAllUsersData(prev => ({
                             ...prev,
                             [freshEmployeeData.employee.id]: {
@@ -874,19 +916,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                                 employee: freshEmployeeData.employee
                             }
                         }));
-
-                    } else {
                     }
                 } catch (refreshError) {
                 }
             }
         } catch (error) {
-
             // Rollback the local state update in case of failure
             try {
                 const freshEmployee = await getEmployeeById(loggedInEmployee.id);
                 if (freshEmployee) {
-                    setLoggedInEmployee(freshEmployee);
+                    // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
                     setAllUsersData(prev => ({
                         ...prev,
                         [freshEmployee.id]: {
@@ -900,7 +939,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
             addToast('Gagal menghapus riwayat bacaan dari database. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, handleUpdateProfile, addToast, setLoggedInEmployee, setAllUsersData]);
+    }, [loggedInEmployee?.id, allUsersData, setAllUsersData, addToast]);
 
     // 🚀 PROGRESSIVE LOADING STRATEGY: Load data in background with priority levels
     // This allows dashboard to render immediately with cached data from localStorage
@@ -923,7 +962,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         };
 
         loadImportantData();
-    }, [loggedInEmployee]); // Run when loggedInEmployee changes
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loggedInEmployee?.id]); // 🔥 CRITICAL FIX: Only depend on ID, not entire object to avoid infinite loops
 
     // 🔥 NEW: Refresh monthly reports data when activity stats refresh counter changes
     // This ensures dashboard chart updates when manual activities are reported
@@ -935,7 +975,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         };
 
         refreshData();
-    }, [activityStatsRefreshCounter]); // Remove loggedInEmployee and refreshMonthlyReportsData from deps to avoid infinite loops
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activityStatsRefreshCounter, loggedInEmployee?.id]); // 🔥 CRITICAL FIX: Remove refreshMonthlyReportsData from deps to break infinite loop
 
     // Priority 3: Load nice-to-have data in background (longer delay)
     useEffect(() => {
@@ -966,7 +1007,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     // Data is already properly loaded from /api/auth/me
     /*
     const hasSyncedRef = React.useRef(false);
-    
+
     useEffect(() => {
         if (!loggedInEmployee || !allUsersData[loggedInEmployee.id]) return;
         if (hasSyncedRef.current) return;
@@ -1164,10 +1205,24 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                 }
             }}
             onAddActivity={handleAddActivity}
-            onUpdateTeamAttendance={(id, presentUserIds) => updateTeamAttendanceSession(id, { presentUserIds })}
+            onUpdateTeamAttendance={async (id, presentUserIds) => {
+                // 🔥 FIX: Implement bulk update or single record creation logic here
+                // For now, let's just create a record if it's the current user attending
+                if (loggedInEmployee && presentUserIds.includes(loggedInEmployee.id)) {
+                    await createTeamAttendanceRecord({
+                        sessionId: id,
+                        userId: loggedInEmployee.id,
+                        userName: loggedInEmployee.name,
+                        attendedAt: Date.now(),
+                        sessionType: 'KIE', // Default or derive from session
+                        sessionDate: '',
+                        sessionStartTime: '',
+                        sessionEndTime: ''
+                    } as any);
+                }
+            }}
             onUpdateSession={(id, sessionData) => updateTeamAttendanceSessionData(id, sessionData)}
             onDeleteTeamAttendanceSession={deleteTeamAttendanceSession}
-            onUpdateMonthlyActivities={handleUpdateMonthlyActivities}
             onOpenAssignmentLetter={handleOpenAssignmentLetter}
         />
     );

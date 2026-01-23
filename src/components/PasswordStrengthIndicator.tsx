@@ -8,7 +8,7 @@ interface PasswordStrengthIndicatorProps {
 
 const Requirement: React.FC<{ isValid: boolean; text: string }> = ({ isValid, text }) => (
     <li className={`flex items-center gap-2 text-sm transition-colors ${isValid ? 'text-green-400' : 'text-gray-400'}`}>
-        {isValid ? <CheckIcon className="w-4 h-4 flex-shrink-0" /> : <XIcon className="w-4 h-4 flex-shrink-0" />}
+        {isValid ? <CheckIcon className="w-4 h-4 shrink-0" /> : <XIcon className="w-4 h-4 shrink-0" />}
         <span>{text}</span>
     </li>
 );

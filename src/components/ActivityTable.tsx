@@ -4,13 +4,13 @@ import { ZoomIcon, YouTubeIcon, CheckIcon, XIcon, PencilIcon, ClockIcon, UserGro
 import { getTodayLocalDateString, getCurrentTime } from '../utils/dateUtils';
 
 interface ActivityTableProps {
-  activities: Activity[];
-  teamAttendanceSessions: TeamAttendanceSession[];
-  attendance: Attendance;
-  onHadir: (id: string) => void;
-  onTidakHadir: (activity: Pick<Activity, 'id' | 'name'>) => void;
-  onUbah: (id: string) => void;
-  loggedInEmployee: Employee;
+    activities: Activity[];
+    teamAttendanceSessions: TeamAttendanceSession[];
+    attendance: Attendance;
+    onHadir: (id: string) => void;
+    onTidakHadir: (activity: Pick<Activity, 'id' | 'name'>) => void;
+    onUbah: (id: string) => void;
+    loggedInEmployee: Employee;
 }
 
 const formatTimeDifference = (diff: number): string => {
@@ -19,7 +19,7 @@ const formatTimeDifference = (diff: number): string => {
     const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
     const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
     const seconds = String(totalSeconds % 60).padStart(2, '0');
-    
+
     // If more than a day, show days
     if (totalSeconds > 86400) {
         const days = Math.floor(totalSeconds / 86400);
@@ -239,7 +239,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
 
                             return (
                                 <tr key={item.id} className="hover:bg-white/5 border-b border-gray-800 last:border-b-0">
-                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-semibold text-xs sm:text-sm break-words">{item.name}</td>
+                                    <td className="px-2 sm:px-4 py-2 sm:py-4 font-semibold text-xs sm:text-sm wrap-break-word">{item.name}</td>
                                     <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs">
                                         {new Date(item.date + 'T00:00:00').toLocaleDateString('id-ID', {
                                             weekday: 'short',
@@ -270,7 +270,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                                                 </a>
                                             )}
                                             {item.youtubeUrl && (
-                                                 <a href={item.youtubeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors shadow" title={item.youtubeUrl}>
+                                                <a href={item.youtubeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white transition-colors shadow" title={item.youtubeUrl}>
                                                     <YouTubeIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                                     <span className="hidden sm:inline">YouTube</span>
                                                 </a>
@@ -288,10 +288,9 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                                                 </div>
                                             ) : isSubmitted ? (
                                                 <div className="w-full flex flex-col items-center">
-                                                    <p className={`w-full text-center py-1.5 sm:py-2.5 px-2 sm:px-3 rounded-lg font-semibold flex items-center justify-center shadow-md text-[10px] sm:text-xs ${
-                                                        attendanceStatus.status === 'hadir' ? 'bg-green-500/50 text-green-200' : 'bg-red-500/50 text-red-200'
-                                                    }`}>
-                                                        {attendanceStatus.status === 'hadir' ? <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1"/> : <XIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1"/>}
+                                                    <p className={`w-full text-center py-1.5 sm:py-2.5 px-2 sm:px-3 rounded-lg font-semibold flex items-center justify-center shadow-md text-[10px] sm:text-xs ${attendanceStatus.status === 'hadir' ? 'bg-green-500/50 text-green-200' : 'bg-red-500/50 text-red-200'
+                                                        }`}>
+                                                        {attendanceStatus.status === 'hadir' ? <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> : <XIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
                                                         {attendanceStatus.status === 'hadir' ? 'Hadir' : 'Tidak'}
                                                     </p>
                                                 </div>
@@ -300,7 +299,7 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                                                     <button onClick={() => onHadir(item.id)} className="w-1/2 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-lg font-semibold flex items-center justify-center transition-all bg-green-500 hover:bg-green-400 text-white shadow-md text-[10px] sm:text-xs">
                                                         <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Hadir</span>
                                                     </button>
-                                                    <button onClick={() => onTidakHadir({id: item.id, name: item.name})} className="w-1/2 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-lg font-semibold flex items-center justify-center transition-all bg-red-500 hover:bg-red-400 text-white shadow-md text-[10px] sm:text-xs">
+                                                    <button onClick={() => onTidakHadir({ id: item.id, name: item.name })} className="w-1/2 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-lg font-semibold flex items-center justify-center transition-all bg-red-500 hover:bg-red-400 text-white shadow-md text-[10px] sm:text-xs">
                                                         <XIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Tidak</span>
                                                     </button>
                                                 </>

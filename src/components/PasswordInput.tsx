@@ -48,6 +48,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
                     autoComplete={autoComplete}
                     required={required}
                     className={className || defaultInputClass}
+                    suppressHydrationWarning
                 />
                 <button
                     type="button"

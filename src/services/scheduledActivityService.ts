@@ -171,7 +171,7 @@ export const getActivitiesForEmployee = async (
         }
 
         query = query.order('date', { ascending: true })
-                   .order('start_time', { ascending: true });
+            .order('start_time', { ascending: true });
 
         const { data: allActivities, error: actError } = await query;
 
@@ -279,7 +279,6 @@ export const createActivity = async (
     activity: Omit<Activity, 'id' | 'createdAt'>
 ): Promise<Activity> => {
     try {
-
         // Prepare data for database (convert camelCase to snake_case)
         const dbData = {
             name: activity.name,
@@ -288,7 +287,7 @@ export const createActivity = async (
             start_time: activity.startTime,
             end_time: activity.endTime,
             created_by: activity.createdBy,
-            created_by_name: activity.createdByName || '', // ⚡ FIX: Gunakan createdByName dari parameter
+            created_by_name: activity.createdByName || '',
             participant_ids: activity.participantIds || [],
             zoom_url: activity.zoomUrl || null,
             youtube_url: activity.youtubeUrl || null,
@@ -298,18 +297,42 @@ export const createActivity = async (
             audience_rules: activity.audienceRules || null,
         };
 
+        // 🔥 FIX: Use API endpoint to bypass RLS/401 issues
+        const response = await fetch('/api/activities', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dbData),
+        });
 
-        const { data, error } = await supabase
-            .from('activities')
-            .insert(dbData)
-            .select()
-            .single();
-
-        if (error) {
-            throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to create activity: ${errorData.error || 'Unknown error'} (Code: ${errorData.code || 'HTTP ' + response.status})`);
         }
 
-        return data;
+        const result = await response.json();
+        const data = result.data;
+
+        // Convert back to camelCase
+        return {
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            date: data.date,
+            startTime: data.start_time,
+            endTime: data.end_time,
+            createdBy: data.created_by,
+            createdByName: data.created_by_name,
+            participantIds: data.participant_ids || [],
+            zoomUrl: data.zoom_url,
+            youtubeUrl: data.youtube_url,
+            activityType: data.activity_type,
+            status: data.status,
+            audienceType: data.audience_type,
+            audienceRules: data.audience_rules,
+            createdAt: data.created_at
+        };
     } catch (error) {
         throw error;
     }
@@ -642,18 +665,9 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
         const monthKey = `${activityDate.getFullYear()}-${(activityDate.getMonth() + 1).toString().padStart(2, '0')}`;
         const dayKey = activityDate.getDate().toString().padStart(2, '0'); // DD format
 
-        // Get current monthly activities
-        const { data: currentData, error: fetchError } = await supabase
-            .from('employee_monthly_activities')
-            .select('activities')
-            .eq('employee_id', employeeId)
-            .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-            throw fetchError;
-        }
-
-        const currentActivities = currentData?.activities || {};
+        // 🔥 FIX: NO CACHE - Don't read from employee_monthly_activities anymore
+        // const currentActivities = currentData?.activities || {};
+        const currentActivities = {};
 
         // ⚡ PERBAIKI: MERGE dengan benar untuk nested objects
         // Kita perlu merge di level dayKey, bukan monthKey
@@ -690,35 +704,12 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
             (window as any).lastUpdatedActivities = updatedActivities;
         }
 
-        // Upsert monthly activities
-        const { data: upsertData, error: upsertError } = await supabase
-            .from('employee_monthly_activities')
-            .upsert({
-                employee_id: employeeId,
-                activities: updatedActivities,
-                updated_at: new Date().toISOString(),
-            }, {
-                onConflict: 'employee_id'
-            });
-
-        console.log('📊 Upsert result:', {
-            upsertData,
-            upsertError: upsertError ? JSON.stringify(upsertError, null, 2) : null
-        });
-
-        if (upsertError) {
-            console.error('❌ Upsert error:', upsertError);
-            throw upsertError;
-        }
-
-        console.log('✅ Successfully updated monthly activities');
+        // 🔥 FIX: NO CACHE - Don't upsert to employee_monthly_activities anymore
+        console.log('⏭️ [updateMonthlyActivitiesFromScheduledActivity] NO CACHE - Skipping upsert (data tracked in scheduled_activity_attendance)');
 
     } catch (error) {
-        // ⚡ FIX: Log error untuk debugging
-        console.error('❌ Failed to update monthly activities for activity attendance:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
-        // Re-throw agar component bisa handle
-        throw error;
+        // 🔥 FIX: NO CACHE - Only log the error, don't re-throw since we're not doing anything
+        console.error('❌ [updateMonthlyActivitiesFromScheduledActivity] Error (non-fatal - NO CACHE mode):', error);
     }
 };
 

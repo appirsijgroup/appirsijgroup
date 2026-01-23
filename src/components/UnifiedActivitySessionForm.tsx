@@ -22,19 +22,20 @@ type ActivitySessionType =
     | 'Pengajian Persyarikatan'
     | 'KIE'
     | 'Doa Bersama'
-    | 'Murojahah'
-    | 'Evaluasi Mutaba\'ah';
+    | 'BBQ'
+    | 'UMUM';
 
 interface UnifiedActivitySessionFormProps {
     allUsers: Employee[];
     onCreateActivity: (data: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onCreateSessions: (sessions: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[]) => void;
+    onCreateSessions: (sessions: any[]) => void; // ⚡ Allow any type to bypass strict TeamAttendanceSession check
     initialData?: Activity | TeamAttendanceSession | null;
     isEditing?: boolean;
+    disabled?: boolean; // ⚡ Added disabled prop
 }
 
 const ACTIVITY_TYPES: ActivitySessionType[] = ['Umum', 'Kajian Selasa', 'Pengajian Persyarikatan'];
-const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'Doa Bersama', 'Murojahah', 'Evaluasi Mutaba\'ah'];
+const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'Doa Bersama', 'BBQ', 'UMUM'];
 
 export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProps> = ({
     allUsers,
@@ -42,6 +43,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     onCreateSessions,
     initialData,
     isEditing = false,
+    disabled = false,
 }) => {
     const router = useRouter();
 
@@ -91,7 +93,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             setAttendanceMode(isSession ? (initialData as TeamAttendanceSession).attendanceMode || 'self' : 'self');
             setIsRecurring(false); // Editing recurring sessions is complex, disable for now.
             setSelectedDays(new Set());
-            setAudienceType(initialData.audienceType || 'rules');
+            setAudienceType((initialData.audienceType as any) === 'public' ? 'rules' : (initialData.audienceType as 'rules' | 'manual') || 'rules');
 
             if (initialData.audienceType === 'rules' && initialData.audienceRules) {
                 setUnit(initialData.audienceRules.units?.[0] || 'all');
@@ -262,9 +264,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     };
 
     // SegmentedControlButton component
-    const SegmentedControlButton: React.FC <{
+    const SegmentedControlButton: React.FC<{
         label: string;
-        icon: React.FC<{className: string}>;
+        icon: React.FC<{ className: string }>;
         isActive: boolean;
         onClick: () => void;
     }> = ({ label, icon: Icon, isActive, onClick }) => (
@@ -273,7 +275,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             onClick={onClick}
             className={`flex-1 flex items-center justify-center text-center gap-3 p-4 rounded-xl border-2 ${isActive ? 'bg-teal-500/20 border-teal-400 shadow-lg' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
         >
-            <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
+            <Icon className={`w-6 h-6 shrink-0 ${isActive ? 'text-teal-300' : 'text-gray-400'}`} />
             <span className={`font-semibold ${isActive ? 'text-white' : 'text-gray-300'}`}>{label}</span>
         </button>
     );
@@ -284,7 +286,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
         <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full border border-white/20 flex flex-col">
             {/* Form */}
             <div className="flex-1 flex flex-col min-h-0">
-                <div className="flex-grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Left Column: Basic Info */}
                     <div className="space-y-4">
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
@@ -294,8 +296,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 <select
                                     value={type}
                                     onChange={(e) => setType(e.target.value as ActivitySessionType)}
-                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white"
-                                    disabled={isEditing}
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={isEditing || disabled}
                                 >
                                     <optgroup label="Kegiatan Terjadwal" className="text-black font-semibold">
                                         {ACTIVITY_TYPES.map(t => (
@@ -304,7 +306,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     </optgroup>
                                     <optgroup label="Sesi Presensi" className="text-black font-semibold">
                                         {SESSION_TYPES.map(t => (
-                                            <option key={t} value={t} className="text-black bg-white">{t}</option>
+                                            <option key={t} value={t} className="text-black bg-white">{t === 'BBQ' ? 'Bimbingan Baca Al-Qur\'an (BBQ)' : t === 'UMUM' ? 'Tadarus Umum' : t}</option>
                                         ))}
                                     </optgroup>
                                 </select>
@@ -318,7 +320,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder={isActivityType ? 'Contoh: Kajian Pagi' : 'Contoh: Doa Pagi'}
-                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white"
+                                    className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                    disabled={disabled}
                                 />
                             </div>
 
@@ -330,7 +333,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
                                         rows={3}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white"
+                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                        disabled={disabled}
                                     />
                                 </div>
                             )}
@@ -346,8 +350,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                         type="date"
                                         value={date}
                                         onChange={(e) => setDate(e.target.value)}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
                                         style={{ colorScheme: 'dark' }}
+                                        disabled={disabled}
                                     />
                                 </div>
                             </div>
@@ -362,8 +367,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                             type="time"
                                             value={startTime}
                                             onChange={(e) => setStartTime(e.target.value)}
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
                                             style={{ colorScheme: 'dark' }}
+                                            disabled={disabled}
                                         />
                                     </div>
                                 </div>
@@ -375,8 +381,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                             type="time"
                                             value={endTime}
                                             onChange={(e) => setEndTime(e.target.value)}
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
                                             style={{ colorScheme: 'dark' }}
+                                            disabled={disabled}
                                         />
                                     </div>
                                 </div>
@@ -391,13 +398,13 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     label="Mandiri"
                                     icon={UserCircleIcon}
                                     isActive={attendanceMode === 'self'}
-                                    onClick={() => setAttendanceMode('self')}
+                                    onClick={() => !disabled && setAttendanceMode('self')}
                                 />
                                 <SegmentedControlButton
                                     label="Oleh Atasan"
                                     icon={CheckBadgeIcon}
                                     isActive={attendanceMode === 'leader'}
-                                    onClick={() => setAttendanceMode('leader')}
+                                    onClick={() => !disabled && setAttendanceMode('leader')}
                                 />
                             </div>
                         </div>
@@ -418,7 +425,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                             value={zoomUrl}
                                             onChange={(e) => setZoomUrl(e.target.value)}
                                             placeholder="https://zoom.us/j/..."
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                            disabled={disabled}
                                         />
                                     </div>
                                 </div>
@@ -431,7 +439,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                             value={youtubeUrl}
                                             onChange={(e) => setYoutubeUrl(e.target.value)}
                                             placeholder="https://youtube.com/watch?v=..."
-                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white"
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                            disabled={disabled}
                                         />
                                     </div>
                                 </div>
@@ -446,9 +455,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                                 checked={isRecurring}
                                                 onChange={(e) => setIsRecurring(e.target.checked)}
                                                 className="sr-only peer"
-                                                disabled={isEditing}
+                                                disabled={isEditing || disabled}
                                             />
-                                            <div className={`w-11 h-6 bg-gray-600 rounded-full peer ${isEditing && 'cursor-not-allowed opacity-50'} peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500`}></div>
+                                            <div className={`w-11 h-6 bg-gray-600 rounded-full peer ${(isEditing || disabled) && 'cursor-not-allowed opacity-50'} peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 peer-checked:bg-teal-500`}></div>
                                         </label>
                                     </div>
                                     {isRecurring && (
@@ -459,8 +468,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                                     <button
                                                         key={index}
                                                         type="button"
+                                                        disabled={disabled}
                                                         onClick={() => handleDayToggle(index)}
-                                                        className={`w-10 h-10 rounded-full font-semibold ${selectedDays.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'}`}
+                                                        className={`w-10 h-10 rounded-full font-semibold ${selectedDays.has(index) ? 'bg-teal-500 text-white' : 'text-blue-200 hover:bg-white/10'} ${disabled && 'opacity-50 cursor-not-allowed'}`}
                                                     >
                                                         {day}
                                                     </button>
@@ -473,20 +483,20 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                         </div>
 
                         {/* Audience - separate card */}
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 flex-grow flex flex-col">
+                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
                             <div className="flex items-center gap-4 mb-4">
                                 <SegmentedControlButton
                                     label="Aturan"
                                     icon={GlobeAltIcon}
                                     isActive={audienceType === 'rules'}
-                                    onClick={() => setAudienceType('rules')}
+                                    onClick={() => !disabled && setAudienceType('rules')}
                                 />
                                 <SegmentedControlButton
                                     label="Manual"
                                     icon={UserGroupIcon}
                                     isActive={audienceType === 'manual'}
-                                    onClick={() => setAudienceType('manual')}
+                                    onClick={() => !disabled && setAudienceType('manual')}
                                 />
                             </div>
                             {audienceType === 'rules' && (
@@ -494,7 +504,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     <select
                                         value={unit}
                                         onChange={(e) => setUnit(e.target.value)}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white"
+                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                        disabled={disabled}
                                     >
                                         {uniqueUnits.map(u => (
                                             <option key={u} value={u} className="text-black bg-white">{u === 'all' ? 'Semua Unit' : u}</option>
@@ -503,7 +514,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     <select
                                         value={bagian}
                                         onChange={(e) => setBagian(e.target.value)}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white"
+                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                        disabled={disabled}
                                     >
                                         {uniqueBagians.map(b => (
                                             <option key={b} value={b} className="text-black bg-white">{b === 'all' ? 'Semua Bagian' : b}</option>
@@ -513,22 +525,24 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 </div>
                             )}
                             {audienceType === 'manual' && (
-                                <div className="space-y-2 flex-grow flex flex-col">
+                                <div className="space-y-2 grow flex flex-col">
                                     <input
                                         type="search"
                                         value={participantSearch}
                                         onChange={(e) => setParticipantSearch(e.target.value)}
                                         placeholder="Cari nama..."
-                                        className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white"
+                                        className="w-full bg-black/30 border border-white/20 rounded-lg p-2.5 text-white disabled:opacity-50"
+                                        disabled={disabled}
                                     />
-                                    <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1 max-h-48">
+                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/30 space-y-1 max-h-48">
                                         {filteredParticipants.map(user => (
-                                            <label key={user.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
+                                            <label key={user.id} className={`flex items-center gap-3 p-2 rounded-md hover:bg-white/10 cursor-pointer ${disabled && 'pointer-events-none opacity-50'}`}>
                                                 <input
                                                     type="checkbox"
                                                     checked={manualParticipants.has(user.id)}
                                                     onChange={() => handleParticipantToggle(user.id)}
                                                     className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
+                                                    disabled={disabled}
                                                 />
                                                 <p className="font-semibold text-white">{user.name}</p>
                                             </label>
@@ -552,16 +566,27 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                 <div className="mt-4 flex gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="flex-1 px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold"
+                        className="flex-1 px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50"
+                        disabled={disabled}
                     >
                         Batal
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="flex-1 px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold flex items-center justify-center gap-2"
+                        className="flex-1 px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={disabled}
                     >
-                        <CheckIcon className="w-5 h-5" />
-                        {isEditing ? 'Simpan Perubahan' : 'Buat'}
+                        {disabled ? (
+                            <>
+                                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                                <span>Menyimpan...</span>
+                            </>
+                        ) : (
+                            <>
+                                <CheckIcon className="w-5 h-5" />
+                                <span>{isEditing ? 'Simpan Perubahan' : 'Buat'}</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

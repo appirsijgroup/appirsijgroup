@@ -74,6 +74,7 @@ export interface RawEmployee {
   professionCategory: 'MEDIS' | 'NON MEDIS';
   profession: string;
   gender: 'Laki-laki' | 'Perempuan';
+  email?: string;
 }
 
 // Role hierarchy (from highest to lowest):
@@ -195,6 +196,7 @@ export interface Employee extends RawEmployee {
   managedHospitalIds?: string[];
   achievements?: UserAchievement[];
   mustChangePassword?: boolean;
+  _monthlyReportsDataCache?: Record<string, Record<string, Record<string, boolean>>>;
 }
 
 export interface AttendanceStatus {
@@ -286,24 +288,24 @@ export type MonthlyActivityProgress = Record<string, DailyActivityProgress>;
 // Represents monthly report activities (counter-based, not daily checklist)
 // e.g., { "2026-01": { infaq: { count: 2, completedAt: "..." }, jujur: { count: 5, ... } } }
 export interface MonthlyReportActivity {
-    count: number;
-    completedAt?: string;
-    note?: string;
-    entries?: ManualReportEntry[]; // Array untuk aktivitas manual (per-date tracking)
-    bookEntries?: BookReadingEntry[]; // Array untuk aktivitas tipe buku (e.g., "Membaca Al-Quran dan buku")
+  count: number;
+  completedAt?: string;
+  note?: string;
+  entries?: ManualReportEntry[]; // Array untuk aktivitas manual (per-date tracking)
+  bookEntries?: BookReadingEntry[]; // Array untuk aktivitas tipe buku (e.g., "Membaca Al-Quran dan buku")
 }
 
 export interface ManualReportEntry {
-    date: string; // Format: "YYYY-MM-DD"
-    completedAt: string; // ISO timestamp
-    note?: string;
+  date: string; // Format: "YYYY-MM-DD"
+  completedAt: string; // ISO timestamp
+  note?: string;
 }
 
 export interface BookReadingEntry {
-    bookTitle: string;
-    pagesRead: string;
-    dateCompleted: string;
-    completedAt: string;
+  bookTitle: string;
+  pagesRead: string;
+  dateCompleted: string;
+  completedAt: string;
 }
 
 export type MonthlyReports = Record<string, Record<string, MonthlyReportActivity>>;
@@ -434,7 +436,7 @@ export interface MyDashboardViewProps {
   menteeMissedPrayerRequests: MissedPrayerRequest[];
   onCreateMissedPrayerRequest: (data: Omit<MissedPrayerRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => void;
   // Panel Mentor
-  onUpdateProfile: (userId: string, updates: Partial<Employee>) => boolean;
+  onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
   allPrayers: Prayer[];
   activities: Activity[];
   weeklyReportSubmissions: WeeklyReportSubmission[];

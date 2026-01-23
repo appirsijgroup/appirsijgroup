@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
     const session = await getSession()
 
     if (!session) {
+      console.warn('❌ [/api/auth/me] No session found')
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.userId
+    console.log('🔍 [/api/auth/me] Fetching user data for userId:', userId)
 
 
     // Ambil data employee lengkap berdasarkan id
@@ -81,6 +83,13 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (employeeError || !employee) {
+      console.error('❌ [/api/auth/me] Employee lookup failed:', {
+        userId,
+        error: employeeError?.message,
+        code: employeeError?.code,
+        details: employeeError?.details,
+        hint: employeeError?.hint
+      })
       return NextResponse.json(
         { error: 'User not found', details: employeeError?.message },
         { status: 404 }
@@ -91,19 +100,11 @@ export async function GET(request: NextRequest) {
     // Menggunakan Promise.all agar semua request berjalan bersamaan, bukan antri satu per satu
 
     const [
-      { data: monthlyActivitiesData, error: activitiesError },
       { data: readingHistoryData, error: readingError },
       { data: quranHistoryData, error: quranError },
       { data: todosData, error: todosError }
     ] = await Promise.all([
-      // 1. Monthly activities
-      supabase
-        .from('employee_monthly_activities')
-        .select('activities')
-        .eq('employee_id', userId)
-        .maybeSingle(),
-
-      // 2. Reading history
+      // 1. Reading history
       supabase
         .from('employee_reading_history')
         .select('*')
@@ -163,17 +164,35 @@ export async function GET(request: NextRequest) {
 
     const finalEmployeeData = {
       ...basicEmployeeInCamelCase,
-      monthlyActivities: monthlyActivitiesData?.activities || {},
+      // 🔥 FIX: Monthly activities - NO CACHE, loaded separately via /api/monthly-activities
+      monthlyActivities: {}, // Start with empty object, will be loaded in background via MutabaahContext
       readingHistory: convertedReadingHistory,
       quranReadingHistory: convertedQuranHistory,
       todoList: convertedTodos,
     };
 
     // 🔥 DEBUG: Log hasil akhir SEBELUM return
+    console.log('🔍 [/api/auth/me] User data returned:', {
+      userId: finalEmployeeData.id,
+      name: finalEmployeeData.name,
+      role: finalEmployeeData.role,
+      email: finalEmployeeData.email,
+      hasActivatedMonths: !!finalEmployeeData.activatedMonths,
+      activatedMonthsCount: finalEmployeeData.activatedMonths?.length || 0,
+      canBeMentor: finalEmployeeData.canBeMentor,
+      canBeSupervisor: finalEmployeeData.canBeSupervisor,
+      canBeKaUnit: finalEmployeeData.canBeKaUnit,
+      canBeDirut: finalEmployeeData.canBeDirut,
+      functionalRoles: finalEmployeeData.functionalRoles,
+    });
 
     return NextResponse.json({ employee: finalEmployeeData })
 
   } catch (error) {
+    console.error('❌ [/api/auth/me] Unexpected error:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: 'Failed to get user data', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }

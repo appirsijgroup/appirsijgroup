@@ -44,9 +44,11 @@ const getAuthenticatedSupabaseClient = () => {
     }
 
     if (token) {
+        // console.log('🔐 [monthlyReportService] Using authenticated client with token');
         return createSupabaseClientWithToken(token);
     }
 
+    // console.warn('⚠️ [monthlyReportService] No session token found in cookies, falling back to anon client');
     return supabase; // Fallback to anon client
 };
 
@@ -54,12 +56,17 @@ const getAuthenticatedSupabaseClient = () => {
  * Get monthly reports untuk satu employee
  */
 export const getMonthlyReports = async (employeeId: string): Promise<MonthlyReports> => {
+    if (!employeeId) {
+        console.warn('⚠️ [monthlyReportService] getMonthlyReports called without employeeId');
+        return {};
+    }
+
     try {
         const client = getAuthenticatedSupabaseClient();
 
         // Add timeout to prevent hanging requests
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased to 15 seconds
 
         const { data, error } = await client
             .from('employee_monthly_reports')
@@ -73,25 +80,31 @@ export const getMonthlyReports = async (employeeId: string): Promise<MonthlyRepo
         if (error) {
             // Jika tabel belum ada (42P01), return empty object
             if (error.code === '42P01') {
-                // Silent fail - table not created yet
+                console.warn('⚠️ [monthlyReportService] Table employee_monthly_reports does not exist');
                 return {};
             }
-            // Ignore abort errors from timeout (silent fail)
+            // Ignore abort errors from timeout
             if (error.message && error.message.includes('abort')) {
-                // Silent fail - request was cancelled or timed out
+                console.warn('⏱️ [monthlyReportService] Fetch timed out for employee:', employeeId);
                 return {};
             }
+            console.error('❌ [monthlyReportService] Supabase error:', error);
             throw error;
+        }
+
+        if (!data) {
+            // console.log('🔍 [monthlyReportService] No reports found for employee:', employeeId);
+            return {};
         }
 
         return (data as any)?.reports || {};
     } catch (error: any) {
         // Handle abort errors gracefully (silent fail)
         if (error.name === 'AbortError' || (error.message && error.message.includes('abort'))) {
-            // Silent fail - request was cancelled or timed out
+            console.warn('⏱️ [monthlyReportService] Request aborted/timed out for employee:', employeeId);
             return {};
         }
-        console.error('Error getting monthly reports:', error);
+        console.error('❌ [monthlyReportService] Unexpected error getting monthly reports:', error);
         return {};
     }
 };
@@ -149,9 +162,8 @@ export const updateMonthlyReports = async (
                 .abortSignal(controller.signal)
                 .select();
 
-            clearTimeout(timeoutId);
-
             if (error) {
+                clearTimeout(timeoutId);
                 // Handle abort errors
                 if (error.message && error.message.includes('abort')) {
                     throw new Error('Request timeout saat menyimpan. Silakan coba lagi.');
@@ -165,6 +177,7 @@ export const updateMonthlyReports = async (
                 });
                 throw new Error(`Failed to update monthly reports: ${error.message}`);
             }
+            clearTimeout(timeoutId);
 
         } else {
             // Insert new
@@ -178,9 +191,8 @@ export const updateMonthlyReports = async (
                 .abortSignal(controller.signal)
                 .select();
 
-            clearTimeout(timeoutId);
-
             if (error) {
+                clearTimeout(timeoutId);
                 // Handle abort errors
                 if (error.message && error.message.includes('abort')) {
                     throw new Error('Request timeout saat menyimpan. Silakan coba lagi.');
@@ -194,6 +206,7 @@ export const updateMonthlyReports = async (
                 });
                 throw new Error(`Failed to insert monthly reports: ${error.message}`);
             }
+            clearTimeout(timeoutId);
 
         }
 
@@ -499,6 +512,8 @@ export const convertMonthlyReportsToActivities = async (
                 // Process entries (manual reports per date)
                 if (activityData.entries && Array.isArray(activityData.entries)) {
                     activityData.entries.forEach((entry: ManualReportEntry) => {
+                        if (!entry?.date || typeof entry.date !== 'string' || entry.date.length < 10) return;
+
                         const dayKey = entry.date.substring(8, 10); // Extract DD from YYYY-MM-DD
 
                         if (!result[monthKey][dayKey]) {
@@ -512,6 +527,8 @@ export const convertMonthlyReportsToActivities = async (
                 // Process bookEntries (reading reports)
                 if (activityData.bookEntries && Array.isArray(activityData.bookEntries)) {
                     activityData.bookEntries.forEach((entry: BookReadingEntry) => {
+                        if (!entry?.dateCompleted || typeof entry.dateCompleted !== 'string' || entry.dateCompleted.length < 10) return;
+
                         const dayKey = entry.dateCompleted.substring(8, 10); // Extract DD from YYYY-MM-DD
 
                         if (!result[monthKey][dayKey]) {

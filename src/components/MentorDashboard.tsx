@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
 import { useUIStore } from '@/store/store';
 
-export type MentorDashboardView = 'overview' | 'sessions' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target';
+export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target';
 
 interface MentorDashboardProps {
   employee: Employee;
@@ -187,7 +187,7 @@ const MenteeDetailProgressView: React.FC<{
              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
                      {onBack && (
-                        <button onClick={onBack} className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
+                        <button onClick={onBack} className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
                             <ArrowLeftIcon className="w-5 h-5"/>
                             <span>Kembali</span>
                         </button>
@@ -205,7 +205,7 @@ const MenteeDetailProgressView: React.FC<{
                 </div>
 
                 {mentees && mentees.length > 0 && (
-                    <div className="w-full md:w-auto flex-grow md:flex-grow-0 flex items-center gap-4">
+                    <div className="w-full md:w-auto grow md:grow-0 flex items-center gap-4">
                         <div className="w-full md:w-56">
                             <select
                                 value={selectedMenteeId || ''}
@@ -215,7 +215,7 @@ const MenteeDetailProgressView: React.FC<{
                                 {mentees.map(m => <option key={m.id} value={m.id} className="text-black bg-white">{m.name}</option>)}
                             </select>
                         </div>
-                        <div className="flex-shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-auto">
+                        <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-auto">
                             <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
                             <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
                         </div>
@@ -650,7 +650,7 @@ const MenteeManagement: React.FC<{
                                  {uniqueProfessions.map(p => <option key={p} value={p} className="bg-white text-black">{p === 'all' ? 'Semua Profesi' : p}</option>)}
                             </select>
                         </div>
-                        <div className="flex-grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/20">
+                        <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/20">
                              {filteredUnassigned.map(user => (
                                 <label key={user.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                     <input type="checkbox" checked={selectedToAdd.has(user.id)} onChange={() => toggleSelection(user.id)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
@@ -1000,7 +1000,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                         <StatusFilterButton filter="approved" label="Disetujui" currentFilter={statusFilter} setFilter={setStatusFilter} />
                         <StatusFilterButton filter="rejected" label="Ditolak" currentFilter={statusFilter} setFilter={setStatusFilter} />
                      </div>
-                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                             <option value="all" className="text-black bg-white">Semua Tahun</option>
                             {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
@@ -1088,7 +1088,7 @@ const SesiBimbingan: React.FC<SesiBimbinganProps> = ({
                                     </p>
                                     <p className="text-xs text-purple-300 mt-1 font-semibold">{session.category}</p>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
+                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                                     {isToday && !session.mentorPresent && (
                                         <button onClick={() => onMentorAttendOwnSession(session.id)} className="px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white rounded-md">Hadir</button>
                                     )}
@@ -1288,7 +1288,6 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
              <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
                     <SubTabButton label="Persetujuan" icon={CheckSquareIcon} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
-                    <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={mentorSubView === 'sessions'} onClick={() => setMentorSubView('sessions')} />
                     <SubTabButton label="Anggota Bimbingan" icon={UserGroupIcon} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
                     <SubTabButton label="Target Bimbingan" icon={TagIcon} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
                     <SubTabButton label="Progres Anggota" icon={ChartBarIcon} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />

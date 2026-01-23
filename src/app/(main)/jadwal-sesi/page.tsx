@@ -119,7 +119,7 @@ export default function JadwalSesiPage() {
 
     if (!loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
                 <p className="text-white text-xl">Silakan login terlebih dahulu</p>
             </div>
         );

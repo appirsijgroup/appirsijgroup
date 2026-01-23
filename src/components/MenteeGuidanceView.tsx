@@ -77,11 +77,11 @@ const MissedPrayerRequestModal: React.FC<{
     const [date, setDate] = useState('');
     const [prayerId, setPrayerId] = useState('');
     const [reason, setReason] = useState('');
-    
+
     const wajibPrayers = useMemo(() => PRAYERS.filter(p => p.type === 'wajib' && p.id !== 'jumat'), []);
 
     if (!isOpen) return null;
-    
+
     const handleSubmit = () => {
         if (!date || !prayerId || !reason) {
             addToast("Semua kolom wajib diisi.", 'error');
@@ -203,26 +203,26 @@ const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, r
     );
 };
 
-const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({ 
-    employee, 
-    submissions = [], 
-    onNavigateToReport = () => {}, 
-    tadarusRequests = [], 
-    onTadarusRequest = () => {}, 
-    tadarusSessions = [], 
-    onMenteeAttendSession = () => {}, 
-    missedPrayerRequests = [], 
-    onCreateMissedPrayerRequest = () => {} 
+const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
+    employee,
+    submissions = [],
+    onNavigateToReport = () => {},
+    tadarusRequests = [],
+    onTadarusRequest = () => {},
+    tadarusSessions = [],
+    onMenteeAttendSession = () => {},
+    missedPrayerRequests = [],
+    onCreateMissedPrayerRequest = () => {}
 }) => {
 
-    const [activeSubTab, setActiveSubTab] = useState<'reports' | 'sessions' | 'missed-requests'>('reports');
+    const [activeSubTab, setActiveSubTab] = useState<'reports' | 'missed-requests'>('reports');
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [isMissedPrayerModalOpen, setIsMissedPrayerModalOpen] = useState(false);
 
     const sortedSubmissions = [...submissions].sort((a, b) => b.submittedAt - a.submittedAt);
     const sortedTadarusRequests = [...tadarusRequests].sort((a,b) => b.requestedAt - a.requestedAt);
     const sortedMissedPrayerRequests = [...missedPrayerRequests].sort((a,b) => b.requestedAt - a.requestedAt);
-    
+
     // Accordion and filter state for reports tab
     const [openAccordionId, setOpenAccordionId] = useState<string | null>(sortedSubmissions[0]?.id || null);
     const [filterYear, setFilterYear] = useState<string>('all');
@@ -241,11 +241,11 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
             return yearMatch && monthMatch;
         });
     }, [sortedSubmissions, filterYear, filterMonth]);
-    
+
     const openBbqSessions = useMemo(() => {
         const d = new Date();
         const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        return tadarusSessions.filter(s => 
+        return tadarusSessions.filter(s =>
             s.participantIds.includes(employee.id) &&
             s.category === 'BBQ' &&
             s.status === 'open' &&
@@ -275,7 +275,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
 
         return <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${colorClass}`}>{icon} {statusText}</span>;
     };
-    
+
     const handleTadarusSubmit = (date: string, notes: string) => {
         if(!employee.mentorId) return;
         onTadarusRequest({
@@ -285,7 +285,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
             notes,
         })
     };
-    
+
     const handleMissedPrayerSubmit = (data: { date: string, prayerId: string, prayerName: string, reason: string }) => {
         if (!employee.mentorId) return;
         onCreateMissedPrayerRequest({
@@ -300,7 +300,6 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
             <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
                     <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
-                    <SubTabButton label="Sesi Bimbingan" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
                     <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
                 </div>
             </div>
@@ -327,8 +326,8 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                     const isRejected = sub.status.startsWith('rejected');
                                     return (
                                         <div key={sub.id} className="bg-black/20 rounded-lg border border-white/10 overflow-hidden transition-all duration-300">
-                                            <button 
-                                                onClick={() => setOpenAccordionId(isOpen ? null : sub.id)} 
+                                            <button
+                                                onClick={() => setOpenAccordionId(isOpen ? null : sub.id)}
                                                 className="w-full p-4 text-left flex justify-between items-center hover:bg-white/5"
                                                 aria-expanded={isOpen}
                                             >
@@ -352,7 +351,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                                             <div className="mb-4 flex justify-end">
                                                                 <button
                                                                     onClick={() => onNavigateToReport(sub.monthKey)}
-                                                                    className="flex-shrink-0 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors"
+                                                                    className="shrink-0 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-sm transition-colors"
                                                                 >
                                                                     Lihat & Perbaiki Laporan
                                                                 </button>
@@ -392,7 +391,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                         )}
                     </div>
                 )}
-                
+
                 {activeSubTab === 'sessions' && (
                     <div className="space-y-8 px-2 sm:px-0">
                          {openBbqSessions.length > 0 && (
@@ -439,7 +438,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                         </div>
                     </div>
                 )}
-                
+
                 {activeSubTab === 'missed-requests' && (
                      <div className="px-2 sm:px-0">
                          <div className="flex justify-between items-center mb-4">

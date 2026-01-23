@@ -14,7 +14,7 @@ export const LoadingSpinner = ({
 }: {
   message?: string;
 }) => (
-  <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+  <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
     <div className="text-center">
       <div className="relative inline-block mb-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mx-auto"></div>

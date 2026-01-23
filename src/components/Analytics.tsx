@@ -274,7 +274,7 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                     </div>
                 </div>
                 <div className="lg:col-span-2 flex flex-col">
-                    <div className="max-h-96 overflow-auto rounded-lg border border-white/10 flex-grow">
+                    <div className="max-h-96 overflow-auto rounded-lg border border-white/10 grow">
                         <table className="min-w-full text-sm text-left text-white">
                             <thead className="bg-gray-800/70 backdrop-blur-sm text-xs uppercase text-blue-200 sticky top-0 z-10">
                                 <tr>
@@ -524,9 +524,9 @@ const MutabaahPerformanceReport: React.FC<{
         <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h3 className="text-xl font-bold text-white">Analisis Kinerja Mutaba&apos;ah</h3>
-                <div className="flex-shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto">
+                <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto">
                     <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
-                    <span className="font-semibold text-base text-teal-300 px-2 flex-grow text-center">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
+                    <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
                     <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
                 </div>
             </div>

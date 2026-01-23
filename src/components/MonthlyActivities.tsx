@@ -83,12 +83,18 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     const isMonthActivated = useMemo(() => {
         // Support both camelCase (from Supabase) and snake_case conversions
         const months = employee.activatedMonths || employee.activated_months || [];
-        const isActivated = months.includes(monthKey) ?? false;
+        const isActivated = months.includes(monthKey);
 
-        // Debug log to help diagnose issues
+        console.log('🔍 [MonthlyActivities] Month activation status:', {
+            role: employee.role,
+            employeeId: employee.id,
+            monthKey,
+            isActivated,
+            activatedMonths: months
+        });
 
         return isActivated;
-    }, [employee.activatedMonths, employee.activated_months, monthKey]);
+    }, [employee?.id, employee?.activatedMonths, employee?.activated_months, monthKey]); // 🔥 FIX: Also depend on activated_months arrays
 
     const daysInMonth = useMemo(() => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(), [date]);
 
@@ -641,7 +647,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-40 justify-between flex-1 min-w-[160px]">
                                         <p className="text-sm text-blue-200 font-semibold">Kepala Unit</p>
                                         <div className="w-full">
-                                            <p className="font-bold text-white text-sm break-words h-10 flex items-center justify-center px-1" title={kaUnitName || 'Belum Diatur'}>{kaUnitName || 'Belum Diatur'}</p>
+                                            <p className="font-bold text-white text-sm wrap-break-word h-10 flex items-center justify-center px-1" title={kaUnitName || 'Belum Diatur'}>{kaUnitName || 'Belum Diatur'}</p>
                                             <div className="w-full h-px bg-gray-600 my-1 mx-auto"></div>
                                             <p className="font-mono text-xs text-gray-400">{employee.kaUnitId || '-'}</p>
                                         </div>
@@ -650,7 +656,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-40 justify-between flex-1 min-w-[160px]">
                                         <p className="text-sm text-blue-200 font-semibold">Supervisor</p>
                                         <div className="w-full">
-                                            <p className="font-bold text-white text-sm break-words h-10 flex items-center justify-center px-1" title={supervisorName || 'Belum Diatur'}>{supervisorName || 'Belum Diatur'}</p>
+                                            <p className="font-bold text-white text-sm wrap-break-word h-10 flex items-center justify-center px-1" title={supervisorName || 'Belum Diatur'}>{supervisorName || 'Belum Diatur'}</p>
                                             <div className="w-full h-px bg-gray-600 my-1 mx-auto"></div>
                                             <p className="font-mono text-xs text-gray-400">{employee.supervisorId || '-'}</p>
                                         </div>
@@ -659,7 +665,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-40 justify-between flex-1 min-w-[160px]">
                                         <p className="text-sm text-blue-200 font-semibold">Mentor</p>
                                         <div className="w-full">
-                                            <p className="font-bold text-white text-sm break-words h-10 flex items-center justify-center px-1" title={mentorName || 'Belum Diatur'}>{mentorName || 'Belum Diatur'}</p>
+                                            <p className="font-bold text-white text-sm wrap-break-word h-10 flex items-center justify-center px-1" title={mentorName || 'Belum Diatur'}>{mentorName || 'Belum Diatur'}</p>
                                             <div className="w-full h-px bg-gray-600 my-1 mx-auto"></div>
                                             <p className="font-mono text-xs text-gray-400">{employee.mentorId || '-'}</p>
                                         </div>
@@ -668,7 +674,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-40 justify-between flex-1 min-w-[160px]">
                                         <p className="text-sm text-blue-200 font-semibold">Karyawan</p>
                                         <div className="w-full">
-                                            <p className="font-bold text-white text-sm break-words h-10 flex items-center justify-center px-1" title={employee.name}>{employee.name}</p>
+                                            <p className="font-bold text-white text-sm wrap-break-word h-10 flex items-center justify-center px-1" title={employee.name}>{employee.name}</p>
                                             <div className="w-full h-px bg-gray-600 my-1 mx-auto"></div>
                                             <p className="font-mono text-xs text-gray-400">{employee.id}</p>
                                         </div>

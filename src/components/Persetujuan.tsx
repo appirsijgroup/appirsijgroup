@@ -76,7 +76,7 @@ const MenteeReportDetailView: React.FC<{
     return (
         <div className="animate-view-change">
             <div className="flex items-center gap-4 mb-6">
-                <button onClick={onBack} className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
+                <button onClick={onBack} className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
                     <ArrowLeftIcon className="w-5 h-5"/>
                     <span>Kembali</span>
                 </button>
@@ -298,7 +298,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                                 <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
                             </div>
                         </div>
-                         <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                                 <option value="all" className="text-black bg-white">Semua Tahun</option>
                                 {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}

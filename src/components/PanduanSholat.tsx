@@ -26,7 +26,7 @@ const GuideDetailView: React.FC<{ guide: PrayerGuide; onBack: () => void }> = ({
                 <ArrowLeftIcon className="h-5 w-5" />
                 Kembali ke Daftar Panduan
             </button>
-            <div className="text-center mb-8 p-6 bg-gradient-to-br from-gray-800 to-gray-900/50 rounded-2xl border border-white/10 shadow-lg">
+            <div className="text-center mb-8 p-6 bg-linear-to-br from-gray-800 to-gray-900/50 rounded-2xl border border-white/10 shadow-lg">
                 <h2 className="text-3xl font-bold text-white">{guide.title}</h2>
                 <p className="text-blue-200 mt-1">{guide.description}</p>
                 <p className="text-xs text-gray-400 mt-3">Sumber: {guide.source}</p>
@@ -66,10 +66,10 @@ const GuideCard: React.FC<{ guide: PrayerGuide; onSelect: () => void; icon: Reac
         onClick={onSelect}
         className="group p-5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-300 text-left flex items-start gap-4 h-full"
     >
-        <div className="flex-shrink-0 mt-1 p-3 rounded-full bg-gray-700/50 group-hover:bg-teal-500/20 text-teal-300 transition-colors">
+        <div className="shrink-0 mt-1 p-3 rounded-full bg-gray-700/50 group-hover:bg-teal-500/20 text-teal-300 transition-colors">
             {icon}
         </div>
-        <div className="flex-grow">
+        <div className="grow">
             <h3 className="font-semibold text-lg text-white group-hover:text-teal-300 transition-colors">{guide.title}</h3>
             <p className="text-blue-200 text-sm mt-1">{guide.description}</p>
         </div>

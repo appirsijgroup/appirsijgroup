@@ -33,7 +33,7 @@ const SuperAdminSetup: React.FC<SuperAdminSetupProps> = ({ onSetup }) => {
             setError('Semua kolom wajib diisi.');
             return;
         }
-        
+
         if (!isPasswordValid(validatePassword(password))) {
             setError('Password tidak memenuhi syarat keamanan.');
             return;
@@ -67,7 +67,7 @@ const SuperAdminSetup: React.FC<SuperAdminSetupProps> = ({ onSetup }) => {
     };
 
     return (
-        <div className="w-full min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center p-4 antialiased">
+        <div className="w-full min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center p-4 antialiased">
             <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
                 <div className="text-center mb-10">
                     <div className="inline-block p-4 bg-teal-500 rounded-full mb-5">
@@ -83,28 +83,28 @@ const SuperAdminSetup: React.FC<SuperAdminSetupProps> = ({ onSetup }) => {
                     <fieldset className="border-t-2 border-teal-500/50 pt-4">
                         <legend className="px-2 text-lg font-semibold text-teal-300">1. Informasi Rumah Sakit</legend>
                         <div className="space-y-4 mt-4">
-                             <div>
+                            <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Brand / ID Unik RS</label>
-                                 <input type="text" value={hospitalBrand} onChange={e => setHospitalBrand(e.target.value)} placeholder="Contoh: RSIJSP" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors" />
+                                <input type="text" value={hospitalBrand} onChange={e => setHospitalBrand(e.target.value)} placeholder="Contoh: RSIJSP" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Nama Lengkap Rumah Sakit</label>
-                                 <input type="text" value={hospitalName} onChange={e => setHospitalName(e.target.value)} placeholder="Contoh: RS Islam Jakarta Sukapura" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors"/>
+                                <input type="text" value={hospitalName} onChange={e => setHospitalName(e.target.value)} placeholder="Contoh: RS Islam Jakarta Sukapura" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors" />
                             </div>
                         </div>
                     </fieldset>
 
-                     {/* Admin Info */}
+                    {/* Admin Info */}
                     <fieldset className="border-t-2 border-teal-500/50 pt-4">
                         <legend className="px-2 text-lg font-semibold text-teal-300">2. Super Administrator</legend>
-                         <div className="space-y-4 mt-4">
-                             <div>
+                        <div className="space-y-4 mt-4">
+                            <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">NIP / NOPEG Admin</label>
-                                 <input type="text" value={adminNopeg} onChange={e => setAdminNopeg(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors"/>
+                                <input type="text" value={adminNopeg} onChange={e => setAdminNopeg(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">Nama Lengkap Admin</label>
-                                 <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors"/>
+                                <input type="text" value={adminName} onChange={e => setAdminName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors" />
                             </div>
                             <PasswordInput
                                 id="password"
@@ -124,7 +124,7 @@ const SuperAdminSetup: React.FC<SuperAdminSetupProps> = ({ onSetup }) => {
                         </div>
                     </fieldset>
 
-                     {error && (
+                    {error && (
                         <div className="p-3 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg text-sm text-center">
                             {error}
                         </div>

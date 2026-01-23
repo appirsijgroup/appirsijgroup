@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     const sessionCookie = request.cookies.get('session')?.value
 
     if (!sessionCookie) {
+      console.warn('❌ [/api/employees] No session cookie found')
       return NextResponse.json(
         { error: 'Unauthorized - No session' },
         { status: 401 }
@@ -23,11 +24,14 @@ export async function GET(request: NextRequest) {
     const session = await verifyToken(sessionCookie)
 
     if (!session) {
+      console.warn('❌ [/api/employees] Invalid session token')
       return NextResponse.json(
         { error: 'Unauthorized - Invalid session' },
         { status: 401 }
       )
     }
+
+    console.log('🔍 [/api/employees] Fetching employees for user:', session.userId)
 
 
     // 🔥 FIX: Add defensive check for environment variables
@@ -35,6 +39,7 @@ export async function GET(request: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ [/api/employees] Missing environment variables')
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -51,38 +56,29 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true })
 
     if (error) {
+      console.error('❌ [/api/employees] Database query failed:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      })
       return NextResponse.json(
-        { error: 'Failed to fetch employees' },
+        { error: 'Failed to fetch employees', details: error.message },
         { status: 500 }
       )
     }
 
-    // 🔥 FIX: Fetch all monthly activities to support analytics
-    // Since activities are moved to a separate table, we must fetch and merge them
-    const { data: allActivities, error: activitiesError } = await supabaseService
-      .from('employee_monthly_activities')
-      .select('employee_id, activities')
-
-    if (activitiesError) {
-      // Don't fail the whole request, just proceed with basic employee data
-    }
-
-    // Map activities to a lookup object for fast access
-    const activitiesLookup = (allActivities || []).reduce((acc: any, item: any) => {
-      acc[item.employee_id] = item.activities;
-      return acc;
-    }, {});
-
-    // Merge activities into employee objects
+    // 🔥 FIX: NO CACHE - activities are loaded separately via /api/monthly-activities
+    // Map employees and set monthly_activities to empty object
     const mergedEmployees = (employees || []).map(emp => ({
       ...emp,
-      // Favor data from dedicated table, fallback to legacy field if present
-      monthly_activities: activitiesLookup[emp.id] || emp.monthly_activities || {}
+      monthly_activities: {} // Will be loaded separately via /api/monthly-activities
     }));
 
 
     // 🔥 DEBUG: Log first few employees to verify data
     if (process.env.NODE_ENV === "development") {
+      console.log('✅ [/api/employees] Returning', mergedEmployees.length, 'employees')
     }
 
     return NextResponse.json({
@@ -90,8 +86,12 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('❌ [/api/employees] Unexpected error:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

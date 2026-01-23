@@ -37,7 +37,9 @@
       "Bash(git checkout:*)",
       "Bash(md5sum:*)",
       "Bash(perl:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

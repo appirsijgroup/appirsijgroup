@@ -49,7 +49,7 @@ const IbadahCard: React.FC<IbadahCardProps> = ({ ibadah, attendanceStatus, onHad
 
     return (
         <div className={cardClasses}>
-            <div className="flex-grow flex flex-col items-center justify-center text-center">
+            <div className="grow flex flex-col items-center justify-center text-center">
                 <div className={`p-3 rounded-full mb-2 transition-colors ${
                     isSubmitted && attendanceStatus.status === 'hadir' ? 'bg-green-500/50' : 
                     isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`

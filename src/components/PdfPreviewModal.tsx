@@ -25,7 +25,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClose, pdfD
   return createPortal(
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-2 sm:p-4 z-50">
       <div className="bg-gray-800 rounded-2xl shadow-2xl w-full h-full max-w-5xl border border-white/20 flex flex-col">
-        <header className="flex-shrink-0 flex items-center justify-between p-4 border-b border-white/20">
+        <header className="shrink-0 flex items-center justify-between p-4 border-b border-white/20">
           <h3 className="text-lg font-bold text-white">Pratinjau Dokumen</h3>
           <div className="flex items-center gap-3">
             <button
@@ -43,7 +43,7 @@ const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClose, pdfD
             </button>
           </div>
         </header>
-        <main className="flex-grow p-1 sm:p-2 bg-black/20">
+        <main className="grow p-1 sm:p-2 bg-black/20">
           <iframe
             src={pdfDataUri}
             title="PDF Preview"

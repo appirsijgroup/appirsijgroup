@@ -13,7 +13,7 @@ interface BrandedLoaderProps {
  */
 export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat..." }) => {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-800">
+        <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-br from-slate-900 to-indigo-800">
             {/* Logo Container dengan Pulse Animation */}
             <div className="relative mb-8">
                 {/* Pulse rings */}

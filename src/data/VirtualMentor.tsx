@@ -507,8 +507,8 @@ ${analyticsKnowledge}
     };
 
     return (
-        <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-2xl shadow-2xl border border-white/20 flex flex-col w-full h-full overflow-hidden">
-            <header className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+        <div className="bg-linear-to-br from-gray-800 via-gray-900 to-black rounded-2xl shadow-2xl border border-white/20 flex flex-col w-full h-full overflow-hidden">
+            <header className="flex items-center justify-between p-4 border-b border-white/10 shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-1.5 bg-teal-500/30 rounded-full border border-teal-500/50">
                         <AcademicCapIcon className="w-6 h-6 text-teal-300"/>
@@ -536,11 +536,11 @@ ${analyticsKnowledge}
                 </div>
             </header>
             
-            <div ref={chatContainerRef} className="flex-grow overflow-y-auto pr-2 space-y-6 scroll-smooth p-4">
+            <div ref={chatContainerRef} className="grow overflow-y-auto pr-2 space-y-6 scroll-smooth p-4">
                 {messages.map((msg, index) => (
                      <div key={index} className={`flex items-start gap-3 w-full animate-fade-in-up ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {msg.role === 'model' && (
-                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-teal-500/50 rounded-full border-2 border-teal-400/70"><AcademicCapIcon className="w-6 h-6 text-white"/></div>
+                            <div className="shrink-0 w-10 h-10 flex items-center justify-center bg-teal-500/50 rounded-full border-2 border-teal-400/70"><AcademicCapIcon className="w-6 h-6 text-white"/></div>
                         )}
                         <div className={`max-w-md p-4 rounded-2xl shadow-lg ${
                             msg.role === 'user'
@@ -563,13 +563,13 @@ ${analyticsKnowledge}
                             )}
                         </div>
                          {msg.role === 'user' && (
-                            <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-gray-600/50 rounded-full border-2 border-gray-500/70"><UserIcon className="w-6 h-6 text-white"/></div>
+                            <div className="shrink-0 w-10 h-10 flex items-center justify-center bg-gray-600/50 rounded-full border-2 border-gray-500/70"><UserIcon className="w-6 h-6 text-white"/></div>
                         )}
                     </div>
                 ))}
             </div>
 
-            <footer className="mt-auto p-4 border-t border-white/10 flex-shrink-0">
+            <footer className="mt-auto p-4 border-t border-white/10 shrink-0">
                 <div className="relative">
                     <textarea
                         value={userInput}

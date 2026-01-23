@@ -79,7 +79,7 @@ const findOptimalQuranFontSizes = (
     const translationText = ayah.teksIndonesia.replace(/^"|"$/g, '').trim();
     const surahInfoText = `QS. ${surah.namaLatin} [${surah.nomor}:${ayah.nomorAyat}]`;
 
-    while(arabicSize >= minArabicSize) {
+    while (arabicSize >= minArabicSize) {
         let translationSize = arabicSize * 0.45 < 24 ? 24 : arabicSize * 0.45;
         let surahInfoSize = translationSize * 0.9 < 22 ? 22 : translationSize * 0.9;
 
@@ -360,7 +360,7 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
         }
 
         if (type !== 'quote') {
-             ctx.fillStyle = gradient;
+            ctx.fillStyle = gradient;
         }
         ctx.fillRect(0, 0, W, H);
         drawPattern(ctx, W, H, 'rgba(255, 255, 255, 0.04)', 0.5);
@@ -491,8 +491,8 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
             // Draw Separator
             currentY += SEPARATOR_HEIGHT;
             ctx.beginPath();
-            ctx.moveTo(W/2 - 50, currentY);
-            ctx.lineTo(W/2 + 50, currentY);
+            ctx.moveTo(W / 2 - 50, currentY);
+            ctx.lineTo(W / 2 + 50, currentY);
             ctx.lineWidth = 3;
             ctx.strokeStyle = '#f59e0b';
             ctx.stroke();
@@ -604,7 +604,7 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
                         }
                     }
                 } else {
-                     addToast('Tidak dapat membagikan file ini.', 'error');
+                    addToast('Tidak dapat membagikan file ini.', 'error');
                 }
             }
         }, 'image/png');
@@ -620,13 +620,13 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-70 animate-fade-in">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-4 w-full max-w-lg border border-white/20 animate-pop-in flex flex-col">
-                <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <div className="flex justify-between items-center mb-4 shrink-0">
                     <h3 className="text-lg font-bold text-white">Bagikan Gambar</h3>
-                    <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10"><XIcon className="w-6 h-6"/></button>
+                    <button onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10"><XIcon className="w-6 h-6" /></button>
                 </div>
-                <div className="flex-grow flex items-center justify-center bg-black/20 rounded-lg p-2" style={{ aspectRatio }}>
+                <div className="grow flex items-center justify-center bg-black/20 rounded-lg p-2" style={{ aspectRatio }}>
                     {isLoading ? (
                         <div className="text-center text-blue-200">Membuat gambar...</div>
                     ) : (
@@ -634,14 +634,14 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
                     )}
                 </div>
                 <canvas ref={canvasRef} className="hidden"></canvas>
-                <div className="mt-4 flex-shrink-0 flex items-center justify-end gap-3">
+                <div className="mt-4 shrink-0 flex items-center justify-end gap-3">
                     {canShare && (
-                         <button onClick={handleShare} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-white transition-all shadow-lg">
+                        <button onClick={handleShare} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-white transition-all shadow-lg">
                             <ShareIcon className="w-5 h-5" /><span>Bagikan</span>
                         </button>
                     )}
                     <button onClick={handleDownload} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 hover:bg-teal-400 rounded-lg font-bold text-white transition-all shadow-lg">
-                        <DownloadIcon className="w-5 h-5"/><span>Unduh</span>
+                        <DownloadIcon className="w-5 h-5" /><span>Unduh</span>
                     </button>
                 </div>
             </div>

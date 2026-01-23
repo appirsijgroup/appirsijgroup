@@ -7,7 +7,7 @@ import { useAppDataStore, useDailyActivitiesStore } from '@/store/store';
 // ⚡ OPTIMIZATION: Dynamic import untuk Analytics component - hanya load ketika dibutuhkan
 const Analytics = dynamic(() => import('@/components/Analytics'), {
     loading: () => (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+        <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
         </div>
     ),
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
     // Show loading state
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
             </div>
         );
@@ -68,7 +68,7 @@ export default function AnalyticsPage() {
     // Show error state
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
                 <div className="text-center bg-red-500/20 p-8 rounded-lg border border-red-500">
                     <p className="text-white mb-4">{error}</p>
                     <button

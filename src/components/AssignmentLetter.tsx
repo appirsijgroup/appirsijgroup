@@ -37,8 +37,8 @@ const AssignmentLetter: React.FC<AssignmentLetterProps> = ({ recipient, roleName
     const salutation = normalizedGender === 'laki-laki' || normalizedGender === 'lk' || normalizedGender === 'pria' || normalizedGender === 'male'
         ? 'Bapak'
         : normalizedGender === 'perempuan' || normalizedGender === 'pr' || normalizedGender === 'wanita' || normalizedGender === 'female'
-        ? 'Ibu'
-        : 'Bapak/Ibu'; // Fallback if gender is unclear
+            ? 'Ibu'
+            : 'Bapak/Ibu'; // Fallback if gender is unclear
 
     const roleText = getRoleSpecificText(roleName);
     let subject = "";
@@ -100,31 +100,31 @@ const AssignmentLetter: React.FC<AssignmentLetterProps> = ({ recipient, roleName
     }
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-60 animate-fade-in">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-2xl border border-white/20 animate-pop-in flex flex-col h-[90vh]">
-                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
+                <div className="flex justify-between items-center mb-4 shrink-0">
                     <h3 className="text-lg font-bold text-white">Surat Pemberitahuan</h3>
                 </div>
-                <div className="bg-slate-50 text-slate-800 p-8 rounded-lg overflow-y-auto flex-grow">
+                <div className="bg-slate-50 text-slate-800 p-8 rounded-lg overflow-y-auto grow">
                     <div className="flex items-start justify-between pb-4 border-b-2 border-slate-700">
                         <div className="text-left">
                             <h4 className="text-xl font-bold text-slate-900">SURAT PEMBERITAHUAN</h4>
-                             <p className="text-sm font-semibold text-slate-500">APLIKASI PERILAKU PELAYANAN ISLAMI</p>
+                            <p className="text-sm font-semibold text-slate-500">APLIKASI PERILAKU PELAYANAN ISLAMI</p>
                         </div>
-                         <div className="text-center">
-                            <MosqueIcon className="w-10 h-10 text-teal-600 mx-auto"/>
+                        <div className="text-center">
+                            <MosqueIcon className="w-10 h-10 text-teal-600 mx-auto" />
                             <p className="text-xs font-bold text-teal-700 mt-1">RSIJ GROUP</p>
                         </div>
                     </div>
                     <div className="mt-8 text-sm">
                         <p className="mb-4">
-                            <strong>Kepada Yth.</strong><br/>
-                            {salutation} {recipient.name}<br/>
-                            NIP. {recipient.id}<br/>
+                            <strong>Kepada Yth.</strong><br />
+                            {salutation} {recipient.name}<br />
+                            NIP. {recipient.id}<br />
                             di Tempat
                         </p>
                         <p className="font-bold mb-6">Perihal: {subject}</p>
-                        
+
                         <div className="space-y-4 leading-relaxed">
                             {bodyParagraphs.map((p, i) => (
                                 typeof p === 'string' ? <p key={i}>{p}</p> : <div key={i}>{p}</div>
@@ -141,8 +141,8 @@ const AssignmentLetter: React.FC<AssignmentLetterProps> = ({ recipient, roleName
                         </div>
                     </div>
                 </div>
-                 <div className="mt-4 text-right flex-shrink-0">
-                     <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold text-white">Tutup</button>
+                <div className="mt-4 text-right shrink-0">
+                    <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold text-white">Tutup</button>
                 </div>
             </div>
         </div>,

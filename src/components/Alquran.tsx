@@ -151,14 +151,14 @@ const ReportReadingModal: React.FC<{
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center animate-pop-in">
                 <h3 className="text-lg font-bold text-white mb-2">Lapor Selesai Membaca</h3>
                 <p className="text-blue-200 mb-4">
                     Catat progres membaca <strong>Surah {surah.namaLatin}</strong> Anda.
                 </p>
                 <div className="space-y-4">
-                     <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-blue-100 mb-1">Dari Ayat</label>
                             <input
@@ -171,7 +171,7 @@ const ReportReadingModal: React.FC<{
                                 className="w-full text-center bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"
                             />
                         </div>
-                         <div>
+                        <div>
                             <label className="block text-sm font-medium text-blue-100 mb-1">Sampai Ayat</label>
                             <input
                                 type="number"
@@ -194,13 +194,13 @@ const ReportReadingModal: React.FC<{
                             style={{ colorScheme: 'dark' }}
                         />
                     </div>
-                     {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+                    {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
                 </div>
                 {isLocked ? (
                     <div className="mt-6 flex justify-end space-x-3">
                         <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Tutup</button>
-                        <div className="flex-grow font-semibold py-2 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
-                            <LockClosedIcon className="w-5 h-5"/> {lockReason}
+                        <div className="grow font-semibold py-2 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
+                            <LockClosedIcon className="w-5 h-5" /> {lockReason}
                         </div>
                     </div>
                 ) : (
@@ -378,7 +378,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 {selectedSurah && (
                     <>
                         <div className="space-y-4">
-                             <div className="text-center p-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-white/10 shadow-lg">
+                            <div className="text-center p-6 bg-linear-to-br from-gray-800 to-gray-900 rounded-lg border border-white/10 shadow-lg">
                                 <p className="font-serif text-5xl text-white tracking-wider">{selectedSurah.nama}</p>
                                 <h2 className="text-3xl font-bold text-teal-300 mt-2">{selectedSurah.namaLatin}</h2>
                                 <p className="text-blue-200 mt-1">{selectedSurah.arti}</p>
@@ -391,13 +391,13 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                         <div className="flex justify-between items-center mb-6">
                                             <span className="px-3 py-1 bg-teal-500/20 text-teal-200 font-bold rounded-full">{selectedSurah.nomor}:{ayah.nomorAyat}</span>
                                             <div className="flex items-center gap-2">
-                                                 <button
+                                                <button
                                                     onClick={() => openShareModal('quran', { ayah, surah: selectedSurah })}
                                                     className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
                                                     aria-label="Bagikan ayat ini"
                                                     title="Bagikan ayat ini sebagai gambar"
                                                 >
-                                                    <ShareIcon className="w-6 h-6"/>
+                                                    <ShareIcon className="w-6 h-6" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleBookmarkClick({ surahNumber: selectedSurah.nomor, ayahNumber: ayah.nomorAyat, surahName: selectedSurah.namaLatin, ayahText: ayah.teksIndonesia, timestamp: Date.now() })}
@@ -405,9 +405,9 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     aria-label="Bookmark ayat ini"
                                                 >
                                                     {bookmarkedAyahs.has(`${selectedSurah.nomor}:${ayah.nomorAyat}`) ? (
-                                                        <BookmarkSolidIcon className="w-6 h-6 text-teal-400"/>
+                                                        <BookmarkSolidIcon className="w-6 h-6 text-teal-400" />
                                                     ) : (
-                                                        <BookmarkIcon className="w-6 h-6"/>
+                                                        <BookmarkIcon className="w-6 h-6" />
                                                     )}
                                                 </button>
                                                 <button
@@ -419,7 +419,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     aria-label="Laporkan telah membaca ayat ini"
                                                     title="Laporkan selesai membaca sampai ayat ini"
                                                 >
-                                                    <CheckSquareIcon className="w-6 h-6"/>
+                                                    <CheckSquareIcon className="w-6 h-6" />
                                                 </button>
                                             </div>
                                         </div>
@@ -445,7 +445,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
 
                 {/* Bookmark Confirmation Modal for Detail View */}
                 {isBookmarkConfirmOpen && createPortal(
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
                         <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
                             <div className="mb-4">
                                 <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
@@ -486,115 +486,115 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
 
     return (
         <>
-        <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
-            <h2 className="text-3xl font-bold text-white mb-4 text-center">Al-Qur'an Digital</h2>
+            <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
+                <h2 className="text-3xl font-bold text-white mb-4 text-center">Al-Qur'an Digital</h2>
 
-            <div className="mb-6 max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4">
-                <div className="relative flex-grow w-full">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <SearchIcon className="h-5 w-5 text-gray-400" />
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Cari surah berdasarkan nama atau nomor..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white/10 border border-white/30 rounded-full py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white placeholder-gray-400"
-                    />
+                <div className="mb-6 max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4">
+                    <div className="relative grow w-full">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <SearchIcon className="h-5 w-5 text-gray-400" />
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Cari surah berdasarkan nama atau nomor..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white/10 border border-white/30 rounded-full py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white placeholder-gray-400"
+                        />
+                    </div>
+                    <form onSubmit={handleJumpToAyah} className="w-full sm:w-auto shrink-0 flex items-center gap-2 bg-gray-900/50 border-2 border-white/20 rounded-full p-1.5">
+                        <input
+                            type="number"
+                            value={jumpToSurah}
+                            onChange={e => setJumpToSurah(e.target.value)}
+                            placeholder="Surah"
+                            min="1" max="114"
+                            className="w-20 bg-transparent text-center focus:outline-none text-white placeholder-gray-400 appearance-none [-moz-appearance:textfield]"
+                        />
+                        <span className="text-gray-500">:</span>
+                        <input
+                            type="number"
+                            value={jumpToAyah}
+                            onChange={e => setJumpToAyah(e.target.value)}
+                            placeholder="Ayah"
+                            min="1"
+                            className="w-20 bg-transparent text-center focus:outline-none text-white placeholder-gray-400 appearance-none [-moz-appearance:textfield]"
+                        />
+                        <button type="submit" className="px-4 py-1.5 bg-teal-500 text-white font-semibold rounded-full hover:bg-teal-400 text-sm transition-colors">
+                            Buka
+                        </button>
+                    </form>
                 </div>
-                <form onSubmit={handleJumpToAyah} className="w-full sm:w-auto flex-shrink-0 flex items-center gap-2 bg-gray-900/50 border-2 border-white/20 rounded-full p-1.5">
-                    <input
-                        type="number"
-                        value={jumpToSurah}
-                        onChange={e => setJumpToSurah(e.target.value)}
-                        placeholder="Surah"
-                        min="1" max="114"
-                        className="w-20 bg-transparent text-center focus:outline-none text-white placeholder-gray-400 appearance-none [-moz-appearance:textfield]"
-                    />
-                    <span className="text-gray-500">:</span>
-                    <input
-                        type="number"
-                        value={jumpToAyah}
-                        onChange={e => setJumpToAyah(e.target.value)}
-                        placeholder="Ayah"
-                        min="1"
-                        className="w-20 bg-transparent text-center focus:outline-none text-white placeholder-gray-400 appearance-none [-moz-appearance:textfield]"
-                    />
-                    <button type="submit" className="px-4 py-1.5 bg-teal-500 text-white font-semibold rounded-full hover:bg-teal-400 text-sm transition-colors">
-                        Buka
-                    </button>
-                </form>
+
+                {isLoadingList && (
+                    <div className="flex items-center justify-center p-10">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                    </div>
+                )}
+                {error && <div className="text-center p-10 text-red-400">{error}</div>}
+
+                {filteredSurahs.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {filteredSurahs.map((surah) => (
+                            <button
+                                key={surah.nomor}
+                                onClick={() => handleSelectSurah(surah.nomor)}
+                                className="group p-4 rounded-xl border border-white/10 bg-linear-to-br from-gray-800/50 to-gray-900/50 hover:border-teal-400/50 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-300 text-left flex items-center space-x-4"
+                            >
+                                <div className="shrink-0 w-12 h-12 flex items-center justify-center bg-gray-700/50 group-hover:bg-teal-500/20 rounded-lg text-teal-300 font-bold text-lg transition-colors">
+                                    {surah.nomor}
+                                </div>
+                                <div className="grow overflow-hidden">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="font-semibold text-lg text-white truncate">{surah.namaLatin}</h3>
+                                        <p className="font-serif text-xl text-teal-200/80 -mt-1 shrink-0">{surah.nama}</p>
+                                    </div>
+                                    <p className="text-blue-200 text-sm truncate">{surah.arti}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{surah.jumlahAyat} ayat • {surah.tempatTurun}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {isLoadingList && (
-                <div className="flex items-center justify-center p-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
-                </div>
-            )}
-            {error && <div className="text-center p-10 text-red-400">{error}</div>}
-
-            {filteredSurahs.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredSurahs.map((surah) => (
-                        <button
-                            key={surah.nomor}
-                            onClick={() => handleSelectSurah(surah.nomor)}
-                            className="group p-4 rounded-xl border border-white/10 bg-gradient-to-br from-gray-800/50 to-gray-900/50 hover:border-teal-400/50 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-300 text-left flex items-center space-x-4"
-                        >
-                            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-gray-700/50 group-hover:bg-teal-500/20 rounded-lg text-teal-300 font-bold text-lg transition-colors">
-                                {surah.nomor}
-                            </div>
-                            <div className="flex-grow overflow-hidden">
-                                <div className="flex justify-between items-start">
-                                    <h3 className="font-semibold text-lg text-white truncate">{surah.namaLatin}</h3>
-                                    <p className="font-serif text-xl text-teal-200/80 -mt-1 flex-shrink-0">{surah.nama}</p>
-                                </div>
-                                <p className="text-blue-200 text-sm truncate">{surah.arti}</p>
-                                <p className="text-xs text-gray-400 mt-1">{surah.jumlahAyat} ayat • {surah.tempatTurun}</p>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-
-        {/* Bookmark Confirmation Modal */}
-        {isBookmarkConfirmOpen && createPortal(
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-                <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
-                    <div className="mb-4">
-                        <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">
-                        {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
-                            ? 'Hapus Bookmark?'
-                            : 'Simpan Bookmark?'}
-                    </h3>
-                    <p className="text-blue-200 mb-6">
-                        {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
-                            ? `Anda yakin ingin menghapus bookmark untuk ${pendingBookmark.surahName} ayat ${pendingBookmark.ayahNumber}?`
-                            : `Simpan bookmark untuk ${pendingBookmark?.surahName} ayat ${pendingBookmark?.ayahNumber}?`}
-                    </p>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleCancelBookmark}
-                            className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            onClick={handleConfirmBookmark}
-                            className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl transition-colors"
-                        >
+            {/* Bookmark Confirmation Modal */}
+            {isBookmarkConfirmOpen && createPortal(
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
+                    <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
+                        <div className="mb-4">
+                            <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">
                             {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
-                                ? 'Hapus'
-                                : 'Simpan'}
-                        </button>
+                                ? 'Hapus Bookmark?'
+                                : 'Simpan Bookmark?'}
+                        </h3>
+                        <p className="text-blue-200 mb-6">
+                            {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                ? `Anda yakin ingin menghapus bookmark untuk ${pendingBookmark.surahName} ayat ${pendingBookmark.ayahNumber}?`
+                                : `Simpan bookmark untuk ${pendingBookmark?.surahName} ayat ${pendingBookmark?.ayahNumber}?`}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleCancelBookmark}
+                                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleConfirmBookmark}
+                                className="flex-1 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-xl transition-colors"
+                            >
+                                {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
+                                    ? 'Hapus'
+                                    : 'Simpan'}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>,
-            document.body
-        )}
+                </div>,
+                document.body
+            )}
         </>
     );
 };

@@ -84,10 +84,10 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
       ></div>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:sticky top-0 h-full lg:h-screen flex-shrink-0 w-64 bg-gray-900/70 backdrop-blur-lg border-r border-white/10 z-40 transition-transform duration-200 ease-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed lg:sticky top-0 h-full lg:h-screen shrink-0 w-64 bg-gray-900/70 backdrop-blur-lg border-r border-white/10 z-40 transition-transform duration-200 ease-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="flex items-center justify-start h-20 flex-shrink-0 border-b border-white/10 px-4">
+          <div className="flex items-center justify-start h-20 shrink-0 border-b border-white/10 px-4">
             <i className="fa-solid fa-mosque text-3xl text-teal-300 mr-3"></i>
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-white">
@@ -114,7 +114,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
                   }
                 }}
               >
-                <item.icon className="w-6 h-6 flex-shrink-0" />
+                <item.icon className="w-6 h-6 shrink-0" />
                 <span>{item.label}</span>
                 {item.id === 'pengumuman' && unreadAnnouncementsCount > 0 && (
                   <span className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold animate-pop-in">
@@ -126,7 +126,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
           </nav>
 
           {/* Logout Button */}
-          <div className="flex-shrink-0 border-t border-white/10 p-4">
+          <div className="shrink-0 border-t border-white/10 p-4">
             <button
               onClick={handleLogout}
               className={`w-full flex items-center justify-start gap-4 px-4 py-3 text-sm font-semibold rounded-lg
@@ -135,7 +135,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
                 text-red-400 hover:bg-red-900/30 hover:text-red-300 hover:scale-[1.02]`}
               title="Keluar dari Aplikasi"
             >
-              <LogoutIcon className="w-6 h-6 flex-shrink-0" />
+              <LogoutIcon className="w-6 h-6 shrink-0" />
               <span>Keluar</span>
             </button>
           </div>

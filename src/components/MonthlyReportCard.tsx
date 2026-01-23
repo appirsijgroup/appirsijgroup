@@ -104,7 +104,7 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({
     };
 
     return (
-        <div className="border border-white/10 p-4 rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50">
+        <div className="border border-white/10 p-4 rounded-lg bg-linear-to-br from-gray-800/50 to-gray-900/50">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -139,8 +139,8 @@ const MonthlyReportCard: React.FC<MonthlyReportCardProps> = ({
                     <div
                         className={`h-full transition-all duration-500 ease-out ${
                             isTargetMet
-                                ? 'bg-gradient-to-r from-green-500 to-green-400'
-                                : 'bg-gradient-to-r from-teal-500 to-blue-500'
+                                ? 'bg-linear-to-r from-green-500 to-green-400'
+                                : 'bg-linear-to-r from-teal-500 to-blue-500'
                         }`}
                         style={{ width: `${progress}%` }}
                     />

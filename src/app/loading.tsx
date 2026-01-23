@@ -5,7 +5,7 @@
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+    <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
       <div className="text-center">
         {/* Loading Spinner */}
         <div className="relative inline-block">
@@ -17,7 +17,7 @@ export default function Loading() {
 
         {/* Silent Progress Bar (Visual Only) */}
         <div className="mt-8 w-64 h-1 bg-gray-700 rounded-full overflow-hidden mx-auto">
-          <div className="h-full bg-gradient-to-r from-teal-400 to-blue-500 animate-[slide-left_1.5s_infinite]"></div>
+          <div className="h-full bg-linear-to-r from-teal-400 to-blue-500 animate-[slide-left_1.5s_infinite]"></div>
         </div>
       </div>
     </div>

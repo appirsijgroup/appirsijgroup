@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useAppDataStore } from '@/store/appDataStore';
+import { useAppDataStore } from '@/store/store';
 import { useUIStore } from '@/store/store';
 import { submitAttendance } from '@/services/attendanceService';
 
@@ -48,7 +48,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
       // Call parent callback
       onSubmit(isLateEntry ? 'hadir' : 'tidak-hadir', reason || null, isLateEntry);
-      
+
       // Close modal and reset
       setReason('');
       onClose();
@@ -78,9 +78,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({
         />
         <div className="mt-6 flex justify-end space-x-3">
           <button onClick={handleClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={!reason.trim() && !isLateEntry} 
+          <button
+            onClick={handleSubmit}
+            disabled={!reason.trim() && !isLateEntry}
             className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
             Kirim

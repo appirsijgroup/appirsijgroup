@@ -43,7 +43,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
         </div>
       )}
 
-      <div className="flex-grow flex flex-col items-center justify-center text-center">
+      <div className="grow flex flex-col items-center justify-center text-center">
           <div className={`p-3 rounded-full mb-2 transition-colors ${
               isSubmitted && attendanceStatus.status === 'hadir' ? 'bg-green-500/50' :
               isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`
@@ -102,7 +102,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
 export const PrayerCardSkeleton: React.FC = () => {
   return (
     <div className="p-4 rounded-2xl flex flex-col items-center justify-between aspect-square bg-white/5 border-2 border-white/10 animate-pulse">
-      <div className="flex-grow flex flex-col items-center justify-center text-center w-full">
+      <div className="grow flex flex-col items-center justify-center text-center w-full">
         <div className="p-3 rounded-full mb-2 bg-white/10 w-16 h-16"></div>
         <div className="h-5 bg-white/10 rounded w-2/3 mb-1"></div>
         <div className="h-3 bg-white/10 rounded w-1/3"></div>

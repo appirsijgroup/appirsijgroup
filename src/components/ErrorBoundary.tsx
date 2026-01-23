@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
             }
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+                <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
                     <div className="max-w-md w-full bg-gray-800 rounded-2xl shadow-2xl p-8 border border-red-500/30">
                         <div className="text-center">
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-4">
@@ -82,7 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                         Lihat detail error
                                     </summary>
                                     <div className="mt-3 p-3 bg-black/30 rounded-lg">
-                                        <code className="text-xs text-red-400 break-words">
+                                        <code className="text-xs text-red-400 wrap-break-word">
                                             {this.state.error.message}
                                         </code>
                                     </div>

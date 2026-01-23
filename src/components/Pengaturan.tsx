@@ -45,10 +45,10 @@ const SettingsSection: React.FC<{
                 aria-expanded={isOpen}
             >
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300 flex-shrink-0" />
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300 shrink-0" />
                     <span className="font-semibold text-base sm:text-lg text-white truncate">{title}</span>
                 </div>
-                <ChevronDownIcon className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDownIcon className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
@@ -90,7 +90,7 @@ const SignatureModal: React.FC<{
             reader.readAsDataURL(file);
         }
     };
-    
+
     const handleSave = async () => {
         if (activeTab === 'draw') {
             const signature = signaturePadRef.current?.getSignature();
@@ -109,7 +109,7 @@ const SignatureModal: React.FC<{
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                 <h3 className="text-lg font-bold text-white mb-4">Kelola Tanda Tangan</h3>
                 <div className="flex border-b border-white/10 mb-4">
@@ -123,12 +123,12 @@ const SignatureModal: React.FC<{
                         <button onClick={() => signaturePadRef.current?.clear()} className="px-4 py-2 text-sm rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Bersihkan</button>
                     </div>
                 )}
-                 {activeTab === 'upload' && (
+                {activeTab === 'upload' && (
                     <div className="flex flex-col items-center gap-4">
                         <p className="text-sm text-blue-200">Pilih file gambar tanda tangan (disarankan format PNG dengan latar transparan).</p>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg" className="hidden" />
                         <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold flex items-center gap-2">
-                           <UploadIcon className="w-5 h-5" /> Pilih File
+                            <UploadIcon className="w-5 h-5" /> Pilih File
                         </button>
                         {uploadedImage && <img src={uploadedImage} alt="Preview" className="max-h-40 border-2 border-dashed border-gray-500 rounded-md p-2 bg-white" />}
                     </div>
@@ -136,8 +136,8 @@ const SignatureModal: React.FC<{
                 <div className="mt-6 flex justify-between items-center">
                     <button onClick={handleDelete} className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-500 font-semibold disabled:bg-gray-500" disabled={!currentSignature}>Hapus Tanda Tangan</button>
                     <div className="flex gap-3">
-                         <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                         <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan</button>
+                        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
+                        <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan</button>
                     </div>
                 </div>
             </div>
@@ -155,7 +155,7 @@ const RoleEmblem: React.FC<{ icon: React.FC<{ className: string }>, label: strin
 
 const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahList, activities, onUpdateProfile, onChangePassword, cities, addToast }) => {
     const [openSection, setOpenSection] = useState<'profil' | 'keamanan' | null>(employee.mustChangePassword ? 'keamanan' : 'profil');
-    
+
     // States for Profile Form
     const [name, setName] = useState(employee.name);
     const [email, setEmail] = useState(employee.email);
@@ -170,7 +170,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordValidation, setPasswordValidation] = useState<PasswordValidationResult | null>(null);
-    
+
     // States for UI control
     const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
     const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
@@ -207,7 +207,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
         } else if (employee.role === 'admin') {
             systemRoles.push({ label: 'Admin', icon: ShieldCheckIcon, colorClasses: 'bg-sky-500/20 text-sky-300' });
         }
-        
+
         if (employee.canBeMentor) {
             systemRoles.push({ label: 'Mentor', icon: AcademicCapIcon, colorClasses: 'bg-orange-500/20 text-orange-300' });
         }
@@ -227,7 +227,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
         setProfilePicture(employee.profilePicture);
         setLocationSearch(employee.locationName || '');
     }, [employee]);
-    
+
     // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -237,7 +237,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             ) {
                 setIsPhotoMenuOpen(false);
             }
-             if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
+            if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
                 setIsCityDropdownOpen(false);
                 setLocationSearch(employee.locationName || '');
             }
@@ -260,11 +260,11 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             reader.readAsDataURL(file);
         }
     };
-    
+
     const handleRemovePicture = () => {
         setProfilePicture(null);
         onUpdateProfile(employee.id, { profilePicture: null });
-        if(fileInputRef.current) fileInputRef.current.value = "";
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -283,7 +283,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             addToast('Gagal memperbarui profil. Silakan coba lagi.', 'error');
         }
     };
-    
+
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -320,8 +320,8 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             addToast(result.error || 'Gagal memperbarui password. Silakan coba lagi.', 'error');
         }
     };
-    
-     const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const pass = e.target.value;
         setNewPassword(pass);
         setPasswordValidation(validatePassword(pass));
@@ -346,17 +346,17 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-8">
-                 {/* Profile Card */}
+                {/* Profile Card */}
                 <div className="bg-black/20 p-6 rounded-2xl shadow-lg border border-white/10 text-center">
                     <div className="relative w-32 h-32 mx-auto">
                         <button
                             ref={photoButtonRef}
                             type="button"
                             onClick={() => setIsPhotoMenuOpen(!isPhotoMenuOpen)}
-                            className="group relative w-full h-full rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden border-4 border-white/20 shadow-lg ring-4 ring-teal-400/50"
+                            className="group relative w-full h-full rounded-full bg-linear-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white text-4xl font-bold overflow-hidden border-4 border-white/20 shadow-lg ring-4 ring-teal-400/50"
                             aria-label="Opsi foto profil"
                         >
-                             {profilePicture ? (
+                            {profilePicture ? (
                                 <img src={profilePicture} alt="Profile" className="w-full h-full object-cover object-top" />
                             ) : (
                                 <span>{getInitials(name)}</span>
@@ -388,18 +388,18 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center truncate max-w-full" title={employee.name}>{employee.name}</h2>
                         {shouldShowVerifiedBadge && (
                             // FIX: Wrapped CheckBadgeIcon in a span with a title attribute to fix a prop type error.
-                            <span title="Lencana Terverifikasi" className="flex-shrink-0">
+                            <span title="Lencana Terverifikasi" className="shrink-0">
                                 <CheckBadgeIcon className="w-5 h-5 sm:w-6 sm:h-7 text-teal-400" />
                             </span>
                         )}
                     </div>
                     <p className="text-teal-300 font-medium text-base sm:text-lg text-center px-4">{employee.profession}</p>
                     <div className="mt-4 pt-4 border-t border-white/10 space-y-2 text-left text-sm px-4">
-                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">NIP</strong>: <span className="font-mono break-all">{employee.id}</span></p>
-                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">Unit</strong>: <span className="break-all">{employee.unit}</span></p>
-                        <p className="break-words"><strong className="text-blue-200 w-20 inline-block flex-shrink-0">Bagian</strong>: <span className="break-all">{employee.bagian}</span></p>
+                        <p className="wrap-break-word"><strong className="text-blue-200 w-20 inline-block shrink-0">NIP</strong>: <span className="font-mono break-all">{employee.id}</span></p>
+                        <p className="wrap-break-word"><strong className="text-blue-200 w-20 inline-block shrink-0">Unit</strong>: <span className="break-all">{employee.unit}</span></p>
+                        <p className="wrap-break-word"><strong className="text-blue-200 w-20 inline-block shrink-0">Bagian</strong>: <span className="break-all">{employee.bagian}</span></p>
                     </div>
-                    
+
                     {(functionalRolesToDisplay.length > 0 || systemRolesToDisplay.length > 0) && (
                         <div className="mt-4 pt-4 border-t border-white/10 text-left">
                             <h3 className="font-semibold text-white mb-3">Peran & Jabatan</h3>
@@ -428,9 +428,9 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
 
             {/* Right Column */}
             <div className="lg:col-span-2 space-y-6">
-                 {employee.mustChangePassword && (
+                {employee.mustChangePassword && (
                     <div className="p-4 bg-yellow-500/20 border-l-4 border-yellow-400 text-yellow-200 rounded-r-lg shadow-lg animate-pulse flex items-start gap-3">
-                        <InformationCircleIcon className="w-6 h-6 flex-shrink-0 text-yellow-300 mt-0.5" />
+                        <InformationCircleIcon className="w-6 h-6 shrink-0 text-yellow-300 mt-0.5" />
                         <div>
                             <p className="font-bold">Perbarui Password Default</p>
                             <p className="text-sm mt-1">Wajib ganti password di bagian "Keamanan Akun"</p>
@@ -449,7 +449,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contoh@email.com" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                             </div>
                         </div>
-                         <div className="relative" ref={cityDropdownRef}>
+                        <div className="relative" ref={cityDropdownRef}>
                             <label htmlFor="location" className="block text-sm font-medium text-blue-200 mb-1">Lokasi Jadwal Sholat</label>
                             <input id="location" type="text" value={locationSearch} onChange={(e) => { setLocationSearch(e.target.value); if (!isCityDropdownOpen) setIsCityDropdownOpen(true); }} onFocus={() => setIsCityDropdownOpen(true)} placeholder="Cari kota (min. 3 huruf)..." className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" autoComplete="off" />
                             {isCityDropdownOpen && filteredCities.length > 0 && (
@@ -468,11 +468,11 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                     </form>
                 </SettingsSection>
 
-                 <SettingsSection title="Keamanan Akun" icon={ShieldCheckIcon} isOpen={openSection === 'keamanan'} onToggle={() => setOpenSection(openSection === 'keamanan' ? null : 'keamanan')}>
-                     <div className="space-y-8">
+                <SettingsSection title="Keamanan Akun" icon={ShieldCheckIcon} isOpen={openSection === 'keamanan'} onToggle={() => setOpenSection(openSection === 'keamanan' ? null : 'keamanan')}>
+                    <div className="space-y-8">
                         <form onSubmit={handlePasswordSubmit} className="space-y-6">
                             <h3 className="text-lg font-semibold text-teal-300">Ubah Password</h3>
-                             <PasswordInput
+                            <PasswordInput
                                 id="oldPassword"
                                 label="Password Lama"
                                 value={oldPassword}
@@ -513,7 +513,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                     </div>
                 </SettingsSection>
             </div>
-             <SignatureModal
+            <SignatureModal
                 isOpen={isSignatureModalOpen}
                 onClose={() => setIsSignatureModalOpen(false)}
                 onSave={async (signature) => {

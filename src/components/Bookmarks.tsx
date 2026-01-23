@@ -120,10 +120,10 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                         >
                             <button 
                                 onClick={() => navigateToAyah(bookmark.surahNumber, bookmark.ayahNumber)}
-                                className="text-left flex-grow"
+                                className="text-left grow"
                             >
                                 <div className="flex items-start gap-3">
-                                    <BookmarkSolidIcon className="w-5 h-5 text-teal-400 flex-shrink-0 mt-1" />
+                                    <BookmarkSolidIcon className="w-5 h-5 text-teal-400 shrink-0 mt-1" />
                                     <div>
                                         <h3 className="font-bold text-xl text-teal-300 group-hover:underline">
                                             QS. {bookmark.surahName} [{bookmark.surahNumber}:{bookmark.ayahNumber}]

@@ -3,7 +3,7 @@
  * Handles tadarus sessions and requests operations for Supabase
  */
 
-import { supabase } from './attendanceService';
+import { supabase } from '@/lib/supabase';
 import type { TadarusSession, TadarusRequest } from '../types';
 
 // ==================== TADARUS SESSIONS ====================
@@ -84,39 +84,38 @@ export const createTadarusSession = async (
     session: Omit<TadarusSession, 'id' | 'createdAt'>
 ): Promise<TadarusSession> => {
     try {
-
-        // Convert camelCase to snake_case for Supabase
-        const dbSession = {
+        // Prepare data for database (convert camelCase to snake_case)
+        const dbData = {
             title: session.title,
             date: session.date,
             start_time: session.startTime,
             end_time: session.endTime,
             category: session.category,
-            notes: session.notes,
-            is_recurring: session.isRecurring,
+            notes: session.notes || null,
+            is_recurring: session.isRecurring || false,
             mentor_id: session.mentorId,
             participant_ids: session.participantIds || [],
             present_mentee_ids: session.presentMenteeIds || [],
-            status: session.status,
-            mentor_present: session.mentorPresent,
-            created_at: session.createdAt || Date.now()
+            status: session.status || 'open',
+            mentor_present: session.mentorPresent ?? true,
         };
 
+        // 🔥 FIX: Use API endpoint to bypass RLS/401 issues on direct Supabase client
+        const response = await fetch('/api/tadarus/sessions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dbData),
+        });
 
-        const { data, error } = await supabase
-            .from('tadarus_sessions')
-            .insert(dbSession as any)
-            .select()
-            .single() as any;
-
-        if (error) {
-            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to create tadarus session: ${errorData.error || 'Unknown error'} (Code: ${errorData.code || 'HTTP ' + response.status})`);
         }
 
-        if (!data) {
-            throw new Error('No data returned from Supabase after insert');
-        }
-
+        const result = await response.json();
+        const data = result.data;
 
         // Convert back to camelCase
         return {

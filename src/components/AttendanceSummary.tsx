@@ -19,7 +19,7 @@ const AttendanceSummary: React.FC<AttendanceSummaryProps> = ({ wajibCount, atten
       </div>
       <div className="w-full bg-black/30 rounded-full h-4">
         <div 
-          className="bg-gradient-to-r from-green-400 to-teal-500 h-4 rounded-full transition-all duration-500 ease-out"
+          className="bg-linear-to-r from-green-400 to-teal-500 h-4 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         ></div>
       </div>

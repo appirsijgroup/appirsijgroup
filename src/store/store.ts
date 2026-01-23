@@ -68,6 +68,19 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 const data = await response.json();
                 const employee = data.employee;
 
+                // 🔥 DEBUG: Log employee data yang diterima dari server
+                console.log('🔍 [loadLoggedInEmployee] Employee data received:', {
+                    id: employee.id,
+                    name: employee.name,
+                    role: employee.role,
+                    email: employee.email,
+                    hasActivatedMonths: !!employee.activatedMonths,
+                    activatedMonthsValue: employee.activatedMonths,
+                    hasActivatedMonthsSnake: !!employee.activated_months,
+                    activatedMonthsSnakeValue: employee.activated_months,
+                    allKeys: Object.keys(employee)
+                });
+
                 if (employee) {
                     // Update localStorage for client-side convenience
                     localStorage.setItem('loggedInUserId', employee.id);

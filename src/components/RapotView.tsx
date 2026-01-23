@@ -236,7 +236,7 @@ const generateChecklistPdf = (
     employee: Employee,
     dailyActivitiesConfig: DailyActivity[],
     selectedMonth: Date,
-    allUsersData: Record<string, { employee: Employee; [key: string]: Record<string, any>; }>,
+    allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>,
     hospital: Hospital | null
 ) => {
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
@@ -420,7 +420,7 @@ const generateChecklistPdf = (
     signatureNames.forEach((name, index) => {
         const yPos = signatureY + 25;
 
-        if(signatures[index]) {
+        if (signatures[index]) {
             const imgWidth = 40, imgHeight = 20;
             const x = signatureXPositions[index] - (imgWidth / 2);
             const y = yPos - 20;
@@ -444,7 +444,7 @@ interface CeklisMutabaahViewProps {
     employee: Employee;
     dailyActivitiesConfig: DailyActivity[];
     selectedMonth: Date;
-    allUsersData: Record<string, { employee: Employee; [key: string]: Record<string, any>; }>;
+    allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>;
     onBack?: () => void;
 }
 
@@ -471,11 +471,11 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
     return (
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl text-slate-800 max-w-7xl mx-auto">
             {onBack && (
-                 <button
+                <button
                     onClick={onBack}
                     className="mb-6 flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
                 >
-                    <ArrowLeftIcon className="w-5 h-5"/>
+                    <ArrowLeftIcon className="w-5 h-5" />
                     Kembali ke Daftar
                 </button>
             )}
@@ -483,7 +483,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                 <h3 className="text-xl font-extrabold text-teal-700">RUMAH SAKIT ISLAM JAKARTA SUKAPURA</h3>
                 <p className="text-sm text-slate-600">Jl. Tipar Cakung No.5, Sukapura, Kec. Cilincing, Jakarta Utara</p>
             </div>
-            <hr className="border-t-4 border-teal-600 mb-4"/>
+            <hr className="border-t-4 border-teal-600 mb-4" />
             <h4 className="text-center font-bold text-lg text-slate-700 mt-6">LEMBAR MUTABAAH HARIAN</h4>
 
             <div className="mt-6 text-sm grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
@@ -559,7 +559,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
 
 interface TranskripNilaiViewProps {
     employee: Employee;
-    allUsersData: Record<string, { employee: Employee; [key: string]: Record<string, any>; }>;
+    allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>;
     selectedMonth: Date;
     performanceData: {
         categories: {
@@ -599,24 +599,24 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
 
     return (
         <div className="bg-gray-900/50 p-2 sm:p-6 rounded-lg">
-             <div className="flex justify-end items-center mb-6">
-                 <button
+            <div className="flex justify-end items-center mb-6">
+                <button
                     onClick={() => generateTranscriptPdf(employee, performanceData, ipForMonth, selectedMonthLabel, signatoryName, signatoryNip, signatoryTitle, mentorName, hospital)}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
                 >
-                    <PdfIcon className="w-5 h-5"/>
+                    <PdfIcon className="w-5 h-5" />
                     Unduh PDF
                 </button>
             </div>
             <div className="bg-slate-50 p-6 sm:p-10 rounded shadow-2xl text-gray-800" id="transcript-content">
-                 <div className="text-center pb-4 flex items-center justify-center">
-                    {hospital?.logo && <Image src={hospital.logo} alt="Hospital Logo" width={80} height={80} className="h-20 mr-4"/>}
+                <div className="text-center pb-4 flex items-center justify-center">
+                    {hospital?.logo && <Image src={hospital.logo} alt="Hospital Logo" width={80} height={80} className="h-20 mr-4" />}
                     <div>
                         <h3 className="text-xl sm:text-3xl font-extrabold text-teal-700">{(hospital?.name || 'Rumah Sakit Islam Jakarta Group').toUpperCase()}</h3>
                         <p className="text-sm text-gray-600">{hospital?.address || 'Alamat tidak terdaftar'}</p>
                     </div>
                 </div>
-                <hr className="border-t-4 border-teal-600 mb-4"/>
+                <hr className="border-t-4 border-teal-600 mb-4" />
 
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm sm:text-base">
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Nama</strong>: {employee.name}</div>
@@ -630,11 +630,11 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                         <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PERIODE</p>
                         <p className="text-2xl sm:text-3xl font-bold text-teal-600">{selectedMonthLabel.toUpperCase()}</p>
                     </div>
-                     <div>
+                    <div>
                         <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">INDEKS PRESTASI BULANAN (IPB)</p>
                         <p className="text-2xl sm:text-3xl font-bold text-teal-600">{ipForMonth.toFixed(2)}</p>
                     </div>
-                     <div>
+                    <div>
                         <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PREDIKAT</p>
                         <p className="text-xl sm:text-2xl font-bold text-teal-600">{getPredicate(ipForMonth)}</p>
                     </div>
@@ -642,7 +642,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
 
                 {performanceData && performanceData.categories.length > 0 ? (
                     <div className="mt-8">
-                         <h4 className="text-lg sm:text-xl font-bold text-center tracking-widest text-gray-700 mb-4">TRANSKRIP NILAI APPI</h4>
+                        <h4 className="text-lg sm:text-xl font-bold text-center tracking-widest text-gray-700 mb-4">TRANSKRIP NILAI APPI</h4>
                         <div className="overflow-x-auto">
                             <table className="min-w-full text-sm border-collapse border border-slate-300">
                                 <thead className="bg-slate-100 text-slate-600 text-left">
@@ -656,17 +656,17 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                                 </thead>
                                 <tbody>
                                     {performanceData.categories.map((cat: {
-            name: string;
-            score: number;
-            grade: string;
-            bobot: number;
-            details: {
-                title: string;
-                target: number;
-                achieved: number;
-                percentage: number;
-            }[];
-        }) => (
+                                        name: string;
+                                        score: number;
+                                        grade: string;
+                                        bobot: number;
+                                        details: {
+                                            title: string;
+                                            target: number;
+                                            achieved: number;
+                                            percentage: number;
+                                        }[];
+                                    }) => (
                                         <Fragment key={cat.name}>
                                             <tr className="bg-slate-100 font-bold">
                                                 <td className="border border-slate-300 p-2 text-slate-700 whitespace-nowrap">{cat.name.toUpperCase()}</td>
@@ -676,11 +676,11 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                                                 <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.bobot.toFixed(1)}</td>
                                             </tr>
                                             {cat.details.map((detail: {
-                title: string;
-                target: number;
-                achieved: number;
-                percentage: number;
-            }) => (
+                                                title: string;
+                                                target: number;
+                                                achieved: number;
+                                                percentage: number;
+                                            }) => (
                                                 <tr key={detail.title}>
                                                     <td className="border-x border-b border-slate-300 p-2 pl-6 text-sm text-gray-600 whitespace-nowrap">- {detail.title}</td>
                                                     <td className="border-x border-b border-slate-300 p-2 text-sm text-gray-600">
@@ -704,7 +704,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                     </div>
                 )}
 
-                 <div className="mt-12 text-gray-800 text-sm">
+                <div className="mt-12 text-gray-800 text-sm">
                     <div className="flex justify-end mb-4">
                         <div className="w-1/3 text-center">
                             <p>Jakarta, {todayForView}</p>
@@ -742,11 +742,11 @@ const TabButton: React.FC<{
 }> = ({ label, icon: Icon, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`flex-grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
           ${active
-            ? 'border-teal-400 text-teal-300'
-            : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
-          }`}
+                ? 'border-teal-400 text-teal-300'
+                : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
+            }`}
     >
         <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
@@ -862,12 +862,12 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
         const dirut = allUsersList.find(u => u.canBeDirut);
         if (foundManager) {
-            return { signatory: { name: foundManager.name, nip: foundManager.id, title: 'Manajer' }};
+            return { signatory: { name: foundManager.name, nip: foundManager.id, title: 'Manajer' } };
         }
         if (dirut) {
-            return { signatory: { name: dirut.name, nip: dirut.id, title: 'Direktur Utama' }};
+            return { signatory: { name: dirut.name, nip: dirut.id, title: 'Direktur Utama' } };
         }
-        return { signatory: { name: '.........................', nip: '.........................', title: 'Direktur Utama' }};
+        return { signatory: { name: '.........................', nip: '.........................', title: 'Direktur Utama' } };
     }, [allUsersData, employee]);
 
     const availableMonths = useMemo(() => {
@@ -954,9 +954,9 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                 {activeTab === 'transkrip' && (
                     <div className="space-y-6">
                         <div className="flex justify-center">
-                            <div className="flex-shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto max-w-sm">
+                            <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto max-w-sm">
                                 <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
-                                <span className="font-semibold text-base text-teal-300 px-2 flex-grow text-center">{selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
+                                <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
                                 <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
                             </div>
                         </div>

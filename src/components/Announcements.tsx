@@ -61,14 +61,14 @@ const AnnouncementModal: React.FC<{
     const isAdmin = isAnyAdmin(loggedInEmployee);
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl border border-white/20 max-h-[90vh] flex flex-col">
-                <div className="flex-shrink-0 mb-4">
+                <div className="shrink-0 mb-4">
                     <h3 className="text-lg font-bold text-white">Buat Pengumuman Baru</h3>
                 </div>
 
                 {/* Two-column layout for desktop */}
-                <div className="flex-grow overflow-y-auto pr-2">
+                <div className="grow overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left column: Title and Content */}
                         <div className="space-y-4">
@@ -168,7 +168,7 @@ const AnnouncementModal: React.FC<{
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">
+                <div className="mt-6 flex justify-end space-x-3 shrink-0">
                     <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
                     <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
                         Terbitkan
@@ -247,13 +247,13 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
     const toggleAnnouncement = (id: string) => {
         setOpenAnnouncementId(prevId => (prevId === id ? null : id));
     };
-    
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
                     <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                        <MegaphoneIcon className="w-8 h-8 text-teal-300"/>
+                        <MegaphoneIcon className="w-8 h-8 text-teal-300" />
                         Pengumuman
                     </h2>
                     <p className="text-blue-200 mt-1">Informasi penting dari manajemen dan para mentor.</p>
@@ -271,19 +271,19 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     {paginatedAnnouncements.map(ann => {
                         const isOpen = openAnnouncementId === ann.id;
                         return (
-                             <div key={ann.id} className="bg-black/20 rounded-lg border border-white/10 animate-view-change overflow-hidden transition-all duration-300">
+                            <div key={ann.id} className="bg-black/20 rounded-lg border border-white/10 animate-view-change overflow-hidden transition-all duration-300">
                                 <button
                                     onClick={() => toggleAnnouncement(ann.id)}
                                     className="w-full flex justify-between items-center p-4 text-left gap-4"
                                     aria-expanded={isOpen}
                                 >
-                                    <div className="flex-grow">
+                                    <div className="grow">
                                         <h3 className="font-bold text-lg text-white">{ann.title}</h3>
                                         <p className="text-sm text-gray-400 mt-1">
                                             Oleh <strong>{ann.authorName}</strong> • {new Date(ann.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${ann.scope === 'alliansi' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
                                             {ann.scope === 'alliansi' ? <GlobeAltIcon className="w-4 h-4" /> : <UserGroupIcon className="w-4 h-4" />}
                                             {ann.scope === 'alliansi' ? (
@@ -301,7 +301,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                         {loggedInEmployee && (isSuperAdmin(loggedInEmployee) || loggedInEmployee.id === ann.authorId) && (
                                             <div className="mt-4 text-right">
                                                 <button onClick={() => setConfirmDelete(ann)} className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white rounded-md">
-                                                    <TrashIcon className="w-4 h-4"/>
+                                                    <TrashIcon className="w-4 h-4" />
                                                     Hapus
                                                 </button>
                                             </div>
@@ -313,7 +313,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     })}
                 </div>
             ) : (
-                 <div className="text-center py-16 bg-black/20 rounded-lg">
+                <div className="text-center py-16 bg-black/20 rounded-lg">
                     <p className="text-lg text-blue-200">Saat ini tidak ada pengumuman.</p>
                 </div>
             )}
@@ -346,11 +346,10 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -362,11 +361,10 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
                                             ? 'bg-teal-500 text-white'
                                             : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -383,7 +381,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     </button>
                 </div>
             )}
-            
+
             {canCreate && (
                 <AnnouncementModal
                     isOpen={isModalOpen}
@@ -393,7 +391,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     hospitals={hospitals}
                 />
             )}
-            
+
             <ConfirmationModal
                 isOpen={!!confirmDelete}
                 onClose={() => setConfirmDelete(null)}

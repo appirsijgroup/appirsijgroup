@@ -45,6 +45,25 @@ export async function GET(request: NextRequest) {
             targetEmployeeIds = [session.userId, ...(mentees?.map(m => m.id) || [])];
         }
 
+        // Get month and year from query params
+        const searchParams = request.nextUrl.searchParams;
+        const monthParam = searchParams.get('month');
+        const yearParam = searchParams.get('year');
+
+        let startDate: string | null = null;
+        let endDate: string | null = null;
+
+        if (monthParam && yearParam) {
+            const month = parseInt(monthParam);
+            const year = parseInt(yearParam);
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0, 23, 59, 59); // Last day of month
+
+            // Format as YYYY-MM-DD for database queries
+            startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+            endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+        }
+
         // 1. Fetch attendance_records (hadir only)
         let attendanceQuery = supabase
             .from('attendance_records')
@@ -54,6 +73,15 @@ export async function GET(request: NextRequest) {
         if (targetEmployeeIds) {
             attendanceQuery = attendanceQuery.in('employee_id', targetEmployeeIds);
         }
+
+        if (startDate && endDate) {
+            // Filter by timestamp range
+            attendanceQuery = attendanceQuery.gte('timestamp', startDate).lte('timestamp', endDate + 'T23:59:59');
+        } else {
+            // Default limit if no date specified to prevent massive fetch
+            attendanceQuery = attendanceQuery.limit(1000);
+        }
+
         const { data: attendanceData } = await attendanceQuery;
 
         // 2. Fetch employee_monthly_reports
@@ -66,10 +94,16 @@ export async function GET(request: NextRequest) {
         }
         const { data: monthlyReports } = await monthlyReportsQuery;
 
-        // 3. Fetch tadarus_sessions (all, we'll filter present_mentee_ids in memory)
-        const { data: tadarusSessions } = await supabase
+        // 3. Fetch tadarus_sessions
+        let tadarusQuery = supabase
             .from('tadarus_sessions')
             .select('date, present_mentee_ids');
+
+        if (startDate && endDate) {
+            tadarusQuery = tadarusQuery.gte('date', startDate).lte('date', endDate);
+        }
+
+        const { data: tadarusSessions } = await tadarusQuery;
 
         // 4. Fetch team_attendance_records
         let teamAttendanceQuery = supabase
@@ -79,6 +113,11 @@ export async function GET(request: NextRequest) {
         if (targetEmployeeIds) {
             teamAttendanceQuery = teamAttendanceQuery.in('user_id', targetEmployeeIds);
         }
+
+        if (startDate && endDate) {
+            teamAttendanceQuery = teamAttendanceQuery.gte('session_date', startDate).lte('session_date', endDate);
+        }
+
         const { data: teamAttendance } = await teamAttendanceQuery;
 
         // Merge everything into a map: employee_id -> monthKey -> dayKey -> { [activity_id]: true }

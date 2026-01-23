@@ -1,9 +1,12 @@
 /**
- * Mendapatkan tanggal hari ini dalam format YYYY-MM-DD berdasarkan timezone lokal (Indonesia)
- * Fungsi ini mengatasi masalah timezone di mana new Date().toISOString() mengembalikan waktu UTC
+ * Mendapatkan tanggal hari ini dalam format YYYY-MM-DD berdasarkan waktu terkoreksi dari server
+ * Fungsi ini menggunakan timeValidationService untuk mendapatkan waktu yang akurat dan tervalidasi
  */
 export const getTodayLocalDateString = (): string => {
-    const now = new Date();
+    // 🔥 FIX: Gunakan timeValidationService untuk mendapatkan waktu terkoreksi
+    // Ini memastikan konsistensi dengan semua pelaporan aktivitas
+    const { timeValidationService } = require('../services/timeValidationService');
+    const now = timeValidationService.getCorrectedTime();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
@@ -11,10 +14,11 @@ export const getTodayLocalDateString = (): string => {
 };
 
 /**
- * Mendapatkan waktu saat ini dalam format HH:mm berdasarkan timezone lokal
+ * Mendapatkan waktu saat ini dalam format HH:mm berdasarkan waktu terkoreksi dari server
  */
 export const getCurrentTime = (): string => {
-    const now = new Date();
+    const { timeValidationService } = require('../services/timeValidationService');
+    const now = timeValidationService.getCorrectedTime();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;

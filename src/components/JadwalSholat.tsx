@@ -64,12 +64,12 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
             } else {
                 setError("Geolocation tidak didukung. Arah Kiblat mungkin tidak akurat.");
             }
-            
+
             // Set location for Qibla if we have it
             if (coordsForQibla) {
                 setLocation(coordsForQibla);
             }
-            
+
             // 2. Fallback to default if both GPS and profile fail to provide a locationId for prayer times
             if (!locationId) {
                 locationId = '1301'; // Default to Jakarta
@@ -148,16 +148,16 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
         };
 
         if (window.DeviceOrientationEvent) {
-             window.addEventListener('deviceorientation', handleOrientation);
+            window.addEventListener('deviceorientation', handleOrientation);
         } else {
             setError(prev => prev ? prev + "\nSensor kompas tidak didukung di perangkat ini." : "Sensor kompas tidak didukung di perangkat ini.");
         }
-        
+
         return () => {
             window.removeEventListener('deviceorientation', handleOrientation);
         };
     }, []);
-    
+
     const { nextPrayerName, nextPrayerTime, nextPrayerDate } = useMemo(() => {
         if (!prayerTimes) return { nextPrayerName: null, nextPrayerTime: null, nextPrayerDate: null };
 
@@ -168,7 +168,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
             { name: "Maghrib", time: prayerTimes.maghrib },
             { name: "Isya", time: prayerTimes.isya },
         ];
-        
+
         let nextPrayer = null;
         for (const prayer of prayerSchedule) {
             if (!prayer.time || typeof prayer.time !== 'string') continue;
@@ -193,8 +193,8 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
 
         return { nextPrayerName: nextPrayer.name, nextPrayerTime: nextPrayer.time, nextPrayerDate: nextPrayer.date };
     }, [prayerTimes, currentTime]);
-    
-     useEffect(() => {
+
+    useEffect(() => {
         if (!nextPrayerDate) {
             setTimeLeft("");
             return;
@@ -215,7 +215,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                 setTimeLeft(`${hours}:${minutes}:${seconds}`);
             }
         }, 1000);
-        
+
         return () => clearInterval(interval);
     }, [nextPrayerDate]);
 
@@ -226,7 +226,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
             </div>
         );
     }
-    
+
     const renderError = () => {
         if (!error) return null;
         if (!prayerTimes) {
@@ -267,25 +267,25 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
 
             <div className="bg-black/20 p-4 rounded-2xl border border-white/10">
                 <h3 className="text-xl font-bold text-white mb-4 text-center">Arah Kiblat</h3>
-                 <div className="relative w-full aspect-square max-w-sm mx-auto rounded-full overflow-hidden border-4 border-teal-500/50 shadow-lg">
+                <div className="relative w-full aspect-square max-w-sm mx-auto rounded-full overflow-hidden border-4 border-teal-500/50 shadow-lg">
                     <video ref={videoRef} autoPlay playsInline muted className="absolute top-0 left-0 w-full h-full object-cover"></video>
                     <div className="absolute top-0 left-0 w-full h-full bg-black/50"></div>
-                     <div className="absolute top-0 left-0 w-full h-full" style={{ transform: `rotate(${compassHeading}deg)`}}>
+                    <div className="absolute top-0 left-0 w-full h-full" style={{ transform: `rotate(${compassHeading}deg)` }}>
                         <div className="absolute top-1/2 left-1/2 -mt-4 -ml-4 w-8 h-8 text-center text-white font-bold">N</div>
                         <div className="absolute bottom-0 left-1/2 -mb-4 -ml-4 w-8 h-8 text-center text-white">S</div>
                         <div className="absolute top-1/2 right-0 -mr-4 -ml-4 w-8 h-8 text-center text-white">E</div>
-                        <div className="absolute top-1/2 left-0 -ml-4 -ml-4 w-8 h-8 text-center text-white">W</div>
+                        <div className="absolute top-1/2 left-0 -ml-4 w-8 h-8 text-center text-white">W</div>
                     </div>
-                     <div className="absolute top-0 left-0 w-full h-full transition-transform duration-200" style={{ transform: `rotate(${qiblaDirection + compassHeading}deg)` }}>
+                    <div className="absolute top-0 left-0 w-full h-full transition-transform duration-200" style={{ transform: `rotate(${qiblaDirection + compassHeading}deg)` }}>
                         <div className="absolute top-0 left-1/2 -ml-3 w-6 h-1/2 flex flex-col items-center">
-                            <div className="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-b-[20px] border-b-teal-400"></div>
+                            <div className="w-0 h-0 border-l-12 border-l-transparent border-r-12 border-r-transparent border-b-20 border-b-teal-400"></div>
                         </div>
                     </div>
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-teal-300 rounded-full border-2 border-gray-900"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-teal-300 rounded-full border-2 border-gray-900"></div>
                 </div>
-                 <p className="text-center text-blue-200 mt-4 text-sm">Arahkan perangkat Anda hingga panah sejajar dengan garis utara-selatan dan menunjuk ke arah Kiblat. Derajat Kiblat: {qiblaDirection.toFixed(2)}° dari Utara.</p>
+                <p className="text-center text-blue-200 mt-4 text-sm">Arahkan perangkat Anda hingga panah sejajar dengan garis utara-selatan dan menunjuk ke arah Kiblat. Derajat Kiblat: {qiblaDirection.toFixed(2)}° dari Utara.</p>
             </div>
-             <style>{`
+            <style>{`
                 .bg-grid-pattern {
                     background-image: linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
                     background-size: 2rem 2rem;

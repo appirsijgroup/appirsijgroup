@@ -61,7 +61,11 @@ const ReportReadingModal: React.FC<{
 }> = ({ isOpen, onClose, onSubmit, surah, targetEndAyah, weeklyReportSubmissions, todayForMaxDate }) => {
     const [startAyah, setStartAyah] = useState('');
     const [endAyah, setEndAyah] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    // 🔥 FIX: Gunakan timeValidationService untuk initial state tanggal
+    const [date, setDate] = useState(() => {
+        const correctedTime = timeValidationService.getCorrectedTime();
+        return correctedTime.toISOString().split('T')[0];
+    });
     const [error, setError] = useState('');
     const isOpenRef = useRef(isOpen);
 
@@ -71,7 +75,9 @@ const ReportReadingModal: React.FC<{
         if (isOpen && !hasInitialized.current) {
             setStartAyah(''); // Start empty for user input
             setEndAyah(String(targetEndAyah || ''));
-            setDate(new Date().toISOString().split('T')[0]);
+            // 🔥 FIX: Gunakan timeValidationService untuk default tanggal
+            const correctedTime = timeValidationService.getCorrectedTime();
+            setDate(correctedTime.toISOString().split('T')[0]);
             setError('');
             hasInitialized.current = true;
         } else if (!isOpen) {
@@ -83,27 +89,24 @@ const ReportReadingModal: React.FC<{
     const [isLocked, lockReason] = useMemo(() => {
         if (!date) return [true, "Pilih tanggal"];
 
-        const selectedDateObj = new Date(date + 'T12:00:00Z');
-        const monthKey = date.slice(0, 7);
-
         // Get corrected time from time validation service
         const correctedNow = timeValidationService.getCorrectedTime();
 
-        // 🔥 FIX: Normalize ke UTC timezone untuk comparison yang akurat
-        const today = new Date(Date.UTC(
-            correctedNow.getUTCFullYear(),
-            correctedNow.getUTCMonth(),
-            correctedNow.getUTCDate()
-        ));
+        // 🔥 FIX: Gunakan perbandingan tanggal lokal yang sederhana
+        // Buat today date dengan jam 00:00:00 untuk perbandingan yang akurat
+        const today = new Date(correctedNow);
         today.setHours(0, 0, 0, 0);
 
-        // Normalize selectedDateObj ke UTC juga
-        const normalizedSelectedDate = new Date(selectedDateObj);
-        normalizedSelectedDate.setUTCHours(12, 0, 0, 0);
+        // Parse selected date sebagai local date (bukan UTC)
+        const [year, month, day] = date.split('-').map(Number);
+        const selectedDateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
 
-        if (normalizedSelectedDate > today) {
+        // Cek apakah tanggal yang dipilih di masa depan
+        if (selectedDateObj > today) {
             return [true, "Tidak bisa mengisi tanggal di masa depan."];
         }
+
+        const monthKey = date.slice(0, 7);
 
         const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
         const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
@@ -197,17 +200,30 @@ const ReportReadingModal: React.FC<{
                     {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
                 </div>
                 {isLocked ? (
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Tutup</button>
-                        <div className="grow font-semibold py-2 px-4 rounded-lg shadow-md transition-colors flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
+                    <div className="mt-6">
+                        <button
+                            onClick={onClose}
+                            className="w-full px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold text-white transition-colors"
+                        >
+                            Tutup
+                        </button>
+                        <div className="mt-2 w-full font-semibold py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
                             <LockClosedIcon className="w-5 h-5" /> {lockReason}
                         </div>
                     </div>
                 ) : (
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                        <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
-                            Ya, Laporkan
+                    <div className="mt-6">
+                        <button
+                            onClick={handleSubmit}
+                            className="w-full py-2 px-4 rounded-lg font-semibold transition-all bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/50"
+                        >
+                            Lapor Aktivitas
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="w-full mt-2 px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold text-white transition-colors"
+                        >
+                            Batal
                         </button>
                     </div>
                 )}
@@ -233,7 +249,13 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
     const { openShareModal } = useUIStore();
 
     const ayahRefs = useRef<(HTMLDivElement | null)[]>([]);
-    const todayForMaxDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+    // 🔥 FIX: Gunakan timeValidationService untuk mendapatkan tanggal yang terkoreksi
+    // Ini memastikan konsistensi dengan menu Aktivitas Pribadi
+    const todayForMaxDate = useMemo(() => {
+        const correctedTime = timeValidationService.getCorrectedTime();
+        return correctedTime.toISOString().split('T')[0];
+    }, []); // Empty deps - akan di-compute sekali saat mount, tapi menggunakan waktu terkoreksi
 
     useEffect(() => {
         const loadSurahs = async () => {

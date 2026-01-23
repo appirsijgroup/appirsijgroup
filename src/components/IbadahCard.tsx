@@ -22,11 +22,11 @@ const PencilIcon = () => (
 );
 
 interface IbadahCardProps {
-  ibadah: SunnahIbadah;
-  attendanceStatus: AttendanceStatus | undefined;
-  onHadir: () => void;
-  onTidakHadir: () => void;
-  onUbah: () => void;
+    ibadah: SunnahIbadah;
+    attendanceStatus: AttendanceStatus | undefined;
+    onHadir: () => void;
+    onTidakHadir: () => void;
+    onUbah: () => void;
 }
 
 const IbadahCard: React.FC<IbadahCardProps> = ({ ibadah, attendanceStatus, onHadir, onTidakHadir, onUbah }) => {
@@ -36,13 +36,12 @@ const IbadahCard: React.FC<IbadahCardProps> = ({ ibadah, attendanceStatus, onHad
     const cardClasses = `
     p-4 rounded-2xl flex flex-col items-center justify-between aspect-square
     transform transition-all duration-300 relative shadow-lg bg-white/5 backdrop-blur-sm border-2
-    ${
-      isSubmitted && attendanceStatus.status === 'hadir'
-        ? 'border-green-400/80'
-        : isSubmitted && attendanceStatus.status === 'tidak-hadir'
-        ? 'border-red-400/80'
-        : 'border-white/20 hover:-translate-y-1'
-    }
+    ${isSubmitted && attendanceStatus.status === 'hadir'
+            ? 'border-green-400/80'
+            : isSubmitted && attendanceStatus.status === 'tidak-hadir'
+                ? 'border-red-400/80'
+                : 'border-white/20 hover:-translate-y-1'
+        }
   `;
 
     const primaryActionText = ibadah.type === 'puasa' ? 'Puasa' : 'Hadir';
@@ -50,27 +49,25 @@ const IbadahCard: React.FC<IbadahCardProps> = ({ ibadah, attendanceStatus, onHad
     return (
         <div className={cardClasses}>
             <div className="grow flex flex-col items-center justify-center text-center">
-                <div className={`p-3 rounded-full mb-2 transition-colors ${
-                    isSubmitted && attendanceStatus.status === 'hadir' ? 'bg-green-500/50' : 
-                    isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`
-                    }>
+                <div className={`p-3 rounded-full mb-2 transition-colors ${isSubmitted && attendanceStatus.status === 'hadir' ? 'bg-green-500/50' :
+                        isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`
+                }>
                     <IbadahIcon className="h-8 w-8 text-teal-300" />
                 </div>
                 <h3 className="font-bold text-lg text-white">{ibadah.name}</h3>
-                 <div className="mt-1 h-10 flex flex-col items-center justify-center text-center">
+                <div className="mt-1 h-10 flex flex-col items-center justify-center text-center">
                     {attendanceStatus?.status === 'tidak-hadir' && attendanceStatus?.reason && (
                         <p className="text-xs text-yellow-300 italic truncate" title={attendanceStatus.reason}>Ada alasan</p>
                     )}
                 </div>
             </div>
 
-            <div className="w-full mt-3 text-sm min-h-[4.5rem] flex flex-col justify-center">
+            <div className="w-full mt-3 text-sm min-h-18 flex flex-col justify-center">
                 {isSubmitted ? (
                     <div className="flex flex-col items-center">
-                         <p className={`w-full text-center py-3 px-2 rounded-lg font-semibold flex items-center justify-center shadow-md ${
-                            attendanceStatus.status === 'hadir' ? 'bg-green-500/50 text-green-200' : 'bg-red-500/50 text-red-200'
+                        <p className={`w-full text-center py-3 px-2 rounded-lg font-semibold flex items-center justify-center shadow-md ${attendanceStatus.status === 'hadir' ? 'bg-green-500/50 text-green-200' : 'bg-red-500/50 text-red-200'
                             }`}>
-                            {attendanceStatus.status === 'hadir' ? <CheckIcon/> : <XIcon/> } 
+                            {attendanceStatus.status === 'hadir' ? <CheckIcon /> : <XIcon />}
                             {attendanceStatus.status === 'hadir' ? 'Terkirim' : 'Tidak Hadir'}
                         </p>
                     </div>

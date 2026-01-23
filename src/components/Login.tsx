@@ -69,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
     };
 
     return (
-        <div className="w-full min-h-screen bg-gradient-to-br from-slate-900 to-indigo-800 flex items-center justify-center p-4 antialiased">
+        <div className="w-full min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center p-4 antialiased">
             <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
 
                 <div className="text-center mb-10">

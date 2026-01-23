@@ -214,3 +214,14 @@ input[type="time"]::-moz-calendar-picker-indicator {
   filter: invert(1);
   cursor: pointer;
 }
+@keyframes swing {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(15deg); }
+  40% { transform: rotate(-10deg); }
+  60% { transform: rotate(5deg); }
+  80% { transform: rotate(-5deg); }
+}
+.animate-swing {
+  animation: swing 2s infinite ease-in-out;
+  transform-origin: top center;
+}

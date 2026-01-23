@@ -9,6 +9,7 @@ interface AnnouncementState {
     isHydrated: boolean;
     loadAnnouncements: (showLoading?: boolean) => Promise<void>;
     addAnnouncement: (data: Omit<Announcement, 'id' | 'timestamp'>, imageFile?: File, documentFile?: File) => Promise<void>;
+    updateAnnouncement: (announcementId: string, data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => Promise<void>;
     removeAnnouncement: (announcementId: string) => Promise<void>;
     deleteAnnouncement: (announcementId: string) => Promise<void>; // Alias for backward compatibility
     refreshAnnouncements: () => Promise<void>;
@@ -79,6 +80,50 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
         } catch (error: any) {
             set({
                 error: error instanceof Error ? error.message : 'Failed to add announcement',
+                isLoading: false
+            });
+            throw error;
+        }
+    },
+    updateAnnouncement: async (announcementId, data, imageFile, documentFile) => {
+        set({ isLoading: true, error: null });
+        try {
+            const updates: Partial<Announcement> = { ...data };
+
+            // Upload new image if provided
+            if (imageFile) {
+                try {
+                    const imageUrl = await announcementService.uploadAnnouncementImage(imageFile, announcementId);
+                    updates.imageUrl = imageUrl;
+                } catch (uploadError) {
+                    console.error('Failed to upload announcement image:', uploadError);
+                }
+            }
+
+            // Upload new document if provided
+            if (documentFile) {
+                try {
+                    const documentUrl = await announcementService.uploadAnnouncementDocument(documentFile, announcementId);
+                    updates.documentUrl = documentUrl;
+                    updates.documentName = documentFile.name;
+                } catch (uploadError) {
+                    console.error('Failed to upload announcement document:', uploadError);
+                }
+            }
+
+            // Update announcement in database
+            const updatedAnnouncement = await announcementService.updateAnnouncement(announcementId, updates);
+
+            // Update local state
+            set((state) => ({
+                announcements: state.announcements.map((a) =>
+                    a.id === announcementId ? updatedAnnouncement : a
+                ),
+                isLoading: false
+            }));
+        } catch (error: any) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to update announcement',
                 isLoading: false
             });
             throw error;

@@ -49,11 +49,21 @@ export async function GET(request: NextRequest) {
     // Use service role client to bypass RLS
     const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
+    // Check for limit parameter
+    const limitParam = request.nextUrl.searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : null;
+
     // Fetch all employees
-    const { data: employees, error } = await supabaseService
+    let query = supabaseService
       .from('employees')
       .select('*')
-      .order('name', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data: employees, error } = await query;
 
     if (error) {
       console.error('❌ [/api/employees] Database query failed:', {

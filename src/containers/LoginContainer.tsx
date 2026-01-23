@@ -5,12 +5,21 @@ import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
 import BrandedLoader from '@/components/BrandedLoader';
 import { useAppDataStore } from '@/store/store';
+import { timeValidationService } from '@/services/timeValidationService';
+import { useEffect } from 'react';
 
 const LoginContainer = () => {
     const router = useRouter();
-    const { setLoggedInEmployee } = useAppDataStore();
+    const { loggedInEmployee, setLoggedInEmployee, setHydrated, setAllUsersData } = useAppDataStore();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('Memuat...');
+
+    // 🔥 FIX: Redirect to dashboard if already logged in (prevents "stuck" on login page)
+    useEffect(() => {
+        if (loggedInEmployee && !isLoading) {
+            router.push('/dashboard');
+        }
+    }, [loggedInEmployee, router, isLoading]);
 
     const handleLogin = async (identifier: string, password: string) => {
         setIsLoading(true);
@@ -31,21 +40,38 @@ const LoginContainer = () => {
                 return { employee: null, error: data.error };
             }
 
-            // Simpan ke localStorage untuk client-side
-            localStorage.setItem('loggedInUserId', data.employee.id);
+            const employee = data.employee;
 
+            // 🔥 OPTIMIZATION: Set store state immediately before redirect
+            // This prevents MainLayoutShell from showing skeleton and calling /api/auth/me again
+            localStorage.setItem('loggedInUserId', employee.id);
 
-            // 🔥 ENHANCEMENT: Show branded loading before redirect
-            setLoadingMessage(`Selamat datang, ${data.employee.name}!`);
+            // Sync time in background (don't wait for it if we want maximum speed, 
+            // but syncWithServerTime is generally fast)
+            timeValidationService.syncWithServerTime();
 
-            // Tunggu sebentar untuk menampilkan loading dengan logo
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Store in global state
+            setLoggedInEmployee(employee);
+            setHydrated(true); // Mark as hydrated so MainLayoutShell doesn't reload
+            setAllUsersData(prev => ({
+                ...prev,
+                [employee.id]: {
+                    employee,
+                    attendance: prev[employee.id]?.attendance || {},
+                    history: prev[employee.id]?.history || {}
+                }
+            }));
+
+            // 🔥 ENHANCEMENT: Show branded success message
+            setLoadingMessage(`Selamat datang, ${employee.name}!`);
+
+            // Tunggu sebentar untuk branding (dikurangi dari 800ms ke 400ms untuk kecepatan)
+            await new Promise(resolve => setTimeout(resolve, 400));
 
             // Redirect ke dashboard
-            // MainLayoutShell akan memuat data lengkap melalui loadLoggedInEmployee()
             router.push('/dashboard');
 
-            return { employee: data.employee };
+            return { employee };
 
         } catch (err) {
             setIsLoading(false);

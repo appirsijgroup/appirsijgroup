@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { UserIcon, LockClosedIcon } from './Icons';
+import { User, Lock } from 'lucide-react';
 import PasswordInput from './PasswordInput';
 import type { Employee } from '@/types';
 
@@ -94,7 +94,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <div className="relative">
-                            <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                             <input
                                 id="nip"
                                 type="text"
@@ -111,7 +111,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Masukkan password Anda"
-                        leadingIcon={<LockClosedIcon className="h-5 w-5 text-slate-500" />}
+                        leadingIcon={<Lock className="h-5 w-5 text-slate-500" />}
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 pl-12 pr-12 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none text-white transition-colors"
                     />
 

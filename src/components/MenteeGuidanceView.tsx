@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { type Employee, type WeeklyReportSubmission, type TadarusRequest, type TadarusSession, type MissedPrayerRequest } from '../types';
-import { DocumentTextIcon, CalendarDaysIcon, CheckIcon, XIcon, ClockIcon, ChevronDownIcon } from './Icons';
+import { FileText, CalendarDays, Check, X, Clock, ChevronDown } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { PRAYERS } from '../data/prayers';
 import { useUIStore } from '@/store/store';
@@ -132,13 +132,13 @@ const SubTabButton: React.FC<{
     active: boolean;
     onClick: () => void;
     label: string;
-    icon: React.FC<{ className: string }>
+    icon: any;
 }> = ({ active, onClick, label, icon: Icon }) => (
     <button
         onClick={onClick}
-        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm
+        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm whitespace-nowrap shrink-0
           ${active
-                ? 'bg-teal-500 text-white'
+                ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.3)]'
                 : 'text-blue-200 hover:text-white hover:bg-white/10'
             }`}
     >
@@ -157,19 +157,19 @@ interface ApprovalStatusCardProps {
 const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, reviewedAt, notes }) => {
     const config = {
         'Menunggu': {
-            icon: <ClockIcon className="w-5 h-5 text-yellow-300" />,
+            icon: <Clock className="w-5 h-5 text-yellow-300" />,
             borderColor: "border-yellow-500/30",
             bgColor: "bg-yellow-900/20",
             textColor: "text-yellow-300",
         },
         'Disetujui': {
-            icon: <CheckIcon className="w-5 h-5 text-green-300" />,
+            icon: <Check className="w-5 h-5 text-green-300" />,
             borderColor: "border-green-500/30",
             bgColor: "bg-green-900/20",
             textColor: "text-green-300",
         },
         'Ditolak': {
-            icon: <XIcon className="w-5 h-5 text-red-300" />,
+            icon: <X className="w-5 h-5 text-red-300" />,
             borderColor: "border-red-500/30",
             bgColor: "bg-red-900/20",
             textColor: "text-red-300",
@@ -257,16 +257,16 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
     const getStatusChip = (status: WeeklyReportSubmission['status'] | TadarusRequest['status'] | MissedPrayerRequest['status']) => {
         let statusText = 'Menunggu';
         let colorClass = "bg-yellow-500/20 text-yellow-300";
-        let icon = <ClockIcon className="w-4 h-4" />;
+        let icon = <Clock className="w-4 h-4" />;
 
         if (status === 'approved') {
             statusText = 'Disetujui';
             colorClass = "bg-green-500/20 text-green-300";
-            icon = <CheckIcon className="w-4 h-4" />;
+            icon = <Check className="w-4 h-4" />;
         } else if (status.startsWith('rejected')) {
             statusText = 'Ditolak';
             colorClass = "bg-red-500/20 text-red-300";
-            icon = <XIcon className="w-4 h-4" />;
+            icon = <X className="w-4 h-4" />;
         } else if (status === 'pending_supervisor') {
             statusText = 'Menunggu Supervisor';
         } else if (status === 'pending_kaunit') {
@@ -299,9 +299,9 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
         <div className="space-y-6">
             <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
-                    <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
-                    <SubTabButton label="Sesi & Tadarus" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
-                    <SubTabButton label="Presensi Terlewat" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
+                    <SubTabButton label="Laporan Bulanan" icon={FileText} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
+                    <SubTabButton label="Sesi & Tadarus" icon={CalendarDays} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
+                    <SubTabButton label="Presensi Terlewat" icon={Clock} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
                 </div>
             </div>
 
@@ -342,7 +342,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     {getStatusChip(sub.status)}
-                                                    <ChevronDownIcon className={`w-6 h-6 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                                                    <ChevronDown className={`w-6 h-6 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                                                 </div>
                                             </button>
                                             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -405,7 +405,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                                             <p className="text-sm text-blue-200">Hari ini, {new Date(session.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'long' })}</p>
                                         </div>
                                         <button onClick={() => onMenteeAttendSession(session.id)} className="px-3 sm:px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                            <CheckIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                                             Konfirmasi Hadir
                                         </button>
                                     </div>
@@ -416,7 +416,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold text-white">Riwayat Pengajuan Kehadiran</h3>
                                 <button onClick={() => setIsRequestModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                    <CalendarDaysIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Ajukan Manual
+                                    <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" /> Ajukan Manual
                                 </button>
                             </div>
                             {sortedTadarusRequests.length > 0 ? (
@@ -445,7 +445,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-white">Pengajuan Presensi Terlewat</h3>
                             <button onClick={() => setIsMissedPrayerModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Buat Pengajuan
+                                <Clock className="w-4 h-4 sm:w-5 sm:h-5" /> Buat Pengajuan
                             </button>
                         </div>
                         {sortedMissedPrayerRequests.length > 0 ? (

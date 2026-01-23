@@ -35,7 +35,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         quranReadingHistory: emp.quran_reading_history || [], // Default to empty array if not exists
         todoList: emp.todo_list || [], // Default to empty array if not exists
         signature: emp.signature,
-        lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp,
+        lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
         managedHospitalIds: emp.managed_hospital_ids,
         mustChangePassword: emp.must_change_password,
         hospitalId: emp.hospital_id,
@@ -76,11 +76,12 @@ export const getEmployeesPaginated = async (
     };
 };
 
-// Get all employees with camelCase column names
-export const getAllEmployees = async (): Promise<Employee[]> => {
+// Get all employees (or limited set) with camelCase column names
+export const getAllEmployees = async (limit?: number): Promise<Employee[]> => {
     // 🔥 Use API endpoint instead of direct Supabase query
     // This avoids RLS policy issues with anon key
-    const response = await fetch('/api/employees', {
+    const url = limit ? `/api/employees?limit=${limit}` : '/api/employees';
+    const response = await fetch(url, {
         credentials: 'include', // Include session cookie
     });
 
@@ -367,16 +368,20 @@ export const updateEmployee = async (
         }
     }
 
-    const { data, error } = await (supabase
-        .from('employees') as any) // <--- Cast to any here
-        .update(sanitizedUpdates)
-        .eq('id', id)
-        .select()
-        .maybeSingle(); // Use maybeSingle() instead of single() to handle cases where no data is returned
+    // Use the API route instead of direct Supabase to bypass RLS
+    const response = await fetch('/api/employees/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...sanitizedUpdates }),
+        credentials: 'include'
+    });
 
-    if (error) {
-        throw new Error(`Failed to update employee: ${error.message || 'Unknown error'} (Code: ${error.code || 'N/A'})`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to update employee: ${errorData.error || response.statusText}`);
     }
+
+    const { data } = await response.json();
 
 
     // If no data returned, fetch the updated employee to return

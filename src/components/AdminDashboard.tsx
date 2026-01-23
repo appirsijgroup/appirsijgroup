@@ -6,7 +6,28 @@ import { createPortal } from 'react-dom';
 import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, AudienceType, AudienceRules, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
-import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon, PencilIcon, XIcon, UserGroupIcon, ChartBarIcon, DocumentTextIcon, SparklesIcon, availableIconsForSunnah, ChevronDownIcon, ShieldCheckIcon, MegaphoneIcon, MosqueIcon, PlusCircleIcon, TrashIcon, ArrowPathIcon } from './Icons';
+import {
+    Search,
+    FileDown,
+    FileSpreadsheet,
+    CalendarDays,
+    User,
+    Upload,
+    Pencil,
+    X,
+    Users,
+    BarChart3,
+    FileText,
+    Sparkles,
+    ChevronDown,
+    ShieldCheck,
+    Megaphone,
+    Building2,
+    PlusCircle,
+    Trash2,
+    RefreshCw
+} from 'lucide-react';
+import { availableIconsForSunnah } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
 import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -204,7 +225,7 @@ const MultiSelectDropdown: React.FC<{
                 className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 text-left flex justify-between items-center"
             >
                 <span className="text-white truncate">{displayLabel}</span>
-                <ChevronDownIcon className={`w-5 h-5 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
                 <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-white/20 rounded-md shadow-lg">
@@ -453,7 +474,7 @@ const ActivityModal: React.FC<{
                             {audienceType === 'manual' && (
                                 <div className="space-y-2 grow flex flex-col">
                                     <div className="relative shrink-0">
-                                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                         <input type="text" placeholder="Cari nama atau NIP..." value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                                     </div>
                                     <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 space-y-1 bg-black/20">
@@ -518,7 +539,7 @@ const ActivityManagement: React.FC<{
         <div>
             <div className="flex justify-end mb-4">
                 <button onClick={() => onOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
-                    <CalendarDaysIcon className="w-5 h-5" />
+                    <CalendarDays className="w-5 h-5" />
                     Tambah Kegiatan Baru
                 </button>
             </div>
@@ -1220,7 +1241,7 @@ const UserImportModal: React.FC<{
                             disabled={!file || isProcessing}
                             className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            <UploadIcon className="w-5 h-5" />
+                            <Upload className="w-5 h-5" />
                             {isProcessing ? 'Memproses...' : 'Impor Data'}
                         </button>
                     )}
@@ -1273,7 +1294,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
         <div>
             <div className="flex flex-col sm:flex-row justify-between mb-4 gap-4">
                 <div className="relative w-full sm:max-w-xs">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         value={pagination?.searchTerm || ''}
@@ -1284,11 +1305,11 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                 </div>
                 <div className="flex justify-end gap-2 w-full sm:w-auto">
                     <button onClick={() => setIsImportModalOpen(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                        <UploadIcon className="w-5 h-5" />
+                        <Upload className="w-5 h-5" />
                         Impor
                     </button>
                     <button onClick={() => onOpenUserModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                        <UserIcon className="w-5 h-5" />
+                        <User className="w-5 h-5" />
                         Tambah
                     </button>
                 </div>
@@ -1312,7 +1333,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                         {isLoading ? (
                             <tr>
                                 <td colSpan={9} className="text-center p-12">
-                                    <ArrowPathIcon className="w-8 h-8 animate-spin mx-auto text-teal-400 mb-2" />
+                                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-teal-400 mb-2" />
                                     <p className="text-blue-200">Memuat data...</p>
                                 </td>
                             </tr>
@@ -1429,7 +1450,7 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <div className="relative w-full sm:max-w-xs">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         value={searchTerm}
@@ -1999,7 +2020,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     <label className="text-xs font-semibold text-blue-200 block mb-1">Cari Nama atau NIP</label>
                     <div className="relative">
                         <input type="text" value={nameOrNipFilter} onChange={e => setNameOrNipFilter(e.target.value)} placeholder="Ketik nama atau NIP..." className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                        <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
                 </div>
                 {reportType === 'prayer' && dateFilterType === 'monthly' && (
@@ -2013,8 +2034,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </div>
                 )}
                 <div className={`${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-1' : 'lg:col-span-2'} flex items-center justify-end gap-2`} style={{ position: 'relative', zIndex: 40 }}>
-                    <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
-                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><ExcelIcon className="w-5 h-5" /></button>
+                    <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><FileDown className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
+                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><FileSpreadsheet className="w-5 h-5" /></button>
                 </div>
             </div>
 
@@ -2046,8 +2067,8 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center justify-center gap-2">
-                                        <button onClick={() => onEditAttendance(record)} title="Edit Presensi" className="p-1.5 text-blue-300 hover:text-white rounded-md hover:bg-white/10"><PencilIcon className="w-4 h-4" /></button>
-                                        <button onClick={() => onDeleteAttendance(record)} title="Hapus Presensi" className="p-1.5 text-red-400 hover:text-red-300 rounded-md hover:bg-white/10"><XIcon className="w-4 h-4" /></button>
+                                        <button onClick={() => onEditAttendance(record)} title="Edit Presensi" className="p-1.5 text-blue-300 hover:text-white rounded-md hover:bg-white/10"><Pencil className="w-4 h-4" /></button>
+                                        <button onClick={() => onDeleteAttendance(record)} title="Hapus Presensi" className="p-1.5 text-red-400 hover:text-red-300 rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
                                     </div>
                                 </td>
                             </tr>
@@ -2411,7 +2432,7 @@ const SunnahIbadahManagement: React.FC<{
         <div>
             <div className="flex justify-end mb-4">
                 <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
-                    <SparklesIcon className="w-5 h-5" />
+                    <Sparkles className="w-5 h-5" />
                     Tambah Ibadah Sunnah
                 </button>
             </div>
@@ -2598,7 +2619,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                     placeholder="Cari nama atau NIP karyawan..."
                     className="w-full bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
                 />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
             <div className="overflow-x-auto rounded-lg border border-white/20">
                 <table className="min-w-full text-sm text-left text-white">
@@ -2720,10 +2741,10 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
 };
 
 // Tab button component for navigation
-const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string; icon: React.FC<{ className: string }> }> = ({ active, onClick, label, icon: Icon }) => (
+const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string; icon: any }> = ({ active, onClick, label, icon: Icon }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 py-3 px-5 rounded-t-lg font-semibold transition-all duration-300 ease-in-out text-base border-b-2
+        className={`flex items-center gap-2 py-3 px-5 rounded-t-lg font-semibold transition-all duration-300 ease-in-out text-base border-b-2 whitespace-nowrap shrink-0
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:text-white'
@@ -2738,7 +2759,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string;
 const SubTabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${active ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-blue-200'}`}
+        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${active ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-blue-200'}`}
     >
         {children}
     </button>
@@ -2798,7 +2819,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
         <div>
             <h3 className="text-xl font-bold text-white mb-4">Manajemen Peran & Akses Admin</h3>
             <div className="mb-4 relative max-w-md">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                     type="text"
                     value={searchTerm}
@@ -3085,11 +3106,11 @@ const HospitalModal: React.FC<HospitalModalProps> = ({ isOpen, onClose, onSave, 
                             <div className="flex flex-col gap-2">
                                 <input type="file" ref={fileInputRef} onChange={handleLogoChange} accept="image/png, image/jpeg" className="hidden" />
                                 <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold flex items-center gap-2">
-                                    <UploadIcon className="w-5 h-5" /> Unggah Logo
+                                    <Upload className="w-5 h-5" /> Unggah Logo
                                 </button>
                                 {logo && (
                                     <button type="button" onClick={() => setLogo(null)} className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-500 font-semibold flex items-center gap-2">
-                                        <TrashIcon className="w-5 h-5" /> Hapus Logo
+                                        <Trash2 className="w-5 h-5" /> Hapus Logo
                                     </button>
                                 )}
                             </div>
@@ -3147,7 +3168,7 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h3 className="text-xl font-bold text-white">Manajemen Rumah Sakit</h3>
                 <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
-                    <PlusCircleIcon className="w-5 h-5" />
+                    <PlusCircle className="w-5 h-5" />
                     Tambah RS Baru
                 </button>
             </div>
@@ -3294,7 +3315,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
         onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
-        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, isLoadingEmployees
+        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, isLoadingEmployees,
+        pagination, paginatedEmployees
     } = props;
     /* eslint-enable */
 
@@ -3319,8 +3341,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     // 🔥 Load employee data on-demand when switching to Manajemen Pengguna or Reports tab
     useEffect(() => {
         if ((activeView === 'manajemen-pengguna' || activeView === 'reports') && onLoadEmployees) {
-            const hasEmployeeData = Object.keys(allUsersData).length > 0;
-            if (!hasEmployeeData) {
+            const hasEnoughData = Object.keys(allUsersData).length > 1;
+            if (!hasEnoughData) {
                 onLoadEmployees();
             }
         }
@@ -3548,14 +3570,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             <div className="mb-6">
                 <div className="flex items-center justify-between border-b border-white/20 px-2">
                     <div className="flex items-center gap-2 -mb-px overflow-x-auto min-w-0 pr-4">
-                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
+                        <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={BarChart3} />
                         {isSuperAdmin(loggedInEmployee) && (
-                            <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
+                            <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={Users} />
                         )}
-                        <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={DocumentTextIcon} />
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={MosqueIcon} />}
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
+                        <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={FileText} />
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheck} />}
+                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheck} />}
                     </div>
 
                     {/* 🔥 Global Refresh Button */}
@@ -3563,10 +3585,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         <button
                             onClick={() => onLoadEmployees()}
                             disabled={isLoadingEmployees}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-blue-200 hover:text-white rounded-lg transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap mb-2 shrink-0"
+                            title={isLoadingEmployees ? 'Memuat...' : 'Refresh Data'}
+                            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-blue-200 hover:text-white rounded-lg transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 mb-2"
                         >
-                            <ArrowPathIcon className={`w-4 h-4 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
-                            {isLoadingEmployees ? 'Memuat...' : 'Refresh Data'}
+                            <RefreshCw className={`w-5 h-5 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
                         </button>
                     )}
                 </div>
@@ -3647,14 +3669,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             </div>
                         </div>
                         <div className="mt-8">
-                            {reportSubView === 'sholat' && (
-                                <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
-                            )}
-                            {reportSubView === 'kegiatan' && (
-                                <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
-                            )}
-                            {reportSubView === 'mutabaah' && (
-                                <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
+                            {isLoadingEmployees ? (
+                                <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                                    <p className="text-teal-200/60 font-medium animate-pulse">Memuat data laporan...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {reportSubView === 'sholat' && (
+                                        <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                                    )}
+                                    {reportSubView === 'kegiatan' && (
+                                        <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                                    )}
+                                    {reportSubView === 'mutabaah' && (
+                                        <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

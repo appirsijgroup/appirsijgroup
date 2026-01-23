@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from './Icons';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface PasswordInputProps {
     id: string;
@@ -57,7 +57,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
                     aria-label={isPasswordVisible ? 'Sembunyikan password' : 'Tampilkan password'}
                     tabIndex={-1}
                 >
-                    {isPasswordVisible ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                    {isPasswordVisible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmission, MenteeTarget, ToDoItem, DailyActivity } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { ChartBarIcon, DocumentTextIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, CheckIcon, TrashIcon, CheckSquareIcon, UserGroupIcon, ShieldCheckIcon, PencilIcon, LockClosedIcon, PlusCircleIcon, ListBulletIcon, EyeIcon, ArrowUturnLeftIcon, CheckCircleIcon, InformationCircleIcon, TrendingUpIcon } from './Icons';
+import { BarChart3, FileText, TrendingUp, CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, PlusCircle, List, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
 import MenteeGuidanceView from './MenteeGuidanceView';
 import { MentorDashboard, type MentorDashboardView } from './MentorDashboard';
 import ConfirmationModal from './ConfirmationModal';
@@ -18,13 +18,13 @@ const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b'
 
 const TabButton: React.FC<{
     label: string;
-    icon: React.FC<{ className: string }>;
+    icon: any;
     active: boolean;
     onClick: () => void;
 }> = ({ label, icon: Icon, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
@@ -367,7 +367,7 @@ const ReadingActivityCard: React.FC<{
                 {/* Status Badge */}
                 {isTargetMet ? (
                     <div className="flex items-center gap-1 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
-                        <CheckCircleIcon className="w-4 h-4 text-green-400" />
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
                         <span className="text-xs font-semibold text-green-400">
                             Tercapai!
                         </span>
@@ -514,7 +514,7 @@ const SimpleActivityCard: React.FC<{
                 {/* Status Badge */}
                 {isDone ? (
                     <div className="flex items-center gap-1 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
-                        <CheckCircleIcon className="w-4 h-4 text-green-400" />
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
                         <span className="text-xs font-semibold text-green-400">
                             Selesai
                         </span>
@@ -658,7 +658,7 @@ const RiwayatBacaan: React.FC<{
                                 <td className="px-2 sm:px-4 py-2 sm:py-3 text-[11px] sm:text-sm whitespace-nowrap">{item.detail}</td>
                                 <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
                                     <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 sm:p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
-                                        <TrashIcon className="w-4 h-4 sm:w-4 sm:h-4" />
+                                        <Trash2 className="w-4 h-4 sm:w-4 sm:h-4" />
                                     </button>
                                 </td>
                             </tr>
@@ -988,11 +988,11 @@ const ToDoListView: React.FC<{
         <div className="bg-gray-800/50 p-6 rounded-2xl shadow-lg border border-white/10 space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                    <ListBulletIcon className="w-6 h-6 text-teal-300" />
+                    <List className="w-6 h-6 text-teal-300" />
                     To-Do List Pribadi
                 </h3>
                 <button onClick={() => setIsAddModalOpen(true)} className="shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
-                    <PlusCircleIcon className="w-5 h-5" /> Tambah Tugas
+                    <PlusCircle className="w-5 h-5" /> Tambah Tugas
                 </button>
             </div>
 
@@ -1003,7 +1003,7 @@ const ToDoListView: React.FC<{
                         <label className="text-xs font-medium text-blue-100 block mb-1">Filter Rentang Tanggal</label>
                         <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white text-left flex justify-between items-center">
                             <span>{dateRange.start ? `${formatDateForDisplay(dateRange.start)} - ${formatDateForDisplay(dateRange.end)}` : 'Pilih Tanggal'}</span>
-                            <CalendarDaysIcon className="w-5 h-5 text-gray-400" />
+                            <CalendarDays className="w-5 h-5 text-gray-400" />
                         </button>
                         {isCalendarOpen && (
                             <div className="absolute z-10 top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg p-4 shadow-xl" onMouseLeave={() => setHoverDate(null)}>
@@ -1052,15 +1052,15 @@ const ToDoListView: React.FC<{
                                 <p className="font-semibold text-white">{task.title}</p>
                                 {(task.date || task.time) && (
                                     <p className="text-xs text-blue-200 mt-1 flex items-center gap-1.5">
-                                        <CalendarDaysIcon className="w-4 h-4" />
+                                        <CalendarDays className="w-4 h-4" />
                                         {formatDate(task.date)} {task.time}
                                     </p>
                                 )}
                             </div>
                             <div className="shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><CheckIcon className="w-5 h-5" /></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'complete', todo: task })} className="p-2 text-green-400 hover:text-green-300 rounded-full hover:bg-white/10" title="Selesaikan"><Check className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><Eye className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><Trash2 className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Tidak ada tugas aktif</p>
@@ -1072,10 +1072,10 @@ const ToDoListView: React.FC<{
                                 <p className="text-xs text-gray-500 mt-1">Selesai: {formatDateTime(task.completedAt)}</p>
                             </div>
                             <div className="shrink-0 flex items-center gap-1">
-                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><ArrowUturnLeftIcon className="w-5 h-5" /></button>
-                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><PencilIcon className="w-5 h-5" /></button>
-                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><EyeIcon className="w-5 h-5" /></button>
-                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><TrashIcon className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'reopen', todo: task })} className="p-2 text-yellow-400 hover:text-yellow-300 rounded-full hover:bg-white/10" title="Aktifkan Kembali"><RotateCcw className="w-5 h-5" /></button>
+                                <button onClick={() => { setEditingTodo(task); setEditCompletionNotes(task.completionNotes || ''); }} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Edit Catatan Selesai"><Pencil className="w-5 h-5" /></button>
+                                <button onClick={() => setViewingTodo(task)} className="p-2 text-blue-400 hover:text-blue-300 rounded-full hover:bg-white/10" title="Lihat Detail"><Eye className="w-5 h-5" /></button>
+                                <button onClick={() => setConfirmingAction({ type: 'delete', todo: task })} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus"><Trash2 className="w-5 h-5" /></button>
                             </div>
                         </div>
                     )) : <p className="text-center pt-10 text-gray-400 italic">Belum ada tugas selesai</p>
@@ -1113,21 +1113,21 @@ const ToDoListView: React.FC<{
                         <div className="p-6 space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                                 <div className="flex items-start gap-3">
-                                    {viewingTodo.completed ? <CheckCircleIcon className="w-5 h-5 text-green-400 shrink-0 mt-0.5" /> : <InformationCircleIcon className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />}
+                                    {viewingTodo.completed ? <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" /> : <Info className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />}
                                     <div>
                                         <p className="text-blue-200">Status</p>
                                         <p className={`font-semibold text-lg ${viewingTodo.completed ? 'text-green-300' : 'text-yellow-300'}`}>{viewingTodo.completed ? 'Selesai' : 'Aktif'}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <CalendarDaysIcon className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
+                                    <CalendarDays className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-blue-200">Jadwal</p>
                                         <p className="font-semibold text-white text-lg">{formatDate(viewingTodo.date) || 'Tidak diatur'} {viewingTodo.time}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <ClockIcon className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
+                                    <Clock className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
                                     <div>
                                         <p className="text-blue-200">Dibuat pada</p>
                                         <p className="font-semibold text-white text-base">{formatDateTime(viewingTodo.createdAt)}</p>
@@ -1135,7 +1135,7 @@ const ToDoListView: React.FC<{
                                 </div>
                                 {viewingTodo.completed && (
                                     <div className="flex items-start gap-3">
-                                        <CheckSquareIcon className="w-5 h-5 text-green-300 shrink-0 mt-0.5" />
+                                        <CheckSquare className="w-5 h-5 text-green-300 shrink-0 mt-0.5" />
                                         <div>
                                             <p className="text-blue-200">Diselesaikan pada</p>
                                             <p className="font-semibold text-white text-base">{formatDateTime(viewingTodo.completedAt)}</p>
@@ -1369,6 +1369,17 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
 
+    // 🔥 FIX: Auto-load all employees data when entering Analytics or Panel Mentor
+    useEffect(() => {
+        if ((activeTab === 'analytics' || activeTab === 'panel-mentor') && props.onLoadEmployees) {
+            // Check if we need to load data (if allUsersData is empty or just has current user)
+            const userCount = Object.keys(allUsersData).length;
+            if (userCount <= 1) {
+                props.onLoadEmployees();
+            }
+        }
+    }, [activeTab, allUsersData, props.onLoadEmployees]);
+
     // State for MentorDashboard target creation form
     const [targetMenteeId, setTargetMenteeId] = useState('');
     const [targetTitle, setTargetTitle] = useState('');
@@ -1426,6 +1437,15 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     };
 
     const renderContent = () => {
+        if (props.isLoadingEmployees && (activeTab === 'analytics' || activeTab === 'panel-mentor')) {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 sm:p-20 bg-black/20 rounded-2xl border border-white/5">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                    <p className="text-teal-200/60 text-sm font-medium animate-pulse">Memuat data...</p>
+                </div>
+            );
+        }
+
         switch (activeTab) {
             case 'kinerja':
                 return <MemoizedKinerjaView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} />;
@@ -1512,9 +1532,9 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     <div className="flex items-center gap-2 -mb-px min-w-max">
                         {/* Remove Aktivitas Pribadi tab group since it's now in AktivitasSaya component */}
                         <>
-                            <TabButton label="Kinerja" icon={ChartBarIcon} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                            {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUpIcon} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
-                            <TabButton label="Rapot APPI" icon={DocumentTextIcon} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
+                            <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
+                            {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
+                            <TabButton label="APPI" icon={FileText} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
                         </>
                     </div>
                 </div>

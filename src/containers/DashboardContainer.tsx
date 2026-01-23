@@ -33,7 +33,7 @@ interface DashboardContainerProps {
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) => {
     const router = useRouter();
-    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, activityStatsRefreshCounter } = useAppDataStore();
+    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, activityStatsRefreshCounter, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
     const { addToast } = useUIStore();
     // Note: Navigation handled by useRouter
 
@@ -1116,9 +1116,68 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onSubmitReport={handleSubmitWeeklyReport}
             // ...
             weeklyReportSubmissions={weeklyReportSubmissions}
-            onReviewReport={(_id, _decision, _notes) => { // eslint-disable-line
-                // Implement proper review logic same as App.tsx
-                // This requires updating submission and notifying mentee
+            onReviewReport={async (id, decision, notes, reviewerRole) => {
+                try {
+                    // 1. Determine new status based on decision and reviewer role
+                    let newStatus = 'pending_mentor';
+                    if (decision === 'rejected') {
+                        newStatus = `rejected_${reviewerRole}` as any;
+                    } else {
+                        // Approved
+                        if (reviewerRole === 'mentor') newStatus = 'pending_supervisor';
+                        else if (reviewerRole === 'supervisor') newStatus = 'pending_kaunit';
+                        else if (reviewerRole === 'kaunit') newStatus = 'approved';
+                    }
+
+                    // 2. Prepare update payload
+                    const updates: any = { status: newStatus };
+                    const now = Date.now();
+                    if (reviewerRole === 'mentor') {
+                        updates.mentorNotes = notes;
+                        updates.mentorReviewedAt = now;
+                    } else if (reviewerRole === 'supervisor') {
+                        updates.supervisorNotes = notes;
+                        updates.supervisorReviewedAt = now;
+                    } else if (reviewerRole === 'kaunit') {
+                        updates.kaUnitNotes = notes;
+                        updates.kaUnitReviewedAt = now;
+                    }
+
+                    // 3. Call service
+                    const { reviewWeeklyReport } = await import('@/services/weeklyReportService');
+                    const updatedSubmission = await reviewWeeklyReport(id, updates);
+
+                    if (updatedSubmission) {
+                        // 4. Update local store
+                        addOrUpdateWeeklyReportSubmission(updatedSubmission);
+
+                        // 5. Notify mentee
+                        const submission = weeklyReportSubmissions.find(s => s.id === id);
+                        if (submission) {
+                            const message = decision === 'approved'
+                                ? `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} telah disetujui oleh ${reviewerRole}.`
+                                : `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} DITOLAK oleh ${reviewerRole}.`;
+
+                            createNotification({
+                                id: Date.now().toString(),
+                                userId: submission.menteeId,
+                                type: 'report_status',
+                                title: `Laporan ${decision === 'approved' ? 'Disetujui' : 'Ditolak'}`,
+                                message: message,
+                                timestamp: Date.now(),
+                                isRead: false,
+                                relatedEntityId: id
+                            } as any);
+                        }
+
+                        addToast(`Laporan berhasil ${decision === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+                    } else {
+                        throw new Error('Gagal memperbarui laporan di server');
+                    }
+                } catch (error) {
+                    console.error('Error reviewing report:', error);
+                    addToast('Gagal memproses review laporan', 'error');
+                }
             }}
             tadarusRequests={tadarusRequests}
             onCreateTadarusSession={(data) => {
@@ -1150,6 +1209,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onLogAudit={logAudit}
             onCreateAnnouncement={(data: any, imageFile?: File, documentFile?: File) => addAnnouncement({ ...data, authorId: loggedInEmployee.id, authorName: loggedInEmployee.name }, imageFile, documentFile)}
             onDeleteAnnouncement={deleteAnnouncement}
+            onLoadEmployees={loadAllEmployees}
+            isLoadingEmployees={isLoadingEmployees}
             history={allUsersData[loggedInEmployee.id]?.history || []}
             attendance={allUsersData[loggedInEmployee.id]?.attendance}
             sunnahIbadahList={sunnahIbadahList}

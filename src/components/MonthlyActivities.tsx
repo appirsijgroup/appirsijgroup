@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { type Employee, type MonthlyActivityProgress, type WeeklyReportSubmission, type DailyActivity, type MutabaahLockingMode } from '../types';
-import { CheckSquareIcon, SquareIcon, SendIcon, CalendarDaysIcon, LockClosedIcon } from './Icons';
+import { CheckSquare, Square, Send, CalendarDays, Lock } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useUIStore } from '@/store/store';
 
@@ -147,11 +147,11 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
         const today = new Date();
         if (date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth()) {
-             const dayOfMonth = today.getDate();
-             const weekIndex = weeks.findIndex(w => w.days.includes(dayOfMonth));
-             setCurrentWeekIndex(weekIndex >= 0 ? weekIndex : 0);
+            const dayOfMonth = today.getDate();
+            const weekIndex = weeks.findIndex(w => w.days.includes(dayOfMonth));
+            setCurrentWeekIndex(weekIndex >= 0 ? weekIndex : 0);
         } else {
-             setCurrentWeekIndex(0);
+            setCurrentWeekIndex(0);
         }
 
     }, [monthKey, weeks, date]);
@@ -174,7 +174,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     }, [date.getFullYear(), date.getMonth(), onDateChange]);
 
     const handleProgressChange = (day: string, activityId: string, value: boolean) => {
-        if(isReadOnlyForWeek) return;
+        if (isReadOnlyForWeek) return;
 
         // Create a deep copy of the current month's progress to modify
         const newMonthProgress = JSON.parse(JSON.stringify(progress));
@@ -457,7 +457,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
             {!isMonthActivated ? (
                 <div className="flex flex-col items-center justify-center text-center bg-black/20 rounded-2xl p-8 sm:p-12 animate-view-change border-2 border-dashed border-teal-500/50 w-full max-w-7xl mx-auto">
-                    <CalendarDaysIcon className="w-20 h-20 text-teal-300 mb-6" />
+                    <CalendarDays className="w-20 h-20 text-teal-300 mb-6" />
                     <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">Aktivasi Lembar Mutaba'ah Diperlukan</h2>
                     <p className="text-blue-200 text-base sm:text-lg mt-3 max-w-3xl">
                         Untuk dapat melakukan presensi dan mencatat aktivitas lainnya, Anda harus mengaktifkan Lembar Mutaba'ah untuk bulan <strong>{date.toLocaleDateString('id-ID', { month: 'long' })}</strong> terlebih dahulu.
@@ -485,27 +485,26 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                             <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">
                                 <div className="flex items-center justify-center gap-2 min-w-max">
                                     {weeks.map(({ weekIndex, days }) => {
-                                    const submission = weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndex);
-                                    let statusDot: React.ReactNode = null;
-                                    if (submission) {
-                                        statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${statusConfig[submission.status].dot}`}></span>;
-                                    } else if (isPastWeek && currentWeekIndex === weekIndex) {
-                                         statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 bg-green-400`}></span>;
-                                    }
+                                        const submission = weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndex);
+                                        let statusDot: React.ReactNode = null;
+                                        if (submission) {
+                                            statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${statusConfig[submission.status].dot}`}></span>;
+                                        } else if (isPastWeek && currentWeekIndex === weekIndex) {
+                                            statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 bg-green-400`}></span>;
+                                        }
 
-                                    return (
-                                        <button
-                                            key={weekIndex}
-                                            onClick={() => setCurrentWeekIndex(weekIndex)}
-                                            className={`relative px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
-                                                currentWeekIndex === weekIndex ? 'bg-teal-500 text-white' : 'bg-white/10 hover:bg-white/20 text-blue-200'
-                                            }`}
-                                        >
-                                            Pekan {weekIndex + 1}
-                                            {statusDot}
-                                        </button>
-                                    );
-                                })}
+                                        return (
+                                            <button
+                                                key={weekIndex}
+                                                onClick={() => setCurrentWeekIndex(weekIndex)}
+                                                className={`relative px-4 py-2 text-sm font-semibold rounded-full transition-colors ${currentWeekIndex === weekIndex ? 'bg-teal-500 text-white' : 'bg-white/10 hover:bg-white/20 text-blue-200'
+                                                    }`}
+                                            >
+                                                Pekan {weekIndex + 1}
+                                                {statusDot}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -517,7 +516,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                             <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sm:sticky sm:left-[250px] sm:z-20 bg-gray-900 whitespace-nowrap">Progres</th>
                                             {selectedWeekDays.map(day => (
                                                 <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-20 min-w-[80px] whitespace-nowrap ${isCurrentMonthView && day === todayDay ? 'bg-teal-700' : 'bg-gray-800'}`}>
-                                                    {new Date(date.getFullYear(), date.getMonth(), day).toLocaleDateString('id-ID', { weekday: 'short' })} <br/> {day}
+                                                    {new Date(date.getFullYear(), date.getMonth(), day).toLocaleDateString('id-ID', { weekday: 'short' })} <br /> {day}
                                                 </th>
                                             ))}
                                         </tr>
@@ -552,7 +551,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                                                 return (
                                                                     <td key={day} className={`text-center border-l border-gray-700 ${isCurrentMonthView && day === todayDay ? 'bg-teal-900/40' : ''}`}>
                                                                         <div className="w-full h-full flex items-center justify-center py-3">
-                                                                            {isChecked ? <CheckSquareIcon className="w-6 h-6 text-teal-400" /> : <SquareIcon className="w-6 h-6 text-gray-600" />}
+                                                                            {isChecked ? <CheckSquare className="w-6 h-6 text-teal-400" /> : <Square className="w-6 h-6 text-gray-600" />}
                                                                         </div>
                                                                     </td>
                                                                 );
@@ -608,8 +607,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                     )}
 
                     {activeTab === 'monthly' && (
-                         <div className="animate-view-change">
-                             <div className="overflow-x-auto rounded-lg border border-white/20">
+                        <div className="animate-view-change">
+                            <div className="overflow-x-auto rounded-lg border border-white/20">
                                 <table className="min-w-full text-sm text-left text-white border-collapse">
                                     <thead>
                                         <tr>
@@ -630,7 +629,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                                         <td className="px-3 py-3 font-semibold text-center sm:sticky sm:left-[250px] bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}</td>
                                                         {Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0')).map(dayKey => (
                                                             <td key={dayKey} className={`text-center border-l border-gray-700 group-hover:bg-white/5 ${isCurrentMonthView && parseInt(dayKey) === todayDay ? 'bg-teal-900/40' : ''}`}>
-                                                                <div className="w-full h-full flex items-center justify-center py-3">{progress[dayKey]?.[activity.id] ? <CheckSquareIcon className="w-6 h-6 text-teal-400" /> : <SquareIcon className="w-6 h-6 text-gray-600" />}</div>
+                                                                <div className="w-full h-full flex items-center justify-center py-3">{progress[dayKey]?.[activity.id] ? <CheckSquare className="w-6 h-6 text-teal-400" /> : <Square className="w-6 h-6 text-gray-600" />}</div>
                                                             </td>
                                                         ))}
                                                     </tr>
@@ -681,14 +680,14 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                     </div>
                                 </div>
                             </div>
-                         </div>
+                        </div>
                     )}
-                     {successMessage && <p className="mt-4 text-green-300 animate-fade-in text-center">{successMessage}</p>}
+                    {successMessage && <p className="mt-4 text-green-300 animate-fade-in text-center">{successMessage}</p>}
                 </>
             )}
 
             {submissionConfirmation && createPortal(
-                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20">
                         <h3 className="text-lg font-bold text-white mb-2">Konfirmasi Pengajuan Laporan</h3>
                         <p className="text-blue-200 mb-4">Apakah Anda yakin ingin mengajukan laporan untuk <strong>Pekan {currentWeekIndex + 1} - {date.toLocaleDateString('id-ID', { month: 'long' })}</strong> kepada mentor Anda?</p>

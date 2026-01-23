@@ -59,13 +59,11 @@ const CreateActivityPage = () => {
       };
 
       // Split sessions based on allowed types in team_attendance_sessions table
-      const teamAttendanceTypes = ['KIE', 'Doa Bersama'];
-      const tadarusTypes = ['BBQ', 'UMUM'];
+      const teamAttendanceTypes = ['KIE', 'Doa Bersama', 'BBQ', 'UMUM'];
 
       const teamSessions = sessions.filter(s => teamAttendanceTypes.includes(s.type as any));
-      const tadarusSessionsList = sessions.filter(s => tadarusTypes.includes(s.type as any));
 
-      // 1. Handle Team Attendance Sessions (KIE, Doa Bersama)
+      // 1. Handle Team Attendance Sessions (KIE, Doa Bersama, BBQ, UMUM)
       if (teamSessions.length > 0) {
         const sessionsWithCreator = teamSessions.map(session => ({
           ...session,
@@ -77,44 +75,6 @@ const CreateActivityPage = () => {
         }));
 
         await addTeamAttendanceSessions(sessionsWithCreator);
-      }
-
-      // 2. Handle Tadarus Sessions (BBQ, UMUM)
-      if (tadarusSessionsList.length > 0) {
-        const { createTadarusSession } = await import('@/services/tadarusService');
-        // We use getState() inside the function to ensure we get the store, 
-        // but we can also use the hook if we extracted it. 
-        // Since this component is client-side, dynamic import is fine.
-        // Note: useGuidanceStore needs to be imported if we want to update local state immediately
-        // But for now, we rely on implicit refresh or just navigation.
-        // Let's grab the store updater if possible. 
-        // Just inserting to DB is enough as navigation triggers refresh usually.
-
-        const tadarusPromises = tadarusSessionsList.map(session => {
-          const title = (session.type as any) === 'BBQ' ? 'Bimbingan Baca Al-Qur\'an' : 'Tadarus Umum';
-
-          // Construct TadarusSession object
-          // Note: manualParticipantIds maps to participantIds
-          // We default audienceRules to empty as Tadarus doesn't support it natively yet
-          return createTadarusSession({
-            title: title,
-            date: session.date,
-            startTime: session.startTime,
-            endTime: session.endTime,
-            category: session.type as unknown as 'BBQ' | 'UMUM',
-            notes: '',
-            isRecurring: false,
-            mentorId: creator.id,
-            participantIds: session.manualParticipantIds || [],
-            presentMenteeIds: [],
-            status: 'open',
-            mentorPresent: true
-          });
-        });
-
-        await Promise.all(tadarusPromises);
-
-        // Optionally update store if needed, but page reload/navigate handles it
       }
 
       // Sukses - navigate ke halaman jadwal

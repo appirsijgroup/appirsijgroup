@@ -91,5 +91,11 @@ export function setSessionCookie(response: NextResponse, token: string) {
  * Used in logout API routes
  */
 export function clearSessionCookie(response: NextResponse) {
-  response.cookies.delete('session');
+  response.cookies.set('session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/',
+  });
 }

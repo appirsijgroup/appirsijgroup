@@ -1,48 +1,62 @@
 import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { type Employee, TadarusSession, TadarusRequest, MissedPrayerRequest, AuditLogEntry, type WeeklyReportSubmission, MenteeTarget, Attendance } from '../types';
-import { ArrowLeftIcon, CheckSquareIcon, SquareIcon, CalendarDaysIcon, PdfIcon, ExcelIcon, ChartBarIcon, UserGroupIcon, UserPlusIcon, BookOpenIcon, TagIcon, TrashIcon } from './Icons';
+import {
+    ArrowLeft,
+    CheckSquare,
+    Square,
+    CalendarDays,
+    FileDown,
+    FileSpreadsheet,
+    BarChart3,
+    Users,
+    UserPlus,
+    BookOpen,
+    Tag,
+    Trash2,
+    Calendar
+} from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
 import { useUIStore } from '@/store/store';
 
-export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target';
+export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
 interface MentorDashboardProps {
-  employee: Employee;
-  allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
-  onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
-  weeklyReportSubmissions: WeeklyReportSubmission[];
-  onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
-  tadarusSessions: TadarusSession[];
-  tadarusRequests: TadarusRequest[];
-  onCreateTadarusSession: (data: Omit<TadarusSession, 'id' | 'createdAt' | 'presentMenteeIds'>) => void;
-  onUpdateTadarusSession: (sessionId: string, updates: Partial<TadarusSession>) => void;
-  onDeleteTadarusSession: (sessionId: string) => void;
-  onReviewTadarusRequest: (requestId: string, status: 'approved' | 'rejected') => void;
-  missedPrayerRequests: MissedPrayerRequest[];
-  onReviewMissedPrayerRequest: (requestId: string, status: "approved" | "rejected", mentorNotes?: string) => void;
-  onMentorAttendOwnSession: (sessionId: string) => void;
-  onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
-  onDeleteMenteeTarget: (targetId: string) => void;
-  addToast?: (message: string, type: 'success' | 'error') => void;
+    employee: Employee;
+    allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
+    onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
+    weeklyReportSubmissions: WeeklyReportSubmission[];
+    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
+    tadarusSessions: TadarusSession[];
+    tadarusRequests: TadarusRequest[];
+    onCreateTadarusSession: (data: Omit<TadarusSession, 'id' | 'createdAt' | 'presentMenteeIds'>) => void;
+    onUpdateTadarusSession: (sessionId: string, updates: Partial<TadarusSession>) => void;
+    onDeleteTadarusSession: (sessionId: string) => void;
+    onReviewTadarusRequest: (requestId: string, status: 'approved' | 'rejected') => void;
+    missedPrayerRequests: MissedPrayerRequest[];
+    onReviewMissedPrayerRequest: (requestId: string, status: "approved" | "rejected", mentorNotes?: string) => void;
+    onMentorAttendOwnSession: (sessionId: string) => void;
+    onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
+    onDeleteMenteeTarget: (targetId: string) => void;
+    addToast?: (message: string, type: 'success' | 'error') => void;
 
-  mentorSubView: MentorDashboardView;
-  setMentorSubView: React.Dispatch<React.SetStateAction<MentorDashboardView>>;
-  menteesOfMentor: Employee[];
+    mentorSubView: MentorDashboardView;
+    setMentorSubView: React.Dispatch<React.SetStateAction<MentorDashboardView>>;
+    menteesOfMentor: Employee[];
 
-  // Target management
-  targetMenteeId: string;
-  setTargetMenteeId: React.Dispatch<React.SetStateAction<string>>;
-  targetTitle: string;
-  setTargetTitle: React.Dispatch<React.SetStateAction<string>>;
-  targetDescription: string;
-  setTargetDescription: React.Dispatch<React.SetStateAction<string>>;
-  handleCreateTarget: (e: React.FormEvent) => void;
-  setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
-  menteeTargets: MenteeTarget[];
+    // Target management
+    targetMenteeId: string;
+    setTargetMenteeId: React.Dispatch<React.SetStateAction<string>>;
+    targetTitle: string;
+    setTargetTitle: React.Dispatch<React.SetStateAction<string>>;
+    targetDescription: string;
+    setTargetDescription: React.Dispatch<React.SetStateAction<string>>;
+    handleCreateTarget: (e: React.FormEvent) => void;
+    setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
+    menteeTargets: MenteeTarget[];
 }
 
 const PREMIUM_COLORS = ['#14b8a6', '#0ea5e9', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981'];
@@ -184,11 +198,11 @@ const MenteeDetailProgressView: React.FC<{
 
     return (
         <div className="animate-view-change">
-             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                     {onBack && (
+                    {onBack && (
                         <button onClick={onBack} className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
-                            <ArrowLeftIcon className="w-5 h-5"/>
+                            <ArrowLeft className="w-5 h-5" />
                             <span>Kembali</span>
                         </button>
                     )}
@@ -197,7 +211,7 @@ const MenteeDetailProgressView: React.FC<{
                             {onBack ? 'Detail Laporan Aktivitas' : 'Detail Progres Anggota'}
                         </h3>
                         {selectedMentee && (
-                             <p className="text-base sm:text-lg text-teal-200">
+                            <p className="text-base sm:text-lg text-teal-200">
                                 {selectedMentee.name} - {activeDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                             </p>
                         )}
@@ -258,9 +272,9 @@ const MenteeDetailProgressView: React.FC<{
                                                         <td key={day} className="text-center border-l border-gray-700">
                                                             <div className="w-full h-full flex items-center justify-center py-3">
                                                                 {isChecked ? (
-                                                                    <CheckSquareIcon className="w-6 h-6 text-teal-400" />
+                                                                    <CheckSquare className="w-6 h-6 text-teal-400" />
                                                                 ) : (
-                                                                    <SquareIcon className="w-6 h-6 text-gray-600" />
+                                                                    <Square className="w-6 h-6 text-gray-600" />
                                                                 )}
                                                             </div>
                                                         </td>
@@ -273,7 +287,7 @@ const MenteeDetailProgressView: React.FC<{
                             </tbody>
                         </table>
                     </div>
-                     <div className="mt-8 pt-8 border-t border-white/20">
+                    <div className="mt-8 pt-8 border-t border-white/20">
                         <h4 className="text-xl font-semibold text-white mb-4 text-center">
                             Grafik Rangkuman Capaian Bulanan
                         </h4>
@@ -286,7 +300,7 @@ const MenteeDetailProgressView: React.FC<{
                         {/* Scrollable container for mobile */}
                         <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
                             <div className="min-w-[700px] md:min-w-0" style={{ height: 500 }}>
-                               <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                         layout="vertical"
                                         data={chartSummaryData}
@@ -469,20 +483,20 @@ const TadarusSessionModal: React.FC<{
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
                 <h3 className="text-lg font-bold mb-4 text-white">{existingSession ? 'Edit Sesi Bimbingan' : 'Jadwalkan Sesi Bimbingan Baru'}</h3>
-                 <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul Sesi" className={formElementClasses}/>
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul Sesi" className={formElementClasses} />
                     <div className="grid grid-cols-3 gap-4">
                         <input type="date" value={date} onChange={e => setDate(e.target.value)} className={`col-span-1 ${formElementClasses}`} style={{ colorScheme: 'dark' }} />
                         <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className={`col-span-1 ${formElementClasses}`} style={{ colorScheme: 'dark' }} />
                         <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className={`col-span-1 ${formElementClasses}`} style={{ colorScheme: 'dark' }} />
                     </div>
-                     <select value={category} onChange={e => setCategory(e.target.value as 'UMUM' | 'BBQ')} className={formElementClasses}>
-                         <option value="BBQ" className="bg-white text-black">Bimbingan Baca Qur'an (BBQ)</option>
-                         <option value="UMUM" className="bg-white text-black">Tadarus Umum</option>
+                    <select value={category} onChange={e => setCategory(e.target.value as 'UMUM' | 'BBQ')} className={formElementClasses}>
+                        <option value="BBQ" className="bg-white text-black">Bimbingan Baca Qur'an (BBQ)</option>
+                        <option value="UMUM" className="bg-white text-black">Tadarus Umum</option>
                     </select>
                     {!existingSession && (
                         <label className="flex items-center gap-2 text-white">
-                            <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"/>
+                            <input type="checkbox" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
                             Ulangi setiap minggu pada bulan ini
                         </label>
                     )}
@@ -490,7 +504,7 @@ const TadarusSessionModal: React.FC<{
 
                     <div>
                         <h4 className="font-semibold text-white mb-2">Pilih Peserta</h4>
-                        <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari anggota..." className={`${formElementClasses} mb-2`}/>
+                        <input type="search" value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} placeholder="Cari anggota..." className={`${formElementClasses} mb-2`} />
                         <div className="max-h-40 overflow-y-auto space-y-1 p-2 bg-black/20 rounded-md">
                             {filteredMentees.map(mentee => (
                                 <label key={mentee.id} className="flex items-center gap-2 p-1.5 hover:bg-white/10 rounded-md cursor-pointer">
@@ -603,11 +617,11 @@ const MenteeManagement: React.FC<{
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white">Kelola Anggota Bimbingan</h3>
                 <button onClick={() => setIsAddModalOpen(true)} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                    <UserPlusIcon className="w-5 h-5" />
+                    <UserPlus className="w-5 h-5" />
                     Tambah Anggota
                 </button>
             </div>
-             <div className="overflow-x-auto rounded-lg border border-white/20">
+            <div className="overflow-x-auto rounded-lg border border-white/20">
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
@@ -635,23 +649,23 @@ const MenteeManagement: React.FC<{
                         )}
                     </tbody>
                 </table>
-             </div>
+            </div>
 
-             {isAddModalOpen && createPortal(
+            {isAddModalOpen && createPortal(
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl border border-white/20 flex flex-col h-[90vh]">
                         <h3 className="text-lg font-bold text-white mb-4">Tambah Anggota Bimbingan Baru</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                            <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama atau NIP..." className="sm:col-span-1 w-full bg-black/20 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"/>
+                            <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama atau NIP..." className="sm:col-span-1 w-full bg-black/20 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                             <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="sm:col-span-1 w-full bg-black/20 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
                                 {uniqueUnits.map(u => <option key={u} value={u} className="bg-white text-black">{u === 'all' ? 'Semua Unit' : u}</option>)}
                             </select>
                             <select value={professionFilter} onChange={e => setProfessionFilter(e.target.value)} className="sm:col-span-1 w-full bg-black/20 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                                 {uniqueProfessions.map(p => <option key={p} value={p} className="bg-white text-black">{p === 'all' ? 'Semua Profesi' : p}</option>)}
+                                {uniqueProfessions.map(p => <option key={p} value={p} className="bg-white text-black">{p === 'all' ? 'Semua Profesi' : p}</option>)}
                             </select>
                         </div>
                         <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 bg-black/20">
-                             {filteredUnassigned.map(user => (
+                            {filteredUnassigned.map(user => (
                                 <label key={user.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
                                     <input type="checkbox" checked={selectedToAdd.has(user.id)} onChange={() => toggleSelection(user.id)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
                                     <div>
@@ -659,8 +673,8 @@ const MenteeManagement: React.FC<{
                                         <span className="text-xs text-gray-400 ml-2">({user.profession}, {user.unit})</span>
                                     </div>
                                 </label>
-                             ))}
-                             {filteredUnassigned.length === 0 && <p className="text-center text-gray-400 p-4">Tidak ada karyawan yang tersedia.</p>}
+                            ))}
+                            {filteredUnassigned.length === 0 && <p className="text-center text-gray-400 p-4">Tidak ada karyawan yang tersedia.</p>}
                         </div>
                         <div className="mt-6 flex justify-between items-center">
                             <p className="text-sm text-blue-200">Terpilih: {selectedToAdd.size} orang</p>
@@ -674,10 +688,10 @@ const MenteeManagement: React.FC<{
                     </div>
                 </div>,
                 document.body
-             )}
+            )}
 
             {confirmation && (
-                 <ConfirmationModal
+                <ConfirmationModal
                     isOpen={confirmation.isOpen}
                     onClose={() => setConfirmation(null)}
                     onConfirm={confirmation.onConfirm}
@@ -685,7 +699,7 @@ const MenteeManagement: React.FC<{
                     message={confirmation.message}
                     confirmText="Ya, Hapus"
                     confirmColorClass="bg-red-600 hover:bg-red-500"
-                 />
+                />
             )}
         </div>
     );
@@ -752,10 +766,10 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                 <h3 className="text-xl font-bold text-white">Laporan Bacaan Anggota Bimbingan</h3>
                 <div className="flex items-center gap-2">
                     <button onClick={() => handleExport('pdf')} className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                        <PdfIcon className="w-5 h-5" /> Export PDF
+                        <FileDown className="w-5 h-5" /> Export PDF
                     </button>
                     <button onClick={() => handleExport('xlsx')} className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                        <ExcelIcon className="w-5 h-5" /> Export Excel
+                        <FileSpreadsheet className="w-5 h-5" /> Export Excel
                     </button>
                 </div>
             </div>
@@ -883,7 +897,7 @@ const TargetManagement: React.FC<TargetManagementProps> = ({
                                         onClick={() => setConfirmDeleteTarget(target)}
                                         className="p-1.5 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10"
                                     >
-                                        <TrashIcon className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
@@ -949,12 +963,12 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
             <div>
                 <h3 className="text-xl font-bold text-white mb-4">Menunggu Tinjauan Anda</h3>
                 {!hasPending ? (
-                     <div className="text-center py-10 bg-black/20 rounded-lg"><p className="text-blue-200 text-sm">Tidak ada pengajuan</p></div>
+                    <div className="text-center py-10 bg-black/20 rounded-lg"><p className="text-blue-200 text-sm">Tidak ada pengajuan</p></div>
                 ) : (
                     <div className="space-y-4">
                         {/* Render pending requests */}
                         {pendingMentorReviews.map(sub => (
-                             <div key={sub.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div key={sub.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div>
                                     <p className="font-semibold text-white">Laporan Mingguan: {sub.menteeName}</p>
                                     <p className="text-sm text-blue-200">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long' })}`}</p>
@@ -962,8 +976,8 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                 <button onClick={() => onViewReport(sub)} className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm">Lihat & Tinjau</button>
                             </div>
                         ))}
-                         {pendingTadarusRequests.map(req => (
-                             <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        {pendingTadarusRequests.map(req => (
+                            <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div>
                                     <p className="font-semibold text-white">Pengajuan Tadarus: {req.menteeName}</p>
                                     <p className="text-sm text-blue-200">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
@@ -973,33 +987,33 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                     <button onClick={() => onReviewTadarusRequest(req.id, 'approved')} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
                                 </div>
                             </div>
-                         ))}
-                         {pendingMissedPrayerRequests.map(req => (
-                             <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        ))}
+                        {pendingMissedPrayerRequests.map(req => (
+                            <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div>
                                     <p className="font-semibold text-white">Presensi Terlewat: {req.menteeName}</p>
                                     <p className="text-sm text-blue-200">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                     <p className="text-xs text-gray-400 italic mt-1">&quot;{req.reason}&quot;</p>
+                                    <p className="text-xs text-gray-400 italic mt-1">&quot;{req.reason}&quot;</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => onRejectMissedRequest(req.id)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
                                     <button onClick={() => onApproveMissedRequest(req.id)} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
                                 </div>
                             </div>
-                         ))}
+                        ))}
                     </div>
                 )}
             </div>
 
             <div>
-                 <h3 className="text-xl font-bold text-white mb-4">Riwayat Tinjauan Laporan</h3>
-                 <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
-                     <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full self-start flex-wrap">
+                <h3 className="text-xl font-bold text-white mb-4">Riwayat Tinjauan Laporan</h3>
+                <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
+                    <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full self-start flex-wrap">
                         <StatusFilterButton filter="all" label="Semua" currentFilter={statusFilter} setFilter={setStatusFilter} />
                         <StatusFilterButton filter="pending" label="Menunggu" currentFilter={statusFilter} setFilter={setStatusFilter} />
                         <StatusFilterButton filter="approved" label="Disetujui" currentFilter={statusFilter} setFilter={setStatusFilter} />
                         <StatusFilterButton filter="rejected" label="Ditolak" currentFilter={statusFilter} setFilter={setStatusFilter} />
-                     </div>
+                    </div>
                     <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                             <option value="all" className="text-black bg-white">Semua Tahun</option>
@@ -1012,18 +1026,18 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                             ))}
                         </select>
                     </div>
-                 </div>
-                 <div className="overflow-x-auto rounded-lg border border-white/20">
-                     <table className="min-w-full text-sm text-left text-white">
-                         <thead className="bg-white/10 text-xs uppercase text-blue-200">
-                             <tr>
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-white/20">
+                    <table className="min-w-full text-sm text-left text-white">
+                        <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                            <tr>
                                 <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
                                 <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
                                 <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
                                 <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
-                         <tbody>
+                        <tbody>
                             {filteredSubmissions.map(sub => (
                                 <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
                                     <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
@@ -1036,10 +1050,10 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                             {filteredSubmissions.length === 0 && <tr><td colSpan={4} className="text-center p-4 text-blue-200">Tidak ada data.</td></tr>}
+                            {filteredSubmissions.length === 0 && <tr><td colSpan={4} className="text-center p-4 text-blue-200">Tidak ada data.</td></tr>}
                         </tbody>
                     </table>
-                 </div>
+                </div>
             </div>
         </div>
     );
@@ -1064,16 +1078,16 @@ const SesiBimbingan: React.FC<SesiBimbinganProps> = ({
 }) => {
 
     return (
-         <div className="space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white">Sesi Bimbingan Terjadwal</h3>
                 <button onClick={onNewSession} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
-                    <CalendarDaysIcon className="w-5 h-5" />
+                    <CalendarDays className="w-5 h-5" />
                     Jadwalkan Sesi Baru
                 </button>
             </div>
             {upcomingSessions.length > 0 ? (
-                 <div className="space-y-3">
+                <div className="space-y-3">
                     {upcomingSessions.map(session => {
                         const todayStr = new Date().toISOString().split('T')[0];
                         const isToday = session.date === todayStr;
@@ -1101,7 +1115,7 @@ const SesiBimbingan: React.FC<SesiBimbinganProps> = ({
                     })}
                 </div>
             ) : (
-                 <div className="text-center py-16 bg-black/20 rounded-lg">
+                <div className="text-center py-16 bg-black/20 rounded-lg">
                     <p className="text-lg text-blue-200">Belum ada sesi bimbingan</p>
                 </div>
             )}
@@ -1113,16 +1127,16 @@ const SubTabButton: React.FC<{
     active: boolean;
     onClick: () => void;
     label: string;
-    icon: React.FC<{className: string}>
+    icon: any;
     count?: number;
 }> = ({ active, onClick, label, icon: Icon, count }) => (
-     <button
+    <button
         onClick={onClick}
-        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm relative
+        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm relative whitespace-nowrap shrink-0
           ${active
-            ? 'bg-teal-500 text-white'
-            : 'text-blue-200 hover:text-white hover:bg-white/10'
-          }`}
+                ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.3)]'
+                : 'text-blue-200 hover:text-white hover:bg-white/10'
+            }`}
     >
         <Icon className="w-4 h-4" />
         {label}
@@ -1135,39 +1149,39 @@ const SubTabButton: React.FC<{
 );
 
 export const MentorDashboard: React.FC<MentorDashboardProps> = ({
-  employee,
-  allUsersData,
-  onUpdateProfile,
-  weeklyReportSubmissions,
-  onReviewReport,
-  tadarusSessions,
-  tadarusRequests,
-  onCreateTadarusSession,
-  onUpdateTadarusSession,
-  onDeleteTadarusSession,
-  onReviewTadarusRequest,
-  missedPrayerRequests,
-  onReviewMissedPrayerRequest,
-  onMentorAttendOwnSession,
-  onLogAudit,
-  addToast,
-  mentorSubView,
-  setMentorSubView,
-  menteesOfMentor,
-  targetMenteeId,
-  setTargetMenteeId,
-  targetTitle,
-  setTargetTitle,
-  targetDescription,
-  setTargetDescription,
-  handleCreateTarget,
-  setConfirmDeleteTarget,
-  menteeTargets,
+    employee,
+    allUsersData,
+    onUpdateProfile,
+    weeklyReportSubmissions,
+    onReviewReport,
+    tadarusSessions,
+    tadarusRequests,
+    onCreateTadarusSession,
+    onUpdateTadarusSession,
+    onDeleteTadarusSession,
+    onReviewTadarusRequest,
+    missedPrayerRequests,
+    onReviewMissedPrayerRequest,
+    onMentorAttendOwnSession,
+    onLogAudit,
+    addToast,
+    mentorSubView,
+    setMentorSubView,
+    menteesOfMentor,
+    targetMenteeId,
+    setTargetMenteeId,
+    targetTitle,
+    setTargetTitle,
+    targetDescription,
+    setTargetDescription,
+    handleCreateTarget,
+    setConfirmDeleteTarget,
+    menteeTargets,
 }) => {
 
     // Unified state for confirmations
-    const [approvalTarget, setApprovalTarget] = useState<{type: 'missed-prayer', id: string} | {type: 'report', id: string} | null>(null);
-    const [rejectionTarget, setRejectionTarget] = useState<{type: 'missed-prayer', id: string} | {type: 'report', submission: WeeklyReportSubmission} | null>(null);
+    const [approvalTarget, setApprovalTarget] = useState<{ type: 'missed-prayer', id: string } | { type: 'report', id: string } | null>(null);
+    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'missed-prayer', id: string } | { type: 'report', submission: WeeklyReportSubmission } | null>(null);
     const [pendingSessionDelete, setPendingSessionDelete] = useState<TadarusSession | null>(null);
     const [selectedSubmission, setSelectedSubmission] = useState<WeeklyReportSubmission | null>(null);
 
@@ -1200,7 +1214,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const upcomingSessions = useMemo(() => {
         const today = new Date().toISOString().split('T')[0];
         return tadarusSessions.filter(s => s.mentorId === employee.id && s.date >= today)
-               .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [tadarusSessions, employee.id]);
 
     const submissionsForMentor = useMemo(() => {
@@ -1243,7 +1257,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         }
 
         const submission = weeklyReportSubmissions.find(s => s.id === approvalTarget.id);
-        if(submission) {
+        if (submission) {
             onLogAudit({ adminId: employee.id, adminName: employee.name, action: `Persetujuan Laporan`, target: `Karyawan: ${submission.menteeName}`, reason: 'Menyetujui laporan mingguan.' });
         }
 
@@ -1258,7 +1272,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
             onReviewMissedPrayerRequest(rejectionTarget.id, 'rejected', notes);
         } else {
             onReviewReport(rejectionTarget.submission.id, 'rejected', notes, 'mentor');
-             onLogAudit({ adminId: employee.id, adminName: employee.name, action: `Penolakan Laporan`, target: `Karyawan: ${rejectionTarget.submission.menteeName}`, reason: notes });
+            onLogAudit({ adminId: employee.id, adminName: employee.name, action: `Penolakan Laporan`, target: `Karyawan: ${rejectionTarget.submission.menteeName}`, reason: notes });
         }
 
         setSelectedSubmission(null);
@@ -1285,13 +1299,14 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
 
     return (
         <div className="space-y-6">
-             <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
+            <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
-                    <SubTabButton label="Persetujuan" icon={CheckSquareIcon} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
-                    <SubTabButton label="Anggota Bimbingan" icon={UserGroupIcon} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
-                    <SubTabButton label="Target Bimbingan" icon={TagIcon} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
-                    <SubTabButton label="Progres Anggota" icon={ChartBarIcon} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
-                    <SubTabButton label="Laporan Bacaan" icon={BookOpenIcon} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
+                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
+                    <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
+                    <SubTabButton label="Sesi Bimbingan" icon={Calendar} active={mentorSubView === 'sessions'} onClick={() => setMentorSubView('sessions')} />
+                    <SubTabButton label="Target Bimbingan" icon={Tag} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
+                    <SubTabButton label="Progres Anggota" icon={BarChart3} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
+                    <SubTabButton label="Laporan Bacaan" icon={BookOpen} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
                 </div>
             </div>
 
@@ -1315,7 +1330,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         setFilterMonth={setFilterMonth}
                     />
                 )}
-                 {mentorSubView === 'sessions' && (
+                {mentorSubView === 'sessions' && (
                     <SesiBimbingan
                         upcomingSessions={upcomingSessions}
                         employee={employee}
@@ -1325,7 +1340,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         onNewSession={() => openSessionModal()}
                     />
                 )}
-                 {mentorSubView === 'mentees' && (
+                {mentorSubView === 'mentees' && (
                     <MenteeManagement
                         mentees={mentees}
                         allUsers={Object.values(allUsersData).map(d => d.employee)}
@@ -1334,7 +1349,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         addToast={addToast}
                     />
                 )}
-                 {mentorSubView === 'target' && (
+                {mentorSubView === 'target' && (
                     <TargetManagement
                         mentees={mentees}
                         targetMenteeId={targetMenteeId}
@@ -1380,7 +1395,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                 title="Tolak Pengajuan"
                 prompt="Berikan alasan penolakan pengajuan ini."
             />
-             <ConfirmationModal
+            <ConfirmationModal
                 isOpen={!!pendingSessionDelete}
                 onClose={() => setPendingSessionDelete(null)}
                 onConfirm={handleDeleteSession}
@@ -1389,7 +1404,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                 confirmText="Ya, Hapus Sesi"
                 confirmColorClass="bg-red-600 hover:bg-red-500"
             />
-             <TadarusSessionModal
+            <TadarusSessionModal
                 isOpen={isSessionModalOpen}
                 onClose={() => setIsSessionModalOpen(false)}
                 onSave={onCreateTadarusSession}

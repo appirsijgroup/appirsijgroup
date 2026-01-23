@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { type Employee, WeeklyReportSubmission, ToDoItem, DailyActivity, AuditLogEntry } from '../types';
-import { PencilIcon, AcademicCapIcon, ShieldCheckIcon, CheckSquareIcon } from './Icons';
+import { Pencil, GraduationCap, ShieldCheck, CheckSquare } from 'lucide-react';
 import { AktivitasPribadiView } from './AktivitasPribadi';
 import MenteeGuidanceView from './MenteeGuidanceView';
 import { MentorDashboard, type MentorDashboardView } from './MentorDashboard';
@@ -44,13 +44,13 @@ interface AktivitasSayaProps {
 
 const TabButton: React.FC<{
     label: string;
-    icon: React.FC<{ className: string }>;
+    icon: any;
     active: boolean;
     onClick: () => void;
 }> = ({ label, icon: Icon, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
@@ -217,10 +217,10 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
             <nav className="border-b border-white/20">
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
-                        <TabButton label="Aktivitas Pribadi" icon={PencilIcon} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                        <TabButton label="Bimbingan Saya" icon={AcademicCapIcon} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
-                        {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheckIcon} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
-                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquareIcon} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
+                        <TabButton label="Aktivitas Pribadi" icon={Pencil} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
+                        <TabButton label="Bimbingan Saya" icon={GraduationCap} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
+                        {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheck} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
+                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquare} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
                     </div>
                 </div>
             </nav>

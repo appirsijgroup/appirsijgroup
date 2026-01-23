@@ -11,6 +11,7 @@ import NotificationPanel from './NotificationPanel';
 import AssignmentLetter from './AssignmentLetter';
 import { ErrorBoundary } from './ErrorBoundary';
 import ActivationRequired from './ActivationRequired';
+import ConfirmationModal from './ConfirmationModal';
 import BrandedLoader from './BrandedLoader';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
@@ -18,37 +19,38 @@ import { useAnnouncementStore } from '@/store/announcementStore';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
 import { useMutabaah } from '@/contexts/MutabaahContext';
 import { logger } from '@/lib/logger';
+import { Suspense } from 'react';
 import type { Employee } from '@/types';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 import {
-    CalendarDaysIcon,
-    MegaphoneIcon,
-    AdminIcon,
-    HomeIcon,
-    QuranIcon,
-    PrayerBeadIcon,
-    ClipboardDocumentIcon,
-    DocumentDuplicateIcon,
-    IdentificationIcon,
-    UsersIcon,
-    ClockIcon,
-    CalendarClockIcon
-} from './Icons';
+    LayoutDashboard,
+    History,
+    CalendarDays,
+    ClipboardCheck,
+    Megaphone,
+    Users,
+    CalendarClock,
+    BookOpen,
+    Bookmark,
+    HandHeart,
+    UserCircle,
+    ShieldCheck
+} from 'lucide-react';
 import type { Notification } from '@/types';
 
 const allNavItemsRaw = [
-    { id: 'dashboard-saya', label: 'Dashboard', icon: HomeIcon, href: '/dashboard' },
-    { id: 'aktifitas-saya', label: 'Aktifitas Saya', icon: ClockIcon, href: '/aktifitas-saya' },
-    { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDaysIcon, href: '/aktivitas-bulanan' },
-    { id: 'presensi', label: 'Presensi Harian', icon: ClipboardDocumentIcon, href: '/presensi' },
-    { id: 'pengumuman', label: 'Pengumuman', icon: MegaphoneIcon, href: '/pengumuman' },
-    { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: UsersIcon, href: '/kegiatan' },
-    { id: 'jadwal-sesi', label: 'Jadwal & Sesi', icon: CalendarClockIcon, href: '/jadwal-sesi' },
-    { id: 'alquran', label: 'Al-Qur\'an', icon: QuranIcon, href: '/alquran' },
-    { id: 'bookmarks', label: 'Bookmark', icon: DocumentDuplicateIcon, href: '/bookmarks' },
-    { id: 'panduan-doa', label: 'Panduan & Doa', icon: PrayerBeadIcon, href: '/panduan-doa' },
-    { id: 'profile', label: 'Profil', icon: IdentificationIcon, href: '/profile' },
-    { id: 'admin', label: 'Admin Dashboard', icon: AdminIcon, href: '/admin' },
+    { id: 'dashboard-saya', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { id: 'aktifitas-saya', label: 'Aktifitas Saya', icon: History, href: '/aktifitas-saya' },
+    { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDays, href: '/aktivitas-bulanan' },
+    { id: 'presensi', label: 'Presensi Harian', icon: ClipboardCheck, href: '/presensi' },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, href: '/pengumuman' },
+    { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: Users, href: '/kegiatan' },
+    { id: 'jadwal-sesi', label: 'Jadwal & Sesi', icon: CalendarClock, href: '/jadwal-sesi' },
+    { id: 'alquran', label: 'Al-Qur\'an', icon: BookOpen, href: '/alquran' },
+    { id: 'bookmarks', label: 'Bookmark', icon: Bookmark, href: '/bookmarks' },
+    { id: 'panduan-doa', label: 'Panduan & Doa', icon: HandHeart, href: '/panduan-doa' },
+    { id: 'profile', label: 'Profil', icon: UserCircle, href: '/profile' },
+    { id: 'admin', label: 'Admin Dashboard', icon: ShieldCheck, href: '/admin' },
 ];
 
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
@@ -84,6 +86,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         previousAssigneeName?: string;
         notificationTimestamp: number;
     } | null>(null);
+
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     // --- Handle Activation of Lembar Mutaba'ah ---
     const { addToast } = useUIStore();
@@ -351,6 +355,11 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
     // ⚡ OPTIMIZATION: Direct logout without router.push - logoutEmployee already redirects
     const handleLogout = useCallback(() => {
+        setShowLogoutConfirm(true);
+    }, []);
+
+    const confirmLogout = useCallback(() => {
+        setShowLogoutConfirm(false);
         logoutEmployee();
     }, [logoutEmployee]);
 
@@ -445,6 +454,10 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [pathname, loggedInEmployee]);
 
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
+    if (isLoggingOut) {
+        return <BrandedLoader message="Sedang keluar..." />;
+    }
+
     if (!isClient || !isHydrated || !loggedInEmployee) {
         return (
             <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800" suppressHydrationWarning>
@@ -514,20 +527,27 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 />
                 <main className="flex-1 overflow-y-auto p-2 sm:p-4 relative" id="main-content-area">
                     <ErrorBoundary>
-                        {/* 🚀 OPTIMIZED: Removed loading overlay - content renders immediately with cached data */}
-                        {/* Page content */}
-                        {activationStatus.shouldShowActivationRequired ? (
-                            <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
-                                <ActivationRequired
-                                    monthName={activationStatus.currentMonthName}
-                                    monthKey={activationStatus.currentMonthKey}
-                                    onActivate={handleActivation}
-                                    isLoading={isActivating}
-                                />
+                        {/* 🚀 OPTIMIZED: Using Suspense here ensures sidebar/navbar STAY visible during page transitions */}
+                        <Suspense fallback={
+                            <div className="flex flex-col items-center justify-center min-h-[50vh] w-full">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                                <p className="text-teal-200/60 text-sm font-medium animate-pulse">Memuat konten...</p>
                             </div>
-                        ) : (
-                            children
-                        )}
+                        }>
+                            {/* Page content */}
+                            {activationStatus.shouldShowActivationRequired ? (
+                                <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
+                                    <ActivationRequired
+                                        monthName={activationStatus.currentMonthName}
+                                        monthKey={activationStatus.currentMonthKey}
+                                        onActivate={handleActivation}
+                                        isLoading={isActivating}
+                                    />
+                                </div>
+                            ) : (
+                                children
+                            )}
+                        </Suspense>
                     </ErrorBoundary>
                 </main>
                 <Footer />
@@ -586,6 +606,17 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                     onClose={() => setAssignmentLetter(null)}
                 />
             )}
+
+            {/* Logout Confirmation */}
+            <ConfirmationModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={confirmLogout}
+                title="Keluar Aplikasi"
+                message="Apakah Anda yakin ingin keluar dari aplikasi APPI?"
+                confirmText="Ya, Keluar"
+                confirmColorClass="bg-red-500 hover:bg-red-600"
+            />
 
         </div>
     );

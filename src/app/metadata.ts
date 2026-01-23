@@ -43,7 +43,7 @@ export const baseMetadata: Metadata = {
       'Aplikasi manajemen mutaba\'ah, presensi, dan kegiatan harian untuk pegawai RSI Group.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/logorsijsp.png',
         width: 1200,
         height: 630,
         alt: 'Aplikasi APPI',
@@ -57,7 +57,7 @@ export const baseMetadata: Metadata = {
     title: 'Aplikasi APPI - RSI Group',
     description:
       'Aplikasi manajemen mutaba\'ah, presensi, dan kegiatan harian untuk pegawai RSI Group.',
-    images: ['/twitter-image.png'],
+    images: ['/logorsijsp.png'],
   },
 
   // Robots

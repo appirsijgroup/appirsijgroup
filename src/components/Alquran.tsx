@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Surah, SurahDetail, Employee, WeeklyReportSubmission } from '../types';
 import type { Bookmark } from '../services/bookmarkService';
 import { fetchSurahs, fetchSurahDetail } from '../services/quranService';
-import { SearchIcon, ArrowLeftIcon, BookmarkIcon, BookmarkSolidIcon, CheckSquareIcon, LockClosedIcon, ShareIcon } from './Icons';
+import { Search, ArrowLeft, Bookmark as BookmarkIcon, CheckSquare, Lock, Share2 } from 'lucide-react';
 import { useUIStore } from '../store/store';
 import { timeValidationService } from '../services/timeValidationService';
 
@@ -208,7 +208,7 @@ const ReportReadingModal: React.FC<{
                             Tutup
                         </button>
                         <div className="mt-2 w-full font-semibold py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-2 bg-gray-700/50 text-gray-400 cursor-not-allowed">
-                            <LockClosedIcon className="w-5 h-5" /> {lockReason}
+                            <Lock className="w-5 h-5" /> {lockReason}
                         </div>
                     </div>
                 ) : (
@@ -385,7 +385,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                         onClick={handleBackToList}
                         className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500"
                     >
-                        <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                        <ArrowLeft className="h-5 w-5 mr-2" />
                         Kembali ke Daftar Surah
                     </button>
                 </div>
@@ -419,7 +419,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     aria-label="Bagikan ayat ini"
                                                     title="Bagikan ayat ini sebagai gambar"
                                                 >
-                                                    <ShareIcon className="w-6 h-6" />
+                                                    <Share2 className="w-6 h-6" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleBookmarkClick({ surahNumber: selectedSurah.nomor, ayahNumber: ayah.nomorAyat, surahName: selectedSurah.namaLatin, ayahText: ayah.teksIndonesia, timestamp: Date.now() })}
@@ -427,7 +427,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     aria-label="Bookmark ayat ini"
                                                 >
                                                     {bookmarkedAyahs.has(`${selectedSurah.nomor}:${ayah.nomorAyat}`) ? (
-                                                        <BookmarkSolidIcon className="w-6 h-6 text-teal-400" />
+                                                        <BookmarkIcon className="w-6 h-6 text-teal-400 fill-current" />
                                                     ) : (
                                                         <BookmarkIcon className="w-6 h-6" />
                                                     )}
@@ -441,7 +441,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                                     aria-label="Laporkan telah membaca ayat ini"
                                                     title="Laporkan selesai membaca sampai ayat ini"
                                                 >
-                                                    <CheckSquareIcon className="w-6 h-6" />
+                                                    <CheckSquare className="w-6 h-6" />
                                                 </button>
                                             </div>
                                         </div>
@@ -470,7 +470,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
                         <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
                             <div className="mb-4">
-                                <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
+                                <BookmarkIcon className="w-16 h-16 text-teal-400 mx-auto fill-current" />
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">
                                 {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)
@@ -514,7 +514,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 <div className="mb-6 max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4">
                     <div className="relative grow w-full">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <SearchIcon className="h-5 w-5 text-gray-400" />
+                            <Search className="h-5 w-5 text-gray-400" />
                         </span>
                         <input
                             type="text"
@@ -585,7 +585,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
                     <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20 text-center">
                         <div className="mb-4">
-                            <BookmarkSolidIcon className="w-16 h-16 text-teal-400 mx-auto" />
+                            <BookmarkIcon className="w-16 h-16 text-teal-400 mx-auto fill-current" />
                         </div>
                         <h3 className="text-xl font-bold text-white mb-2">
                             {pendingBookmark && bookmarkedAyahs.has(`${pendingBookmark.surahNumber}:${pendingBookmark.ayahNumber}`)

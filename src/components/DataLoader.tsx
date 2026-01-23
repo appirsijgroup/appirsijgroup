@@ -15,7 +15,7 @@ interface DataLoaderProps {
 }
 
 export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
-    const { loadHospitals, loadAllEmployees } = useAppDataStore();
+    const { loadHospitals } = useAppDataStore();
     const { loadAnnouncements } = useAnnouncementStore();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,11 +37,6 @@ export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
                     loadHospitals().catch(err => {
                         // Don't throw - allow other data to load
                     }),
-
-                    // All Employees - needed for Analytics page (accessible to all users)
-                    loadAllEmployees().catch(err => {
-                        // Don't throw - allow other data to load
-                    }),
                 ];
 
                 await Promise.allSettled(loadPromises);
@@ -55,7 +50,7 @@ export const DataLoader: React.FC<DataLoaderProps> = ({ children }) => {
         };
 
         loadEssentialData();
-    }, [loadAnnouncements, loadHospitals, loadAllEmployees]);
+    }, [loadAnnouncements, loadHospitals]);
 
     // Don't block rendering - load in background
     return <>{children}</>;

@@ -10,9 +10,11 @@ const COLORS = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f97316', '#ef4444', '#f59e0b'
 interface AnalyticsProps {
     allUsersData: Record<string, { employee: Employee; attendance: unknown; history: unknown; }>;
     dailyActivitiesConfig: DailyActivity[];
+    onLoadAllData?: () => Promise<void>;
 }
 
 const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?: string }> = ({ title, children, minWidth }) => {
+    // ... existing implementation
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
@@ -44,6 +46,11 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
         </div>
     );
 };
+
+// ... existing ActivationReport ...
+
+// ... existing MutabaahPerformanceReport ...
+
 
 const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
     const [isClient, setIsClient] = useState(false);
@@ -335,8 +342,8 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
                                             className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                                    ? 'bg-teal-500 text-white'
-                                                    : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                                ? 'bg-teal-500 text-white'
+                                                : 'bg-gray-700 hover:bg-gray-600 text-white'
                                                 }`}
                                         >
                                             {pageNum}
@@ -350,8 +357,8 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                                         <button
                                             onClick={() => setCurrentPage(totalPages)}
                                             className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                                    ? 'bg-teal-500 text-white'
-                                                    : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                                ? 'bg-teal-500 text-white'
+                                                : 'bg-gray-700 hover:bg-gray-600 text-white'
                                                 }`}
                                         >
                                             {totalPages}
@@ -615,7 +622,8 @@ const MutabaahPerformanceReport: React.FC<{
     );
 };
 
-const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConfig }) => {
+const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConfig, onLoadAllData }) => {
+    const [isLoadingMore, setIsLoadingMore] = useState(false); // State local untuk loading more
 
     const allUsers = useMemo(() => {
         const employees = Object.values(allUsersData).map((d: { employee: Employee }) => d.employee);
@@ -623,7 +631,20 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         return employees.filter(e => e.isActive !== false);
     }, [allUsersData]);
 
-    // Debug log
+    // Check if we likely have partial data (e.g., exactly 50 records)
+    // This is a heuristic; ideally we'd pass total count from backend
+    const isPartialData = allUsers.length > 0 && allUsers.length <= 50;
+
+    const handleLoadAll = async () => {
+        if (onLoadAllData) {
+            setIsLoadingMore(true);
+            try {
+                await onLoadAllData();
+            } finally {
+                setIsLoadingMore(false);
+            }
+        }
+    };
 
     // Show loading state if no data yet
     if (Object.keys(allUsersData).length === 0) {
@@ -636,6 +657,34 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
     return (
         <div className="space-y-8">
+            {isPartialData && onLoadAllData && (
+                <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-300">
+                            <ChartBarIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan</p>
+                            <p className="text-blue-200 text-xs">Untuk performa, hanya sebagian data yang dimuat. Analisis mungkin belum lengkap.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleLoadAll}
+                        disabled={isLoadingMore}
+                        className="whitespace-nowrap px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {isLoadingMore ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Memuat...
+                            </>
+                        ) : (
+                            'Muat Semua Data'
+                        )}
+                    </button>
+                </div>
+            )}
+
             <ActivationReport allUsers={allUsers} />
             <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} />
         </div>

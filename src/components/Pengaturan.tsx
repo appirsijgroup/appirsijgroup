@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee, Attendance, SunnahIbadah, Activity, City, FunctionalRole } from '../types';
-import { UserIcon, CameraIcon, UserGroupIcon, ShieldCheckIcon, TrashIcon, SparklesIcon, UploadIcon, ChevronDownIcon, CheckIcon, XIcon, BuildingOfficeIcon, TagIcon, AcademicCapIcon, EyeIcon, CheckBadgeIcon, InformationCircleIcon } from './Icons';
+import { User, Camera, Users, ShieldCheck, Trash2, Sparkles, Upload, ChevronDown, Check, X, Building2, Tag, GraduationCap, Eye, BadgeCheck, Info } from 'lucide-react';
 import SignaturePad, { type SignaturePadRef } from './SignaturePad';
 import { validatePassword, isPasswordValid, type PasswordValidationResult } from './passwordUtils';
 import PasswordInput from './PasswordInput';
@@ -50,7 +50,7 @@ const SettingsSection: React.FC<{
                     <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-teal-300 shrink-0" />
                     <span className="font-semibold text-base sm:text-lg text-white truncate">{title}</span>
                 </div>
-                <ChevronDownIcon className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-300 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <div className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                 <div className="overflow-hidden">
@@ -130,7 +130,7 @@ const SignatureModal: React.FC<{
                         <p className="text-sm text-blue-200">Pilih file gambar tanda tangan (disarankan format PNG dengan latar transparan).</p>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg" className="hidden" />
                         <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold flex items-center gap-2">
-                            <UploadIcon className="w-5 h-5" /> Pilih File
+                            <Upload className="w-5 h-5" /> Pilih File
                         </button>
                         {uploadedImage && <img src={uploadedImage} alt="Preview" className="max-h-40 border-2 border-dashed border-gray-500 rounded-md p-2 bg-white" />}
                     </div>
@@ -192,11 +192,11 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     const { functionalRolesToDisplay, systemRolesToDisplay } = useMemo(() => {
         type DisplayConfig = { label: string, icon: React.FC<{ className: string }>, colorClasses: string };
         const functionalRoleMap: Record<FunctionalRole, DisplayConfig> = {
-            'BPH': { label: 'BPH', icon: BuildingOfficeIcon, colorClasses: 'bg-indigo-500/20 text-indigo-300' },
-            'DIREKSI': { label: 'Direksi', icon: BuildingOfficeIcon, colorClasses: 'bg-indigo-500/20 text-indigo-300' },
-            'MANAJER': { label: 'Manajer', icon: UserGroupIcon, colorClasses: 'bg-blue-500/20 text-blue-300' },
-            'KEPALA URUSAN': { label: 'Kepala Urusan', icon: TagIcon, colorClasses: 'bg-green-500/20 text-green-300' },
-            'KEPALA RUANGAN': { label: 'Kepala Ruangan', icon: TagIcon, colorClasses: 'bg-green-500/20 text-green-300' },
+            'BPH': { label: 'BPH', icon: Building2, colorClasses: 'bg-indigo-500/20 text-indigo-300' },
+            'DIREKSI': { label: 'Direksi', icon: Building2, colorClasses: 'bg-indigo-500/20 text-indigo-300' },
+            'MANAJER': { label: 'Manajer', icon: Users, colorClasses: 'bg-blue-500/20 text-blue-300' },
+            'KEPALA URUSAN': { label: 'Kepala Urusan', icon: Tag, colorClasses: 'bg-green-500/20 text-green-300' },
+            'KEPALA RUANGAN': { label: 'Kepala Ruangan', icon: Tag, colorClasses: 'bg-green-500/20 text-green-300' },
         };
 
         const functionalRoles = (employee.functionalRoles || [])
@@ -205,19 +205,19 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
 
         const systemRoles: DisplayConfig[] = [];
         if (employee.role === 'super-admin') {
-            systemRoles.push({ label: 'Super Admin', icon: ShieldCheckIcon, colorClasses: 'bg-purple-500/20 text-purple-300' });
+            systemRoles.push({ label: 'Super Admin', icon: ShieldCheck, colorClasses: 'bg-purple-500/20 text-purple-300' });
         } else if (employee.role === 'admin') {
-            systemRoles.push({ label: 'Admin', icon: ShieldCheckIcon, colorClasses: 'bg-sky-500/20 text-sky-300' });
+            systemRoles.push({ label: 'Admin', icon: ShieldCheck, colorClasses: 'bg-sky-500/20 text-sky-300' });
         }
 
         if (employee.canBeMentor) {
-            systemRoles.push({ label: 'Mentor', icon: AcademicCapIcon, colorClasses: 'bg-orange-500/20 text-orange-300' });
+            systemRoles.push({ label: 'Mentor', icon: GraduationCap, colorClasses: 'bg-orange-500/20 text-orange-300' });
         }
         if (employee.canBeSupervisor) {
-            systemRoles.push({ label: 'Supervisor', icon: EyeIcon, colorClasses: 'bg-cyan-500/20 text-cyan-300' });
+            systemRoles.push({ label: 'Supervisor', icon: Eye, colorClasses: 'bg-cyan-500/20 text-cyan-300' });
         }
         if (employee.canBeKaUnit) {
-            systemRoles.push({ label: 'Ka. Unit', icon: TagIcon, colorClasses: 'bg-lime-500/20 text-lime-300' });
+            systemRoles.push({ label: 'Ka. Unit', icon: Tag, colorClasses: 'bg-lime-500/20 text-lime-300' });
         }
 
         return { functionalRolesToDisplay: functionalRoles, systemRolesToDisplay: systemRoles };
@@ -373,7 +373,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 <span>{getInitials(name)}</span>
                             )}
                             <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <CameraIcon className="h-8 w-8 text-white" />
+                                <Camera className="h-8 w-8 text-white" />
                             </div>
                         </button>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -384,11 +384,11 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                             >
                                 <div className="py-1">
                                     <button onClick={() => { fileInputRef.current?.click(); setIsPhotoMenuOpen(false); }} className="flex items-center w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600/80 rounded-t-md">
-                                        <CameraIcon className="w-5 h-5 mr-3" /> Ganti Foto
+                                        <Camera className="w-5 h-5 mr-3" /> Ganti Foto
                                     </button>
                                     {profilePicture && (
                                         <button onClick={() => { handleRemovePicture(); setIsPhotoMenuOpen(false); }} className="flex items-center w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-600/80 rounded-b-md">
-                                            <TrashIcon className="w-5 h-5 mr-3" /> Hapus Foto
+                                            <Trash2 className="w-5 h-5 mr-3" /> Hapus Foto
                                         </button>
                                     )}
                                 </div>
@@ -400,7 +400,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                         {shouldShowVerifiedBadge && (
                             // FIX: Wrapped CheckBadgeIcon in a span with a title attribute to fix a prop type error.
                             <span title="Lencana Terverifikasi" className="shrink-0">
-                                <CheckBadgeIcon className="w-5 h-5 sm:w-6 sm:h-7 text-teal-400" />
+                                <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-7 text-teal-400" />
                             </span>
                         )}
                     </div>
@@ -441,14 +441,14 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
             <div className="lg:col-span-2 space-y-6">
                 {employee.mustChangePassword && (
                     <div className="p-4 bg-yellow-500/20 border-l-4 border-yellow-400 text-yellow-200 rounded-r-lg shadow-lg animate-pulse flex items-start gap-3">
-                        <InformationCircleIcon className="w-6 h-6 shrink-0 text-yellow-300 mt-0.5" />
+                        <Info className="w-6 h-6 shrink-0 text-yellow-300 mt-0.5" />
                         <div>
                             <p className="font-bold">Perbarui Password Default</p>
                             <p className="text-sm mt-1">Wajib ganti password di bagian "Keamanan Akun"</p>
                         </div>
                     </div>
                 )}
-                <SettingsSection title="Edit Informasi Profil" icon={UserIcon} isOpen={openSection === 'profil'} onToggle={() => setOpenSection(openSection === 'profil' ? null : 'profil')}>
+                <SettingsSection title="Edit Informasi Profil" icon={User} isOpen={openSection === 'profil'} onToggle={() => setOpenSection(openSection === 'profil' ? null : 'profil')}>
                     <form onSubmit={handleProfileSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -479,7 +479,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                     </form>
                 </SettingsSection>
 
-                <SettingsSection title="Keamanan Akun" icon={ShieldCheckIcon} isOpen={openSection === 'keamanan'} onToggle={() => setOpenSection(openSection === 'keamanan' ? null : 'keamanan')}>
+                <SettingsSection title="Keamanan Akun" icon={ShieldCheck} isOpen={openSection === 'keamanan'} onToggle={() => setOpenSection(openSection === 'keamanan' ? null : 'keamanan')}>
                     <div className="space-y-8">
                         <form onSubmit={handlePasswordSubmit} className="space-y-6">
                             <h3 className="text-lg font-semibold text-teal-300">Ubah Password</h3>

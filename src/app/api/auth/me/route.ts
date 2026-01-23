@@ -35,7 +35,7 @@ const convertToCamelCase = (emp: any): any => {
     // todoList: emp.todo_list,                     // ❌ REMOVED - already converted manually
 
     signature: emp.signature,
-    lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp,
+    lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
     managedHospitalIds: emp.managed_hospital_ids,
     mustChangePassword: emp.must_change_password,
     hospitalId: emp.hospital_id,
@@ -44,21 +44,9 @@ const convertToCamelCase = (emp: any): any => {
 };
 
 import { getSession } from '@/lib/auth'
+import { getFullEmployeeData } from '@/services/employeeServerService'
 
 export async function GET(request: NextRequest) {
-  // 🔥 FIX: Create Supabase client inside function to avoid build-time errors
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json(
-      { error: 'Server configuration error' },
-      { status: 500 }
-    )
-  }
-
-  const supabase = createSupabaseClient(supabaseUrl, supabaseServiceKey)
-
   try {
     // Get secure session
     const session = await getSession()
@@ -74,127 +62,29 @@ export async function GET(request: NextRequest) {
     const userId = session.userId
     console.log('🔍 [/api/auth/me] Fetching user data for userId:', userId)
 
+    const fullEmployeeData = await getFullEmployeeData(userId)
 
-    // Ambil data employee lengkap berdasarkan id
-    const { data: employee, error: employeeError, status } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (employeeError || !employee) {
-      console.error('❌ [/api/auth/me] Employee lookup failed:', {
-        userId,
-        error: employeeError?.message,
-        code: employeeError?.code,
-        details: employeeError?.details,
-        hint: employeeError?.hint
-      })
+    if (!fullEmployeeData) {
       return NextResponse.json(
-        { error: 'User not found', details: employeeError?.message },
+        { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    // 🔥 FIX: Ambil data dari tabel terpisah secara PARALEL untuk performa yang lebih cepat
-    // Menggunakan Promise.all agar semua request berjalan bersamaan, bukan antri satu per satu
-
-    const [
-      { data: readingHistoryData, error: readingError },
-      { data: quranHistoryData, error: quranError },
-      { data: todosData, error: todosError }
-    ] = await Promise.all([
-      // 1. Reading history
-      supabase
-        .from('employee_reading_history')
-        .select('*')
-        .eq('employee_id', userId)
-        .order('created_at', { ascending: false }),
-
-      // 3. Quran reading history
-      supabase
-        .from('employee_quran_reading_history')
-        .select('*')
-        .eq('employee_id', userId)
-        .order('date', { ascending: false }),
-
-      // 4. Todos
-      supabase
-        .from('employee_todos')
-        .select('*')
-        .eq('employee_id', userId)
-        .order('created_at', { ascending: false })
-    ]);
-
-    // Log warnings if any (non-blocking)
-
-    // 5. Convert format data dari tabel terpisah ke format camelCase seperti di Employee type
-    const convertedReadingHistory = (readingHistoryData || []).map((item: any) => ({
-      id: item.id,
-      bookTitle: item.book_title,
-      pagesRead: item.pages_read,
-      dateCompleted: item.date_completed,
-      createdAt: item.created_at
-    }))
-
-    const convertedQuranHistory = (quranHistoryData || []).map((item: any) => ({
-      id: item.id,
-      date: item.date,
-      surahName: item.surah_name,
-      surahNumber: item.surah_number,
-      startAyah: item.start_ayah,
-      endAyah: item.end_ayah,
-      createdAt: item.created_at
-    }))
-
-    const convertedTodos = (todosData || []).map((item: any) => ({
-      id: item.id,
-      title: item.title,
-      notes: item.description,
-      completed: item.is_completed,
-      date: item.due_date,
-      priority: item.priority,
-      completedAt: item.completed_at,
-      createdAt: item.created_at
-    }))
-
-    // 🔥 FIX: Convert basic employee data first, then attach the additional data
-    // This avoids convertToCamelCase overwriting our manually prepared camelCase fields with undefined
-    const basicEmployeeInCamelCase = convertToCamelCase(employee);
-
-    const finalEmployeeData = {
-      ...basicEmployeeInCamelCase,
-      // 🔥 FIX: Monthly activities - NO CACHE, loaded separately via /api/monthly-activities
-      monthlyActivities: {}, // Start with empty object, will be loaded in background via MutabaahContext
-      readingHistory: convertedReadingHistory,
-      quranReadingHistory: convertedQuranHistory,
-      todoList: convertedTodos,
-    };
-
     // 🔥 DEBUG: Log hasil akhir SEBELUM return
     console.log('🔍 [/api/auth/me] User data returned:', {
-      userId: finalEmployeeData.id,
-      name: finalEmployeeData.name,
-      role: finalEmployeeData.role,
-      email: finalEmployeeData.email,
-      hasActivatedMonths: !!finalEmployeeData.activatedMonths,
-      activatedMonthsCount: finalEmployeeData.activatedMonths?.length || 0,
-      canBeMentor: finalEmployeeData.canBeMentor,
-      canBeSupervisor: finalEmployeeData.canBeSupervisor,
-      canBeKaUnit: finalEmployeeData.canBeKaUnit,
-      canBeDirut: finalEmployeeData.canBeDirut,
-      functionalRoles: finalEmployeeData.functionalRoles,
+      userId: fullEmployeeData.id,
+      name: fullEmployeeData.name,
+      role: fullEmployeeData.role,
+      email: fullEmployeeData.email,
     });
 
-    return NextResponse.json({ employee: finalEmployeeData })
+    return NextResponse.json({ employee: fullEmployeeData })
 
   } catch (error) {
-    console.error('❌ [/api/auth/me] Unexpected error:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    })
+    console.error('❌ [/api/auth/me] Unexpected error:', error)
     return NextResponse.json(
-      { error: 'Failed to get user data', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to get user data' },
       { status: 500 }
     )
   }

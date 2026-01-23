@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Fragment, useMemo } from 'react';
 import { type Activity, type Attendance, type Employee, type AudienceRules, type TeamAttendanceSession } from '../types';
-import { ZoomIcon, YouTubeIcon, CheckIcon, XIcon, PencilIcon, ClockIcon, UserGroupIcon } from './Icons';
+import { Video as ZoomIcon, Youtube as YouTubeIcon, Check, X, Pencil, Clock, Users } from 'lucide-react';
 import { getTodayLocalDateString, getCurrentTime } from '../utils/dateUtils';
 
 interface ActivityTableProps {
@@ -290,17 +290,17 @@ export const ActivityTable: React.FC<ActivityTableProps> = ({ activities, teamAt
                                                 <div className="w-full flex flex-col items-center">
                                                     <p className={`w-full text-center py-1.5 sm:py-2.5 px-2 sm:px-3 rounded-lg font-semibold flex items-center justify-center shadow-md text-[10px] sm:text-xs ${attendanceStatus.status === 'hadir' ? 'bg-green-500/50 text-green-200' : 'bg-red-500/50 text-red-200'
                                                         }`}>
-                                                        {attendanceStatus.status === 'hadir' ? <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> : <XIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
+                                                        {attendanceStatus.status === 'hadir' ? <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> : <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
                                                         {attendanceStatus.status === 'hadir' ? 'Hadir' : 'Tidak'}
                                                     </p>
                                                 </div>
                                             ) : isActionable ? (
                                                 <>
                                                     <button onClick={() => onHadir(item.id)} className="w-1/2 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-lg font-semibold flex items-center justify-center transition-all bg-green-500 hover:bg-green-400 text-white shadow-md text-[10px] sm:text-xs">
-                                                        <CheckIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Hadir</span>
+                                                        <Check className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Hadir</span>
                                                     </button>
                                                     <button onClick={() => onTidakHadir({ id: item.id, name: item.name })} className="w-1/2 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-lg font-semibold flex items-center justify-center transition-all bg-red-500 hover:bg-red-400 text-white shadow-md text-[10px] sm:text-xs">
-                                                        <XIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Tidak</span>
+                                                        <X className="h-4 w-4 sm:h-5 sm:w-5 mr-0.5 sm:mr-1" /> <span className="hidden xs:inline">Tidak</span>
                                                     </button>
                                                 </>
                                             ) : (

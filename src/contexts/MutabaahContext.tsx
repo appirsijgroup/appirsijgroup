@@ -552,7 +552,11 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       // Initialize immediately to ensure activation status is available
       setIsLoading(true);
       initializeFromEmployee(employee).then(() => {
-        setIsLoading(false);
+        // 🔥 FIX: Automatically refresh data from all sources in background
+        // to ensure all latest data from separate tables is synced
+        refreshData().finally(() => {
+          setIsLoading(false);
+        });
       });
     } else {
       // 🔥 CRITICAL FIX: Don't reset activation state if employee is null/undefined

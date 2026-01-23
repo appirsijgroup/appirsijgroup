@@ -1,9 +1,6 @@
-
-'use client';
-
 import React, { useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogoutIcon } from './Icons';
+import { Bell, LogOut } from 'lucide-react';
 
 export interface NavItem {
   href: string;
@@ -117,9 +114,10 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
                 <item.icon className="w-6 h-6 shrink-0" />
                 <span>{item.label}</span>
                 {item.id === 'pengumuman' && unreadAnnouncementsCount > 0 && (
-                  <span className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold animate-pop-in">
-                    {unreadAnnouncementsCount}
-                  </span>
+                  <div className="ml-auto relative">
+                    <Bell className="w-5 h-5 text-amber-400 animate-swing" />
+                    <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full border border-gray-900 animate-pulse"></span>
+                  </div>
                 )}
               </div>
             ))}
@@ -135,7 +133,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
                 text-red-400 hover:bg-red-900/30 hover:text-red-300 hover:scale-[1.02]`}
               title="Keluar dari Aplikasi"
             >
-              <LogoutIcon className="w-6 h-6 shrink-0" />
+              <LogOut className="w-6 h-6 shrink-0" />
               <span>Keluar</span>
             </button>
           </div>

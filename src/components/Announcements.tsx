@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Announcement, type Employee, type Hospital } from '../types';
-import { MegaphoneIcon, PlusCircleIcon, TrashIcon, UserGroupIcon, GlobeAltIcon, ChevronDownIcon, PdfIcon } from './Icons';
+import { Megaphone, PlusCircle, Trash2, Pencil, Users, Globe, ChevronDown, FileDown } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useUIStore } from '@/store/store';
@@ -11,7 +11,8 @@ interface AnnouncementsProps {
     loggedInEmployee: Employee | null;
     allUsers: Employee[];
     hospitals?: Hospital[];
-    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
+    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
+    onUpdate: (announcementId: string, data: Omit<Announcement, 'id' | 'authorId' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
     onDelete: (announcementId: string) => void;
     onMarkAsRead: () => void;
 }
@@ -19,10 +20,12 @@ interface AnnouncementsProps {
 const AnnouncementModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
+    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
+    onUpdate?: (announcementId: string, data: Omit<Announcement, 'id' | 'authorId' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
+    editingAnnouncement?: Announcement | null;
     loggedInEmployee: Employee | null;
     hospitals: Hospital[];
-}> = ({ isOpen, onClose, onCreate, loggedInEmployee, hospitals }) => {
+}> = ({ isOpen, onClose, onCreate, onUpdate, editingAnnouncement, loggedInEmployee, hospitals }) => {
     const { addToast } = useUIStore();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -41,6 +44,26 @@ const AnnouncementModal: React.FC<{
         setFilePreview(objectUrl);
         return () => URL.revokeObjectURL(objectUrl);
     }, [file]);
+
+    // Effect to pre-fill form when editing
+    useEffect(() => {
+        if (editingAnnouncement) {
+            setTitle(editingAnnouncement.title);
+            setContent(editingAnnouncement.content);
+            setScope(editingAnnouncement.scope);
+            setSelectedHospitalIds(editingAnnouncement.targetHospitalIds || []);
+            // Note: existing images/documents will be shown via editingAnnouncement.imageUrl/documentUrl
+            // User can upload new files to replace them
+        } else {
+            // Reset form when creating new
+            setTitle('');
+            setContent('');
+            setScope('alliansi');
+            setSelectedHospitalIds([]);
+            setFile(null);
+            setFilePreview(null);
+        }
+    }, [editingAnnouncement, isOpen]);
 
     if (!isOpen || !loggedInEmployee) return null;
 
@@ -67,7 +90,8 @@ const AnnouncementModal: React.FC<{
             title,
             content,
             scope,
-            documentName: file && !file.type.startsWith('image/') ? file.name : undefined
+            documentName: file && !file.type.startsWith('image/') ? file.name : (editingAnnouncement?.documentName || undefined),
+            authorName: editingAnnouncement?.authorName || loggedInEmployee.name // Preserve original author name when editing
         };
 
         if (scope === 'alliansi' && selectedHospitalIds.length > 0) {
@@ -78,7 +102,11 @@ const AnnouncementModal: React.FC<{
         const imageFile = (file && file.type.startsWith('image/')) ? file : undefined;
         const documentFile = (file && !file.type.startsWith('image/')) ? file : undefined;
 
-        onCreate(announcementData, imageFile, documentFile);
+        if (editingAnnouncement && onUpdate) {
+            onUpdate(editingAnnouncement.id, announcementData, imageFile, documentFile);
+        } else {
+            onCreate(announcementData, imageFile, documentFile);
+        }
 
         onClose();
         setTitle('');
@@ -98,8 +126,8 @@ const AnnouncementModal: React.FC<{
                 <div className="bg-linear-to-r from-teal-600/20 to-blue-600/20 px-8 py-6 border-b border-white/10 flex items-center justify-between shrink-0">
                     <div>
                         <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                            <PlusCircleIcon className="w-6 h-6 text-teal-400" />
-                            Buat Pengumuman Baru
+                            <PlusCircle className="w-6 h-6 text-teal-400" />
+                            {editingAnnouncement ? 'Edit Pengumuman' : 'Buat Pengumuman Baru'}
                         </h3>
                         <p className="text-sm text-blue-200/60 mt-1">Sampaikan informasi penting ke seluruh tim atau mentee.</p>
                     </div>
@@ -136,20 +164,19 @@ const AnnouncementModal: React.FC<{
                             <div>
                                 <label className="text-sm font-semibold text-teal-300 mb-2 block uppercase tracking-wider">Media & Lampiran</label>
                                 {!file ? (
-                                    <div
+                                    <button
+                                        type="button"
                                         onClick={() => document.getElementById('announcement-file-input')?.click()}
-                                        className="group relative border-2 border-dashed border-white/10 hover:border-teal-500/50 rounded-2xl p-8 transition-all bg-white/5 hover:bg-teal-500/5 text-center cursor-pointer"
+                                        className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-teal-500/30 rounded-xl flex items-center justify-center gap-4 transition-all group"
                                     >
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
-                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-white font-medium">Pilih Gambar atau PDF</p>
-                                                <p className="text-xs text-white/40 mt-1">Ukuran maks. 5MB (PNG, JPG, PDF)</p>
-                                            </div>
+                                        <div className="p-2 rounded-lg bg-teal-500/20 text-teal-400 group-hover:scale-110 transition-transform">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                         </div>
-                                    </div>
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-white group-hover:text-teal-400 transition-colors">Upload Media / Dokumen</p>
+                                            <p className="text-[10px] text-white/40">Maks. 5MB (PNG, JPG, PDF)</p>
+                                        </div>
+                                    </button>
                                 ) : (
                                     <div className="relative group bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 animate-in zoom-in-95 duration-200">
                                         <div className="shrink-0 w-16 h-16 rounded-xl bg-gray-800 overflow-hidden border border-white/10 flex items-center justify-center">
@@ -168,7 +195,7 @@ const AnnouncementModal: React.FC<{
                                             className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
                                             title="Hapus file"
                                         >
-                                            <TrashIcon className="w-5 h-5" />
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
                                 )}
@@ -192,7 +219,7 @@ const AnnouncementModal: React.FC<{
                                             onClick={() => { setScope('alliansi'); setSelectedHospitalIds([]); }}
                                             className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${scope === 'alliansi' ? 'bg-teal-500/10 border-teal-500 text-teal-400 shadow-[0_0_20px_rgba(20,184,166,0.1)]' : 'bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20'}`}
                                         >
-                                            <GlobeAltIcon className="w-6 h-6" />
+                                            <Globe className="w-6 h-6" />
                                             <span className="text-xs font-bold uppercase tracking-tight">Aliansi</span>
                                         </button>
                                     )}
@@ -201,7 +228,7 @@ const AnnouncementModal: React.FC<{
                                             onClick={() => { setScope('mentor'); setSelectedHospitalIds([]); }}
                                             className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${scope === 'mentor' ? 'bg-teal-500/10 border-teal-500 text-teal-400 shadow-[0_0_20px_rgba(20,184,166,0.1)]' : 'bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20'}`}
                                         >
-                                            <UserGroupIcon className="w-6 h-6" />
+                                            <Users className="w-6 h-6" />
                                             <span className="text-xs font-bold uppercase tracking-tight">Mentee Saya</span>
                                         </button>
                                     )}
@@ -227,7 +254,7 @@ const AnnouncementModal: React.FC<{
 
                                     <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                         {hospitals.length === 0 ? (
-                                            <div className="text-center py-8 opacity-20"><GlobeAltIcon className="w-12 h-12 mx-auto mb-2" /> No Data</div>
+                                            <div className="text-center py-8 opacity-20"><Globe className="w-12 h-12 mx-auto mb-2" /> No Data</div>
                                         ) : (
                                             hospitals.map(hospital => (
                                                 <label key={hospital.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${selectedHospitalIds.includes(hospital.id) ? 'bg-teal-500/10 border-teal-500/30' : 'bg-black/20 border-white/5 hover:border-white/10'}`}>
@@ -269,16 +296,17 @@ const AnnouncementModal: React.FC<{
                         onClick={handleSubmit}
                         className="px-8 py-2.5 rounded-xl bg-linear-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-teal-500/20 active:scale-95 transition-all"
                     >
-                        Terapkan & Terbitkan
+                        {editingAnnouncement ? 'Simpan Perubahan' : 'Terapkan & Terbitkan'}
                     </button>
                 </div>
             </div>
-        </div>,
+        </div >,
         document.body
     );
 };
-const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onDelete, onMarkAsRead, hospitals = [] }) => {
+const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onUpdate, onDelete, onMarkAsRead, hospitals = [] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<Announcement | null>(null);
     const [openAnnouncementId, setOpenAnnouncementId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -346,7 +374,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                 <div>
                     <h2 className="text-4xl font-black text-white flex items-center gap-4 tracking-tight">
                         <div className="p-3 bg-teal-500/20 rounded-2xl">
-                            <MegaphoneIcon className="w-8 h-8 text-teal-400" />
+                            <Megaphone className="w-8 h-8 text-teal-400" />
                         </div>
                         Pengumuman
                         {unreadCount > 0 && (
@@ -363,7 +391,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                         onClick={() => setIsModalOpen(true)}
                         className="group w-full md:w-auto px-6 py-3.5 bg-linear-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-teal-500/20 transition-all hover:scale-105 active:scale-95"
                     >
-                        <PlusCircleIcon className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                        <PlusCircle className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                         Buat Baru
                     </button>
                 )}
@@ -395,7 +423,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                                 <span className="px-2 py-0.5 bg-teal-500 text-[10px] font-black uppercase tracking-tighter text-white rounded-md animate-pulse">Baru</span>
                                             )}
                                             <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-lg flex items-center gap-1.5 ${ann.scope === 'alliansi' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
-                                                {ann.scope === 'alliansi' ? <GlobeAltIcon className="w-3.5 h-3.5" /> : <UserGroupIcon className="w-3.5 h-3.5" />}
+                                                {ann.scope === 'alliansi' ? <Globe className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
                                                 {ann.scope === 'alliansi' ? (
                                                     ann.targetHospitalIds && ann.targetHospitalIds.length > 0
                                                         ? `${ann.targetHospitalNames?.[0] || 'RS'}${ann.targetHospitalIds.length > 1 ? ` +${ann.targetHospitalIds.length - 1}` : ''}`
@@ -410,7 +438,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                     </div>
                                     <div className="shrink-0">
                                         <div className={`p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-teal-500/20 text-teal-400 rotate-180' : 'bg-white/5 text-white/20 group-hover:text-white/40 group-hover:bg-white/10'}`}>
-                                            <ChevronDownIcon className="w-6 h-6" />
+                                            <ChevronDown className="w-6 h-6" />
                                         </div>
                                     </div>
                                 </button>
@@ -438,7 +466,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                             <div className="bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/20 rounded-2xl p-5 flex items-center justify-between transition-all group/doc">
                                                 <div className="flex items-center gap-4">
                                                     <div className="p-3 bg-teal-500/20 rounded-xl text-teal-400 group-hover/doc:scale-110 transition-transform">
-                                                        <PdfIcon className="w-6 h-6" />
+                                                        <FileDown className="w-6 h-6" />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">{ann.documentName || 'Lampiran Dokumen'}</div>
@@ -457,12 +485,19 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                         )}
 
                                         {loggedInEmployee && (isSuperAdmin(loggedInEmployee) || loggedInEmployee.id === ann.authorId) && (
-                                            <div className="pt-4 flex justify-end">
+                                            <div className="pt-4 flex justify-end gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setEditingAnnouncement(ann); setIsModalOpen(true); }}
+                                                    className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-teal-400 hover:text-white hover:bg-teal-500/20 rounded-xl border border-teal-500/20 transition-all"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                    Edit
+                                                </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setConfirmDelete(ann); }}
                                                     className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all"
                                                 >
-                                                    <TrashIcon className="w-4 h-4" />
+                                                    <Trash2 className="w-4 h-4" />
                                                     Hapus
                                                 </button>
                                             </div>
@@ -476,7 +511,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
             ) : (
                 <div className="text-center py-24 bg-white/5 border border-white/5 rounded-[40px] flex flex-col items-center gap-4">
                     <div className="p-6 bg-white/5 rounded-full mb-4">
-                        <MegaphoneIcon className="w-16 h-16 text-white/5" />
+                        <Megaphone className="w-16 h-16 text-white/5" />
                     </div>
                     <p className="text-xl font-bold text-white/20">Belum ada pengumuman</p>
                     <p className="text-sm text-white/10 max-w-xs">Informasi terbaru dari manajemen akan muncul di sini.</p>
@@ -550,8 +585,10 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
             {canCreate && (
                 <AnnouncementModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={() => { setIsModalOpen(false); setEditingAnnouncement(null); }}
                     onCreate={onCreate}
+                    onUpdate={onUpdate}
+                    editingAnnouncement={editingAnnouncement}
                     loggedInEmployee={loggedInEmployee}
                     hospitals={hospitals}
                 />

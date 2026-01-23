@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import { createToken, setSessionCookie } from '@/lib/jwt'
+import { getFullEmployeeData } from '@/services/employeeServerService'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,26 +84,18 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // 6. Token Generation - Include additional role and activation info
+    // 6. Success Response - Fetch FULL employee data for faster initial load
+    const fullEmployee = await getFullEmployeeData(employee.id);
+
+    // Token Generation - Include additional role and activation info
     const sessionPayload = {
       userId: employee.id,
       email: employee.email,
       name: employee.name,
       nip: employee.id,
       role: employee.role,
-      // Include additional role information
-      canBeMentor: employee.can_be_mentor,
-      canBeSupervisor: employee.can_be_supervisor,
-      canBeKaUnit: employee.can_be_ka_unit,
-      canBeDirut: employee.can_be_dirut,
-      functionalRoles: employee.functional_roles,
-      // Include activation status
+      // Include additional activation info for session verification if needed
       activatedMonths: employee.activated_months,
-      // Include assignment information
-      mentorId: employee.mentor_id,
-      supervisorId: employee.supervisor_id,
-      kaUnitId: employee.ka_unit_id,
-      dirutId: employee.dirut_id,
     };
 
     let token;
@@ -112,16 +105,10 @@ export async function POST(request: NextRequest) {
       throw new Error(`Token generation failed: ${jwtError instanceof Error ? jwtError.message : 'Unknown reason'}`);
     }
 
-    // 7. Success Response
     const response = NextResponse.json({
       success: true,
       message: 'Berhasil masuk',
-      employee: {
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        role: employee.role,
-      }
+      employee: fullEmployee // Return the full object
     });
 
     // Set cookie

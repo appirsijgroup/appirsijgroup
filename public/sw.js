@@ -1,4 +1,4 @@
-const CACHE_NAME = 'appi-rsi-group-v2';
+const CACHE_NAME = 'appi-rsi-group-v3';
 
 // Only cache static assets and public pages
 // NEVER cache authenticated pages or pages with redirects
@@ -63,8 +63,8 @@ self.addEventListener('fetch', (event) => {
 
   // IMPORTANT: Skip chrome-extension and other extension schemes
   if (url.protocol === 'chrome-extension:' ||
-      url.protocol === 'extension:' ||
-      url.protocol === 'moz-extension:') {
+    url.protocol === 'extension:' ||
+    url.protocol === 'moz-extension:') {
     return;
   }
 

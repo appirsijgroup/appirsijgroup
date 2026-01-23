@@ -10,7 +10,8 @@ interface AnnouncementState {
 
     // Actions
     loadAnnouncements: () => Promise<void>;
-    addAnnouncement: (data: Omit<Announcement, 'id' | 'timestamp'>) => Promise<void>;
+    addAnnouncement: (data: Omit<Announcement, 'id' | 'timestamp'>, imageFile?: File, documentFile?: File) => Promise<void>;
+    updateAnnouncement: (announcementId: string, data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => Promise<void>;
     deleteAnnouncement: (announcementId: string) => Promise<void>;
     refreshAnnouncements: () => Promise<void>;
 }
@@ -46,20 +47,82 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
         }
     },
 
-    addAnnouncement: async (data) => {
+    addAnnouncement: async (data, imageFile, documentFile) => {
         set({ isLoading: true, error: null });
 
         try {
             const newAnnouncement = await announcementService.createAnnouncement(data);
-            set((state) => ({
-                announcements: [newAnnouncement, ...state.announcements],
-                isLoading: false
-            }));
+
+            // Upload files if provided
+            let imageUrl = newAnnouncement.imageUrl;
+            let documentUrl = newAnnouncement.documentUrl;
+
+            if (imageFile) {
+                imageUrl = await announcementService.uploadAnnouncementImage(imageFile, newAnnouncement.id);
+            }
+            if (documentFile) {
+                documentUrl = await announcementService.uploadAnnouncementDocument(documentFile, newAnnouncement.id);
+            }
+
+            // Update announcement with file URLs if any were uploaded
+            if (imageUrl || documentUrl) {
+                const updatedAnnouncement = await announcementService.updateAnnouncement(newAnnouncement.id, {
+                    ...(imageUrl && { imageUrl }),
+                    ...(documentUrl && { documentUrl }),
+                });
+                set((state) => ({
+                    announcements: [updatedAnnouncement, ...state.announcements],
+                    isLoading: false
+                }));
+            } else {
+                set((state) => ({
+                    announcements: [newAnnouncement, ...state.announcements],
+                    isLoading: false
+                }));
+            }
         } catch (error) {
             set({
                 error: error instanceof Error ? error.message : 'Failed to add announcement',
                 isLoading: false
             });
+            throw error;
+        }
+    },
+
+    updateAnnouncement: async (announcementId, data, imageFile, documentFile) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            // Upload new files if provided
+            let imageUrl = data.imageUrl;
+            let documentUrl = data.documentUrl;
+
+            if (imageFile) {
+                imageUrl = await announcementService.uploadAnnouncementImage(imageFile, announcementId);
+            }
+            if (documentFile) {
+                documentUrl = await announcementService.uploadAnnouncementDocument(documentFile, announcementId);
+            }
+
+            // Update announcement with new data and file URLs
+            const updatedAnnouncement = await announcementService.updateAnnouncement(announcementId, {
+                ...data,
+                ...(imageUrl && { imageUrl }),
+                ...(documentUrl && { documentUrl }),
+            });
+
+            set((state) => ({
+                announcements: state.announcements.map((a) =>
+                    a.id === announcementId ? updatedAnnouncement : a
+                ),
+                isLoading: false
+            }));
+        } catch (error) {
+            set({
+                error: error instanceof Error ? error.message : 'Failed to update announcement',
+                isLoading: false
+            });
+            throw error;
         }
     },
 

@@ -5,15 +5,16 @@ import Image from 'next/image';
 
 interface BrandedLoaderProps {
     message?: string;
+    fullScreen?: boolean;
 }
 
 /**
  * BrandedLoader - Loading screen dengan logo app dan animasi yang smooth
  * Digunakan untuk memberikan experience yang lebih baik saat loading
  */
-export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat..." }) => {
+export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat...", fullScreen = true }) => {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-br from-slate-900 to-indigo-800">
+        <div className={`${fullScreen ? 'min-h-screen' : 'py-20 w-full'} flex flex-col items-center justify-center bg-linear-to-br from-slate-900 to-indigo-800`}>
             {/* Logo Container dengan Pulse Animation */}
             <div className="relative mb-8">
                 {/* Pulse rings */}

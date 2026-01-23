@@ -18,17 +18,19 @@ interface WeeklyReportSubmissionDB {
 
 // Mapping function from DB to App type
 function mapDbToApp(dbItem: WeeklyReportSubmissionDB): WeeklyReportSubmission {
-  // This is a simplified mapping - you may need to adjust based on actual requirements
-  // For now, we'll use type assertion to handle the mismatch
+  const reportData = dbItem.report_data || {};
+
   return {
+    ...reportData, // Spread report data first (contains content, status, notes, etc.)
     id: dbItem.id || '',
     menteeId: dbItem.mentee_id,
-    menteeName: '', // This should come from employee data
+    menteeName: reportData.menteeName || '',
     monthKey: dbItem.month_key,
     weekIndex: dbItem.week_index,
     submittedAt: dbItem.submitted_at ? new Date(dbItem.submitted_at).getTime() : Date.now(),
-    status: 'pending_mentor', // Default status
-    mentorId: '', // This should come from context
+    // Ensure status exists, default to pending_mentor if not in report_data
+    status: reportData.status || 'pending_mentor',
+    mentorId: reportData.mentorId || '',
   } as WeeklyReportSubmission;
 }
 
@@ -110,13 +112,20 @@ export const submitWeeklyReport = async (
       throw new Error('Cannot submit report for future months.');
     }
 
+    // Prepare report data with default status
+    const dataToStore = {
+      ...reportData,
+      status: 'pending_mentor',
+      submittedAt: timeValidation.correctedTime.getTime()
+    };
+
     const { data, error } = await (supabase
       .from('weekly_report_submissions') as any)
       .insert({
         mentee_id: userId,
         month_key: monthKey,
         week_index: weekIndex,
-        report_data: reportData,
+        report_data: dataToStore,
         submitted_at: timeValidation.correctedTime.toISOString()
       })
       .select()
@@ -125,19 +134,20 @@ export const submitWeeklyReport = async (
     if (error) {
       // Check for unique constraint violation
       if (error.code === '23505') {
-        return null;
+        return null; // Return null to indicate duplicate (could also throw)
       }
       throw error;
     }
 
     return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
   } catch (error) {
+    console.error("Error submitting weekly report:", error);
     return null;
   }
 };
 
 /**
- * Update an existing weekly report
+ * Update an existing weekly report (mentee editing their report)
  */
 export const updateWeeklyReport = async (
   reportId: string,
@@ -152,20 +162,83 @@ export const updateWeeklyReport = async (
       throw new Error('System time appears to be manipulated. Report update denied.');
     }
 
+    // Allow updating content but preserve status ideally, or reset to pending?
+    // Usually editing resets approval status. Let's force reset to pending_mentor.
+    const dataToUpdate = {
+      ...reportData,
+      status: 'pending_mentor',
+      updatedAt: timeValidation.correctedTime.getTime()
+    };
+
     const { error } = await (supabase
       .from('weekly_report_submissions') as any)
       .update({
-        report_data: reportData,
+        report_data: dataToUpdate,
         updated_at: timeValidation.correctedTime.toISOString()
       })
       .eq('id', reportId)
-      .eq('mentee_id', userId);  // Changed from user_id to mentee_id
+      .eq('mentee_id', userId);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
     return false;
+  }
+};
+
+/**
+ * Review a weekly report (Mentor/Supervisor/Kazie action)
+ */
+export const reviewWeeklyReport = async (
+  reportId: string,
+  reviews: {
+    status: string;
+    mentorNotes?: string;
+    mentorReviewedAt?: number;
+    supervisorNotes?: string;
+    supervisorReviewedAt?: number;
+    kaUnitNotes?: string;
+    kaUnitReviewedAt?: number;
+    [key: string]: any;
+  }
+): Promise<WeeklyReportSubmission | null> => {
+  try {
+    // 1. Fetch existing report to merge data
+    const { data: existing, error: fetchError } = await supabase
+      .from('weekly_report_submissions')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+
+    if (fetchError || !existing) throw fetchError || new Error('Report not found');
+
+    const existingDBArg = existing as unknown as WeeklyReportSubmissionDB;
+    const currentReportData = existingDBArg.report_data || {};
+
+    // 2. Merge updates
+    const updatedReportData = {
+      ...currentReportData,
+      ...reviews
+    };
+
+    // 3. Save back
+    const { data, error } = await (supabase
+      .from('weekly_report_submissions') as any)
+      .update({
+        report_data: updatedReportData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', reportId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return mapDbToApp(data as unknown as WeeklyReportSubmissionDB);
+  } catch (error) {
+    console.error("Error reviewing report:", error);
+    return null;
   }
 };
 
@@ -178,7 +251,7 @@ export const deleteWeeklyReport = async (reportId: string, userId: string): Prom
       .from('weekly_report_submissions')
       .delete()
       .eq('id', reportId)
-      .eq('mentee_id', userId);  // Changed from user_id to mentee_id
+      .eq('mentee_id', userId);
 
     if (error) throw error;
 
@@ -207,7 +280,7 @@ export const hasSubmittedReport = async (
     const { data, error } = await supabase
       .from('weekly_report_submissions')
       .select('id')
-      .eq('mentee_id', userId)  // Changed from user_id to mentee_id
+      .eq('mentee_id', userId)
       .eq('month_key', monthKey)
       .eq('week_index', weekIndex)
       .single();

@@ -8,7 +8,7 @@ import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export default function PengumumanPage() {
     const { loggedInEmployee, allUsersData, markAnnouncementAsRead, hospitalsData, loadHospitals } = useAppDataStore();
-    const { announcements, addAnnouncement, removeAnnouncement, loadAnnouncements, isLoading } = useAnnouncementStore();
+    const { announcements, addAnnouncement, updateAnnouncement, removeAnnouncement, loadAnnouncements, isLoading } = useAnnouncementStore();
     const { addToast } = useUIStore();
     const [initLoaded, setInitLoaded] = useState(false);
 
@@ -72,6 +72,23 @@ export default function PengumumanPage() {
         }
     };
 
+    // Handler to update announcement
+    const handleUpdateAnnouncement = async (announcementId: string, data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => {
+        if (!loggedInEmployee) {
+            addToast('Anda harus login terlebih dahulu', 'error');
+            return;
+        }
+
+        try {
+            await updateAnnouncement(announcementId, data, imageFile, documentFile);
+            addToast('Pengumuman berhasil diperbarui!', 'success');
+            // Refresh announcements after update
+            await loadAnnouncements();
+        } catch (error: any) {
+            addToast(`Gagal memperbarui pengumuman: ${error.message || 'Terjadi kesalahan'}`, 'error');
+        }
+    };
+
     const handleDeleteAnnouncement = async (id: string) => {
         try {
             await removeAnnouncement(id);
@@ -96,6 +113,7 @@ export default function PengumumanPage() {
             allUsers={allUsersList}
             hospitals={hospitalsList}
             onCreate={handleCreateAnnouncement}
+            onUpdate={handleUpdateAnnouncement}
             onDelete={handleDeleteAnnouncement}
             onMarkAsRead={markAnnouncementAsRead}
         />

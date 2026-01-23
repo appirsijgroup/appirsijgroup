@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { type Activity, type Employee, type TeamAttendanceSession, type Attendance, AudienceRules, type TeamAttendanceRecord } from '../types';
-import { UserGroupIcon, CalendarDaysIcon, PlusCircleIcon, PencilIcon, SearchIcon, CheckIcon, TrashIcon, GlobeAltIcon, UserCircleIcon, ClockIcon, CheckBadgeIcon, ZoomIcon, YouTubeIcon } from './Icons';
+import { Users, CalendarDays, PlusCircle, Pencil, Search, Check, Trash2, Globe, UserCircle, Clock, BadgeCheck, Video as ZoomIcon, Youtube as YouTubeIcon } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ConfirmationModal from './ConfirmationModal';
 import { getTodayLocalDateString } from '../utils/dateUtils';
@@ -36,12 +36,16 @@ interface TeamAttendanceViewProps {
 const teamActivityOptions: { label: string; value: TeamAttendanceSession['type'] }[] = [
     { label: "Doa bersama mengawali pekerjaan", value: 'Doa Bersama' },
     { label: "Tepat waktu menghadiri KIE", value: 'KIE' },
+    { label: "Bimbingan Baca Al-Qur'an (BBQ)", value: 'BBQ' },
+    { label: "Tadarus Umum", value: 'UMUM' },
 ];
 
 // Mapping session type to activity ID for monthlyActivities
 const sessionTypeToActivityId: Record<TeamAttendanceSession['type'], string> = {
     'Doa Bersama': 'doa_bersama',
     'KIE': 'tepat_waktu_kie',
+    'BBQ': 'tadarus',
+    'UMUM': 'tadarus',
 };
 
 const CreateSessionModal: React.FC<{
@@ -183,7 +187,7 @@ const CreateSessionModal: React.FC<{
                                 <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">{isRecurring ? 'Tanggal Mulai' : 'Tanggal'}</label>
                                     <div className="relative">
-                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                     </div>
                                 </div>
@@ -191,14 +195,14 @@ const CreateSessionModal: React.FC<{
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
@@ -232,13 +236,13 @@ const CreateSessionModal: React.FC<{
                             <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
-                                    icon={UserCircleIcon}
+                                    icon={UserCircle}
                                     isActive={attendanceMode === 'self'}
                                     onClick={() => setAttendanceMode('self')}
                                 />
                                 <SegmentedControlButton
                                     label="Oleh Atasan"
-                                    icon={CheckBadgeIcon}
+                                    icon={BadgeCheck}
                                     isActive={attendanceMode === 'leader'}
                                     onClick={() => setAttendanceMode('leader')}
                                 />
@@ -270,8 +274,8 @@ const CreateSessionModal: React.FC<{
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Target Peserta</h4>
                             <div className="flex items-center gap-4 mb-4">
-                                <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
-                                <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
+                                <SegmentedControlButton label="Aturan" icon={Globe} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
+                                <SegmentedControlButton label="Manual" icon={Users} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
                             </div>
                             {audienceType === 'rules' && (
                                 <div className="space-y-4">
@@ -448,7 +452,7 @@ const ManageAttendanceModal: React.FC<{
                                 <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
                                     <div className="relative">
-                                        <CalendarDaysIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                        <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                         <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                     </div>
                                 </div>
@@ -456,14 +460,14 @@ const ManageAttendanceModal: React.FC<{
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
                                         <div className="relative">
-                                            <ClockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 text-white" style={{ colorScheme: 'dark' }} />
                                         </div>
                                     </div>
@@ -476,13 +480,13 @@ const ManageAttendanceModal: React.FC<{
                             <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
-                                    icon={UserCircleIcon}
+                                    icon={UserCircle}
                                     isActive={attendanceMode === 'self'}
                                     onClick={() => setAttendanceMode('self')}
                                 />
                                 <SegmentedControlButton
                                     label="Oleh Atasan"
-                                    icon={CheckBadgeIcon}
+                                    icon={BadgeCheck}
                                     isActive={attendanceMode === 'leader'}
                                     onClick={() => setAttendanceMode('leader')}
                                 />
@@ -514,8 +518,8 @@ const ManageAttendanceModal: React.FC<{
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Target Peserta & Presensi</h4>
                             <div className="flex items-center gap-4 mb-4">
-                                <SegmentedControlButton label="Aturan" icon={GlobeAltIcon} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
-                                <SegmentedControlButton label="Manual" icon={UserGroupIcon} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
+                                <SegmentedControlButton label="Aturan" icon={Globe} isActive={audienceType === 'rules'} onClick={() => setAudienceType('rules')} />
+                                <SegmentedControlButton label="Manual" icon={Users} isActive={audienceType === 'manual'} onClick={() => setAudienceType('manual')} />
                             </div>
                             {audienceType === 'rules' && (
                                 <div className="space-y-4">
@@ -606,7 +610,7 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [managingAttendanceFor, setManagingAttendanceFor] = useState<TeamAttendanceSession | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<TeamAttendanceSession | null>(null);
-    const [activeTab, setActiveTab] = useState<TeamAttendanceSession['type']>('KIE');
+    const [activeTab, setActiveTab] = useState<TeamAttendanceSession['type']>('Doa Bersama');
 
     const allUsers = useMemo(() => Object.values(allUsersData).map(d => d.employee), [allUsersData]);
 
@@ -637,8 +641,16 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
 
     const otherKieSessions = useMemo(() => otherSessions.filter(s => s.type === 'KIE'), [otherSessions]);
     const otherDoaSessions = useMemo(() => otherSessions.filter(s => s.type === 'Doa Bersama'), [otherSessions]);
+    const otherBbqSessions = useMemo(() => otherSessions.filter(s => s.type === 'BBQ'), [otherSessions]);
+    const otherUmumSessions = useMemo(() => otherSessions.filter(s => s.type === 'UMUM'), [otherSessions]);
 
-    const sessionsForTab = activeTab === 'KIE' ? otherKieSessions : otherDoaSessions;
+    const sessionsForTab = useMemo(() => {
+        if (activeTab === 'KIE') return otherKieSessions;
+        if (activeTab === 'Doa Bersama') return otherDoaSessions;
+        if (activeTab === 'BBQ') return otherBbqSessions;
+        if (activeTab === 'UMUM') return otherUmumSessions;
+        return [];
+    }, [activeTab, otherKieSessions, otherDoaSessions, otherBbqSessions, otherUmumSessions]);
 
     const handleSelfAttend = async (session: TeamAttendanceSession) => {
         // ⚡ UPDATE: Cek apakah user sudah hadir menggunakan teamAttendanceRecords
@@ -722,11 +734,11 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 <div>
                     <p className="font-semibold text-lg text-white">{session.type}</p>
                     <p className="text-sm text-blue-200 flex items-center gap-2">
-                        <CalendarDaysIcon className="w-4 h-4" />
+                        <CalendarDays className="w-4 h-4" />
                         {new Date(session.date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </p>
                     <p className="text-sm text-blue-200 flex items-center gap-2">
-                        <ClockIcon className="w-4 h-4" />
+                        <Clock className="w-4 h-4" />
                         {session.startTime} - {session.endTime}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
@@ -743,20 +755,20 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                     {isCreator ? (
                         <>
                             <button onClick={() => setManagingAttendanceFor(session)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-md">
-                                <PencilIcon className="w-4 h-4" /> Kelola Presensi
+                                <Pencil className="w-4 h-4" /> Kelola Presensi
                             </button>
                             <button onClick={() => setConfirmDelete(session)} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Hapus Sesi">
-                                <TrashIcon className="w-5 h-5" />
+                                <Trash2 className="w-5 h-5" />
                             </button>
                         </>
                     ) : session.attendanceMode === 'self' ? (
                         isPresent ? (
                             <div className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-green-500/30 text-green-300 rounded-md">
-                                <CheckBadgeIcon className="w-4 h-4" /> Anda Sudah Hadir
+                                <BadgeCheck className="w-4 h-4" /> Anda Sudah Hadir
                             </div>
                         ) : (
                             <button onClick={() => handleSelfAttend(session)} disabled={!isActionable} className="w-full sm:w-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-green-600 hover:bg-green-500 rounded-md disabled:bg-gray-500 disabled:cursor-not-allowed">
-                                <CheckIcon className="w-4 h-4" /> Konfirmasi Hadir
+                                <Check className="w-4 h-4" /> Konfirmasi Hadir
                             </button>
                         )
                     ) : (
@@ -791,12 +803,12 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                        <UserGroupIcon className="w-6 h-6 text-teal-300" />
+                        <Users className="w-6 h-6 text-teal-300" />
                         Manajemen Presensi Tim
                     </h3>
                 </div>
                 <button onClick={() => setIsCreateModalOpen(true)} className="shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-semibold p-2 rounded-lg shadow-md transition-colors flex items-center gap-2 text-sm">
-                    <PlusCircleIcon className="w-5 h-5" /> Buat Sesi Baru
+                    <PlusCircle className="w-5 h-5" /> Buat Sesi Baru
                 </button>
             </div>
 
@@ -815,8 +827,10 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                 <h3 className="text-lg font-bold text-white border-l-4 border-teal-400 pl-3">Sesi Akan Datang & Riwayat</h3>
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 min-w-max">
-                        <SubTabButton label="KIE" active={activeTab === 'KIE'} onClick={() => setActiveTab('KIE')} />
                         <SubTabButton label="Doa Pagi" active={activeTab === 'Doa Bersama'} onClick={() => setActiveTab('Doa Bersama')} />
+                        <SubTabButton label="KIE" active={activeTab === 'KIE'} onClick={() => setActiveTab('KIE')} />
+                        <SubTabButton label="BBQ" active={activeTab === 'BBQ'} onClick={() => setActiveTab('BBQ')} />
+                        <SubTabButton label="Tadarus Umum" active={activeTab === 'UMUM'} onClick={() => setActiveTab('UMUM')} />
                     </div>
                 </div>
                 {sessionsForTab.length > 0 ? (

@@ -1,4 +1,4 @@
-import { supabase, toSnakeCase } from '@/lib/supabase';
+import { supabase, toSnakeCase, toCamelCase } from '@/lib/supabase';
 import { convertImageToWebP } from '@/utils/imageUtils';
 import type { Announcement } from '@/types';
 // Replace UUID with standard crypto.randomUUID()
@@ -16,7 +16,7 @@ export const getAllAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    return toCamelCase(data) as Announcement[] || [];
 };
 
 // Get announcement by ID
@@ -31,7 +31,11 @@ export const getAnnouncementById = async (id: string): Promise<Announcement | nu
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    return data as unknown as Announcement | null;
+    if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+    }
+    return toCamelCase(data) as Announcement | null;
 };
 
 // Get global/alliansi announcements
@@ -43,7 +47,8 @@ export const getGlobalAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    if (error) throw error;
+    return toCamelCase(data) as Announcement[] || [];
 };
 
 // Get mentor announcements
@@ -55,7 +60,8 @@ export const getMentorAnnouncements = async (): Promise<Announcement[]> => {
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    if (error) throw error;
+    return toCamelCase(data) as Announcement[] || [];
 };
 
 // Get announcements by author
@@ -67,7 +73,8 @@ export const getAnnouncementsByAuthor = async (authorId: string): Promise<Announ
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    if (error) throw error;
+    return toCamelCase(data) as Announcement[] || [];
 };
 
 // Create new announcement
@@ -100,7 +107,7 @@ export const createAnnouncement = async (
         throw new Error('Insert operation completed but no data returned - possible RLS violation');
     }
 
-    return data;
+    return toCamelCase(data) as Announcement;
 };
 
 // Update announcement
@@ -116,7 +123,7 @@ export const updateAnnouncement = async (
         .single();
 
     if (error) throw error;
-    return data;
+    return toCamelCase(data) as Announcement;
 };
 
 // Delete announcement
@@ -148,7 +155,7 @@ export const getRecentAnnouncements = async (limit: number = 10): Promise<Announ
         .limit(limit);
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    return toCamelCase(data) as Announcement[] || [];
 };
 
 // Upload announcement image
@@ -213,5 +220,5 @@ export const getAnnouncementsAfter = async (timestamp: number): Promise<Announce
         .order('timestamp', { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as Announcement[]) || [];
+    return toCamelCase(data) as Announcement[] || [];
 };

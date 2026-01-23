@@ -459,6 +459,8 @@ export const convertTeamAttendanceToActivities = async (
                 result[monthKey][dayKey]['tepat_waktu_kie'] = true;
             } else if (sessionType === 'Doa Bersama') {
                 result[monthKey][dayKey]['doa_bersama'] = true;
+            } else if (sessionType === 'BBQ' || sessionType === 'UMUM') {
+                result[monthKey][dayKey]['tadarus'] = true;
             }
         });
 

@@ -8,10 +8,16 @@ export async function POST(request: NextRequest) {
       message: 'Logout berhasil'
     })
 
-    // Hapus cookie session
-    clearSessionCookie(response)
+    // Hapus cookie session dengan path yang sesuai
+    response.cookies.set('session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    })
 
-    // Also delete legacy userId cookie just in case
+    // Also delete legacy cookies
     response.cookies.delete('userId')
 
     return response

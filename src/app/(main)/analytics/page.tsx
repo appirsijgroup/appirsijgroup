@@ -27,9 +27,17 @@ export default function AnalyticsPage() {
                 // Check if we already have data loaded
                 const employeeCount = Object.keys(allUsersData).length;
 
-                // 🔥 FIX: Always reload if we have less than 50 employees (likely paginated data)
-                // 15 is the default paginated limit, so anything less than 50 means incomplete data
-                if (employeeCount > 50) {
+                // 🔥 FIX: Validate data completeness
+                // If we have employees but NO activities (likely due to previous 401 error or partial load),
+                // we must force a reload.
+                const firstUser = Object.values(allUsersData)[0];
+                const hasActivities = firstUser &&
+                    firstUser.employee &&
+                    (firstUser.employee.monthlyActivities || (firstUser.employee as any).monthly_activities) &&
+                    Object.keys(firstUser.employee.monthlyActivities || (firstUser.employee as any).monthly_activities || {}).length > 0;
+
+                // If data is sufficient, stop loading
+                if (employeeCount >= 15 && hasActivities) {
                     setIsLoading(false);
                     return;
                 }
@@ -37,14 +45,10 @@ export default function AnalyticsPage() {
                 setIsLoading(true);
                 setError(null);
 
-                // 🔥 FIX: Force reload from server to get ALL employees, not paginated data
-                await loadAllEmployees();
-
-                // Verify the load was successful
-                const newCount = Object.keys(useAppDataStore.getState().allUsersData).length;
-
-                if (newCount < 50) {
-                }
+                // 🔥 OPTIMIZATION: Load only top 50 employees initially for faster dashboard
+                // loadAllEmployees handles the fetching logic. 
+                // We'll trust the store to handle caching if it's already loading.
+                await loadAllEmployees(50);
 
                 setIsLoading(false);
             } catch (err) {
@@ -83,5 +87,9 @@ export default function AnalyticsPage() {
     }
 
     // Show analytics if not loading and no error
-    return <Analytics allUsersData={allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
+    return <Analytics
+        allUsersData={allUsersData}
+        dailyActivitiesConfig={dailyActivitiesConfig}
+        onLoadAllData={() => loadAllEmployees()} // No limit = load all
+    />;
 }

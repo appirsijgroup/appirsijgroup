@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
         // Verify authorization (Admin or Mentor/Supervisor/KaUnit)
         const session = await getSession();
         const isAdmin = session && (session.role === 'admin' || session.role === 'super-admin' || session.role === 'owner');
-        const isMentor = session && (session.canBeMentor || session.canBeSupervisor || session.canBeKaUnit);
+        // 🔥 FIX: Include canBeDirut in permission check
+        const isMentor = session && (session.canBeMentor || session.canBeSupervisor || session.canBeKaUnit || session.canBeDirut);
 
         if (!session || (!isAdmin && !isMentor)) {
             return NextResponse.json({ error: 'Unauthorized - Adequate role required' }, { status: 401 });

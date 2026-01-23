@@ -392,7 +392,7 @@ export interface TeamAttendanceSession {
   id: string;
   creatorId: string;
   creatorName: string;
-  type: 'KIE' | 'Doa Bersama';
+  type: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM';
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
@@ -416,7 +416,7 @@ export interface TeamAttendanceRecord {
   attendedAt: number; // Unix timestamp - kapan user klik HADIR
   createdAt: number;
   // Metadata dari session (denormalized untuk query performance)
-  sessionType: 'KIE' | 'Doa Bersama';
+  sessionType: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM';
   sessionDate: string; // YYYY-MM-DD
   sessionStartTime: string; // HH:MM
   sessionEndTime: string; // HH:MM
@@ -485,6 +485,8 @@ export interface MyDashboardViewProps {
   onSubmitReport?: (monthKey: string, weekIndex: number) => void;
   // Assignment Letter
   onOpenAssignmentLetter?: (notification: any) => void;
+  onLoadEmployees?: (limit?: number) => Promise<void>;
+  isLoadingEmployees?: boolean;
 }
 
 export interface TadarusSession {

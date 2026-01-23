@@ -5,7 +5,7 @@ import React from 'react';
 import { type View, type Toast, type Notification, Ayah, SurahDetail, DailyPrayer, Employee, Attendance, Hospital } from '@/types';
 import { CheckIcon, XIcon } from '@/components/Icons';
 import { type PrayerTimesData } from '@/services/prayerTimeService';
-import { getEmployeeById } from '@/services/employeeService';
+import { getEmployeeById, updateEmployee } from '@/services/employeeService';
 import { getAllHospitals } from '@/services/hospitalService';
 import { timeValidationService } from '@/services/timeValidationService';
 
@@ -29,9 +29,9 @@ export interface AppDataState {
     setLoggedInEmployee: (employee: Employee | null) => void;
     setHospitalsData: (hospitals: Record<string, Hospital>) => void;
     setHydrated: (isHydrated: boolean) => void;
-    markAnnouncementAsRead: () => void;
+    markAnnouncementAsRead: () => Promise<void>;
     loadLoggedInEmployee: () => Promise<void>;
-    loadAllEmployees: () => Promise<void>;
+    loadAllEmployees: (limit?: number) => Promise<void>;
     loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean) => Promise<void>;
     paginatedEmployees: Employee[];
     paginationInfo: {
@@ -137,9 +137,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 // No valid session - not logged in
                 localStorage.removeItem('loggedInUserId');
                 set({ loggedInEmployee: null, isHydrated: true });
-                // Redirect to login page
+
+                // Redirect to login page ONLY if not already there to prevent loops
                 if (typeof window !== 'undefined') {
-                    window.location.href = '/login';
+                    const currentPath = window.location.pathname;
+                    if (currentPath !== '/login' && currentPath !== '/login/') {
+                        window.location.href = '/login';
+                    }
                 }
             }
         } catch (error) {
@@ -155,33 +159,45 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     // Logout function to clear session
     logoutEmployee: async () => {
+        // 🔥 GUARD: Prevent multiple concurrent logout calls
+        if (get().isLoggingOut) return;
+
         // Set flag to prevent loading flash
         set({ isLoggingOut: true });
 
-        // Call logout API to clear server session if needed
+        // Call logout API to clear server session
         try {
             await fetch('/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include',
             });
         } catch (error) {
-            // Ignore logout API errors - proceed with client-side logout
+            console.error('Logout API error:', error);
         }
 
-        // Clear client-side storage
-        localStorage.removeItem('loggedInUserId');
-        document.cookie = 'loggedInUserId=; path=/; max-age=0; SameSite=Lax';
-
-        // Clear state but keep hydrated to prevent loading flash
-        set({
-            loggedInEmployee: null,
-            isHydrated: true,  // Keep hydrated to prevent loading screen
-            isLoggingOut: false // Reset flag after clearing
-        });
-
-        // Redirect to login page immediately
+        // Clear all client-side storage related to session
         if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+            localStorage.removeItem('loggedInUserId');
+            localStorage.removeItem('lastVisitedPage');
+            // document.cookie removal is a fallback, API should handle it
+            document.cookie = 'session=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'loggedInUserId=; path=/; max-age=0; SameSite=Lax';
+
+            // Clear state but keep hydrated to prevent loading flash before redirect
+            set({
+                loggedInEmployee: null,
+                isHydrated: true,
+                isLoggingOut: true
+            });
+
+            // Redirect to login page immediately ONLY if not already there
+            // Use window.location.origin to be extra safe with the check
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/login' && currentPath !== '/login/') {
+                window.location.href = '/login';
+            } else {
+                set({ isLoggingOut: false });
+            }
         }
     },
 
@@ -202,7 +218,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     },
 
     // Load all employees from Supabase
-    loadAllEmployees: async () => {
+    loadAllEmployees: async (limit?: number) => {
         // 🔥 NEW: Prevent concurrent loading
         if (get().isLoadingEmployees) {
             return;
@@ -213,7 +229,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
             // 1. Fetch all basic employee data
             const { getAllEmployees } = await import('@/services/employeeService');
-            const allEmployees = await getAllEmployees();
+            const allEmployees = await getAllEmployees(limit);
 
             // 2. Fetch all attendance records in BULK
             const { getAllAttendanceRecords } = await import('@/services/attendanceService');
@@ -298,16 +314,17 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
     },
 
-    markAnnouncementAsRead: () => {
+    markAnnouncementAsRead: async () => {
         const { loggedInEmployee, allUsersData } = get();
         if (!loggedInEmployee) return;
 
+        const now = Date.now();
         const updatedEmployee = {
             ...loggedInEmployee,
-            lastAnnouncementReadTimestamp: Date.now()
+            lastAnnouncementReadTimestamp: now
         };
 
-        // Update both loggedInEmployee and allUsersData
+        // 1. Update state immediately for UX
         set({
             loggedInEmployee: updatedEmployee,
             allUsersData: {
@@ -318,6 +335,16 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 }
             }
         });
+
+        // 2. Persist to Supabase
+        try {
+            await updateEmployee(loggedInEmployee.id, {
+                lastAnnouncementReadTimestamp: now
+            });
+        } catch (error) {
+            console.error('❌ [markAnnouncementAsRead] Error persisting to Supabase:', error);
+            // Optionally rollback state if needed, but for unread status it's not critical
+        }
     },
 }));
 

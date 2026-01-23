@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Bookmark } from '../services/bookmarkService';
-import { BookmarkSolidIcon, TrashIcon, SearchIcon, CalendarDaysIcon, XIcon } from './Icons';
+import { Bookmark as BookmarkIcon, Trash2, Search, CalendarDays, X } from 'lucide-react';
 
 interface BookmarksProps {
     bookmarks: Bookmark[];
@@ -38,7 +38,7 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
             const lowerCaseQuery = searchQuery.toLowerCase();
             const textFiltered = dateFiltered.filter(
                 b => b.surahName.toLowerCase().includes(lowerCaseQuery) ||
-                     (b.ayahText && b.ayahText.toLowerCase().includes(lowerCaseQuery))
+                    (b.ayahText && b.ayahText.toLowerCase().includes(lowerCaseQuery))
             );
             setFilteredBookmarks(textFiltered);
         } else {
@@ -57,18 +57,18 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
 
     const sortedBookmarks = useMemo(() =>
         [...filteredBookmarks].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)),
-    [filteredBookmarks]);
+        [filteredBookmarks]);
 
     return (
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 animate-view-change space-y-8">
             <div className="text-center">
                 <h2 className="text-3xl font-bold text-white">Bookmark Ayat Tersimpan</h2>
             </div>
-            
+
             <form onSubmit={handleSearch} className="bg-black/20 p-4 rounded-xl border border-white/10 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="relative">
-                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                         <input
                             type="text"
                             value={searchQuery}
@@ -77,8 +77,8 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                             className="w-full bg-gray-900/50 border-2 border-white/20 rounded-full py-3 pl-12 pr-4 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white placeholder-gray-400 transition-all"
                         />
                     </div>
-                     <div className="relative">
-                        <CalendarDaysIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                    <div className="relative">
+                        <CalendarDays className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                         <input
                             type="date"
                             value={filterDate}
@@ -89,12 +89,12 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                     </div>
                 </div>
                 <div className="flex justify-end items-center gap-3">
-                     <button
+                    <button
                         type="button"
                         onClick={handleReset}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-gray-600/50 hover:bg-gray-600/80 text-blue-200 rounded-full transition-colors"
                     >
-                        <XIcon className="w-4 h-4" />
+                        <X className="w-4 h-4" />
                         Reset
                     </button>
                     <button
@@ -106,7 +106,7 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                     </button>
                 </div>
             </form>
-            
+
             {isLoading ? (
                 <div className="text-center py-20">
                     <p className="text-lg text-teal-300 animate-pulse">Mencari bookmark yang relevan...</p>
@@ -114,21 +114,21 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
             ) : sortedBookmarks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {sortedBookmarks.map((bookmark) => (
-                        <div 
-                            key={`${bookmark.surahNumber}:${bookmark.ayahNumber}:${bookmark.timestamp}`} 
+                        <div
+                            key={`${bookmark.surahNumber}:${bookmark.ayahNumber}:${bookmark.timestamp}`}
                             className="bg-gray-900/50 p-6 rounded-2xl border border-white/10 shadow-lg flex flex-col h-full transition-all duration-300 hover:border-teal-400/50 hover:shadow-teal-500/10 hover:-translate-y-1"
                         >
-                            <button 
+                            <button
                                 onClick={() => navigateToAyah(bookmark.surahNumber, bookmark.ayahNumber)}
                                 className="text-left grow"
                             >
                                 <div className="flex items-start gap-3">
-                                    <BookmarkSolidIcon className="w-5 h-5 text-teal-400 shrink-0 mt-1" />
+                                    <BookmarkIcon className="w-5 h-5 text-teal-400 shrink-0 mt-1 fill-current" />
                                     <div>
                                         <h3 className="font-bold text-xl text-teal-300 group-hover:underline">
                                             QS. {bookmark.surahName} [{bookmark.surahNumber}:{bookmark.ayahNumber}]
                                         </h3>
-                                         <p className="text-xs text-gray-400 mt-1">
+                                        <p className="text-xs text-gray-400 mt-1">
                                             Disimpan pada {new Date(bookmark.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                                         </p>
                                     </div>
@@ -145,7 +145,7 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-full transition-colors"
                                     aria-label="Hapus bookmark"
                                 >
-                                    <TrashIcon className="w-4 h-4"/>
+                                    <Trash2 className="w-4 h-4" />
                                     <span>Hapus</span>
                                 </button>
                             </div>
@@ -154,7 +154,7 @@ const Bookmarks: React.FC<BookmarksProps> = ({ bookmarks, toggleBookmark, naviga
                 </div>
             ) : (
                 <div className="text-center py-20 bg-black/20 rounded-lg border-2 border-dashed border-gray-700">
-                    <BookmarkSolidIcon className="w-12 h-12 mx-auto text-gray-500 mb-4"/>
+                    <BookmarkIcon className="w-12 h-12 mx-auto text-gray-500 mb-4 fill-current" />
                     <h3 className="text-xl font-semibold text-white">
                         {isSearching ? 'Bookmark Tidak Ditemukan' : 'Belum Ada Bookmark'}
                     </h3>

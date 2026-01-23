@@ -62,6 +62,17 @@ const wrapText = (
     return currentY;
 };
 
+// Helper function to load an image
+const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+};
+
 // Finds optimal font sizes for Quran quotes to fit within a given area
 const findOptimalQuranFontSizes = (
     ctx: CanvasRenderingContext2D,
@@ -561,14 +572,38 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.stroke();
 
-        // Center footer text vertically in the space below the line
-        const footerTextY = footerLineY + (H - footerLineY) / 2;
-        ctx.font = '600 32px "Inter", sans-serif';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.letterSpacing = '1px';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('APPI | RSIJ Sukapura', W / 2, footerTextY);
+        // --- Logo in Footer ---
+        try {
+            const logo = await loadImage('/logorsijsp.png');
+            const logoH = 60;
+            const logoW = (logo.width / logo.height) * logoH;
+            const footerCenterY = footerLineY + (H - footerLineY) / 2;
+
+            // Draw logo and text side by side
+            const totalFooterWidth = logoW + 20 + ctx.measureText('APPI | RSIJ Sukapura').width;
+            const startX = (W - totalFooterWidth) / 2;
+
+            ctx.drawImage(logo, startX, footerCenterY - logoH / 2, logoW, logoH);
+
+            ctx.font = '600 32px "Inter", sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.letterSpacing = '1px';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('APPI | RSIJ Sukapura', startX + logoW + 20, footerCenterY);
+        } catch (logoError) {
+            // Fallback to text only if logo fails
+            const footerTextY = footerLineY + (H - footerLineY) / 2;
+            ctx.font = '600 32px "Inter", sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.letterSpacing = '1px';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('APPI | RSIJ Sukapura', W / 2, footerTextY);
+        }
+
         ctx.textBaseline = 'alphabetic'; // Reset to default
+        ctx.textAlign = 'center'; // Reset
 
         setImageSrc(canvas.toDataURL('image/png'));
         setIsLoading(false);

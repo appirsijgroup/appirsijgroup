@@ -14,7 +14,8 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
   const { data, error } = await supabase
     .from('attendance_records')
     .select('*')
-    .eq('employee_id', employeeId);
+    .eq('employee_id', employeeId)
+    .order('created_at', { ascending: true });
   // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
 
   if (error) {
@@ -35,7 +36,8 @@ export const getAllAttendanceRecords = async (): Promise<Record<string, Record<s
   // 🔥 FIX: Kolom is_latest belum ada di database, sementara ambil semua data
   const { data, error } = await supabase
     .from('attendance_records')
-    .select('*');
+    .select('*')
+    .order('created_at', { ascending: true });
   // TODO: Tambahkan .eq('is_latest', true) setelah migrasi database
 
   if (error) {

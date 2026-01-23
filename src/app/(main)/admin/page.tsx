@@ -33,7 +33,7 @@ import { validateRoleChange } from '@/lib/rolePermissions';
 // import { supabase } from '@/lib/supabase'; // Unused import
 
 export default function AdminPage() {
-    const { allUsersData, loggedInEmployee, setAllUsersData } = useAppDataStore();
+    const { allUsersData, loggedInEmployee, setAllUsersData, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
     const { addToast } = useUIStore();
     const { activities, addActivity, updateActivity, deleteActivity } = useActivityStore();
     const { sunnahIbadahList, addSunnahIbadah, updateSunnahIbadah, deleteSunnahIbadah } = useSunnahIbadahStore();
@@ -874,73 +874,16 @@ export default function AdminPage() {
         );
     }
 
-    // 🔥 NEW: On-demand employee data loading (triggered by AdminDashboard)
+    // 🔥 NEW: Global employee data loading (triggered by AdminDashboard)
     const loadEmployeesOnDemand = async () => {
-        if (employeesLoaded) {
-            return;
-        }
+        if (employeesLoaded) return;
 
         try {
-
-            // Load employees with PAGINATION
-            const paginatedResult = await getPaginatedEmployees({
-                page,
-                limit: 15,
-                search: searchTerm,
-                role: roleFilter,
-                isActive: isActiveFilter
-            });
-
-
-            // Convert employees to allUsersData format
-            const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
-
-            for (const emp of paginatedResult.employees) {
-                const camelCaseEmp = convertToCamelCase(emp);
-                newData[emp.id] = {
-                    employee: camelCaseEmp,
-                    attendance: {},
-                    history: {}
-                };
-            }
-
-            setAllUsersData(() => newData);
-            setTotalCount(paginatedResult.pagination.total);
-            setTotalPages(paginatedResult.pagination.totalPages);
+            const { loadAllEmployees } = useAppDataStore.getState();
+            await loadAllEmployees();
             setEmployeesLoaded(true);
-
-            // Load attendance records
-            try {
-                const { getAllAttendanceRecords } = await import('@/services/attendanceService');
-                const allRecords = await getAllAttendanceRecords();
-
-                setAllUsersData((prev) => {
-                    const updated = { ...prev };
-
-                    Object.entries(allRecords).forEach(([employeeId, records]: [string, any]) => {
-                        if (updated[employeeId]) {
-                            updated[employeeId].attendance = {};
-                            Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                                if (record && record.status) {
-                                    updated[employeeId].attendance[entityId] = {
-                                        status: record.status,
-                                        reason: record.reason || null,
-                                        timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                        submitted: true,
-                                        isLateEntry: record.is_late_entry || false
-                                    };
-                                }
-                            });
-                        }
-                    });
-
-                    return updated;
-                });
-            } catch (error) {
-            }
-
         } catch (error) {
-            addToast('Gagal memuat data employee. Silakan coba lagi.', 'error');
+            addToast('Gagal memuat seluruh data karyawan. Silakan muat ulang halaman.', 'error');
         }
     };
 
@@ -1001,6 +944,7 @@ export default function AdminPage() {
                 }}
                 // 🔥 NEW: On-demand employee loading
                 onLoadEmployees={loadEmployeesOnDemand}
+                isLoadingEmployees={isLoadingEmployees}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

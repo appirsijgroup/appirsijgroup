@@ -205,39 +205,56 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
         try {
             set({ isLoadingEmployees: true });
+
+            // 1. Fetch all basic employee data
             const { getAllEmployees } = await import('@/services/employeeService');
             const allEmployees = await getAllEmployees();
 
-            // 🔥 DEBUG: Log sample data
-            if (process.env.NODE_ENV === "development") {
-            }
+            // 2. Fetch all attendance records in BULK
+            const { getAllAttendanceRecords } = await import('@/services/attendanceService');
+            const allAttendanceRecords = await getAllAttendanceRecords();
 
-            // Load attendance records for all employees
-            const { getEmployeeAttendance } = await import('@/services/attendanceService');
+            // 3. Fetch all monthly activities in BULK (Admin only API)
+            let allMonthlyActivities: Record<string, any> = {};
+            try {
+                const response = await fetch('/api/admin/bulk-monthly-activities', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    allMonthlyActivities = data.allActivities || {};
+                }
+            } catch (error) {
+                console.error('⚠️ [loadAllEmployees] Failed to fetch bulk monthly activities:', error);
+            }
 
             const newData: Record<string, UserData> = {};
 
             for (const emp of allEmployees) {
-                let attendanceData: Attendance = {};
-                try {
-                    const records = await getEmployeeAttendance(emp.id);
-                    Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                        if (record && record.status) {
-                            attendanceData[entityId] = {
-                                status: record.status,
-                                reason: record.reason || null,
-                                timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                submitted: true,
-                                isLateEntry: record.is_late_entry || false
-                            };
-                        }
-                    });
-                } catch (error) {
-                    attendanceData = {};
-                }
+                // Get attendance for this emp from bulk data
+                const records = allAttendanceRecords[emp.id] || {};
+                const attendanceData: Attendance = {};
+
+                Object.entries(records).forEach(([entityId, record]: [string, any]) => {
+                    if (record && record.status) {
+                        attendanceData[entityId] = {
+                            status: record.status,
+                            reason: record.reason || null,
+                            timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
+                            submitted: true,
+                            isLateEntry: record.is_late_entry || false
+                        };
+                    }
+                });
+
+                // Attach monthly activities to employee object (important for reports)
+                const empWithActivities = {
+                    ...emp,
+                    monthlyActivities: allMonthlyActivities[emp.id] || {}
+                };
 
                 newData[emp.id] = {
-                    employee: emp,
+                    employee: empWithActivities,
                     attendance: attendanceData,
                     history: {}
                 };
@@ -246,7 +263,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             // Update allUsersData
             set({ allUsersData: newData, isLoadingEmployees: false });
         } catch (error) {
-            set({ isLoadingEmployees: false }); // 🔥 NEW: Reset flag on error
+            console.error('❌ [loadAllEmployees] Error:', error);
+            set({ isLoadingEmployees: false });
             throw error;
         }
     },
@@ -427,25 +445,25 @@ export const useUIStore = create<UIState>((set, get) => ({
     setLocationStatus: (status) => set({ locationStatus: status }),
     setActivePrayerId: (id) => set({ activePrayerId: id }),
     setCurrentTime: (time) => {
-      // Validate time before setting
-      const timeValidation = timeValidationService.validateTime();
-      if (!timeValidation.isValid) {
-        console.warn('System time appears to be manipulated. Using corrected time instead.');
-        set({ currentTime: timeValidation.correctedTime });
-      } else {
-        set({ currentTime: time });
-      }
+        // Validate time before setting
+        const timeValidation = timeValidationService.validateTime();
+        if (!timeValidation.isValid) {
+            console.warn('System time appears to be manipulated. Using corrected time instead.');
+            set({ currentTime: timeValidation.correctedTime });
+        } else {
+            set({ currentTime: time });
+        }
     },
     setUserLocation: (location) => set({ userLocation: location }),
 }));
 
 // Set up interval to update currentTime with corrected time every second
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    // Update the time to the corrected time
-    const correctedTime = timeValidationService.getCorrectedTime();
-    useUIStore.getState().setCurrentTime(correctedTime);
-  }, 1000);
+    setInterval(() => {
+        // Update the time to the corrected time
+        const correctedTime = timeValidationService.getCorrectedTime();
+        useUIStore.getState().setCurrentTime(correctedTime);
+    }, 1000);
 }
 
 export * from './activityStore';

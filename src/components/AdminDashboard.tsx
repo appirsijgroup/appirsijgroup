@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, AudienceType, AudienceRules, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
-import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon, PencilIcon, XIcon, UserGroupIcon, ChartBarIcon, DocumentTextIcon, SparklesIcon, availableIconsForSunnah, ChevronDownIcon, ShieldCheckIcon, MegaphoneIcon, MosqueIcon, PlusCircleIcon, TrashIcon } from './Icons';
+import { SearchIcon, PdfIcon, ExcelIcon, CalendarDaysIcon, UserIcon, UploadIcon, PencilIcon, XIcon, UserGroupIcon, ChartBarIcon, DocumentTextIcon, SparklesIcon, availableIconsForSunnah, ChevronDownIcon, ShieldCheckIcon, MegaphoneIcon, MosqueIcon, PlusCircleIcon, TrashIcon, ArrowPathIcon } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
 import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -55,6 +55,7 @@ interface AdminDashboardProps {
     mutabaahLockingMode: MutabaahLockingMode;
     onUpdateMutabaahLockingMode: (mode: MutabaahLockingMode) => void;
     onLoadEmployees?: () => Promise<void>; // 🔥 NEW: On-demand employee loading
+    isLoadingEmployees?: boolean; // 🔥 NEW: Loading state for global employee loading
     pagination?: any; // TODO: Add proper type
 }
 
@@ -3305,7 +3306,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
         announcements, onCreateAnnouncement, onDeleteAnnouncement, onMarkAsRead, onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
-        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees
+        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, isLoadingEmployees
     } = props;
     /* eslint-enable */
 
@@ -3327,9 +3328,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     }, [activeView]);
 
-    // 🔥 Load employee data on-demand when switching to Manajemen Pengguna tab
+    // 🔥 Load employee data on-demand when switching to Manajemen Pengguna or Reports tab
     useEffect(() => {
-        if (activeView === 'manajemen-pengguna' && onLoadEmployees) {
+        if ((activeView === 'manajemen-pengguna' || activeView === 'reports') && onLoadEmployees) {
             const hasEmployeeData = Object.keys(allUsersData).length > 0;
             if (!hasEmployeeData) {
                 onLoadEmployees();
@@ -3557,8 +3558,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     return (
         <div>
             <div className="mb-6">
-                <nav className="overflow-x-auto overflow-y-hidden touch-pan-x border-b border-white/20">
-                    <div className="flex items-center gap-2 -mb-px min-w-max">
+                <div className="flex items-center justify-between border-b border-white/20 px-2">
+                    <div className="flex items-center gap-2 -mb-px overflow-x-auto min-w-0 pr-4">
                         <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={ChartBarIcon} />
                         {isSuperAdmin(loggedInEmployee) && (
                             <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={UserGroupIcon} />
@@ -3568,7 +3569,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheckIcon} />}
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheckIcon} />}
                     </div>
-                </nav>
+
+                    {/* 🔥 Global Refresh Button */}
+                    {(activeView === 'reports' || activeView === 'manajemen-pengguna') && onLoadEmployees && (
+                        <button
+                            onClick={() => onLoadEmployees()}
+                            disabled={isLoadingEmployees}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white/10 hover:bg-white/20 text-blue-200 hover:text-white rounded-lg transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap mb-2 shrink-0"
+                        >
+                            <ArrowPathIcon className={`w-4 h-4 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
+                            {isLoadingEmployees ? 'Memuat...' : 'Refresh Data'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">

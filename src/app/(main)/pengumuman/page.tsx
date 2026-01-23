@@ -39,12 +39,11 @@ export default function PengumumanPage() {
     }, [loadAnnouncements, loadHospitals]);
 
     // Handler to create announcement with proper structure and save to Supabase
-    const handleCreateAnnouncement = async (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>) => {
+    const handleCreateAnnouncement = async (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => {
         if (!loggedInEmployee) {
             addToast('Anda harus login terlebih dahulu', 'error');
             return;
         }
-
 
         // Check if user has permission to create announcement
         const canCreate = isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor === true;
@@ -55,11 +54,15 @@ export default function PengumumanPage() {
         }
 
         try {
-            await addAnnouncement({
-                ...data,
-                authorId: loggedInEmployee.id,
-                authorName: loggedInEmployee.name
-            });
+            await addAnnouncement(
+                {
+                    ...data,
+                    authorId: loggedInEmployee.id,
+                    authorName: loggedInEmployee.name
+                },
+                imageFile,
+                documentFile
+            );
 
             addToast('Pengumuman berhasil dibuat dan disimpan ke database!', 'success');
             // Refresh announcements after creation

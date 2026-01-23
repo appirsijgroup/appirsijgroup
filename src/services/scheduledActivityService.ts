@@ -1,44 +1,58 @@
 import { supabase } from '@/lib/supabase';
+import { type Activity, type AudienceType, type AudienceRules } from '@/types';
 
 // =====================================================
 // TYPES (SESUAIKAN DENGAN TABEL activities YANG SUDAH ADA)
-// =====================================================
+// =====================================
 
 export type ActivityType = 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
-export type AudienceType = 'public' | 'rules' | 'manual';
 export type ActivityStatus = 'scheduled' | 'postponed' | 'cancelled';
 export type AttendanceStatus = 'hadir' | 'tidak-hadir' | 'izin' | 'sakit';
+
+/**
+ * Representation of the database row
+ */
+interface DbActivity {
+    id: string;
+    name: string;
+    description: string | null;
+    date: string;
+    start_time: string;
+    end_time: string;
+    created_by: string;
+    created_by_name: string | null;
+    participant_ids: string[] | null;
+    zoom_url: string | null;
+    youtube_url: string | null;
+    activity_type: ActivityType;
+    status: ActivityStatus;
+    audience_type: AudienceType;
+    audience_rules: any;
+    created_at: string;
+}
 
 // Alias untuk compatibility dengan hook
 export type ScheduledActivity = Activity;
 export type ScheduledActivityAttendance = ActivityAttendance;
 
-export interface Activity {
-    id: string;
-    name: string;
-    description?: string;
-    date: string; // YYYY-MM-DD
-    startTime: string; // HH:MM
-    endTime: string; // HH:MM
-    createdBy: string;
-    createdByName?: string;
-    participantIds: string[]; // Untuk audience_type = 'manual'
-    zoomUrl?: string;
-    youtubeUrl?: string;
-    activityType: ActivityType;
-    status: ActivityStatus;
-    audienceType: AudienceType;
-    audienceRules?: {
-        hospitalIds?: string[];
-        units?: string[];
-        bagians?: string[];
-        professionCategories?: string[];
-        professions?: string[];
-        roles?: string[];
-        [key: string]: any;
-    };
-    createdAt: string;
-}
+const mapDbToActivity = (dbActivity: DbActivity): Activity => ({
+    id: dbActivity.id,
+    name: dbActivity.name,
+    description: dbActivity.description || undefined,
+    date: dbActivity.date,
+    startTime: dbActivity.start_time,
+    endTime: dbActivity.end_time,
+    createdBy: dbActivity.created_by,
+    createdByName: dbActivity.created_by_name || undefined,
+    participantIds: dbActivity.participant_ids || [],
+    zoomUrl: dbActivity.zoom_url || undefined,
+    youtubeUrl: dbActivity.youtube_url || undefined,
+    activityType: dbActivity.activity_type,
+    status: dbActivity.status,
+    audienceType: dbActivity.audience_type,
+    audienceRules: dbActivity.audience_rules,
+    createdAt: dbActivity.created_at
+});
 
 export interface ActivityAttendance {
     id: string;
@@ -72,24 +86,7 @@ export const getAllActivities = async (): Promise<Activity[]> => {
         if (error) throw error;
 
         // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
-        return (data || []).map(dbActivity => ({
-            id: dbActivity.id,
-            name: dbActivity.name,
-            description: dbActivity.description,
-            date: dbActivity.date,
-            startTime: dbActivity.start_time,
-            endTime: dbActivity.end_time,
-            createdBy: dbActivity.created_by,
-            createdByName: dbActivity.created_by_name,
-            participantIds: dbActivity.participant_ids || [],
-            zoomUrl: dbActivity.zoom_url,
-            youtubeUrl: dbActivity.youtube_url,
-            activityType: dbActivity.activity_type,
-            status: dbActivity.status,
-            audienceType: dbActivity.audience_type,
-            audienceRules: dbActivity.audience_rules,
-            createdAt: dbActivity.created_at
-        }));
+        return (data as any as DbActivity[] || []).map(mapDbToActivity);
     } catch (error) {
         throw error;
     }
@@ -114,24 +111,7 @@ export const getActivitiesByDateRange = async (
         if (error) throw error;
 
         // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
-        return (data || []).map(dbActivity => ({
-            id: dbActivity.id,
-            name: dbActivity.name,
-            description: dbActivity.description,
-            date: dbActivity.date,
-            startTime: dbActivity.start_time,
-            endTime: dbActivity.end_time,
-            createdBy: dbActivity.created_by,
-            createdByName: dbActivity.created_by_name,
-            participantIds: dbActivity.participant_ids || [],
-            zoomUrl: dbActivity.zoom_url,
-            youtubeUrl: dbActivity.youtube_url,
-            activityType: dbActivity.activity_type,
-            status: dbActivity.status,
-            audienceType: dbActivity.audience_type,
-            audienceRules: dbActivity.audience_rules,
-            createdAt: dbActivity.created_at
-        }));
+        return (data as any as DbActivity[] || []).map(mapDbToActivity);
     } catch (error) {
         throw error;
     }
@@ -178,27 +158,7 @@ export const getActivitiesForEmployee = async (
         if (actError) throw actError;
 
         // 3. Convert snake_case to camelCase dan filter
-        const filteredActivities = (allActivities || []).map(dbActivity => {
-            // ⚡ CRITICAL: Convert from Supabase snake_case to camelCase
-            return {
-                id: dbActivity.id,
-                name: dbActivity.name,
-                description: dbActivity.description,
-                date: dbActivity.date,
-                startTime: dbActivity.start_time,
-                endTime: dbActivity.end_time,
-                createdBy: dbActivity.created_by,
-                createdByName: dbActivity.created_by_name,
-                participantIds: dbActivity.participant_ids || [],
-                zoomUrl: dbActivity.zoom_url,
-                youtubeUrl: dbActivity.youtube_url,
-                activityType: dbActivity.activity_type,
-                status: dbActivity.status,
-                audienceType: dbActivity.audience_type,
-                audienceRules: dbActivity.audience_rules,
-                createdAt: dbActivity.created_at
-            };
-        }).filter(activity => {
+        const filteredActivities = (allActivities as any as DbActivity[] || []).map(mapDbToActivity).filter(activity => {
             // Public: Semua bisa lihat
             if (activity.audienceType === 'public') {
                 return true;
@@ -312,27 +272,10 @@ export const createActivity = async (
         }
 
         const result = await response.json();
-        const data = result.data;
+        const data = result.data as DbActivity;
 
         // Convert back to camelCase
-        return {
-            id: data.id,
-            name: data.name,
-            description: data.description,
-            date: data.date,
-            startTime: data.start_time,
-            endTime: data.end_time,
-            createdBy: data.created_by,
-            createdByName: data.created_by_name,
-            participantIds: data.participant_ids || [],
-            zoomUrl: data.zoom_url,
-            youtubeUrl: data.youtube_url,
-            activityType: data.activity_type,
-            status: data.status,
-            audienceType: data.audience_type,
-            audienceRules: data.audience_rules,
-            createdAt: data.created_at
-        };
+        return mapDbToActivity(data);
     } catch (error) {
         throw error;
     }
@@ -373,24 +316,7 @@ export const updateActivity = async (
         if (error) throw error;
 
         // Convert response back to camelCase
-        return {
-            id: data.id,
-            name: data.name,
-            description: data.description,
-            date: data.date,
-            startTime: data.start_time,
-            endTime: data.end_time,
-            createdBy: data.created_by,
-            createdByName: data.created_by_name,
-            participantIds: data.participant_ids,
-            zoomUrl: data.zoom_url,
-            youtubeUrl: data.youtube_url,
-            activityType: data.activity_type,
-            status: data.status,
-            audienceType: data.audience_type,
-            audienceRules: data.audience_rules,
-            createdAt: data.created_at
-        };
+        return mapDbToActivity(data as any as DbActivity);
     } catch (error) {
         throw error;
     }
@@ -432,7 +358,7 @@ export const getActivityAttendance = async (
         if (error) throw error;
 
         // Convert snake_case to camelCase
-        return (data || []).map(att => ({
+        return (data as any[] || []).map(att => ({
             id: att.id,
             activityId: att.activity_id,
             employeeId: att.employee_id,
@@ -474,18 +400,19 @@ export const getEmployeeActivityAttendance = async (
         }
 
         // Convert snake_case to camelCase
+        const att = data as any;
         return {
-            id: data.id,
-            activityId: data.activity_id,
-            employeeId: data.employee_id,
-            status: data.status,
-            reason: data.reason,
-            submittedAt: data.submitted_at,
-            isLateEntry: data.is_late_entry,
-            notes: data.notes,
-            ipAddress: data.ip_address,
-            createdAt: data.created_at,
-            updatedAt: data.updated_at,
+            id: att.id,
+            activityId: att.activity_id,
+            employeeId: att.employee_id,
+            status: att.status,
+            reason: att.reason,
+            submittedAt: att.submitted_at,
+            isLateEntry: att.is_late_entry,
+            notes: att.notes,
+            ipAddress: att.ip_address,
+            createdAt: att.created_at,
+            updatedAt: att.updated_at,
         };
     } catch (error) {
         throw error;
@@ -520,7 +447,7 @@ export const getEmployeeScheduledAttendance = async (
         if (error) throw error;
 
         // Convert snake_case to camelCase
-        return (data || []).map(att => ({
+        return (data as any[] || []).map(att => ({
             id: att.id,
             activityId: att.activity_id,
             employeeId: att.employee_id,
@@ -563,7 +490,8 @@ export const submitScheduledAttendance = async (
 
         // 2. Cek apakah activity sudah selesai atau masih berlangsung
         const now = new Date();
-        const activityDateTime = new Date(`${activity.date}T${activity.end_time}`);
+        const act = activity as any;
+        const activityDateTime = new Date(`${act.date}T${act.end_time}`);
         const isLate = now > activityDateTime;
 
         // 3. Insert atau update attendance
@@ -586,7 +514,7 @@ export const submitScheduledAttendance = async (
                     is_late_entry: isLate,
                     updated_at: new Date().toISOString(),
                 })
-                .eq('id', existingAttendance.id)
+                .eq('id', (existingAttendance as any).id)
                 .select()
                 .single();
 
@@ -594,7 +522,7 @@ export const submitScheduledAttendance = async (
                 throw error;
             }
 
-            attendanceData = data;
+            attendanceData = data as any;
         } else {
             // Insert new
             const { data, error } = await supabase
@@ -614,7 +542,7 @@ export const submitScheduledAttendance = async (
                 throw error;
             }
 
-            attendanceData = data;
+            attendanceData = data as any;
         }
 
         // 4. Convert to camelCase
@@ -667,11 +595,11 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
 
         // 🔥 FIX: NO CACHE - Don't read from employee_monthly_activities anymore
         // const currentActivities = currentData?.activities || {};
-        const currentActivities = {};
+        const currentActivities: Record<string, any> = {};
 
         // ⚡ PERBAIKI: MERGE dengan benar untuk nested objects
         // Kita perlu merge di level dayKey, bukan monthKey
-        const updatedActivities = { ...currentActivities };
+        const updatedActivities: Record<string, any> = { ...currentActivities };
 
         // Pastikan monthKey exists
         if (!updatedActivities[monthKey]) {
@@ -736,7 +664,7 @@ export const getEmployeeActivitiesAttendance = async (
 
         // Convert to map with activity_id as key
         const attendanceMap: Record<string, { status: string; submitted: boolean; isLateEntry: boolean }> = {};
-        (data || []).forEach(att => {
+        (data as any[] || []).forEach(att => {
             attendanceMap[att.activity_id] = {
                 status: att.status,
                 submitted: true,

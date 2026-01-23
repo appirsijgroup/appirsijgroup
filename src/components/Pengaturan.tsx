@@ -9,6 +9,8 @@ import { validatePassword, isPasswordValid, type PasswordValidationResult } from
 import PasswordInput from './PasswordInput';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
 import { uploadSignature, deleteSignature } from '@/services/signatureService';
+import { uploadProfilePicture, deleteProfilePicture } from '@/services/profilePictureService';
+import { dataURLToBlob } from '@/utils/imageUtils';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
 interface ProfileProps {
@@ -248,23 +250,32 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
         };
     }, [employee.locationName]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                setProfilePicture(result);
-                onUpdateProfile(employee.id, { profilePicture: result });
-            };
-            reader.readAsDataURL(file);
+            try {
+                addToast('Mengunggah foto profil...', 'success');
+                const imageUrl = await uploadProfilePicture(file, employee.id);
+                setProfilePicture(imageUrl);
+                await onUpdateProfile(employee.id, { profilePicture: imageUrl });
+                addToast('Foto profil berhasil diperbarui!', 'success');
+            } catch (error) {
+                console.error('Failed to upload profile picture:', error);
+                addToast('Gagal mengunggah foto profil.', 'error');
+            }
         }
     };
 
-    const handleRemovePicture = () => {
-        setProfilePicture(null);
-        onUpdateProfile(employee.id, { profilePicture: null });
-        if (fileInputRef.current) fileInputRef.current.value = "";
+    const handleRemovePicture = async () => {
+        try {
+            await deleteProfilePicture(employee.id);
+            setProfilePicture(null);
+            await onUpdateProfile(employee.id, { profilePicture: null });
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            addToast('Foto profil berhasil dihapus.', 'success');
+        } catch (error) {
+            addToast('Gagal menghapus foto profil.', 'error');
+        }
     };
 
     const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -521,9 +532,8 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                         let signatureUrl: string | null = null;
 
                         if (signature) {
-                            // Convert data URL to File object
-                            const response = await fetch(signature);
-                            const blob = await response.blob();
+                            // Convert data URL to File object using utility to avoid CSP fetch issues
+                            const blob = dataURLToBlob(signature);
                             const file = new File([blob], 'signature.png', { type: 'image/png' });
 
                             // Upload to Supabase Storage

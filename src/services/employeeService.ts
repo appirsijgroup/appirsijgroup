@@ -43,6 +43,39 @@ export const convertToCamelCase = (emp: any): Employee => {
     };
 };
 
+// Get employees with pagination
+export const getEmployeesPaginated = async (
+    page: number = 1,
+    limit: number = 15,
+    search: string = '',
+    role: string = '',
+    isActive?: boolean
+): Promise<{ employees: Employee[], pagination: any }> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        search,
+        role,
+        isActive: isActive !== undefined ? isActive.toString() : ''
+    });
+
+    const response = await fetch(`/api/employees/paginated?${params.toString()}`, {
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch paginated employees');
+    }
+
+    const { employees, pagination } = await response.json();
+
+    return {
+        employees: employees.map((emp: any) => convertToCamelCase(emp)),
+        pagination
+    };
+};
+
 // Get all employees with camelCase column names
 export const getAllEmployees = async (): Promise<Employee[]> => {
     // 🔥 Use API endpoint instead of direct Supabase query

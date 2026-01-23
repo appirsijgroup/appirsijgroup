@@ -21,7 +21,7 @@ interface NotificationState {
     clearAll: (userId: string) => Promise<void>;
     dismissNotification: (notificationId: string) => void;
     deleteNotifications: (notificationIds: string[]) => Promise<void>;
-    subscribeToRealtime: (userId: string) => void;
+    subscribeToRealtime: (userId: string) => (() => void);
 }
 
 export const useNotificationStore = create<NotificationState>()(
@@ -154,7 +154,7 @@ export const useNotificationStore = create<NotificationState>()(
             },
 
             subscribeToRealtime: (userId: string) => {
-                subscribeToUserNotifications(userId, (notification) => {
+                const channel = subscribeToUserNotifications(userId, (notification) => {
                     set((state) => {
                         // Check if notification already exists
                         const exists = state.notifications.some(n => n.id === notification.id);
@@ -173,6 +173,12 @@ export const useNotificationStore = create<NotificationState>()(
                         }
                     });
                 });
+
+                return () => {
+                    import('@/lib/supabase').then(({ supabase }) => {
+                        supabase.removeChannel(channel);
+                    });
+                };
             },
         }),
         {

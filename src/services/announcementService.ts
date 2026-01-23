@@ -1,5 +1,7 @@
 import { supabase, toSnakeCase } from '@/lib/supabase';
+import { convertImageToWebP } from '@/utils/imageUtils';
 import type { Announcement } from '@/types';
+// Replace UUID with standard crypto.randomUUID()
 
 /**
  * Announcement Service
@@ -73,15 +75,17 @@ export const createAnnouncement = async (
     announcement: Omit<Announcement, 'id' | 'timestamp'>
 ): Promise<Announcement> => {
     const timestamp = Date.now();
+    const id = crypto.randomUUID();
 
     // Convert camelCase to snake_case for database
     const announcementToInsert = toSnakeCase({
         ...announcement,
+        id,
         timestamp
     });
 
 
-    const { data, error, status } = await (supabase
+    const { data, error } = await (supabase
         .from('announcements') as any)
         .insert([announcementToInsert]) // Use array format
         .select()
@@ -145,6 +149,59 @@ export const getRecentAnnouncements = async (limit: number = 10): Promise<Announ
 
     if (error) throw error;
     return (data as unknown as Announcement[]) || [];
+};
+
+// Upload announcement image
+export const uploadAnnouncementImage = async (file: File, announcementId: string): Promise<string> => {
+    try {
+        const webpFile = await convertImageToWebP(file);
+        // Use fixed suffix to ensure overwrites/no duplicates for the same announcement
+        const fileName = `${announcementId}-cover.webp`;
+        const filePath = `${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('announcement')
+            .upload(filePath, webpFile, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        const { data: publicUrlData } = supabase.storage
+            .from('announcement')
+            .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Upload announcement document (PDF only as per request, but can also technically take images)
+export const uploadAnnouncementDocument = async (file: File, announcementId: string): Promise<string> => {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${announcementId}-doc.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('announcement')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        const { data: publicUrlData } = supabase.storage
+            .from('announcement')
+            .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+    } catch (error) {
+        throw error;
+    }
 };
 
 // Get announcements after a certain timestamp (for polling)

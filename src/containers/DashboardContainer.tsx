@@ -1148,7 +1148,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onLogManualActivity={handleLogManualActivity}
             onUpdateTodoList={handleUpdateTodoList}
             onLogAudit={logAudit}
-            onCreateAnnouncement={(data) => addAnnouncement({ ...data, authorId: loggedInEmployee.id, authorName: loggedInEmployee.name })}
+            onCreateAnnouncement={(data: any, imageFile?: File, documentFile?: File) => addAnnouncement({ ...data, authorId: loggedInEmployee.id, authorName: loggedInEmployee.name }, imageFile, documentFile)}
             onDeleteAnnouncement={deleteAnnouncement}
             history={allUsersData[loggedInEmployee.id]?.history || []}
             attendance={allUsersData[loggedInEmployee.id]?.attendance}

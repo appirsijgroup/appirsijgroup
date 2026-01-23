@@ -45,7 +45,7 @@ const RequestTadarusModal: React.FC<{
                 <div className="space-y-4">
                     <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal Tadarus</label>
-                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }}/>
+                        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }} />
                     </div>
                     <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Catatan (Opsional)</label>
@@ -102,9 +102,9 @@ const MissedPrayerRequestModal: React.FC<{
                 <div className="space-y-4">
                     <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
-                        <input type="date" value={date} max={maxDate} onChange={e => setDate(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }}/>
+                        <input type="date" value={date} max={maxDate} onChange={e => setDate(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }} />
                     </div>
-                     <div>
+                    <div>
                         <label className="text-sm font-medium text-blue-100 block mb-1">Pilih Sholat Wajib</label>
                         <select value={prayerId} onChange={e => setPrayerId(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
                             <option value="" className="bg-white text-black">-- Pilih Sholat --</option>
@@ -132,15 +132,15 @@ const SubTabButton: React.FC<{
     active: boolean;
     onClick: () => void;
     label: string;
-    icon: React.FC<{className: string}>
+    icon: React.FC<{ className: string }>
 }> = ({ active, onClick, label, icon: Icon }) => (
-     <button
+    <button
         onClick={onClick}
         className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm
           ${active
-            ? 'bg-teal-500 text-white'
-            : 'text-blue-200 hover:text-white hover:bg-white/10'
-          }`}
+                ? 'bg-teal-500 text-white'
+                : 'text-blue-200 hover:text-white hover:bg-white/10'
+            }`}
     >
         <Icon className="w-4 h-4" />
         {label}
@@ -157,19 +157,19 @@ interface ApprovalStatusCardProps {
 const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, reviewedAt, notes }) => {
     const config = {
         'Menunggu': {
-            icon: <ClockIcon className="w-5 h-5 text-yellow-300"/>,
+            icon: <ClockIcon className="w-5 h-5 text-yellow-300" />,
             borderColor: "border-yellow-500/30",
             bgColor: "bg-yellow-900/20",
             textColor: "text-yellow-300",
         },
         'Disetujui': {
-            icon: <CheckIcon className="w-5 h-5 text-green-300"/>,
+            icon: <CheckIcon className="w-5 h-5 text-green-300" />,
             borderColor: "border-green-500/30",
             bgColor: "bg-green-900/20",
             textColor: "text-green-300",
         },
         'Ditolak': {
-            icon: <XIcon className="w-5 h-5 text-red-300"/>,
+            icon: <XIcon className="w-5 h-5 text-red-300" />,
             borderColor: "border-red-500/30",
             bgColor: "bg-red-900/20",
             textColor: "text-red-300",
@@ -197,7 +197,7 @@ const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, r
                     )}
                 </div>
             ) : (
-                 <p className="text-sm text-gray-400 mt-2 italic">Menunggu tinjauan...</p>
+                <p className="text-sm text-gray-400 mt-2 italic">Menunggu tinjauan...</p>
             )}
         </div>
     );
@@ -206,22 +206,22 @@ const ApprovalStatusCard: React.FC<ApprovalStatusCardProps> = ({ role, status, r
 const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
     employee,
     submissions = [],
-    onNavigateToReport = () => {},
+    onNavigateToReport = () => { },
     tadarusRequests = [],
-    onTadarusRequest = () => {},
+    onTadarusRequest = () => { },
     tadarusSessions = [],
-    onMenteeAttendSession = () => {},
+    onMenteeAttendSession = () => { },
     missedPrayerRequests = [],
-    onCreateMissedPrayerRequest = () => {}
+    onCreateMissedPrayerRequest = () => { }
 }) => {
 
-    const [activeSubTab, setActiveSubTab] = useState<'reports' | 'missed-requests'>('reports');
+    const [activeSubTab, setActiveSubTab] = useState<'reports' | 'missed-requests' | 'sessions'>('reports');
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [isMissedPrayerModalOpen, setIsMissedPrayerModalOpen] = useState(false);
 
     const sortedSubmissions = [...submissions].sort((a, b) => b.submittedAt - a.submittedAt);
-    const sortedTadarusRequests = [...tadarusRequests].sort((a,b) => b.requestedAt - a.requestedAt);
-    const sortedMissedPrayerRequests = [...missedPrayerRequests].sort((a,b) => b.requestedAt - a.requestedAt);
+    const sortedTadarusRequests = [...tadarusRequests].sort((a, b) => b.requestedAt - a.requestedAt);
+    const sortedMissedPrayerRequests = [...missedPrayerRequests].sort((a, b) => b.requestedAt - a.requestedAt);
 
     // Accordion and filter state for reports tab
     const [openAccordionId, setOpenAccordionId] = useState<string | null>(sortedSubmissions[0]?.id || null);
@@ -257,16 +257,16 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
     const getStatusChip = (status: WeeklyReportSubmission['status'] | TadarusRequest['status'] | MissedPrayerRequest['status']) => {
         let statusText = 'Menunggu';
         let colorClass = "bg-yellow-500/20 text-yellow-300";
-        let icon = <ClockIcon className="w-4 h-4"/>;
+        let icon = <ClockIcon className="w-4 h-4" />;
 
         if (status === 'approved') {
             statusText = 'Disetujui';
             colorClass = "bg-green-500/20 text-green-300";
-            icon = <CheckIcon className="w-4 h-4"/>;
+            icon = <CheckIcon className="w-4 h-4" />;
         } else if (status.startsWith('rejected')) {
             statusText = 'Ditolak';
             colorClass = "bg-red-500/20 text-red-300";
-            icon = <XIcon className="w-4 h-4"/>;
+            icon = <XIcon className="w-4 h-4" />;
         } else if (status === 'pending_supervisor') {
             statusText = 'Menunggu Supervisor';
         } else if (status === 'pending_kaunit') {
@@ -277,7 +277,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
     };
 
     const handleTadarusSubmit = (date: string, notes: string) => {
-        if(!employee.mentorId) return;
+        if (!employee.mentorId) return;
         onTadarusRequest({
             menteeId: employee.id,
             mentorId: employee.mentorId,
@@ -300,13 +300,14 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
             <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
                     <SubTabButton label="Laporan Bulanan" icon={DocumentTextIcon} active={activeSubTab === 'reports'} onClick={() => setActiveSubTab('reports')} />
-                    <SubTabButton label="Pengajuan Presensi" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
+                    <SubTabButton label="Sesi & Tadarus" icon={CalendarDaysIcon} active={activeSubTab === 'sessions'} onClick={() => setActiveSubTab('sessions')} />
+                    <SubTabButton label="Presensi Terlewat" icon={ClockIcon} active={activeSubTab === 'missed-requests'} onClick={() => setActiveSubTab('missed-requests')} />
                 </div>
             </div>
 
             <div key={activeSubTab} className="animate-view-change -mx-2 sm:mx-0">
                 {activeSubTab === 'reports' && (
-                     <div className="space-y-6 px-2 sm:px-0">
+                    <div className="space-y-6 px-2 sm:px-0">
                         <div className="flex flex-col sm:flex-row gap-4">
                             <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full sm:w-auto bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
                                 <option value="all" className="text-black bg-white">Semua Tahun</option>
@@ -394,17 +395,17 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
 
                 {activeSubTab === 'sessions' && (
                     <div className="space-y-8 px-2 sm:px-0">
-                         {openBbqSessions.length > 0 && (
+                        {openBbqSessions.length > 0 && (
                             <div className="bg-teal-900/50 border border-teal-500/50 p-2 sm:p-4 rounded-lg space-y-3">
                                 <h3 className="text-xl font-semibold text-white">Sesi Terbuka Hari Ini</h3>
                                 {openBbqSessions.map(session => (
                                     <div key={session.id} className="bg-black/20 p-2 sm:p-3 rounded-md flex justify-between items-center">
                                         <div>
                                             <p className="font-semibold text-white">{session.title}</p>
-                                            <p className="text-sm text-blue-200">Hari ini, {new Date(session.date + 'T12:00:00Z').toLocaleDateString('id-ID', {day: '2-digit', month: 'long'})}</p>
+                                            <p className="text-sm text-blue-200">Hari ini, {new Date(session.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'long' })}</p>
                                         </div>
                                         <button onClick={() => onMenteeAttendSession(session.id)} className="px-3 sm:px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                                            <CheckIcon className="w-4 h-4 sm:w-5 sm:h-5"/>
+                                            <CheckIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                             Konfirmasi Hadir
                                         </button>
                                     </div>
@@ -412,41 +413,41 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                             </div>
                         )}
                         <div>
-                             <div className="flex justify-between items-center mb-4">
+                            <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold text-white">Riwayat Pengajuan Kehadiran</h3>
                                 <button onClick={() => setIsRequestModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
                                     <CalendarDaysIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Ajukan Manual
                                 </button>
-                             </div>
-                             {sortedTadarusRequests.length > 0 ? (
+                            </div>
+                            {sortedTadarusRequests.length > 0 ? (
                                 <div className="space-y-3">
-                                     {sortedTadarusRequests.map(req => (
+                                    {sortedTadarusRequests.map(req => (
                                         <div key={req.id} className="bg-black/20 p-2 sm:p-4 rounded-lg border border-white/10 flex justify-between items-center">
                                             <div>
-                                                <p className="font-semibold text-white">Pengajuan untuk {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID', {day: '2-digit', month: 'long', year:'numeric'})}</p>
-                                                <p className="text-xs text-gray-400">Diajukan pada {new Date(req.requestedAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year:'numeric'})}</p>
+                                                <p className="font-semibold text-white">Pengajuan untuk {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                                <p className="text-xs text-gray-400">Diajukan pada {new Date(req.requestedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                                             </div>
                                             {getStatusChip(req.status)}
                                         </div>
-                                     ))}
+                                    ))}
                                 </div>
-                             ) : (
+                            ) : (
                                 <div className="text-center py-10 bg-black/20 rounded-lg">
                                     <p className="text-lg text-blue-200">Anda belum pernah mengajukan kehadiran manual.</p>
                                 </div>
-                             )}
+                            )}
                         </div>
                     </div>
                 )}
 
                 {activeSubTab === 'missed-requests' && (
-                     <div className="px-2 sm:px-0">
-                         <div className="flex justify-between items-center mb-4">
+                    <div className="px-2 sm:px-0">
+                        <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-semibold text-white">Pengajuan Presensi Terlewat</h3>
                             <button onClick={() => setIsMissedPrayerModalOpen(true)} className="px-3 sm:px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
                                 <ClockIcon className="w-4 h-4 sm:w-5 sm:h-5" /> Buat Pengajuan
                             </button>
-                         </div>
+                        </div>
                         {sortedMissedPrayerRequests.length > 0 ? (
                             <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
                                 <table className="min-w-full text-sm text-left text-white">
@@ -499,7 +500,7 @@ const MenteeGuidanceView: React.FC<MenteeGuidanceViewProps> = ({
                 onClose={() => setIsRequestModalOpen(false)}
                 onSubmit={handleTadarusSubmit}
             />
-             <MissedPrayerRequestModal
+            <MissedPrayerRequestModal
                 isOpen={isMissedPrayerModalOpen}
                 onClose={() => setIsMissedPrayerModalOpen(false)}
                 onSubmit={handleMissedPrayerSubmit}

@@ -44,8 +44,10 @@ export interface AudienceRules {
   hospitalIds?: string[];
   units?: string[];
   bagians?: string[];
-  professionCategories?: ('MEDIS' | 'NON MEDIS')[];
+  professionCategories?: string[];
   professions?: string[];
+  roles?: string[];
+  [key: string]: any;
 }
 
 export interface Activity {
@@ -56,14 +58,15 @@ export interface Activity {
   startTime: string; // HH:MM
   endTime: string; // HH:MM
   createdBy: string; // employee ID
-  createdByName: string; // employee Name for display
+  createdByName?: string; // employee Name for display
   participantIds: string[]; // For 'manual' type, or to see who matched the rules at creation time.
   zoomUrl?: string;
   youtubeUrl?: string;
-  activityType?: 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
-  status?: 'scheduled' | 'postponed' | 'cancelled';
+  activityType: 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+  status: 'scheduled' | 'postponed' | 'cancelled';
   audienceType: AudienceType;
   audienceRules?: AudienceRules;
+  createdAt?: string;
 }
 
 export interface RawEmployee {
@@ -456,7 +459,7 @@ export interface MyDashboardViewProps {
   onUpdateTodoList: (userId: string, todoList: ToDoItem[]) => void;
   // Audit & Pengumuman
   onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
-  onCreateAnnouncement: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
+  onCreateAnnouncement: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => Promise<void> | void;
   onDeleteAnnouncement: (announcementId: string) => void;
   // Rapot
   sunnahIbadahList: SunnahIbadah[];
@@ -638,6 +641,9 @@ export interface Announcement {
   scope: 'alliansi' | 'mentor';
   targetHospitalIds?: string[]; // Optional: if set, only users with these hospitalIds can see
   targetHospitalNames?: string[]; // For display purposes
+  imageUrl?: string;
+  documentUrl?: string;
+  documentName?: string;
 }
 
 export interface Notification {

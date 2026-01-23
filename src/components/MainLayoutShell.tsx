@@ -145,7 +145,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     // --- Subscribe to Mutabaah Settings Realtime Updates ---
     useEffect(() => {
         // Subscribe to realtime updates after user is logged in
-        if (isHydrated && loggedInEmployee) {
+        if (isHydrated && loggedInEmployee?.id) {
             const unsubscribe = subscribeToRealtime();
 
             // Cleanup on unmount
@@ -155,14 +155,12 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 }
             };
         }
-        // 🔥 FIX: Remove subscribeToRealtime from deps to prevent infinite loop
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isHydrated, loggedInEmployee]);
+    }, [isHydrated, loggedInEmployee?.id]);
 
     // --- Load Notifications from Supabase & Subscribe to Realtime ---
     useEffect(() => {
         // Load notifications after user is logged in
-        if (isHydrated && loggedInEmployee) {
+        if (isHydrated && loggedInEmployee?.id) {
             const { hydrate, subscribeToRealtime } = useNotificationStore.getState();
 
             logger.info('Loading notifications for user:', loggedInEmployee.id);
@@ -170,19 +168,20 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             // Load notifications from Supabase - SELALU load setiap user login (bukan cuma sekali)
             hydrate(loggedInEmployee.id).then(() => {
                 logger.info('Notifications loaded from Supabase');
-                // Force refresh component setelah hydrate selesai
-                setTimeout(() => {
-                    const { notifications } = useNotificationStore.getState();
-                    logger.info('Current notifications in store:', notifications.length, 'for user', loggedInEmployee.id);
-                }, 500);
             }).catch(error => {
                 logger.error('Error loading notifications:', error);
             });
 
             // Subscribe to realtime notifications
-            subscribeToRealtime(loggedInEmployee.id);
+            const unsubscribe = subscribeToRealtime(loggedInEmployee.id);
+
+            return () => {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+            };
         }
-    }, [isHydrated, loggedInEmployee]);
+    }, [isHydrated, loggedInEmployee?.id]);
 
     // --- Handle Assignment Letter Modal from Custom Events ---
     useEffect(() => {

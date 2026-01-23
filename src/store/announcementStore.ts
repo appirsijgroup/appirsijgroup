@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { type Announcement } from '@/types';
 import * as announcementService from '@/services/announcementService';
 
@@ -9,7 +8,7 @@ interface AnnouncementState {
     error: string | null;
     isHydrated: boolean;
     loadAnnouncements: (showLoading?: boolean) => Promise<void>;
-    addAnnouncement: (data: Omit<Announcement, 'id' | 'timestamp'>) => Promise<void>;
+    addAnnouncement: (data: Omit<Announcement, 'id' | 'timestamp'>, imageFile?: File, documentFile?: File) => Promise<void>;
     removeAnnouncement: (announcementId: string) => Promise<void>;
     deleteAnnouncement: (announcementId: string) => Promise<void>; // Alias for backward compatibility
     refreshAnnouncements: () => Promise<void>;
@@ -17,14 +16,6 @@ interface AnnouncementState {
 
 /**
  * Announcement Store dengan Supabase Integration
- *
- * Cara penggunaan:
- * 1. Di component, panggil loadAnnouncements() di useEffect
- * 2. Gunakan addAnnouncement/removeAnnouncement seperti biasa
- * 3. Data akan otomatis disinkronkan ke Supabase
- *
- * Notes:
- * - Rename file ini ke announcementStore.ts untuk mengganti yang lama
  */
 export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
     announcements: [],
@@ -45,10 +36,42 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
             });
         }
     },
-    addAnnouncement: async (data) => {
+    addAnnouncement: async (data, imageFile, documentFile) => {
         set({ isLoading: true, error: null });
         try {
-            const newAnnouncement = await announcementService.createAnnouncement(data);
+            // 1. Create announcement record
+            let newAnnouncement = await announcementService.createAnnouncement(data);
+            let needsUpdate = false;
+            const updates: Partial<Announcement> = {};
+
+            // 2. Upload image if provided
+            if (imageFile) {
+                try {
+                    const imageUrl = await announcementService.uploadAnnouncementImage(imageFile, newAnnouncement.id);
+                    updates.imageUrl = imageUrl;
+                    needsUpdate = true;
+                } catch (uploadError) {
+                    console.error('Failed to upload announcement image:', uploadError);
+                }
+            }
+
+            // 3. Upload document if provided
+            if (documentFile) {
+                try {
+                    const documentUrl = await announcementService.uploadAnnouncementDocument(documentFile, newAnnouncement.id);
+                    updates.documentUrl = documentUrl;
+                    updates.documentName = documentFile.name;
+                    needsUpdate = true;
+                } catch (uploadError) {
+                    console.error('Failed to upload announcement document:', uploadError);
+                }
+            }
+
+            // 4. Update announcement if files were uploaded
+            if (needsUpdate) {
+                newAnnouncement = await announcementService.updateAnnouncement(newAnnouncement.id, updates);
+            }
+
             set((state) => ({
                 announcements: [newAnnouncement, ...state.announcements],
                 isLoading: false
@@ -58,6 +81,7 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
                 error: error instanceof Error ? error.message : 'Failed to add announcement',
                 isLoading: false
             });
+            throw error;
         }
     },
     removeAnnouncement: async (announcementId) => {
@@ -82,7 +106,7 @@ export const useAnnouncementStore = create<AnnouncementState>((set, get) => ({
             });
             // Reload data to restore state after error
             await get().loadAnnouncements(false);
-            // 🔥 FIX: Throw error back to caller so they can handle it
+            // Throw error back to caller so they can handle it
             throw error;
         }
     },

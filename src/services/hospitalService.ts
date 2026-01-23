@@ -6,34 +6,37 @@ import type { Hospital } from '@/types';
  * Handles all hospital-related database operations
  */
 
+import { convertImageToWebP } from '@/utils/imageUtils';
+
 // Upload hospital logo to Supabase Storage
 export const uploadHospitalLogo = async (file: File, hospitalId: string): Promise<string> => {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${hospitalId}-${Date.now()}.${fileExt}`;
-    const filePath = `${hospitalId}/${fileName}`;
+    try {
+        const webpFile = await convertImageToWebP(file);
+        // Use fixed filename to overwrite existing logo and prevent duplicates
+        const fileName = `${hospitalId}-logo.webp`;
+        const filePath = `${hospitalId}/${fileName}`;
 
 
-    const { data, error } = await supabase.storage
-      .from('Logo')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true
-      });
+        const { data, error } = await supabase.storage
+            .from('Logo')
+            .upload(filePath, webpFile, {
+                cacheControl: '3600',
+                upsert: true
+            });
 
-    if (error) {
-      throw error;
+        if (error) {
+            throw error;
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+            .from('Logo')
+            .getPublicUrl(filePath);
+
+        return publicUrlData.publicUrl;
+    } catch (error) {
+        throw error;
     }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('Logo')
-      .getPublicUrl(filePath);
-
-    return publicUrlData.publicUrl;
-  } catch (error) {
-    throw error;
-  }
 };
 
 // Get all hospitals

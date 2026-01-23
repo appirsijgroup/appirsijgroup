@@ -177,160 +177,9 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     setIsCurrentMonthActivated(isActivated);
 
 
-    // 🚀 DEFER: Run heavy operations in background using setTimeout
-    // This allows UI to render immediately without blocking
-    setTimeout(async () => {
-      // 🔥 CRITICAL: Double-check that employee still exists before proceeding
-      // This prevents race conditions where employee gets cleared during async operations
-      if (!employeeRef.current || !employeeRef.current.id) {
-        console.log('⏭️ [MutabaahContext] Employee cleared during background sync, aborting');
-        return;
-      }
-
-      // 🔥 FIX: Load ALL data from database and sync properly
-      try {
-        const updatedActivities: Record<string, any> = { ...activities };
-
-        // 1. Sync ALL attendance records from Supabase to monthly progress
-        try {
-          const { getEmployeeAttendance } = await import('@/services/attendanceService');
-          const attendanceRecords = await getEmployeeAttendance(emp.id);
-
-          // For each attendance record, sync to the corresponding day and month
-          Object.entries(attendanceRecords).forEach(([entityId, record]) => {
-            if (record.status !== 'hadir') return;
-
-            // Parse timestamp to get day and month
-            const attendanceDate = new Date(record.timestamp);
-            const year = attendanceDate.getFullYear();
-            const month = (attendanceDate.getMonth() + 1).toString().padStart(2, '0');
-            const dayOfMonth = attendanceDate.getDate();
-            const dayKey = dayOfMonth.toString().padStart(2, '0');
-            const monthKey = `${year}-${month}`;
-
-            // Initialize month if not exists
-            if (!updatedActivities[monthKey]) {
-              updatedActivities[monthKey] = {};
-            }
-
-            // Initialize day if not exists
-            if (!updatedActivities[monthKey][dayKey]) {
-              updatedActivities[monthKey][dayKey] = {};
-            }
-
-            // Mark shalat_berjamaah as done for this day
-            updatedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
-          });
-
-          console.log('✅ [MutabaahContext] Synced attendance records:', Object.keys(attendanceRecords).length);
-        } catch (error) {
-          console.error('❌ [MutabaahContext] Error syncing attendance:', error);
-        }
-
-        // 2. Load data from employee_monthly_reports table
-        try {
-          const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
-
-          // 🔥 CRITICAL: Only proceed if employee ID is valid
-          if (emp.id) {
-            const monthlyReportsActivities = await convertMonthlyReportsToActivities(emp.id);
-
-            // Merge monthlyReportsActivities into updatedActivities
-            Object.entries(monthlyReportsActivities).forEach(([monthKey, monthData]) => {
-              if (!updatedActivities[monthKey]) {
-                updatedActivities[monthKey] = {};
-              }
-
-              Object.entries(monthData).forEach(([dayKey, dayData]) => {
-                if (!updatedActivities[monthKey][dayKey]) {
-                  updatedActivities[monthKey][dayKey] = {};
-                }
-
-                // Merge all activities from this day
-                Object.assign(updatedActivities[monthKey][dayKey], dayData);
-              });
-            });
-
-            console.log('✅ [MutabaahContext] Synced monthly reports:', Object.keys(monthlyReportsActivities).length);
-          } else {
-            console.log('⏭️ [MutabaahContext] Skipping monthly reports sync - no employee ID');
-          }
-        } catch (error) {
-          console.error('❌ [MutabaahContext] Error loading monthly reports:', error);
-        }
-
-        // 3. Load data from tadarus_sessions table (RSIJ bertadarus)
-        try {
-          const { convertTadarusSessionsToActivities } = await import('@/services/tadarusService');
-          const tadarusActivities = await convertTadarusSessionsToActivities(emp.id);
-
-          // Merge tadarusActivities into updatedActivities
-          Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
-            if (!updatedActivities[monthKey]) {
-              updatedActivities[monthKey] = {};
-            }
-
-            Object.entries(monthData).forEach(([dayKey, dayData]) => {
-              if (!updatedActivities[monthKey][dayKey]) {
-                updatedActivities[monthKey][dayKey] = {};
-              }
-
-              // Merge all activities from this day
-              Object.assign(updatedActivities[monthKey][dayKey], dayData);
-            });
-          });
-
-          console.log('✅ [MutabaahContext] Synced tadarus sessions:', Object.keys(tadarusActivities).length);
-        } catch (error) {
-          console.error('❌ [MutabaahContext] Error loading tadarus sessions:', error);
-        }
-
-        // 4. Load data from team_attendance_records table (KIE & Doa Bersama)
-        try {
-          const { convertTeamAttendanceToActivities } = await import('@/services/teamAttendanceService');
-          const teamAttendanceActivities = await convertTeamAttendanceToActivities(emp.id);
-
-          // Merge teamAttendanceActivities into updatedActivities
-          Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
-            if (!updatedActivities[monthKey]) {
-              updatedActivities[monthKey] = {};
-            }
-
-            Object.entries(monthData).forEach(([dayKey, dayData]) => {
-              if (!updatedActivities[monthKey][dayKey]) {
-                updatedActivities[monthKey][dayKey] = {};
-              }
-
-              // Merge all activities from this day
-              Object.assign(updatedActivities[monthKey][dayKey], dayData);
-            });
-          });
-
-          console.log('✅ [MutabaahContext] Synced team attendance (KIE & Doa Bersama):', Object.keys(teamAttendanceActivities).length);
-        } catch (error) {
-          console.error('❌ [MutabaahContext] Error loading team attendance:', error);
-        }
-
-        // 5. Update state with ALL synced data
-        setMonthlyProgressData(updatedActivities);
-
-        // 🔥 FIX: NO CACHE - Don't save to employee_monthly_activities anymore
-        // Data is now stored in separate tables and loaded on-demand
-        console.log('✅ [MutabaahContext] Successfully synced data from all sources (NO CACHE)');
-
-      } catch (error) {
-        console.error('❌ [MutabaahContext] Error in background sync:', error);
-      }
-
-      // Load weekly report submissions in background (low priority)
-      try {
-        const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
-        const submissions = await getUserWeeklyReports(emp.id);
-        setWeeklyReportSubmissions(submissions);
-      } catch (error) {
-      }
-
-    }, 100); // 100ms delay to allow UI to render first
+    // 🚀 OPTIMIZATION: Removed automatic massive background sync.
+    // Data remains consistent between sources (attendance, reports, etc.) 
+    // and can be manually refreshed by the user if needed.
 
     // 🔥 FIX: Return Promise to indicate initialization complete
     return Promise.resolve();
@@ -648,20 +497,18 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     }
   }, [onUpdateEmployee]); // 🔥 CRITICAL FIX: Only stable dependencies
 
-  // Setup realtime subscription (optional, only if Supabase is configured)
+  // Setup realtime subscription
   useEffect(() => {
     if (!employee?.id) return;
 
-    // Check if Supabase is configured before setting up subscription
-    const checkAndSetupSubscription = async () => {
+    let channel: any = null;
+
+    const setup = async () => {
       try {
         const { isSupabaseConfigured } = await import('@/lib/supabase');
-        if (!isSupabaseConfigured()) {
-          return;
-        }
+        if (!isSupabaseConfigured()) return;
 
-        // Subscribe to employee changes
-        const channel = supabase
+        channel = supabase
           .channel(`employee-${employee.id}-mutabaah`)
           .on(
             'postgres_changes',
@@ -678,23 +525,24 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
                 setMonthlyProgressData(newEmployee.monthly_activities || {});
                 setWeeklyReportSubmissions(newEmployee.weekly_report_submissions || []);
 
-                // Update current month activation
                 const currentMonth = getCurrentMonthKey();
                 setIsCurrentMonthActivated((newEmployee.activated_months || []).includes(currentMonth));
               }
             }
           )
           .subscribe();
-
-        // Cleanup subscription
-        return () => {
-          supabase.removeChannel(channel);
-        };
       } catch (err) {
+        console.error('Error setting up mutabaah subscription:', err);
       }
     };
 
-    checkAndSetupSubscription();
+    setup();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [employee?.id, getCurrentMonthKey]);
 
   // Initialize when employee changes

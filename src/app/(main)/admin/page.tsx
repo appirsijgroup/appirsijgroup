@@ -33,14 +33,23 @@ import { validateRoleChange } from '@/lib/rolePermissions';
 // import { supabase } from '@/lib/supabase'; // Unused import
 
 export default function AdminPage() {
-    const { allUsersData, loggedInEmployee, setAllUsersData, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
+    const {
+        allUsersData,
+        loggedInEmployee,
+        setAllUsersData,
+        loadAllEmployees,
+        isLoadingEmployees,
+        loadPaginatedEmployees,
+        paginatedEmployees,
+        paginationInfo,
+        isHydrated
+    } = useAppDataStore();
     const { addToast } = useUIStore();
     const { activities, addActivity, updateActivity, deleteActivity } = useActivityStore();
     const { sunnahIbadahList, addSunnahIbadah, updateSunnahIbadah, deleteSunnahIbadah } = useSunnahIbadahStore();
     const { dailyActivitiesConfig, updateDailyActivitiesConfig } = useDailyActivitiesStore();
     const { jobStructure, updateJobStructure } = useJobStructureStore();
     const { auditLog, logAudit } = useAuditLogStore();
-    const { announcements, addAnnouncement, deleteAnnouncement, loadAnnouncements } = useAnnouncementStore();
     const { mutabaahLockingMode, setMutabaahLockingMode } = useMutabaahStore();
     const { createNotification } = useNotificationStore();
     // const { hospitals: localHospitals, addHospital, updateHospital, deleteHospital, toggleHospitalStatus } = useHospitalStore(); // Unused - using hospitals state instead
@@ -145,11 +154,6 @@ export default function AdminPage() {
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
 
-                // 🔥 FIX: Load announcements
-                try {
-                    await loadAnnouncements();
-                } catch (error) {
-                }
 
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Failed to load employees from database');
@@ -159,7 +163,23 @@ export default function AdminPage() {
         };
 
         loadData();
-    }, [setAllUsersData, loadAnnouncements]); // 🔥 Removed pagination deps - employee data loaded on-demand in AdminDashboard
+    }, [setAllUsersData]); // 🔥 Removed pagination deps - employee data loaded on-demand in AdminDashboard
+
+    // ✅ NEW: Load paginated employees when page or filters change
+    useEffect(() => {
+        if (loggedInEmployee && isHydrated) {
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter)
+                .catch(err => console.error('Failed to load paginated employees:', err));
+        }
+    }, [page, searchTerm, roleFilter, isActiveFilter, loggedInEmployee, isHydrated]);
+
+    // 🔥 Sync local pagination state with store pagination info
+    useEffect(() => {
+        if (paginationInfo) {
+            setTotalCount(paginationInfo.total);
+            setTotalPages(paginationInfo.totalPages);
+        }
+    }, [paginationInfo]);
 
     // Handler functions
     const handleToggleStatus = async (userId: string) => {
@@ -283,47 +303,21 @@ export default function AdminPage() {
             // Create in Supabase
             await createEmployeeSupabase(employee);
 
-            // Reload all employees and their attendance
-            const employees = await getAllEmployees();
-            const { getEmployeeAttendance } = await import('@/services/attendanceService');
+            // 🔥 OPTIMIZATION: Don't reload everything. Just add the new user.
+            const newEntry = {
+                employee: employee,
+                attendance: {},
+                history: {}
+            };
 
-            const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
+            setAllUsersData(prev => ({
+                ...prev,
+                [id]: newEntry
+            }));
 
-            for (const emp of employees) {
-                // Load attendance records from Supabase
-                let attendanceData: Attendance = {};
-                try {
-                    const records = await getEmployeeAttendance(emp.id);
-
-                    // Convert AttendanceRecord from Supabase to AttendanceStatus format
-                    Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                        if (record && record.status) {
-                            attendanceData[entityId] = {
-                                status: record.status,
-                                reason: record.reason || null,
-                                timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                submitted: true,
-                                isLateEntry: record.is_late_entry || false
-                            };
-                        }
-                    });
-                } catch (error) {
-                    attendanceData = {};
-                }
-
-                newData[emp.id] = {
-                    employee: emp,
-                    attendance: attendanceData,
-                    history: {}
-                };
-            }
-
-            setAllUsersData(() => newData);
             return { success: true };
         } catch (err: unknown) {
             // Enhanced error logging
-
-            // Try to extract more error details
             let errorMessage = 'Unknown error';
             if (err instanceof Error) {
                 errorMessage = err.message;
@@ -332,17 +326,14 @@ export default function AdminPage() {
             } else {
                 errorMessage = String(err);
             }
-
             return { success: false, error: errorMessage };
         }
     };
 
     const handleUpdateUser = async (id: string, updates: RawEmployee) => {
         try {
-            // Update in Supabase
             await updateEmployeeSupabase(id, updates);
 
-            // 🔥 FIX: Update ONLY the changed user, don't reload everything!
             setAllUsersData((prev) => {
                 const newData = { ...prev };
                 if (newData[id]) {
@@ -362,10 +353,8 @@ export default function AdminPage() {
 
     const handleDeleteUser = async (userId: string) => {
         try {
-            // Delete from Supabase
             await deleteEmployeeSupabase(userId);
 
-            // Update local state
             setAllUsersData((prev) => {
                 const newData = { ...prev };
                 delete newData[userId];
@@ -383,15 +372,12 @@ export default function AdminPage() {
 
         for (const user of usersToProcess) {
             try {
-                // Check if user exists
                 const existing = allUsersData[user.id];
 
                 if (existing) {
-                    // Update existing user
                     await updateEmployeeSupabase(user.id, user);
                     updated++;
 
-                    // Update local state
                     setAllUsersData((prev) => {
                         const newData = { ...prev };
                         if (newData[user.id]) {
@@ -403,46 +389,18 @@ export default function AdminPage() {
                         return newData;
                     });
                 } else {
-                    // Create new user
-                    await createEmployeeSupabase(user as Employee); // Convert to Employee type
+                    await createEmployeeSupabase(user as Employee);
                     added++;
 
-                    // Reload all employees to get the new data
-                    const employees = await getAllEmployees();
-                    const { getEmployeeAttendance } = await import('@/services/attendanceService');
-
-                    const newData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }> = {};
-
-                    for (const emp of employees) {
-                        // Load attendance records from Supabase
-                        let attendanceData: Attendance = {};
-                        try {
-                            const records = await getEmployeeAttendance(emp.id);
-
-                            // Convert AttendanceRecord from Supabase to AttendanceStatus format
-                            Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                                if (record && record.status) {
-                                    attendanceData[entityId] = {
-                                        status: record.status,
-                                        reason: record.reason || null,
-                                        timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                                        submitted: true,
-                                        isLateEntry: record.is_late_entry || false
-                                    };
-                                }
-                            });
-                        } catch (error) {
-                            attendanceData = {};
-                        }
-
-                        newData[emp.id] = {
-                            employee: emp,
-                            attendance: attendanceData,
+                    // 🔥 OPTIMIZATION: Just add to local state
+                    setAllUsersData((prev) => ({
+                        ...prev,
+                        [user.id]: {
+                            employee: user as Employee,
+                            attendance: {},
                             history: {}
-                        };
-                    }
-
-                    setAllUsersData(() => newData);
+                        }
+                    }));
                 }
             } catch (error) {
                 failed.push({
@@ -451,7 +409,6 @@ export default function AdminPage() {
                 });
             }
         }
-
         return { added, updated, failed };
     };
 
@@ -808,35 +765,6 @@ export default function AdminPage() {
         }
     };
 
-    const handleCreateAnnouncement = (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>) => {
-        const newAnnouncement: Announcement = {
-            ...data,
-            id: Date.now().toString(),
-            timestamp: Date.now(),
-            authorId: loggedInEmployee?.id || '',
-            authorName: loggedInEmployee?.name || 'System'
-        };
-        addAnnouncement(newAnnouncement);
-    };
-
-    const markAnnouncementAsRead = () => {
-        if (loggedInEmployee) {
-            // Update employee's last announcement read timestamp
-            const updatedEmployee = {
-                ...loggedInEmployee,
-                lastAnnouncementReadTimestamp: Date.now()
-            };
-
-            // Update both local state and Supabase
-            setAllUsersData(prev => ({
-                ...prev,
-                [loggedInEmployee.id]: {
-                    ...prev[loggedInEmployee.id],
-                    employee: updatedEmployee
-                }
-            }));
-        }
-    };
 
     if (isLoading) {
         return (
@@ -914,10 +842,6 @@ export default function AdminPage() {
                 onUpdateJobStructure={updateJobStructure}
                 auditLog={auditLog}
                 onLogAudit={logAudit}
-                announcements={announcements}
-                onCreateAnnouncement={handleCreateAnnouncement}
-                onDeleteAnnouncement={deleteAnnouncement}
-                onMarkAsRead={markAnnouncementAsRead}
                 hospitals={hospitals}
                 onAddHospital={handleAddHospital}
                 onUpdateHospital={handleUpdateHospital}
@@ -942,6 +866,9 @@ export default function AdminPage() {
                     roleFilter: roleFilter,
                     isActiveFilter: isActiveFilter
                 }}
+                // 🔥 NEW: Pass paginated results
+                paginatedEmployees={paginatedEmployees}
+                paginationInfo={paginationInfo}
                 // 🔥 NEW: On-demand employee loading
                 onLoadEmployees={loadEmployeesOnDemand}
                 isLoadingEmployees={isLoadingEmployees}

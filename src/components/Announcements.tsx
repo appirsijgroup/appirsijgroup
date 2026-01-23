@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Announcement, type Employee, type Hospital } from '../types';
-import { MegaphoneIcon, PlusCircleIcon, TrashIcon, UserGroupIcon, GlobeAltIcon, ChevronDownIcon } from './Icons';
+import { MegaphoneIcon, PlusCircleIcon, TrashIcon, UserGroupIcon, GlobeAltIcon, ChevronDownIcon, PdfIcon } from './Icons';
 import ConfirmationModal from './ConfirmationModal';
 import { isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useUIStore } from '@/store/store';
@@ -11,7 +11,7 @@ interface AnnouncementsProps {
     loggedInEmployee: Employee | null;
     allUsers: Employee[];
     hospitals?: Hospital[];
-    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
+    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
     onDelete: (announcementId: string) => void;
     onMarkAsRead: () => void;
 }
@@ -19,7 +19,7 @@ interface AnnouncementsProps {
 const AnnouncementModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
+    onCreate: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
     loggedInEmployee: Employee | null;
     hospitals: Hospital[];
 }> = ({ isOpen, onClose, onCreate, loggedInEmployee, hospitals }) => {
@@ -28,8 +28,33 @@ const AnnouncementModal: React.FC<{
     const [content, setContent] = useState('');
     const [scope, setScope] = useState<'alliansi' | 'mentor'>('alliansi');
     const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
+    const [file, setFile] = useState<File | null>(null);
+    const [filePreview, setFilePreview] = useState<string | null>(null);
+
+    // Effect for file preview
+    useEffect(() => {
+        if (!file || !file.type.startsWith('image/')) {
+            setFilePreview(null);
+            return;
+        }
+        const objectUrl = URL.createObjectURL(file);
+        setFilePreview(objectUrl);
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [file]);
 
     if (!isOpen || !loggedInEmployee) return null;
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selected = e.target.files?.[0];
+        if (selected) {
+            setFile(selected);
+        }
+    };
+
+    const removeFile = () => {
+        setFile(null);
+        setFilePreview(null);
+    };
 
     const handleSubmit = () => {
         if (!title.trim() || !content.trim()) {
@@ -37,141 +62,214 @@ const AnnouncementModal: React.FC<{
             return;
         }
 
-        // For 'alliansi' scope, check if hospitals are selected
         const selectedHospitals = hospitals.filter(h => selectedHospitalIds.includes(h.id));
+        const announcementData: any = {
+            title,
+            content,
+            scope,
+            documentName: file && !file.type.startsWith('image/') ? file.name : undefined
+        };
+
         if (scope === 'alliansi' && selectedHospitalIds.length > 0) {
-            onCreate({
-                title,
-                content,
-                scope,
-                targetHospitalIds: selectedHospitalIds,
-                targetHospitalNames: selectedHospitals.map(h => h.name || h.brand || '')
-            });
-        } else {
-            onCreate({ title, content, scope });
+            announcementData.targetHospitalIds = selectedHospitalIds;
+            announcementData.targetHospitalNames = selectedHospitals.map(h => h.name || h.brand || '');
         }
+
+        const imageFile = (file && file.type.startsWith('image/')) ? file : undefined;
+        const documentFile = (file && !file.type.startsWith('image/')) ? file : undefined;
+
+        onCreate(announcementData, imageFile, documentFile);
 
         onClose();
         setTitle('');
         setContent('');
         setScope('alliansi');
         setSelectedHospitalIds([]);
+        setFile(null);
+        setFilePreview(null);
     };
 
     const isAdmin = isAnyAdmin(loggedInEmployee);
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl border border-white/20 max-h-[90vh] flex flex-col">
-                <div className="shrink-0 mb-4">
-                    <h3 className="text-lg font-bold text-white">Buat Pengumuman Baru</h3>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-60 animate-in fade-in duration-300">
+            <div className="bg-gray-900/90 border border-white/10 rounded-3xl shadow-2xl p-0 w-full max-w-5xl overflow-hidden flex flex-col max-h-[90vh]">
+                {/* Header */}
+                <div className="bg-linear-to-r from-teal-600/20 to-blue-600/20 px-8 py-6 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                            <PlusCircleIcon className="w-6 h-6 text-teal-400" />
+                            Buat Pengumuman Baru
+                        </h3>
+                        <p className="text-sm text-blue-200/60 mt-1">Sampaikan informasi penting ke seluruh tim atau mentee.</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
 
-                {/* Two-column layout for desktop */}
-                <div className="grow overflow-y-auto pr-2">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left column: Title and Content */}
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                placeholder="Judul Pengumuman"
-                                className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"
-                            />
-                            <textarea
-                                value={content}
-                                onChange={e => setContent(e.target.value)}
-                                placeholder="Isi pengumuman..."
-                                rows={12}
-                                className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white resize-none"
-                            />
+                <div className="grow overflow-y-auto custom-scrollbar">
+                    <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column: Input Fields */}
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-sm font-semibold text-teal-300 mb-2 block uppercase tracking-wider">Informasi Utama</label>
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        value={title}
+                                        onChange={e => setTitle(e.target.value)}
+                                        placeholder="Judul Pengumuman"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 focus:outline-none text-white text-lg font-medium placeholder:text-white/20 transition-all"
+                                    />
+                                    <textarea
+                                        value={content}
+                                        onChange={e => setContent(e.target.value)}
+                                        placeholder="Tulis isi pengumuman di sini..."
+                                        rows={8}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 focus:outline-none text-white placeholder:text-white/20 resize-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Unified File Upload */}
+                            <div>
+                                <label className="text-sm font-semibold text-teal-300 mb-2 block uppercase tracking-wider">Media & Lampiran</label>
+                                {!file ? (
+                                    <div
+                                        onClick={() => document.getElementById('announcement-file-input')?.click()}
+                                        className="group relative border-2 border-dashed border-white/10 hover:border-teal-500/50 rounded-2xl p-8 transition-all bg-white/5 hover:bg-teal-500/5 text-center cursor-pointer"
+                                    >
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-white font-medium">Pilih Gambar atau PDF</p>
+                                                <p className="text-xs text-white/40 mt-1">Ukuran maks. 5MB (PNG, JPG, PDF)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="relative group bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 animate-in zoom-in-95 duration-200">
+                                        <div className="shrink-0 w-16 h-16 rounded-xl bg-gray-800 overflow-hidden border border-white/10 flex items-center justify-center">
+                                            {filePreview ? (
+                                                <img src={filePreview} className="w-full h-full object-cover" alt="Preview" />
+                                            ) : (
+                                                <svg className="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            )}
+                                        </div>
+                                        <div className="grow min-w-0">
+                                            <p className="text-white text-sm font-medium truncate">{file.name}</p>
+                                            <p className="text-xs text-white/40 uppercase">{(file.size / 1024 / 1024).toFixed(2)} MB • {file.type.split('/')[1]}</p>
+                                        </div>
+                                        <button
+                                            onClick={removeFile}
+                                            className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                                            title="Hapus file"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                )}
+                                <input
+                                    id="announcement-file-input"
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </div>
                         </div>
 
-                        {/* Right column: Target Pengumuman */}
-                        <div className="space-y-4">
+                        {/* Right Column: Targeting */}
+                        <div className="space-y-6">
                             <div>
-                                <label className="text-sm font-medium text-blue-100 block mb-2">Target Pengumuman</label>
-                                <div className="flex items-center gap-4">
+                                <label className="text-sm font-semibold text-teal-300 mb-3 block uppercase tracking-wider">Target Audiens</label>
+                                <div className="grid grid-cols-2 gap-3">
                                     {isAdmin && (
                                         <button
                                             onClick={() => { setScope('alliansi'); setSelectedHospitalIds([]); }}
-                                            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'alliansi' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+                                            className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${scope === 'alliansi' ? 'bg-teal-500/10 border-teal-500 text-teal-400 shadow-[0_0_20px_rgba(20,184,166,0.1)]' : 'bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20'}`}
                                         >
-                                            <GlobeAltIcon className="w-5 h-5" /> Aliansi
+                                            <GlobeAltIcon className="w-6 h-6" />
+                                            <span className="text-xs font-bold uppercase tracking-tight">Aliansi</span>
                                         </button>
                                     )}
                                     {loggedInEmployee.canBeMentor && (
                                         <button
                                             onClick={() => { setScope('mentor'); setSelectedHospitalIds([]); }}
-                                            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors text-white ${scope === 'mentor' ? 'bg-teal-500/20 border-teal-400' : 'bg-black/20 border-gray-600 hover:border-gray-500'}`}
+                                            className={`flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 transition-all ${scope === 'mentor' ? 'bg-teal-500/10 border-teal-500 text-teal-400 shadow-[0_0_20px_rgba(20,184,166,0.1)]' : 'bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20'}`}
                                         >
-                                            <UserGroupIcon className="w-5 h-5" /> Untuk Mentee
+                                            <UserGroupIcon className="w-6 h-6" />
+                                            <span className="text-xs font-bold uppercase tracking-tight">Mentee Saya</span>
                                         </button>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Hospital/BRAND selector - only show for Admin when Aliansi is selected */}
+                            {/* RS/BRAND selector context */}
                             {isAdmin && scope === 'alliansi' && (
-                                <div className="bg-white/5 border border-white/20 rounded-lg p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <label className="text-sm font-medium text-blue-100">
-                                            Pilih RS/BRAND (Opsional)
-                                        </label>
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="text-sm font-bold text-white">Batasi Berdasarkan RS</label>
+                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Opsional • Multi-select</p>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={() => setSelectedHospitalIds(selectedHospitalIds.length === hospitals.length ? [] : hospitals.map(h => h.id))}
-                                            className="text-xs text-teal-400 hover:text-teal-300 underline"
+                                            className="text-[10px] uppercase tracking-wider font-bold text-teal-400 hover:text-teal-300"
                                         >
-                                            {selectedHospitalIds.length === hospitals.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                                            {selectedHospitalIds.length === hospitals.length ? 'Batal' : 'Pilih Semua'}
                                         </button>
                                     </div>
 
-                                    <div className="bg-black/20 border border-white/10 rounded-lg p-3 max-h-72 overflow-y-auto">
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                                         {hospitals.length === 0 ? (
-                                            <p className="text-sm text-gray-400 text-center py-4">Belum ada data RS</p>
+                                            <div className="text-center py-8 opacity-20"><GlobeAltIcon className="w-12 h-12 mx-auto mb-2" /> No Data</div>
                                         ) : (
-                                            <div className="space-y-2">
-                                                {hospitals.map(hospital => (
-                                                    <label key={hospital.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedHospitalIds.includes(hospital.id)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) {
-                                                                    setSelectedHospitalIds([...selectedHospitalIds, hospital.id]);
-                                                                } else {
-                                                                    setSelectedHospitalIds(selectedHospitalIds.filter(id => id !== hospital.id));
-                                                                }
-                                                            }}
-                                                            className="w-4 h-4 rounded border-gray-400 text-teal-500 focus:ring-teal-400 focus:ring-offset-gray-800"
-                                                        />
-                                                        <div className="flex-1">
-                                                            <div className="text-sm text-white font-medium">{hospital.brand}</div>
-                                                            <div className="text-xs text-gray-400">{hospital.name}</div>
-                                                        </div>
-                                                    </label>
-                                                ))}
-                                            </div>
+                                            hospitals.map(hospital => (
+                                                <label key={hospital.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${selectedHospitalIds.includes(hospital.id) ? 'bg-teal-500/10 border-teal-500/30' : 'bg-black/20 border-white/5 hover:border-white/10'}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedHospitalIds.includes(hospital.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedHospitalIds([...selectedHospitalIds, hospital.id]);
+                                                            else setSelectedHospitalIds(selectedHospitalIds.filter(id => id !== hospital.id));
+                                                        }}
+                                                        className="w-4 h-4 rounded-md border-white/20 bg-white/5 text-teal-500 focus:ring-teal-400 focus:ring-offset-gray-900"
+                                                    />
+                                                    <div className="grow min-w-0">
+                                                        <div className="text-sm text-white font-bold leading-none">{hospital.brand}</div>
+                                                        <div className="text-[10px] text-white/40 truncate mt-1">{hospital.name}</div>
+                                                    </div>
+                                                </label>
+                                            ))
                                         )}
                                     </div>
 
-                                    <p className="text-xs text-gray-400 mt-3">
-                                        {selectedHospitalIds.length === 0
-                                            ? 'Semua user di Aliansi dapat melihat pengumuman ini'
-                                            : `Hanya user dari ${selectedHospitalIds.length} RS terpilih yang dapat melihat pengumuman ini`}
-                                    </p>
+                                    <div className="pt-2">
+                                        <div className="p-3 rounded-lg bg-teal-500/5 text-[11px] text-teal-200/60 leading-relaxed font-medium">
+                                            {selectedHospitalIds.length === 0
+                                                ? '📢 Pengumuman ini akan terlihat oleh SELURUH pengguna di aliansi.'
+                                                : `📢 Hanya terlihat oleh pengguna dari ${selectedHospitalIds.length} RS yang dipilih.`}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3 shrink-0">
-                    <button onClick={onClose} className="px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                    <button onClick={handleSubmit} className="px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">
-                        Terbitkan
+                {/* Footer Actions */}
+                <div className="bg-gray-900 px-8 py-6 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                    <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all">Batal</button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-8 py-2.5 rounded-xl bg-linear-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-teal-500/20 active:scale-95 transition-all"
+                    >
+                        Terapkan & Terbitkan
                     </button>
                 </div>
             </div>
@@ -179,13 +277,12 @@ const AnnouncementModal: React.FC<{
         document.body
     );
 };
-
 const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onDelete, onMarkAsRead, hospitals = [] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<Announcement | null>(null);
     const [openAnnouncementId, setOpenAnnouncementId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5; // Jumlah item per halaman
+    const itemsPerPage = 5;
 
     const canCreate = loggedInEmployee && (isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor);
 
@@ -194,48 +291,42 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
 
         return announcements
             .filter(a => {
-                // 'alliansi' scope without targetHospitalIds - everyone can see
                 if (a.scope === 'alliansi' && (!a.targetHospitalIds || a.targetHospitalIds.length === 0)) return true;
-
-                // 'alliansi' scope with targetHospitalIds - only users from those hospitals can see
                 if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
-                    // Admins can see all targeted announcements
                     if (isAnyAdmin(loggedInEmployee)) return true;
-                    // Users can see if they belong to one of the target hospitals
                     return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
                 }
-
-                // 'mentor' scope - mentors and their mentees can see
                 if (a.scope === 'mentor') {
                     if (isAnyAdmin(loggedInEmployee)) return true;
                     if (loggedInEmployee.canBeMentor) return true;
                     if (loggedInEmployee.mentorId && loggedInEmployee.mentorId === a.authorId) return true;
                 }
-
                 return false;
             })
             .sort((a, b) => b.timestamp - a.timestamp);
     }, [announcements, loggedInEmployee]);
 
-    // Pagination logic
+    const lastRead = loggedInEmployee?.lastAnnouncementReadTimestamp || 0;
+    const unreadCount = useMemo(() => {
+        if (!loggedInEmployee) return 0;
+        return filteredAnnouncements.filter(a => a.timestamp > lastRead).length;
+    }, [filteredAnnouncements, loggedInEmployee, lastRead]);
+
     const totalPages = Math.ceil(filteredAnnouncements.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paginatedAnnouncements = filteredAnnouncements.slice(startIndex, startIndex + itemsPerPage);
 
-    // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [announcements, loggedInEmployee]);
 
     useEffect(() => {
         if (!loggedInEmployee) return;
-        const lastRead = loggedInEmployee.lastAnnouncementReadTimestamp || 0;
         const firstUnread = filteredAnnouncements.find(a => a.timestamp > lastRead);
         if (firstUnread) {
-            setOpenAnnouncementId(firstUnread.id);
             onMarkAsRead();
         }
-    }, [filteredAnnouncements, loggedInEmployee, onMarkAsRead]);
+    }, [filteredAnnouncements, loggedInEmployee, onMarkAsRead, lastRead]);
 
     const handleDelete = () => {
         if (confirmDelete) {
@@ -249,58 +340,128 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="text-center sm:text-left">
-                    <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                        <MegaphoneIcon className="w-8 h-8 text-teal-300" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+                <div>
+                    <h2 className="text-4xl font-black text-white flex items-center gap-4 tracking-tight">
+                        <div className="p-3 bg-teal-500/20 rounded-2xl">
+                            <MegaphoneIcon className="w-8 h-8 text-teal-400" />
+                        </div>
                         Pengumuman
+                        {unreadCount > 0 && (
+                            <span className="flex h-3 w-3 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                        )}
                     </h2>
-                    <p className="text-blue-200 mt-1">Informasi penting dari manajemen dan para mentor.</p>
+                    <p className="text-blue-200/60 mt-2 font-medium">Berita terbaru dan informasi penting untuk seluruh civitas.</p>
                 </div>
                 {canCreate && (
-                    <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto px-5 py-3 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center justify-center gap-2">
-                        <PlusCircleIcon className="w-6 h-6" />
-                        Buat Pengumuman Baru
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="group w-full md:w-auto px-6 py-3.5 bg-linear-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-teal-500/20 transition-all hover:scale-105 active:scale-95"
+                    >
+                        <PlusCircleIcon className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                        Buat Baru
                     </button>
                 )}
             </div>
 
             {filteredAnnouncements.length > 0 ? (
-                <div className="space-y-2">
+                <div className="grid gap-4">
                     {paginatedAnnouncements.map(ann => {
                         const isOpen = openAnnouncementId === ann.id;
+                        const isUnread = ann.timestamp > lastRead;
+
                         return (
-                            <div key={ann.id} className="bg-black/20 rounded-lg border border-white/10 animate-view-change overflow-hidden transition-all duration-300">
+                            <div
+                                key={ann.id}
+                                className={`group relative bg-gray-900/40 hover:bg-gray-800/60 border rounded-2xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-teal-500/40 ring-1 ring-teal-500/20 shadow-2xl shadow-teal-500/5' : 'border-white/5 hover:border-white/10'}`}
+                            >
+                                {isUnread && (
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-linear-to-b from-teal-400 to-blue-500 shadow-[2px_0_10px_rgba(20,184,166,0.3)] z-10" />
+                                )}
+
                                 <button
                                     onClick={() => toggleAnnouncement(ann.id)}
-                                    className="w-full flex justify-between items-center p-4 text-left gap-4"
+                                    className="w-full flex justify-between items-center p-6 text-left gap-6"
                                     aria-expanded={isOpen}
                                 >
-                                    <div className="grow">
-                                        <h3 className="font-bold text-lg text-white">{ann.title}</h3>
-                                        <p className="text-sm text-gray-400 mt-1">
-                                            Oleh <strong>{ann.authorName}</strong> • {new Date(ann.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}
+                                    <div className="grow min-w-0">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            {isUnread && (
+                                                <span className="px-2 py-0.5 bg-teal-500 text-[10px] font-black uppercase tracking-tighter text-white rounded-md animate-pulse">Baru</span>
+                                            )}
+                                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-lg flex items-center gap-1.5 ${ann.scope === 'alliansi' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                                                {ann.scope === 'alliansi' ? <GlobeAltIcon className="w-3.5 h-3.5" /> : <UserGroupIcon className="w-3.5 h-3.5" />}
+                                                {ann.scope === 'alliansi' ? (
+                                                    ann.targetHospitalIds && ann.targetHospitalIds.length > 0
+                                                        ? `${ann.targetHospitalNames?.[0] || 'RS'}${ann.targetHospitalIds.length > 1 ? ` +${ann.targetHospitalIds.length - 1}` : ''}`
+                                                        : 'Aliansi'
+                                                ) : 'Mentee Saya'}
+                                            </span>
+                                        </div>
+                                        <h3 className={`font-bold text-xl transition-colors ${isOpen ? 'text-teal-400' : 'text-white'}`}>{ann.title}</h3>
+                                        <p className="text-xs text-white/30 mt-2 font-medium">
+                                            Oleh <span className="text-white/60">{ann.authorName}</span> • {new Date(ann.timestamp).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${ann.scope === 'alliansi' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
-                                            {ann.scope === 'alliansi' ? <GlobeAltIcon className="w-4 h-4" /> : <UserGroupIcon className="w-4 h-4" />}
-                                            {ann.scope === 'alliansi' ? (
-                                                ann.targetHospitalIds && ann.targetHospitalIds.length > 0
-                                                    ? `${ann.targetHospitalNames?.[0] || 'RS'}${ann.targetHospitalIds.length > 1 ? ` +${ann.targetHospitalIds.length - 1}` : ''}`
-                                                    : 'Aliansi'
-                                            ) : 'Mentor'}
-                                        </span>
-                                        <ChevronDownIcon className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                                    <div className="shrink-0">
+                                        <div className={`p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-teal-500/20 text-teal-400 rotate-180' : 'bg-white/5 text-white/20 group-hover:text-white/40 group-hover:bg-white/10'}`}>
+                                            <ChevronDownIcon className="w-6 h-6" />
+                                        </div>
                                     </div>
                                 </button>
-                                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[1000px]' : 'max-h-0'}`}>
-                                    <div className="px-4 pb-4 pt-2 border-t border-white/10">
-                                        <p className="text-white whitespace-pre-wrap">{ann.content}</p>
+
+                                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                                    <div className="px-6 pb-8 pt-2 space-y-6">
+                                        <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent w-full" />
+
+                                        {ann.imageUrl && (
+                                            <div className="relative group/img">
+                                                <img
+                                                    src={ann.imageUrl}
+                                                    alt={ann.title}
+                                                    className="w-full max-h-[500px] object-cover rounded-3xl border border-white/10 shadow-lg"
+                                                />
+                                                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity rounded-3xl" />
+                                            </div>
+                                        )}
+
+                                        <div className="prose prose-invert max-w-none">
+                                            <p className="text-white/80 whitespace-pre-wrap leading-relaxed text-base italic-font-fix">{ann.content}</p>
+                                        </div>
+
+                                        {ann.documentUrl && (
+                                            <div className="bg-teal-500/5 hover:bg-teal-500/10 border border-teal-500/20 rounded-2xl p-5 flex items-center justify-between transition-all group/doc">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-teal-500/20 rounded-xl text-teal-400 group-hover/doc:scale-110 transition-transform">
+                                                        <PdfIcon className="w-6 h-6" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">{ann.documentName || 'Lampiran Dokumen'}</div>
+                                                        <div className="text-[10px] text-teal-400/60 uppercase font-bold tracking-widest mt-0.5">Dokumen Pendukung • PDF / Image</div>
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={ann.documentUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="px-6 py-2 bg-teal-500 hover:bg-teal-400 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-teal-500/20"
+                                                >
+                                                    Unduh
+                                                </a>
+                                            </div>
+                                        )}
+
                                         {loggedInEmployee && (isSuperAdmin(loggedInEmployee) || loggedInEmployee.id === ann.authorId) && (
-                                            <div className="mt-4 text-right">
-                                                <button onClick={() => setConfirmDelete(ann)} className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-600/80 hover:bg-red-600 text-white rounded-md">
+                                            <div className="pt-4 flex justify-end">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(ann); }}
+                                                    className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all"
+                                                >
                                                     <TrashIcon className="w-4 h-4" />
                                                     Hapus
                                                 </button>
@@ -313,8 +474,12 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     })}
                 </div>
             ) : (
-                <div className="text-center py-16 bg-black/20 rounded-lg">
-                    <p className="text-lg text-blue-200">Saat ini tidak ada pengumuman.</p>
+                <div className="text-center py-24 bg-white/5 border border-white/5 rounded-[40px] flex flex-col items-center gap-4">
+                    <div className="p-6 bg-white/5 rounded-full mb-4">
+                        <MegaphoneIcon className="w-16 h-16 text-white/5" />
+                    </div>
+                    <p className="text-xl font-bold text-white/20">Belum ada pengumuman</p>
+                    <p className="text-sm text-white/10 max-w-xs">Informasi terbaru dari manajemen akan muncul di sini.</p>
                 </div>
             )}
 
@@ -347,8 +512,8 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {pageNum}
@@ -362,8 +527,8 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
                                     className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
                                         }`}
                                 >
                                     {totalPages}

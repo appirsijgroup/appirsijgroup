@@ -32,6 +32,16 @@ export interface AppDataState {
     markAnnouncementAsRead: () => void;
     loadLoggedInEmployee: () => Promise<void>;
     loadAllEmployees: () => Promise<void>;
+    loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean) => Promise<void>;
+    paginatedEmployees: Employee[];
+    paginationInfo: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    } | null;
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
     refreshActivityStats: () => void; // 🔥 NEW: Trigger refresh activity stats setelah attendance submission
@@ -45,6 +55,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     isLoggingOut: false, // Start not logging out
     isLoadingEmployees: false, // 🔥 NEW: Flag to prevent concurrent employee loading
     activityStatsRefreshCounter: 0, // 🔥 NEW: Counter untuk trigger refresh
+    paginatedEmployees: [],
+    paginationInfo: null,
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
     setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
@@ -99,31 +111,23 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                     }));
 
 
-                    // 🚀 OPTIMIZATION: Load all employees in background after logged-in user is ready
-                    // This prevents blocking the initial render but ensures data is ready for navigation
-                    setTimeout(async () => {
-                        try {
-                            const { getAllEmployees } = await import('@/services/employeeService');
-                            const allEmployees = await getAllEmployees();
+                    // 🚀 OPTIMIZATION: Automatically load all employees ONLY for managers/admins
+                    // This ensures Mentors, Supervisors, etc. have the data they need for their team
+                    const hasManagementRole =
+                        employee.role === 'admin' ||
+                        employee.role === 'super-admin' ||
+                        employee.canBeMentor ||
+                        employee.canBeSupervisor ||
+                        employee.canBeKaUnit ||
+                        employee.canBeDirut;
 
-                            // Update allUsersData with all employees
-                            set((state) => {
-                                const newData = { ...state.allUsersData };
-                                allEmployees.forEach((emp) => {
-                                    if (!newData[emp.id]) {
-                                        newData[emp.id] = {
-                                            employee: emp,
-                                            attendance: {},
-                                            history: {}
-                                        };
-                                    }
-                                });
-                                return { allUsersData: newData };
-                            });
-                        } catch (error) {
-                            // Don't throw - background load failure is OK, page will handle it
-                        }
-                    }, 100); // Small delay to not block initial render
+                    if (hasManagementRole) {
+                        console.log('📋 [AppDataStore] User has management role, loading first page of employees...');
+                        // Use a short delay to not block the main UI render
+                        setTimeout(() => {
+                            get().loadPaginatedEmployees(1, 15).catch(err => console.error('Failed to load paginated employees:', err));
+                        }, 500);
+                    }
 
                 } else {
                     // No employee data in response
@@ -268,6 +272,27 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             set({ allUsersData: newData, isLoadingEmployees: false });
         } catch (error) {
             console.error('❌ [loadAllEmployees] Error:', error);
+            set({ isLoadingEmployees: false });
+            throw error;
+        }
+    },
+
+    // 🔥 NEW: Load employees with pagination
+    loadPaginatedEmployees: async (page = 1, limit = 15, search = '', role = '', isActive) => {
+        if (get().isLoadingEmployees) return;
+
+        try {
+            set({ isLoadingEmployees: true });
+            const { getEmployeesPaginated } = await import('@/services/employeeService');
+            const { employees, pagination } = await getEmployeesPaginated(page, limit, search, role, isActive);
+
+            set({
+                paginatedEmployees: employees,
+                paginationInfo: pagination,
+                isLoadingEmployees: false
+            });
+        } catch (error) {
+            console.error('❌ [loadPaginatedEmployees] Error:', error);
             set({ isLoadingEmployees: false });
             throw error;
         }

@@ -16,7 +16,6 @@ import { useUIStore } from '@/store/store';
 
 // Lazy load heavy components that are only rendered conditionally
 const RelationManagement = lazy(() => import('./RelationManagement'));
-const Announcements = lazy(() => import('./Announcements'));
 
 interface AdminDashboardProps {
     allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }>;
@@ -43,10 +42,6 @@ interface AdminDashboardProps {
     onUpdateJobStructure: (newStructure: JobStructure) => void;
     auditLog: AuditLogEntry[];
     onLogAudit: (entry: Omit<AuditLogEntry, "id" | "timestamp">) => void;
-    announcements: Announcement[];
-    onCreateAnnouncement: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>) => void;
-    onDeleteAnnouncement: (announcementId: string) => void;
-    onMarkAsRead: () => void;
     hospitals: Hospital[];
     onAddHospital: (data: Omit<Hospital, 'id' | 'isActive'>) => Promise<{ success: boolean, error?: string }>;
     onUpdateHospital: (id: string, data: Partial<Omit<Hospital, 'id'>>) => Promise<{ success: boolean, error?: string }>;
@@ -56,7 +51,31 @@ interface AdminDashboardProps {
     onUpdateMutabaahLockingMode: (mode: MutabaahLockingMode) => void;
     onLoadEmployees?: () => Promise<void>; // 🔥 NEW: On-demand employee loading
     isLoadingEmployees?: boolean; // 🔥 NEW: Loading state for global employee loading
-    pagination?: any; // TODO: Add proper type
+    paginatedEmployees?: Employee[];
+    paginationInfo?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    } | null;
+    pagination?: {
+        currentPage: number;
+        totalPages: number;
+        totalCount: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+        onNext: () => void;
+        onPrev: () => void;
+        onSearch: (term: string) => void;
+        onRoleFilter: (role: string) => void;
+        onIsActiveFilter: (isActive: boolean | undefined) => void;
+        onRefresh: () => void;
+        searchTerm: string;
+        roleFilter: string;
+        isActiveFilter: boolean | undefined;
+    };
 }
 
 type DestructiveAction = 'delete-user' | 'delete-activity' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
@@ -1220,35 +1239,35 @@ interface DatabaseKaryawanProps {
     onBulkUpdateUsers: AdminDashboardProps['onBulkUpdateUsers'];
     onOpenUserModal: (user?: Employee) => void;
     hospitals: Hospital[];
+    pagination?: AdminDashboardProps['pagination'];
+    paginatedEmployees?: Employee[];
+    isLoading?: boolean;
 }
 
-const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiateDeleteUser, onOpenUserModal, onBulkUpdateUsers, hospitals }) => {
+const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
+    allUsers,
+    onInitiateDeleteUser,
+    onOpenUserModal,
+    onBulkUpdateUsers,
+    hospitals,
+    pagination,
+    paginatedEmployees,
+    isLoading
+}) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 20; // Jumlah item per halaman
 
-    const filteredAndSortedUsers = useMemo(() => {
-        return allUsers
-            .filter(user => {
-                if (!searchTerm) return true;
-                const lowerSearch = searchTerm.toLowerCase();
-                return user.name.toLowerCase().includes(lowerSearch) || user.id.toLowerCase().includes(lowerSearch);
-            })
-            .sort((a, b) => a.name.localeCompare(b.name));
-    }, [allUsers, searchTerm]);
+    // 🔥 FIX: Use server-side paginated employees if available, fallback to client-side for compatibility
+    const displayUsers = useMemo(() => {
+        if (paginatedEmployees && paginatedEmployees.length > 0) {
+            return paginatedEmployees;
+        }
+        return allUsers; // Fallback during transitions or if store not updated
+    }, [paginatedEmployees, allUsers]);
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedUsers = filteredAndSortedUsers.slice(startIndex, startIndex + itemsPerPage);
+    const totalPages = pagination?.totalPages || 0;
+    const currentPage = pagination?.currentPage || 1;
 
     const hospitalMap = useMemo(() => new Map(hospitals.map(h => [h.id, h.brand])), [hospitals]);
-
-    // Reset to first page when search term changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm]);
 
     return (
         <div>
@@ -1257,8 +1276,8 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                     <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        value={pagination?.searchTerm || ''}
+                        onChange={e => pagination?.onSearch(e.target.value)}
                         placeholder="Cari nama atau NIP..."
                         className="w-full bg-white/5 border border-white/20 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white transition-colors"
                     />
@@ -1290,7 +1309,14 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedUsers.map((user) => (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={9} className="text-center p-12">
+                                    <ArrowPathIcon className="w-8 h-8 animate-spin mx-auto text-teal-400 mb-2" />
+                                    <p className="text-blue-200">Memuat data...</p>
+                                </td>
+                            </tr>
+                        ) : displayUsers.map((user) => (
                             <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">
                                     {/* 🔥 hospital_id langsung berisi RS ID/BRAND (misal: "RSIJSP", "RSAB") */}
@@ -1323,59 +1349,21 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({ allUsers, onInitiat
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
                     <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
+                        onClick={() => pagination?.onPrev()}
+                        disabled={currentPage === 1 || isLoading}
                         className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         ←
                     </button>
 
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
+                    <div className="text-blue-200 text-sm font-medium px-4">
+                        Halaman {currentPage} dari {totalPages}
+                        <span className="ml-2 text-xs text-gray-400">({pagination?.totalCount || 0} Total)</span>
                     </div>
 
                     <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
+                        onClick={() => pagination?.onNext()}
+                        disabled={currentPage === totalPages || isLoading}
                         className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         →
@@ -3305,7 +3293,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onDeleteUser, onBulkUpdateUsers, activities, onAddActivity, onUpdateActivity, onDeleteActivity,
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
-        announcements, onCreateAnnouncement, onDeleteAnnouncement, onMarkAsRead, onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
+        onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
         mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, isLoadingEmployees
     } = props;
     /* eslint-enable */
@@ -3314,7 +3302,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [activeView, setActiveView] = useState<AdminView>(() => {
         if (typeof window !== 'undefined') {
             const savedView = localStorage.getItem('adminDashboardActiveView');
-            if (savedView && ['manajemen-pengguna', 'manajemen-konten', 'reports', 'pengumuman', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(savedView)) {
+            if (savedView && ['manajemen-pengguna', 'manajemen-konten', 'reports', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(savedView)) {
                 return savedView as AdminView;
             }
         }
@@ -3596,7 +3584,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             </div>
                         </div>
                         {userManagementSubView === 'database' && (
-                            <DatabaseKaryawan allUsers={allUsers} onInitiateDeleteUser={handleInitiateDeleteUser} onAddUser={onAddUser} onUpdateUser={onUpdateUser} onBulkUpdateUsers={onBulkUpdateUsers} onOpenUserModal={handleOpenUserModal} hospitals={hospitals} />
+                            <DatabaseKaryawan
+                                allUsers={allUsers}
+                                onInitiateDeleteUser={handleInitiateDeleteUser}
+                                onAddUser={onAddUser}
+                                onUpdateUser={onUpdateUser}
+                                onBulkUpdateUsers={onBulkUpdateUsers}
+                                onOpenUserModal={handleOpenUserModal}
+                                hospitals={hospitals}
+                                pagination={pagination}
+                                paginatedEmployees={paginatedEmployees}
+                                isLoading={isLoadingEmployees}
+                            />
                         )}
                         {userManagementSubView === 'akun' && (
                             <AkunManagement allUsers={allUsers} onInitiateToggleStatus={handleInitiateToggleStatus} />
@@ -3661,17 +3660,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
                 )}
 
-                {activeView === 'pengumuman' && (
-                    <Announcements
-                        announcements={announcements}
-                        loggedInEmployee={loggedInEmployee}
-                        allUsers={allUsers}
-                        hospitals={hospitals}
-                        onCreate={onCreateAnnouncement}
-                        onDelete={onDeleteAnnouncement}
-                        onMarkAsRead={onMarkAsRead}
-                    />
-                )}
                 {activeView === 'audit-log' && isSuperAdmin(loggedInEmployee) && <AuditLogView log={auditLog} />}
                 {activeView === 'manajemen-admin' && isSuperAdmin(loggedInEmployee) && <AdminManagement allUsers={allUsers} loggedInEmployee={loggedInEmployee} onInitiateSetRole={handleInitiateSetRole} onManageAccess={setManagingAccessFor} hospitals={hospitals} />}
                 {activeView === 'manajemen-rs' && isSuperAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}

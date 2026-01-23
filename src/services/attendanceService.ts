@@ -30,9 +30,8 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
   return attendanceMap;
 };
 
-// 🔥 UPDATED: Get ALL attendance records (hanya yang TERBARA) - for admin dashboard
+// 🔥 REVERTED: Get all attendance records (removed 90-day limit per user request)
 export const getAllAttendanceRecords = async (): Promise<Record<string, Record<string, AttendanceRecord>>> => {
-  // 🔥 FIX: Kolom is_latest belum ada di database, sementara ambil semua data
   const { data, error } = await supabase
     .from('attendance_records')
     .select('*')

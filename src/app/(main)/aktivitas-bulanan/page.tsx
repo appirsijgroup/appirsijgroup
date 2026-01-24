@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import MonthlyActivities from '@/components/MonthlyActivities';
 import { useAppDataStore, useDailyActivitiesStore, useMutabaahStore, useUIStore } from '@/store/store';
 import { useMutabaah } from '@/contexts/MutabaahContext';
@@ -11,8 +11,26 @@ export default function AktivitasBulananPage() {
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const { addToast } = useUIStore();
     const { mutabaahLockingMode, loadFromSupabase } = useMutabaahStore();
+    const { loggedInEmployee, loadDetailedEmployeeData, allUsersData } = useAppDataStore();
     const [date, setDate] = useState<Date>(new Date());
     const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+
+    const {
+        isCurrentMonthActivated,
+        monthlyProgressData,
+        activateMonth,
+        updateMonthlyProgress,
+        weeklyReportSubmissions,
+        refreshData,
+        isLoading,
+    } = useMutabaah();
+
+    // 🔥 FIX: Move useMemo BEFORE conditional returns to avoid hooks order issue
+    const enrichedMonthlyProgressData = useMemo(() => {
+        // High fidelity source: store's loggedInEmployee.monthlyActivities
+        // This is pre-loaded via loadDetailedEmployeeData in Dashboard
+        return loggedInEmployee?.monthlyActivities || monthlyProgressData || {};
+    }, [loggedInEmployee?.monthlyActivities, monthlyProgressData]);
 
     // 🔥 DEBUG: Log employee activation status
     useEffect(() => {
@@ -43,19 +61,6 @@ export default function AktivitasBulananPage() {
         };
         loadSettings();
     }, [loadFromSupabase]);
-
-    const {
-        isCurrentMonthActivated,
-        monthlyProgressData,
-        activateMonth,
-        updateMonthlyProgress,
-        weeklyReportSubmissions,
-        refreshData,
-        isLoading,
-    } = useMutabaah();
-
-    // 🔥 NEW: Use global loader for background updates
-    const { loadDetailedEmployeeData, allUsersData } = useAppDataStore();
 
     const handleUpdateMonthlyActivities = async (userId: string, monthKey: string, monthProgress: any) => {
         // 🔥 FIX: BERSIHKAN data sebelum disimpan!
@@ -131,6 +136,7 @@ export default function AktivitasBulananPage() {
         }
     };
 
+    // Conditional renders MUST be AFTER all hooks
     if (!loggedInEmployee || isLoading) {
         return (
             <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
@@ -152,13 +158,6 @@ export default function AktivitasBulananPage() {
             </div>
         );
     }
-
-    // 🔥 FIX: Use pre-aggregated data from store directly (Much faster)
-    const enrichedMonthlyProgressData = React.useMemo(() => {
-        // High fidelity source: store's loggedInEmployee.monthlyActivities
-        // This is pre-loaded via loadDetailedEmployeeData in Dashboard
-        return loggedInEmployee?.monthlyActivities || monthlyProgressData || {};
-    }, [loggedInEmployee?.monthlyActivities, monthlyProgressData]);
 
     return (
         <MonthlyActivities

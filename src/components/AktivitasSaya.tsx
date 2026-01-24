@@ -40,6 +40,7 @@ interface AktivitasSayaProps {
     menteeTargets: any[];
     hospitals: any[];
     addToast?: (message: string, type: 'success' | 'error') => void;
+    loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
 }
 
 const TabButton: React.FC<{
@@ -194,6 +195,7 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                         handleCreateTarget={handleCreateTarget}
                         setConfirmDeleteTarget={setConfirmDeleteTarget}
                         menteeTargets={props.menteeTargets.filter((t: any) => t.mentorId === props.employee.id)}
+                        loadDetailedEmployeeData={props.loadDetailedEmployeeData}
                     />
                 );
             case 'persetujuan':

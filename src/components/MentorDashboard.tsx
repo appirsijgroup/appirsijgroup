@@ -57,6 +57,7 @@ interface MentorDashboardProps {
     handleCreateTarget: (e: React.FormEvent) => void;
     setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
     menteeTargets: MenteeTarget[];
+    loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
 }
 
 const PREMIUM_COLORS = ['#14b8a6', '#0ea5e9', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981'];
@@ -138,8 +139,19 @@ const MenteeDetailProgressView: React.FC<{
     currentMonth?: Date;
     onMonthChange?: (newDate: Date) => void;
     allUsersData?: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
-}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData }) => {
+    loadDetailedEmployeeData?: (employeeId: string) => Promise<void>;
+}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData, loadDetailedEmployeeData }) => {
     const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(mentee?.id || (mentees && mentees.length > 0 ? mentees[0].id : null));
+
+    // 🔥 FIX: Load detailed data for selected mentee when selection changes
+    useEffect(() => {
+        if (selectedMenteeId && loadDetailedEmployeeData) {
+            console.log(`🔄 [MenteeDetailProgressView] Loading detailed data for mentee: ${selectedMenteeId}`);
+            loadDetailedEmployeeData(selectedMenteeId).catch(err => {
+                console.error(`⚠️ [MenteeDetailProgressView] Failed to load data for ${selectedMenteeId}:`, err);
+            });
+        }
+    }, [selectedMenteeId, loadDetailedEmployeeData]);
 
     const activeDate = useMemo(() => currentMonth || new Date(monthKey + '-02'), [currentMonth, monthKey]);
 
@@ -1180,6 +1192,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     handleCreateTarget,
     setConfirmDeleteTarget,
     menteeTargets,
+    loadDetailedEmployeeData,
 }) => {
 
     // Unified state for confirmations
@@ -1297,7 +1310,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const menteeData = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
     if (selectedSubmission) {
-        return menteeData ? (<MenteeDetailProgressView mentee={menteeData} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} />) : null;
+        return menteeData ? (<MenteeDetailProgressView mentee={menteeData} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} allUsersData={allUsersData} loadDetailedEmployeeData={loadDetailedEmployeeData} />) : null;
     }
 
     return (
@@ -1375,6 +1388,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         currentMonth={progressViewMonth}
                         onMonthChange={setProgressViewMonth}
                         allUsersData={allUsersData}
+                        loadDetailedEmployeeData={loadDetailedEmployeeData}
                     />
                 )}
                 {mentorSubView === 'laporan-bacaan' && (

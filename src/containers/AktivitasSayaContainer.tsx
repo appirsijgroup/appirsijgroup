@@ -31,7 +31,7 @@ interface AktivitasSayaContainerProps {
 }
 
 const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initialTab }) => {
-    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, loadDetailedEmployeeData } = useAppDataStore();
+    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, loadDetailedEmployeeData, loadAllEmployees } = useAppDataStore();
     const { addToast } = useUIStore();
     // Note: Navigation handled by useRouter
 
@@ -68,6 +68,21 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             });
         }
     }, [loggedInEmployee?.id, loadDetailedEmployeeData]);
+
+    // 🔥 FIX: Load all employees data for mentors to display mentee list
+    // This is necessary because mentee data comes from allUsersData
+    useEffect(() => {
+        const hasMentorRole = loggedInEmployee?.canBeMentor === true;
+        const hasApprovalRole = loggedInEmployee?.canBeSupervisor === true || loggedInEmployee?.canBeKaUnit === true;
+
+        // Only load if user has mentor/approval role and allUsersData is mostly empty
+        if ((hasMentorRole || hasApprovalRole) && Object.keys(allUsersData).length <= 1) {
+            console.log('🔄 [AktivitasSayaContainer] Loading all employees for mentor/approval roles...');
+            loadAllEmployees().catch(err => {
+                console.error('⚠️ [AktivitasSayaContainer] Failed to load all employees:', err);
+            });
+        }
+    }, [loggedInEmployee?.canBeMentor, loggedInEmployee?.canBeSupervisor, loggedInEmployee?.canBeKaUnit, allUsersData, loadAllEmployees]);
 
     // --- Handlers ---
     const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'password'>>) => {
@@ -693,6 +708,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             menteeTargets={menteeTargets}
             hospitals={hospitals}
             addToast={addToast}
+            loadDetailedEmployeeData={loadDetailedEmployeeData}
         />
     ) : (
         <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">

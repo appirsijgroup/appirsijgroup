@@ -243,7 +243,14 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
                     const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin';
                     if (isAdmin) return true;
-                    return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
+
+                    // 🔥 FIX: Handle potential missing camelCase conversion for hospitalId
+                    // Also ensure we have a valid ID to compare against
+                    const userHospitalId = loggedInEmployee.hospitalId || (loggedInEmployee as any).hospital_id;
+
+                    if (!userHospitalId) return false;
+
+                    return a.targetHospitalIds.includes(userHospitalId);
                 }
 
                 // Mentor scope - mentors and their mentees can see
@@ -278,11 +285,25 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const filteredNavItems = useMemo(() => {
         if (!loggedInEmployee) return [];
 
+        // Check if user has any management/assignment role (Mentor, SPV, KaUnit, Dirut, or Admin)
+        const hasManagementRole =
+            isAdmin ||
+            loggedInEmployee.canBeMentor ||
+            loggedInEmployee.canBeSupervisor ||
+            loggedInEmployee.canBeKaUnit ||
+            loggedInEmployee.canBeDirut;
+
         return allNavItemsRaw.filter(item => {
+            // Hide Admin menu for non-admins
             if (item.id === 'admin' && !isAdmin) return false;
+
+            // 🔥 Hide 'Jadwal & Sesi' for basic users without special assignments/roles
+            // Only Admins, Mentors, SPVs, KaUnits, etc. can access this menu
+            if (item.id === 'jadwal-sesi' && !hasManagementRole) return false;
+
             return true;
         });
-    }, [userId, userRole]); // 🔥 CRITICAL FIX: Only depend on ID and role, not entire object
+    }, [userId, userRole, isAdmin, loggedInEmployee?.canBeMentor, loggedInEmployee?.canBeSupervisor, loggedInEmployee?.canBeKaUnit, loggedInEmployee?.canBeDirut]); // 🔥 CRITICAL FIX: Add assignment flags to deps
 
     // 🔥 DEBUG: Log when filtered nav items change
     React.useEffect(() => {

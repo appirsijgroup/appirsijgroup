@@ -364,6 +364,13 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
     };
 
     const toggleAnnouncement = (id: string) => {
+        // 🔥 FIX: Mark as read when user explicitly expands an unread announcement
+        // This ensures the badge clears if the automatic check missed it or user just wants to clear it by interacting
+        const ann = announcements.find(a => a.id === id);
+        if (ann && ann.timestamp > lastRead) {
+            onMarkAsRead();
+        }
+
         setOpenAnnouncementId(prevId => (prevId === id ? null : id));
     };
 

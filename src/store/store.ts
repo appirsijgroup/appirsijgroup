@@ -378,7 +378,10 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         const { loggedInEmployee, allUsersData } = get();
         if (!loggedInEmployee) return;
 
-        const now = Date.now();
+        // 🔥 FIX: Use corrected time instead of local Date.now()
+        // This prevents issues where local clock is behind server clock, causing announcements to stay "unread"
+        const now = timeValidationService.getCorrectedTime().getTime();
+
         const updatedEmployee = {
             ...loggedInEmployee,
             lastAnnouncementReadTimestamp: now

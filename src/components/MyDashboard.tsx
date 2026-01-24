@@ -1369,16 +1369,20 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
 
-    // 🔥 FIX: Auto-load all employees data when entering Analytics or Panel Mentor
+    // 🔥 FIX: Auto-load all employees data if user is a mentor/approver OR when entering Analytics
     useEffect(() => {
-        if ((activeTab === 'analytics' || activeTab === 'panel-mentor') && props.onLoadEmployees) {
+        const shouldLoadEmployees =
+            (hasMentorRole || hasApprovalRole) || // Eagerly load for mentors/approvers
+            (activeTab === 'analytics' || activeTab === 'panel-mentor'); // Or if explicit tab requires it
+
+        if (shouldLoadEmployees && props.onLoadEmployees) {
             // Check if we need to load data (if allUsersData is empty or just has current user)
             const userCount = Object.keys(allUsersData).length;
             if (userCount <= 1) {
                 props.onLoadEmployees();
             }
         }
-    }, [activeTab, allUsersData, props.onLoadEmployees]);
+    }, [hasMentorRole, hasApprovalRole, activeTab, allUsersData, props.onLoadEmployees]);
 
     // State for MentorDashboard target creation form
     const [targetMenteeId, setTargetMenteeId] = useState('');

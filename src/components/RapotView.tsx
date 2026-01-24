@@ -245,7 +245,50 @@ const generateChecklistPdf = (
     let finalY = 0;
 
     const monthKey = `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`;
-    const progress = employee.monthlyActivities?.[monthKey] || {};
+
+    // 🔥 FIX: Enrich progress data to match Dashboard logic
+    // We use a consolidated approach: Base Monthly Items + Cached Reports (which includes Attendance, Team Sessions, etc.)
+    const baseProgress = employee.monthlyActivities?.[monthKey] || {};
+    const enrichedProgress = { ...baseProgress };
+
+    // 1. Sync from _monthlyReportsDataCache (This contains manual reports, team attendance, AND daily attendance/sholat)
+    const monthlyReports = (employee as any)._monthlyReportsDataCache?.[monthKey] || {};
+    Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
+        if (!enrichedProgress[dayKey]) {
+            enrichedProgress[dayKey] = {};
+        }
+        Object.assign(enrichedProgress[dayKey], dayData);
+    });
+
+    // 2. Sync Reading History (Books)
+    if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+        employee.readingHistory.forEach(history => {
+            const date = history.dateCompleted; // YYYY-MM-DD
+            if (date.startsWith(monthKey)) {
+                const dayKey = date.substring(8, 10);
+                if (!enrichedProgress[dayKey]) {
+                    enrichedProgress[dayKey] = {};
+                }
+                enrichedProgress[dayKey]['baca_alquran_buku'] = true;
+            }
+        });
+    }
+
+    // 3. Sync Quran History
+    if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+        employee.quranReadingHistory.forEach((history: any) => {
+            const date = history.date; // YYYY-MM-DD
+            if (date.startsWith(monthKey)) {
+                const dayKey = date.substring(8, 10);
+                if (!enrichedProgress[dayKey]) {
+                    enrichedProgress[dayKey] = {};
+                }
+                enrichedProgress[dayKey]['baca_alquran_buku'] = true;
+            }
+        });
+    }
+
+    const progress = enrichedProgress;
     const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
 
     const logoBase64 = hospital?.logo;
@@ -450,7 +493,51 @@ interface CeklisMutabaahViewProps {
 
 const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack }) => {
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);
-    const progress = useMemo(() => employee.monthlyActivities?.[monthKey] || {}, [employee, monthKey]);
+
+    // 🔥 FIX: Enrich progress data
+    const progress = useMemo(() => {
+        const baseProgress = employee.monthlyActivities?.[monthKey] || {};
+        const enriched = { ...baseProgress };
+
+        // 1. Sync Manual Reports
+        const monthlyReports = (employee as any)._monthlyReportsDataCache?.[monthKey] || {};
+        Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
+            if (!enriched[dayKey]) {
+                enriched[dayKey] = {};
+            }
+            Object.assign(enriched[dayKey], dayData);
+        });
+
+        // 2. Sync Reading History (Books)
+        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+            employee.readingHistory.forEach(history => {
+                const date = history.dateCompleted;
+                if (date.startsWith(monthKey)) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enriched[dayKey]) {
+                        enriched[dayKey] = {};
+                    }
+                    enriched[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        // 3. Sync Quran History
+        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+            employee.quranReadingHistory.forEach((history: any) => {
+                const date = history.date;
+                if (date.startsWith(monthKey)) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enriched[dayKey]) {
+                        enriched[dayKey] = {};
+                    }
+                    enriched[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        return enriched;
+    }, [employee, monthKey]);
     const daysInMonth = useMemo(() => new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate(), [selectedMonth]);
     const today = useMemo(() => new Date(), []);
     const todayDay = today.getDate().toString().padStart(2, '0');
@@ -781,8 +868,53 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);
 
+    // 🔥 FIX: Enrich progress data for Transcript
+    const enrichedProgress = useMemo(() => {
+        const baseProgress = employee.monthlyActivities?.[monthKey] || {};
+        const enriched = { ...baseProgress };
+
+        // 1. Sync Manual Reports
+        const monthlyReports = (employee as any)._monthlyReportsDataCache?.[monthKey] || {};
+        Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
+            if (!enriched[dayKey]) {
+                enriched[dayKey] = {};
+            }
+            Object.assign(enriched[dayKey], dayData);
+        });
+
+        // 2. Sync Reading History (Books)
+        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
+            employee.readingHistory.forEach(history => {
+                const date = history.dateCompleted;
+                if (date.startsWith(monthKey)) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enriched[dayKey]) {
+                        enriched[dayKey] = {};
+                    }
+                    enriched[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        // 3. Sync Quran History
+        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
+            employee.quranReadingHistory.forEach((history: any) => {
+                const date = history.date;
+                if (date.startsWith(monthKey)) {
+                    const dayKey = date.substring(8, 10);
+                    if (!enriched[dayKey]) {
+                        enriched[dayKey] = {};
+                    }
+                    enriched[dayKey]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        return enriched;
+    }, [employee, monthKey]);
+
     const performanceData = useMemo(() => {
-        const monthProgress = employee.monthlyActivities?.[monthKey] || {};
+        const monthProgress = enrichedProgress;
         const categories: Record<string, {
             name: string;
             details: {
@@ -835,7 +967,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
         const ipForMonth = categoryResults.length > 0 ? totalBobot / categoryResults.length : 0;
 
         return { categories: categoryResults, ipForMonth };
-    }, [employee.monthlyActivities, monthKey, dailyActivitiesConfig]);
+    }, [enrichedProgress, dailyActivitiesConfig]);
 
     const { signatory } = useMemo(() => {
         const allUsersList = Object.values(allUsersData).map(d => d.employee);

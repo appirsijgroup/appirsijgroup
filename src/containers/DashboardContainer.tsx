@@ -185,6 +185,13 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     }, [setAllUsersData, setLoggedInEmployee]); // 🔥 FIX: Remove loggedInEmployee from deps
 
+    // 🔥 FIX: Trigger monthly reports refresh on load and when employee changes
+    useEffect(() => {
+        if (loggedInEmployee?.id) {
+            refreshMonthlyReportsData(loggedInEmployee.id);
+        }
+    }, [loggedInEmployee?.id, refreshMonthlyReportsData]);
+
     // --- Handlers from App.tsx ---
 
     const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Employee>): Promise<boolean> => {
@@ -1114,6 +1121,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onActivateMonth={handleActivateMonth}
             onUpdateMonthlyActivities={handleUpdateMonthlyActivities}
             onSubmitReport={handleSubmitWeeklyReport}
+            onLoadEmployees={loadAllEmployees} // 🔥 FIX: Pass loadAllEmployees so MyDashboard can trigger it
+            isLoadingEmployees={isLoadingEmployees} // 🔥 FIX: Pass loading state
             // ...
             weeklyReportSubmissions={weeklyReportSubmissions}
             onReviewReport={async (id, decision, notes, reviewerRole) => {
@@ -1209,8 +1218,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onLogAudit={logAudit}
             onCreateAnnouncement={(data: any, imageFile?: File, documentFile?: File) => addAnnouncement({ ...data, authorId: loggedInEmployee.id, authorName: loggedInEmployee.name }, imageFile, documentFile)}
             onDeleteAnnouncement={deleteAnnouncement}
-            onLoadEmployees={loadAllEmployees}
-            isLoadingEmployees={isLoadingEmployees}
+
             history={allUsersData[loggedInEmployee.id]?.history || []}
             attendance={allUsersData[loggedInEmployee.id]?.attendance}
             sunnahIbadahList={sunnahIbadahList}

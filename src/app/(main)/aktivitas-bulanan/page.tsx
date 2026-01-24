@@ -209,11 +209,53 @@ export default function AktivitasBulananPage() {
         );
     }
 
+    // 🔥 FIX: Enrich progress data with Cache and Attendance (Sholat)
+    const enrichedMonthlyProgressData = React.useMemo(() => {
+        // 1. Start with base data from Mutabaah Context
+        const data = JSON.parse(JSON.stringify(monthlyProgressData || {}));
+
+        if (!loggedInEmployee) return data;
+
+        // 2. Merge _monthlyReportsDataCache (from Dashboard logic - Team Sessions, Manual Reports)
+        const cache = (loggedInEmployee as any)?._monthlyReportsDataCache || {};
+        Object.keys(cache).forEach(monthKey => {
+            if (!data[monthKey]) data[monthKey] = {};
+
+            const monthCache = cache[monthKey];
+            Object.keys(monthCache).forEach(dayKey => {
+                if (!data[monthKey][dayKey]) data[monthKey][dayKey] = {};
+                Object.assign(data[monthKey][dayKey], monthCache[dayKey]);
+            });
+        });
+
+        // 3. Merge Attendance from allUsersData (Sholat 5 Waktu)
+        // This covers cases where cache might be stale or missing (e.g. page refresh)
+        const userAttendance = allUsersData[loggedInEmployee.id]?.attendance;
+        if (userAttendance) {
+            Object.values(userAttendance).forEach((record: any) => {
+                // Only count 'hadir' status
+                if (record.status === 'hadir' && record.timestamp) {
+                    const d = new Date(record.timestamp);
+                    const mKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+                    const dKey = d.getDate().toString().padStart(2, '0');
+
+                    if (!data[mKey]) data[mKey] = {};
+                    if (!data[mKey][dKey]) data[mKey][dKey] = {};
+
+                    // Mark shalat_berjamaah as done
+                    data[mKey][dKey]['shalat_berjamaah'] = true;
+                }
+            });
+        }
+
+        return data;
+    }, [monthlyProgressData, loggedInEmployee, allUsersData]);
+
     return (
         <MonthlyActivities
             employee={loggedInEmployee}
             allUsers={Object.values(allUsersData).map(data => data.employee)}
-            monthlyProgressData={monthlyProgressData || {}}
+            monthlyProgressData={enrichedMonthlyProgressData}
             onUpdate={handleUpdateMonthlyActivities}
             onActivateMonth={handleActivateMonth}
             weeklyReportSubmissions={weeklyReportSubmissions}

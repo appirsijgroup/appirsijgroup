@@ -55,7 +55,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                             locationName = city.lokasi;
                         }
                     }
-                } catch (geoError: unknown) {
+                } catch {
                     // We can still try to show prayer times from profile, but Qibla might be off.
                     if (!coordsForQibla) {
                         setError("Gagal mendapatkan lokasi GPS. Arah Kiblat mungkin tidak akurat.");
@@ -86,8 +86,9 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
                 } else {
                     throw new Error(`Jadwal sholat untuk lokasi ${locationName || `ID ${locationId}`} tidak dapat dimuat.`);
                 }
-            } catch (fetchError: any) {
-                setError(prev => prev ? `${prev}\n${fetchError.message}` : `Gagal memuat jadwal sholat: ${fetchError.message}.`);
+            } catch (fetchError: unknown) {
+                const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+                setError(prev => prev ? `${prev}\n${errorMessage}` : `Gagal memuat jadwal sholat: ${errorMessage}.`);
             } finally {
                 setIsLoading(false);
             }
@@ -95,26 +96,32 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
 
         getInitialData();
 
-        // Start camera for AR view
+    }, [employee]);
+
+    // Separate effect for camera to avoid dependency issues and unnecessary restarts
+    useEffect(() => {
+        let stream: MediaStream | null = null;
+
         const startCamera = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 setCameraStream(stream);
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
                 }
-            } catch (err) {
+            } catch {
                 setError(prev => prev ? prev + "\nKamera belakang tidak dapat diakses untuk tampilan AR." : "Kamera belakang tidak dapat diakses untuk tampilan AR.");
             }
         };
+
         startCamera();
 
-        // Cleanup camera stream
         return () => {
-            cameraStream?.getTracks().forEach(track => track.stop());
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
         };
-
-    }, [employee]);
+    }, []);
 
     // Effect for calculating Qibla direction
     useEffect(() => {
@@ -137,7 +144,7 @@ const JadwalSholat: React.FC<{ employee: Employee }> = ({ employee }) => {
         const handleOrientation = (event: DeviceOrientationEvent) => {
             let heading = 0;
             // 'webkitCompassHeading' is for iOS Safari
-            const webkitHeading = (event as any).webkitCompassHeading;
+            const webkitHeading = (event as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
             if (webkitHeading !== undefined && webkitHeading !== null) {
                 heading = -webkitHeading; // iOS direction is opposite
             } else if (event.alpha !== null) {

@@ -226,10 +226,16 @@ export default function AdminPage() {
 
             // Update local state
             setAllUsersData((prev) => {
+                if (!prev[userId]) return prev;
                 const newData = { ...prev };
-                if (newData[userId]) {
-                    newData[userId].employee.role = newRole;
-                }
+                newData[userId] = {
+                    ...prev[userId],
+                    employee: {
+                        ...prev[userId].employee,
+                        role: newRole
+                    }
+                };
+
                 if (loggedInEmployee) {
                     logAudit({
                         adminId: loggedInEmployee.id,
@@ -534,15 +540,22 @@ export default function AdminPage() {
 
             // Update local state
             setAllUsersData((prev) => {
+                if (!prev[userId]) return prev;
                 const newData = { ...prev };
-                if (newData[userId]) {
-                    newData[userId].employee = {
-                        ...newData[userId].employee,
+                newData[userId] = {
+                    ...prev[userId],
+                    employee: {
+                        ...prev[userId].employee,
                         ...updates
-                    };
-                }
+                    }
+                };
                 return newData;
             });
+
+            // Show generic success toast if no functional roles toast is shown later
+            if (!('functionalRoles' in updates)) {
+                addToast('✅ Pengaturan profil berhasil disimpan!', 'success');
+            }
 
             // 🔥 FIX: Create notification if functional roles changed
             if ('functionalRoles' in updates && updates.functionalRoles) {
@@ -637,6 +650,8 @@ export default function AdminPage() {
             return true;
         } catch (error) {
             // Don't throw error here, just return false so the calling component can handle it
+            console.error('Failed to update profile:', error);
+            addToast('❌ Gagal menyimpan pengaturan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             return false;
         }
     };

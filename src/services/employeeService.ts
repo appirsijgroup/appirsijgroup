@@ -36,7 +36,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         todoList: emp.todo_list || [], // Default to empty array if not exists
         signature: emp.signature,
         lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
-        managedHospitalIds: emp.managed_hospital_ids,
+        managedHospitalIds: emp.managed_hospital_ids || [],
         mustChangePassword: emp.must_change_password,
         hospitalId: emp.hospital_id,
         professionCategory: emp.profession_category,

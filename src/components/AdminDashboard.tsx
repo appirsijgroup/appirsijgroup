@@ -25,7 +25,8 @@ import {
     Building2,
     PlusCircle,
     Trash2,
-    RefreshCw
+    RefreshCw,
+    Check
 } from 'lucide-react';
 import { availableIconsForSunnah } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
@@ -3249,16 +3250,19 @@ interface ManageAdminAccessModalProps {
 
 const ManageAdminAccessModal: React.FC<ManageAdminAccessModalProps> = ({ isOpen, onClose, onSave, user, availableHospitals }) => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen && user) {
             setSelectedIds(new Set(user.managedHospitalIds || []));
+            setIsSaving(false);
         }
     }, [isOpen, user]);
 
     if (!isOpen || !user) return null;
 
     const handleToggle = (hospitalId: string) => {
+        if (isSaving) return;
         setSelectedIds(prev => {
             const newSet = new Set(prev);
             if (newSet.has(hospitalId)) {
@@ -3270,37 +3274,76 @@ const ManageAdminAccessModal: React.FC<ManageAdminAccessModalProps> = ({ isOpen,
         });
     };
 
-    const handleSave = () => {
-        onSave(Array.from(selectedIds));
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const success = await onSave(Array.from(selectedIds));
+            if (success) {
+                onClose();
+            }
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-60">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
-                <h3 className="text-lg font-bold text-white">Kelola Akses Rumah Sakit</h3>
+                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
+                    <ShieldCheck className="w-6 h-6 text-teal-400" />
+                    Kelola Akses Rumah Sakit
+                </h3>
                 <p className="text-blue-200 mb-4">Pilih rumah sakit yang dapat dikelola oleh <strong className="text-teal-300">{user.name}</strong>.</p>
 
-                <div className="max-h-80 overflow-y-auto space-y-2 p-2 bg-black/20 rounded-lg">
+                <div className="max-h-[50vh] overflow-y-auto space-y-2 p-2 bg-black/20 rounded-lg custom-scrollbar">
                     {availableHospitals.map(hospital => (
-                        <label key={hospital.id} className="flex items-center space-x-3 p-2.5 rounded-md hover:bg-white/10 cursor-pointer">
+                        <label
+                            key={hospital.id}
+                            className={`flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedIds.has(hospital.id)
+                                ? 'bg-teal-500/20 border-teal-500/50 text-teal-100'
+                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                }`}
+                        >
                             <input
                                 type="checkbox"
                                 checked={selectedIds.has(hospital.id)}
                                 onChange={() => handleToggle(hospital.id)}
-                                className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
+                                disabled={isSaving}
+                                className="w-5 h-5 rounded border-gray-500 text-teal-500 focus:ring-teal-500 focus:ring-offset-gray-800 disabled:opacity-50"
                             />
-                            <div>
-                                <span className="text-white font-medium">{hospital.name}</span>
-                                <span className="text-xs text-gray-400 block">({hospital.brand})</span>
+                            <div className="grow">
+                                <span className="text-white font-semibold block">{hospital.name}</span>
+                                <span className="text-xs opacity-60 block uppercase tracking-wider">{hospital.brand}</span>
                             </div>
+                            {selectedIds.has(hospital.id) && <Check className="w-5 h-5 text-teal-400" />}
                         </label>
                     ))}
                     {availableHospitals.length === 0 && <p className="text-center text-gray-400 p-4">Tidak ada rumah sakit yang tersedia untuk dikelola.</p>}
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                    <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan Akses</button>
+                <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        disabled={isSaving}
+                        className="px-6 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 font-semibold text-white transition-colors disabled:opacity-50"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 font-bold text-gray-900 transition-all flex items-center justify-center gap-2 min-w-[140px] disabled:opacity-50"
+                    >
+                        {isSaving ? (
+                            <>
+                                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Menyimpan...
+                            </>
+                        ) : 'Simpan Akses'}
+                    </button>
                 </div>
             </div>
         </div>,
@@ -3540,17 +3583,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     };
 
-    const handleUpdateAdminAccess = (hospitalIds: string[]) => {
-        if (!managingAccessFor) return;
-        onUpdateProfile(managingAccessFor.id, { managedHospitalIds: hospitalIds });
-        onLogAudit({
-            adminId: loggedInEmployee.id,
-            adminName: loggedInEmployee.name,
-            action: 'Perbarui Akses Admin',
-            target: `User: ${managingAccessFor.name} (${managingAccessFor.id})`,
-            reason: `Mengatur akses ke RS: ${hospitalIds.join(', ') || 'Tidak ada'}`,
-        });
-        setManagingAccessFor(null);
+    const handleUpdateAdminAccess = async (hospitalIds: string[]) => {
+        if (!managingAccessFor) return false;
+        const success = await onUpdateProfile(managingAccessFor.id, { managedHospitalIds: hospitalIds });
+
+        if (success) {
+            onLogAudit({
+                adminId: loggedInEmployee.id,
+                adminName: loggedInEmployee.name,
+                action: 'Perbarui Akses Admin',
+                target: `User: ${managingAccessFor.name} (${managingAccessFor.id})`,
+                reason: `Mengatur akses ke RS: ${hospitalIds.join(', ') || 'Tidak ada'}`,
+            });
+            return true;
+        }
+        return false;
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

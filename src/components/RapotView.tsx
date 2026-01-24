@@ -251,15 +251,6 @@ const generateChecklistPdf = (
     const baseProgress = employee.monthlyActivities?.[monthKey] || {};
     const enrichedProgress = { ...baseProgress };
 
-    // 1. Sync from _monthlyReportsDataCache (This contains manual reports, team attendance, AND daily attendance/sholat)
-    const monthlyReports = (employee as any)._monthlyReportsDataCache?.[monthKey] || {};
-    Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
-        if (!enrichedProgress[dayKey]) {
-            enrichedProgress[dayKey] = {};
-        }
-        Object.assign(enrichedProgress[dayKey], dayData);
-    });
-
     // 2. Sync Reading History (Books)
     if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
         employee.readingHistory.forEach(history => {
@@ -498,15 +489,6 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
     const progress = useMemo(() => {
         const baseProgress = employee.monthlyActivities?.[monthKey] || {};
         const enriched = { ...baseProgress };
-
-        // 1. Sync Manual Reports
-        const monthlyReports = (employee as any)._monthlyReportsDataCache?.[monthKey] || {};
-        Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
-            if (!enriched[dayKey]) {
-                enriched[dayKey] = {};
-            }
-            Object.assign(enriched[dayKey], dayData);
-        });
 
         // 2. Sync Reading History (Books)
         if (employee.readingHistory && Array.isArray(employee.readingHistory)) {

@@ -7,6 +7,7 @@ import {
     useAppDataStore,
     useUIStore
 } from '@/store/store';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useAuditLogStore } from '@/store/auditLogStore';
@@ -30,7 +31,7 @@ interface AktivitasSayaContainerProps {
 }
 
 const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initialTab }) => {
-    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee } = useAppDataStore();
+    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, loadDetailedEmployeeData } = useAppDataStore();
     const { addToast } = useUIStore();
     // Note: Navigation handled by useRouter
 
@@ -57,6 +58,16 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     // Sync old team attendance data to monthlyActivities
     const [hasSyncedOldAttendance, setHasSyncedOldAttendance] = useState(false);
     const isSyncingRef = useRef(false);
+
+    // 🔥 NEW: Trigger detailed data loading on mount
+    // This ensures that even if user navigates directly to this page, data is refreshed
+    useEffect(() => {
+        if (loggedInEmployee?.id) {
+            loadDetailedEmployeeData(loggedInEmployee.id).catch(err => {
+                console.error('⚠️ [AktivitasSayaContainer] Pre-load failed:', err);
+            });
+        }
+    }, [loggedInEmployee?.id, loadDetailedEmployeeData]);
 
     // --- Handlers ---
     const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Omit<Employee, 'id' | 'password'>>) => {

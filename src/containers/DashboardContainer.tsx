@@ -18,7 +18,8 @@ import { useAnnouncementStore } from '@/store/announcementStore';
 import { useHospitalStore } from '@/store/hospitalStore';
 import { PRAYERS } from '@/data/prayers';
 import { getBalancedWeeks } from '@/utils/dateUtils';
-import { updateEmployee, getEmployeeById } from '@/services/employeeService';
+import { updateEmployee, getEmployeeById, getEmployeesByMentorId } from '@/services/employeeService';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 import type {
     TadarusRequest,
     MissedPrayerRequest,
@@ -33,7 +34,7 @@ interface DashboardContainerProps {
 
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) => {
     const router = useRouter();
-    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, activityStatsRefreshCounter, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
+    const { loggedInEmployee, setAllUsersData, allUsersData, setLoggedInEmployee, activityStatsRefreshCounter, loadAllEmployees, isLoadingEmployees, loadDetailedEmployeeData } = useAppDataStore();
     const { addToast } = useUIStore();
     // Note: Navigation handled by useRouter
 
@@ -75,116 +76,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     const [monthlyReportsRefreshCounter, setMonthlyReportsRefreshCounter] = useState(0);
 
     // 🔥 NEW: Function to refresh monthly reports data
-    const refreshMonthlyReportsData = useCallback(async (employeeId: string) => {
-        if (!employeeId) {
-            // console.warn('⚠️ [DashboardContainer] refreshMonthlyReportsData called without employeeId');
-            return;
-        }
-        try {
-            // 1. Load employee_monthly_reports data (manual counter activities)
-            const { convertMonthlyReportsToActivities } = await import('@/services/monthlyReportService');
-            const monthlyReportsActivities = await convertMonthlyReportsToActivities(employeeId);
-
-            // 2. Load tadarus sessions data
-            const { convertTadarusSessionsToActivities } = await import('@/services/tadarusService');
-            const tadarusActivities = await convertTadarusSessionsToActivities(employeeId);
-
-            // 3. Load team attendance data (KIE, Doa Bersama)
-            const { convertTeamAttendanceToActivities } = await import('@/services/teamAttendanceService');
-            const teamAttendanceActivities = await convertTeamAttendanceToActivities(employeeId);
-
-            // Merge all data sources
-            const mergedActivities = { ...monthlyReportsActivities };
-
-            // Merge tadarus data
-            Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
-                if (!mergedActivities[monthKey]) {
-                    mergedActivities[monthKey] = {};
-                }
-                Object.entries(monthData).forEach(([dayKey, dayData]) => {
-                    if (!mergedActivities[monthKey][dayKey]) {
-                        mergedActivities[monthKey][dayKey] = {};
-                    }
-                    Object.assign(mergedActivities[monthKey][dayKey], dayData);
-                });
-            });
-
-            // Merge team attendance data
-            Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
-                if (!mergedActivities[monthKey]) {
-                    mergedActivities[monthKey] = {};
-                }
-                Object.entries(monthData).forEach(([dayKey, dayData]) => {
-                    if (!mergedActivities[monthKey][dayKey]) {
-                        mergedActivities[monthKey][dayKey] = {};
-                    }
-                    Object.assign(mergedActivities[monthKey][dayKey], dayData);
-                });
-            });
-
-            // 4. Load attendance data (Sholat Lima Waktu from Presensi Harian)
-            try {
-                const { getEmployeeAttendance } = await import('@/services/attendanceService');
-                const attendanceRecords = await getEmployeeAttendance(employeeId);
-
-                Object.entries(attendanceRecords).forEach(([, record]) => {
-                    if (record.status !== 'hadir') return;
-
-                    const attendanceDate = new Date(record.timestamp);
-                    const year = attendanceDate.getFullYear();
-                    const month = (attendanceDate.getMonth() + 1).toString().padStart(2, '0');
-                    const dayOfMonth = attendanceDate.getDate();
-                    const dayKey = dayOfMonth.toString().padStart(2, '0');
-                    const monthKey = `${year}-${month}`;
-
-                    if (!mergedActivities[monthKey]) {
-                        mergedActivities[monthKey] = {};
-                    }
-                    if (!mergedActivities[monthKey][dayKey]) {
-                        mergedActivities[monthKey][dayKey] = {};
-                    }
-
-                    // Mark shalat_berjamaah as done for this day
-                    mergedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
-                });
-            } catch (error) {
-                console.error('Error syncing attendance to activities:', error);
-            }
-
-            // Update both allUsersData and loggedInEmployee
-            setAllUsersData(prev => {
-                // ⚠️ CRITICAL: Check if prev[employeeId] exists to avoid errors
-                if (!prev[employeeId]) {
-                    return prev;
-                }
-
-                return {
-                    ...prev,
-                    [employeeId]: {
-                        ...prev[employeeId],
-                        employee: {
-                            ...prev[employeeId].employee,
-                            // 🔥 FIX: Update the standard monthlyActivities property so UI components see the fresh data
-                            // This ensures Mentor sees the REAL data populated from all sources
-                            monthlyActivities: mergedActivities
-                        }
-                    }
-                };
-            });
-
-            // Update loggedInEmployee if it's the current user
-            if (loggedInEmployee && loggedInEmployee.id === employeeId) {
-                setLoggedInEmployee({
-                    ...loggedInEmployee,
-                    monthlyActivities: mergedActivities
-                });
-            }
-
-            // 🔥 FIX: Don't increment counter here to avoid infinite loop!
-        } catch (error) {
-            console.error('Error refreshing monthly reports data:', error);
-        }
-    }, [setAllUsersData, setLoggedInEmployee]); // 🔥 FIX: Remove loggedInEmployee from deps
+    const refreshMonthlyReportsData = loadDetailedEmployeeData;
 
     // 🔥 FIX: Trigger monthly reports refresh on load and when employee changes
     useEffect(() => {

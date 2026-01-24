@@ -81,27 +81,12 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }, []); // Empty deps - only compute once per component mount
 
-    // 🔥 FIX: Memoize monthly reports data with stable dependencies
-    const monthlyReportsData = React.useMemo(() => {
-        return (employee as any)._monthlyReportsDataCache?.[currentMonthKey] || {};
-    }, [employee?.id, currentMonthKey, (employee as any)._monthlyReportsDataCache]); // 🔥 Added cache to deps
+    // 🔥 FIX: Data is now already pre-aggregated in monthlyActivities by loadDetailedEmployeeData
 
     const { performanceData, monthlyStats } = useMemo(() => {
 
         const monthProgress = employee.monthlyActivities?.[currentMonthKey] || {};
-
-        // 🔥 FIX: Merge manual activities with automation data (Reading & Quran history)
-        // This ensures "Membaca Al-Quran dan buku" is synced from history tables
         const enrichedMonthProgress = { ...monthProgress };
-
-        // 🔥 NEW: Also include data from employee_monthly_reports table (manual counter activities)
-        // Use the stable monthlyReportsData from outer useMemo
-        Object.entries(monthlyReportsData).forEach(([dayKey, dayData]: [string, any]) => {
-            if (!enrichedMonthProgress[dayKey]) {
-                enrichedMonthProgress[dayKey] = {};
-            }
-            Object.assign(enrichedMonthProgress[dayKey], dayData);
-        });
 
         // 1. Sync Reading History (Books)
         if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
@@ -192,7 +177,6 @@ const KinerjaView: React.FC<{ employee: Employee, dailyActivitiesConfig: DailyAc
         return { performanceData: categoryResults, monthlyStats: statsForCards };
     }, [
         currentMonthKey,
-        monthlyReportsData,
         employee?.monthlyActivities,
         dailyActivitiesConfig,
         employee?.readingHistory,

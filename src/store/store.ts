@@ -24,6 +24,7 @@ export interface AppDataState {
     isLoggingOut: boolean; // Flag to prevent loading flash during logout
     isLoadingEmployees: boolean; // 🔥 NEW: Flag to prevent concurrent employee loading
     activityStatsRefreshCounter: number; // 🔥 NEW: Counter untuk trigger refresh activity stats di Dashboard
+    lastDetailedLoad: Record<string, number>; // 🔥 NEW: Track last detailed load per user to prevent loops
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
@@ -45,6 +46,7 @@ export interface AppDataState {
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
     refreshActivityStats: () => void; // 🔥 NEW: Trigger refresh activity stats setelah attendance submission
+    loadDetailedEmployeeData: (employeeId: string) => Promise<void>; // 🔥 NEW: Centralized detailed data loading
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -55,6 +57,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     isLoggingOut: false, // Start not logging out
     isLoadingEmployees: false, // 🔥 NEW: Flag to prevent concurrent employee loading
     activityStatsRefreshCounter: 0, // 🔥 NEW: Counter untuk trigger refresh
+    lastDetailedLoad: {}, // 🔥 NEW: Track last detailed load
     paginatedEmployees: [],
     paginationInfo: null,
 
@@ -110,6 +113,11 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                         isHydrated: true
                     }));
 
+                    // 🔥 NEW: Trigger detailed data loading (Mutabaah, Tadarus, etc.)
+                    // This pre-loads all supporting data for "Aktifitas Saya" menu
+                    get().loadDetailedEmployeeData(employee.id).catch(err => {
+                        console.error('⚠️ [AppDataStore] Failed to pre-load detailed data:', err);
+                    });
 
                     // 🚀 OPTIMIZATION: Automatically load all employees ONLY for managers/admins
                     // This ensures Mentors, Supervisors, etc. have the data they need for their team
@@ -407,6 +415,116 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         } catch (error) {
             console.error('❌ [markAnnouncementAsRead] Error persisting to Supabase:', error);
             // Optionally rollback state if needed, but for unread status it's not critical
+        }
+    },
+
+    // 🔥 NEW: Centralized detailed data loading logic (Previously scattered in containers)
+    // Aggregates data from multiple sources: Reports, Tadarus, Team Attendance, and Presensi
+    loadDetailedEmployeeData: async (employeeId: string) => {
+        if (!employeeId) return;
+
+        // 🧠 OPTIMIZATION: Prevent redundant loading within 30 seconds
+        const now = Date.now();
+        const lastLoad = get().lastDetailedLoad[employeeId] || 0;
+        if (now - lastLoad < 30000) {
+            console.log(`🚀 [AppDataStore] Skipping detailed load for ${employeeId} (Fresh data exists)`);
+            return;
+        }
+
+        try {
+            // Import services dynamically to keep initial bundle small
+            const [
+                { convertMonthlyReportsToActivities },
+                { convertTadarusSessionsToActivities },
+                { convertTeamAttendanceToActivities },
+                { getEmployeeAttendance }
+            ] = await Promise.all([
+                import('@/services/monthlyReportService'),
+                import('@/services/tadarusService'),
+                import('@/services/teamAttendanceService'),
+                import('@/services/attendanceService')
+            ]);
+
+            // 1. Fetch all data sources in parallel
+            const [
+                monthlyReportsActivities,
+                tadarusActivities,
+                teamAttendanceActivities,
+                attendanceRecords
+            ] = await Promise.all([
+                convertMonthlyReportsToActivities(employeeId),
+                convertTadarusSessionsToActivities(employeeId),
+                convertTeamAttendanceToActivities(employeeId),
+                getEmployeeAttendance(employeeId).catch(() => ({}) as any)
+            ]);
+
+            // 2. Merge all data sources into a single activity structure
+            const mergedActivities = { ...monthlyReportsActivities };
+
+            // Merge Tadarus data
+            Object.entries(tadarusActivities).forEach(([monthKey, monthData]) => {
+                if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+                Object.entries(monthData as any).forEach(([dayKey, dayData]) => {
+                    if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+                    Object.assign(mergedActivities[monthKey][dayKey], dayData as any);
+                });
+            });
+
+            // Merge Team Attendance data
+            Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
+                if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+                Object.entries(monthData as any).forEach(([dayKey, dayData]) => {
+                    if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+                    Object.assign(mergedActivities[monthKey][dayKey], dayData as any);
+                });
+            });
+
+            // Merge Sholat/Attendance data
+            Object.entries(attendanceRecords).forEach(([, record]: [any, any]) => {
+                if (record.status !== 'hadir') return;
+
+                const attendanceDate = new Date(record.timestamp);
+                const year = attendanceDate.getFullYear();
+                const month = (attendanceDate.getMonth() + 1).toString().padStart(2, '0');
+                const dayOfMonth = attendanceDate.getDate();
+                const dayKey = dayOfMonth.toString().padStart(2, '0');
+                const monthKey = `${year}-${month}`;
+
+                if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+                if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+
+                mergedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
+            });
+
+            // 3. Update both store states for consistency
+            set(state => {
+                const newData = { ...state.allUsersData };
+                if (newData[employeeId]) {
+                    newData[employeeId] = {
+                        ...newData[employeeId],
+                        employee: {
+                            ...newData[employeeId].employee,
+                            monthlyActivities: mergedActivities
+                        }
+                    };
+                }
+
+                const updatedLoggedInEmployee = (state.loggedInEmployee && state.loggedInEmployee.id === employeeId)
+                    ? { ...state.loggedInEmployee, monthlyActivities: mergedActivities }
+                    : state.loggedInEmployee;
+
+                return {
+                    allUsersData: newData,
+                    loggedInEmployee: updatedLoggedInEmployee,
+                    lastDetailedLoad: {
+                        ...state.lastDetailedLoad,
+                        [employeeId]: now
+                    }
+                };
+            });
+
+        } catch (error) {
+            console.error('❌ [loadDetailedEmployeeData] Error aggregating data:', error);
         }
     },
 }));

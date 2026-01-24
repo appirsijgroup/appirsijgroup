@@ -6,6 +6,11 @@ export interface ServerTimeResponse {
 
 export const getServerTime = async (): Promise<Date> => {
   try {
+    // 🔥 FIX: Prevent relative fetch on server-side
+    if (typeof window === 'undefined') {
+      return new Date();
+    }
+
     // Make a request to the server to get accurate time
     const response = await fetch('/api/time', {
       method: 'GET',

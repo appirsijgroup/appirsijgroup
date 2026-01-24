@@ -819,6 +819,27 @@ export default function AdminPage() {
         <>
             <AdminDashboard
                 allUsersData={allUsersData}
+                // Pagination & Data Props
+                paginatedEmployees={paginatedEmployees}
+                paginationInfo={paginationInfo}
+                onLoadEmployees={loadEmployeesOnDemand}
+                isLoadingEmployees={isLoadingEmployees}
+                pagination={{
+                    currentPage: page,
+                    totalPages: totalPages,
+                    totalCount: totalCount,
+                    hasNext: page < totalPages,
+                    hasPrev: page > 1,
+                    onNext: handleNextPage,
+                    onPrev: handlePrevPage,
+                    onSearch: handleSearch,
+                    onRoleFilter: handleRoleFilter,
+                    onIsActiveFilter: handleIsActiveFilter,
+                    onRefresh: handleRefresh,
+                    searchTerm: searchTerm,
+                    roleFilter: roleFilter,
+                    isActiveFilter: isActiveFilter,
+                }}
                 loggedInEmployee={loggedInEmployee}
                 onToggleStatus={handleToggleStatus}
                 onSetRole={handleSetRole}

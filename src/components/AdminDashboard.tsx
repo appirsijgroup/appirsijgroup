@@ -1675,9 +1675,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     const isActivityRecord = currentActivityMap.has(entityId);
 
                     if (reportType === 'prayer' && !isPrayerRecord) return;
-                    if (reportType === 'activity' && !isActivityRecord) return;
+                    if (reportType === 'activity' && isPrayerRecord) return; // Only exclude prayers in activity report
 
-                    const entityName = currentPrayerMap.get(entityId) || currentActivityMap.get(entityId) || 'Data Dihapus';
+                    // 🔥 FIX: Use entityId as fallback name for dynamic types (KIE, BBQ, etc)
+                    const entityName = currentPrayerMap.get(entityId) || currentActivityMap.get(entityId) || entityId;
 
                     if (att.submitted && att.status && att.timestamp) {
                         records.push({

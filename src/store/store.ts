@@ -232,8 +232,15 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             const allEmployees = await getAllEmployees(limit);
 
             // 2. Fetch all attendance records in BULK
-            const { getAllAttendanceRecords } = await import('@/services/attendanceService');
-            const allAttendanceRecords = await getAllAttendanceRecords();
+            const { getAllAttendanceRecords, supabase } = await import('@/services/attendanceService');
+            const [allAttendanceRecords, teamRecordsRes, activityRecordsRes] = await Promise.all([
+                getAllAttendanceRecords(),
+                supabase.from('team_attendance_records').select('*'),
+                supabase.from('activity_attendance').select('*')
+            ]);
+
+            const extraTeamRecords = teamRecordsRes.data || [];
+            const extraActivityRecords = activityRecordsRes.data || [];
 
             // 3. Fetch all monthly activities in BULK (Admin only API)
             let allMonthlyActivities: Record<string, any> = {};
@@ -244,34 +251,37 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 if (response.ok) {
                     const data = await response.json();
                     allMonthlyActivities = data.allActivities || {};
-                    // console.log('📦 [loadAllEmployees] Bulk activities loaded for', Object.keys(allMonthlyActivities).length, 'users');
-                } else {
-                    console.error('⚠️ [loadAllEmployees] Bulk API error:', response.status);
                 }
             } catch (error) {
                 console.error('⚠️ [loadAllEmployees] Failed to fetch bulk monthly activities:', error);
             }
 
             const newData: Record<string, UserData> = {};
+            const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
 
-            for (const emp of allEmployees) {
-                // Get attendance for this emp from bulk data
-                const records = allAttendanceRecords[emp.id] || {};
-                const attendanceData: Attendance = {};
+            // Helper to merge record into user data (attendance or history)
+            const mergeRecordToUser = (userId: string, entityId: string, data: any) => {
+                if (!newData[userId]) return; // Should not happen if filtered by employee list, but safe guard pending loop
 
-                Object.entries(records).forEach(([entityId, record]: [string, any]) => {
-                    if (record && record.status) {
-                        attendanceData[entityId] = {
-                            status: record.status,
-                            reason: record.reason || null,
-                            timestamp: record.timestamp ? new Date(record.timestamp).getTime() : null,
-                            submitted: true,
-                            isLateEntry: record.is_late_entry || false
-                        };
+                const timestamp = data.timestamp;
+                if (!timestamp) return;
+
+                const recordDate = new Date(timestamp);
+                const recordDateStr = recordDate.toLocaleDateString('en-CA');
+
+                if (recordDateStr === todayStr) {
+                    newData[userId].attendance[entityId] = data;
+                } else {
+                    if (!newData[userId].history[recordDateStr]) {
+                        newData[userId].history[recordDateStr] = {};
                     }
-                });
+                    newData[userId].history[recordDateStr][entityId] = data;
+                }
+            };
 
-                // Attach monthly activities to employee object (important for reports)
+            // Initialize User Data Structure
+            for (const emp of allEmployees) {
+                // Attach monthly activities to employee object
                 const empWithActivities = {
                     ...emp,
                     monthlyActivities: allMonthlyActivities[emp.id] || {}
@@ -279,12 +289,62 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
                 newData[emp.id] = {
                     employee: empWithActivities,
-                    attendance: attendanceData,
-                    history: {}
+                    attendance: {},
+                    history: {} // Start empty, fill below
                 };
             }
 
-            // Update allUsersData
+            // 1. Process Sholat Attendance (attendance_records)
+            for (const emp of allEmployees) {
+                const records = allAttendanceRecords[emp.id] || {};
+                Object.entries(records).forEach(([entityId, record]: [string, any]) => {
+                    if (record && record.status && record.timestamp) {
+                        const data = {
+                            status: record.status,
+                            reason: record.reason || null,
+                            timestamp: new Date(record.timestamp).getTime(),
+                            submitted: true,
+                            isLateEntry: record.is_late_entry || false
+                        };
+                        mergeRecordToUser(emp.id, entityId, data);
+                    }
+                });
+            }
+
+            // 2. Process Team Attendance (KIE, Doa Bersama)
+            extraTeamRecords.forEach((record: any) => {
+                if (newData[record.user_id]) {
+                    // 🔥 FIX: Use session_type (e.g. 'KIE') as entityId so it matches Activity Name
+                    // AdminDashboard now allows unknown IDs if type='activity', and uses the ID as fallback name.
+                    // So providing "KIE" as ID will make it show "KIE".
+                    const entityId = record.session_type || record.session_id || 'Kegiatan Tim';
+
+                    const data = {
+                        status: 'hadir',
+                        reason: null,
+                        timestamp: new Date(record.attended_at).getTime(),
+                        submitted: true,
+                        isLateEntry: false
+                    };
+
+                    mergeRecordToUser(record.user_id, entityId, data);
+                }
+            });
+
+            // 3. Process Activity Attendance (Manual/General)
+            extraActivityRecords.forEach((record: any) => {
+                if (newData[record.employee_id]) {
+                    const data = {
+                        status: record.status,
+                        reason: record.reason || null,
+                        timestamp: new Date(record.submitted_at || record.created_at).getTime(),
+                        submitted: true,
+                        isLateEntry: record.is_late_entry || false
+                    };
+                    mergeRecordToUser(record.employee_id, record.activity_id, data);
+                }
+            });
+
             set({ allUsersData: newData, isLoadingEmployees: false });
         } catch (error) {
             console.error('❌ [loadAllEmployees] Error:', error);

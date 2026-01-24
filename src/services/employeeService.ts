@@ -642,3 +642,17 @@ export const syncAllEmployeesToSupabase = async (
 
     return { success, failed, errors };
 };
+
+// Get employees by mentor ID
+export const getEmployeesByMentorId = async (mentorId: string): Promise<Employee[]> => {
+    const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('mentor_id', mentorId)
+        .order('name');
+
+    if (error) throw error;
+    if (!data) return [];
+
+    return data.map((emp: any) => convertToCamelCase(emp));
+};

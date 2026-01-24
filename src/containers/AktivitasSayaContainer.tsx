@@ -164,67 +164,9 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         }
     }, [allUsersData, setAllUsersData, loggedInEmployee?.id, setLoggedInEmployee, addToast]);
 
-    const handleNavigateToReport = (monthKey: string) => {
-        // Use URL params to pass state to the page
-        window.location.href = `/aktivitas-bulanan?month=${monthKey}`;
-    };
 
-    const handleRequestTadarusAttendance = (data: Omit<TadarusRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => {
-        if (!loggedInEmployee || !loggedInEmployee.mentorId) return;
-        const newRequest: TadarusRequest = {
-            ...data,
-            id: `${data.menteeId}-${data.date}`, // simple ID generation
-            menteeName: loggedInEmployee.name,
-            requestedAt: Date.now(),
-            status: 'pending',
-        };
-        addOrUpdateTadarusRequest(newRequest);
-        createNotification({
-            userId: loggedInEmployee.mentorId,
-            type: 'tadarus_request',
-            title: 'Permintaan Kehadiran Tadarus',
-            message: `${loggedInEmployee.name} mengajukan kehadiran tadarus manual untuk tanggal ${new Date(data.date).toLocaleDateString('id-ID')}.`,
-            linkTo: { view: 'aktifitas-saya', tab: 'panel-mentor' } as any, // View type mismatch fix later
-            relatedEntityId: newRequest.id,
-        });
-        addToast('Permintaan tadarus berhasil dikirim', 'success');
-    };
 
-    const handleMenteeAttendSession = (sessionId: string) => {
-        if (!loggedInEmployee) return;
-        const menteeId = loggedInEmployee.id;
-        const session = tadarusSessions.find(s => s.id === sessionId);
 
-        if (session && !session.presentMenteeIds.includes(menteeId)) {
-            updateTadarusSession(sessionId, (s) => ({
-                ...s,
-                presentMenteeIds: [...s.presentMenteeIds, menteeId]
-            }));
-            // Logic to update mentee activity sheet (simplified)
-            addToast('Berhasil mencatat kehadiran tadarus', 'success');
-        }
-    };
-
-    const handleCreateMissedPrayerRequest = (data: Omit<MissedPrayerRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => {
-        if (!loggedInEmployee || !loggedInEmployee.mentorId) return;
-        const newRequest: MissedPrayerRequest = {
-            ...data,
-            id: `${data.menteeId}-${data.date}-${data.prayerId}`,
-            menteeName: loggedInEmployee.name,
-            requestedAt: Date.now(),
-            status: 'pending',
-        };
-        addOrUpdateMissedPrayerRequest(newRequest);
-        createNotification({
-            userId: loggedInEmployee.mentorId,
-            type: 'missed_prayer_request',
-            title: 'Permintaan Presensi Terlewat',
-            message: `${loggedInEmployee.name} meminta persetujuan untuk presensi terlewat.`,
-            linkTo: { view: 'aktifitas-saya', tab: 'panel-mentor' } as any,
-            relatedEntityId: newRequest.id,
-        });
-        addToast('Permintaan presensi terlewat berhasil dikirim', 'success');
-    };
 
     // --- Sync old team attendance data to monthlyActivities ---
     const syncOldTeamAttendanceData = useCallback(async () => {
@@ -524,67 +466,6 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         }
     }, [loggedInEmployee, handleUpdateProfile, dailyActivitiesConfig, isDateValidForMutabaahUpdate, addToast]);
 
-    const handleUpdateTodoList = useCallback(async (userId: string, todoList: Employee['todoList']) => {
-        if (!loggedInEmployee) return;
-
-        try {
-            // 🔥 FIX: DON'T update loggedInEmployee - only update allUsersData
-            // This prevents unnecessary re-renders of MainLayoutShell
-            setAllUsersData(prev => ({
-                ...prev,
-                [userId]: {
-                    ...prev[userId],
-                    employee: {
-                        ...prev[userId].employee,
-                        todoList
-                    }
-                }
-            }));
-
-            // 🔥 FIX: Save to employee_todos table using todoService
-            const { bulkUpdateEmployeeTodos } = await import('@/services/todoService');
-            await bulkUpdateEmployeeTodos(userId, todoList || []);
-
-            addToast('To-Do List berhasil diperbarui!', 'success');
-
-            // Force refresh data from Supabase to ensure consistency
-            try {
-                // Small delay to ensure Supabase has processed the update
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                const freshEmployee = await getEmployeeById(loggedInEmployee.id);
-                if (freshEmployee) {
-                    // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
-                }
-            } catch (refreshError) {
-            }
-        } catch (error) {
-            // Rollback the local state update in case of failure
-            try {
-                const freshEmployee = await getEmployeeById(loggedInEmployee.id);
-                if (freshEmployee) {
-                    // 🔥 FIX: ONLY update allUsersData, DON'T update loggedInEmployee
-                    setAllUsersData(prev => ({
-                        ...prev,
-                        [freshEmployee.id]: {
-                            ...prev[freshEmployee.id],
-                            employee: freshEmployee
-                        }
-                    }));
-                }
-            } catch (rollbackError) {
-            }
-
-            addToast('Gagal menyimpan To-Do List ke database. Silakan coba lagi.', 'error');
-        }
-    }, [loggedInEmployee?.id, setAllUsersData, addToast]);
 
     const handleReviewReport = useCallback(async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => {
         if (!loggedInEmployee) return;
@@ -631,17 +512,13 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             onDeleteReadingHistory={(type, id, date) => {
                 // Implementation would go here
             }}
-            onUpdateTodoList={handleUpdateTodoList}
             submissions={weeklyReportSubmissions}
             allUsersData={allUsersData}
             weeklyReportSubmissions={weeklyReportSubmissions}
-            onNavigateToReport={handleNavigateToReport}
+            weeklyReportSubmissions={weeklyReportSubmissions}
             tadarusRequests={tadarusRequests}
-            onTadarusRequest={handleRequestTadarusAttendance}
             tadarusSessions={tadarusSessions}
-            onMenteeAttendSession={handleMenteeAttendSession}
             missedPrayerRequests={missedPrayerRequests}
-            onCreateMissedPrayerRequest={handleCreateMissedPrayerRequest}
             onUpdateProfile={handleUpdateProfile}
             onReviewReport={handleReviewReport}
             onCreateTadarusSession={(data: any) => {

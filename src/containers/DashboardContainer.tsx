@@ -1067,12 +1067,6 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             dailyActivitiesConfig={dailyActivitiesConfig}
             submissions={weeklyReportSubmissions.filter(s => s.menteeId === loggedInEmployee.id)}
             onNavigateToReport={handleNavigateToReport}
-            menteeTadarusRequests={tadarusRequests.filter(r => r.menteeId === loggedInEmployee.id)}
-            onTadarusRequest={handleRequestTadarusAttendance}
-            tadarusSessions={tadarusSessions}
-            onMenteeAttendSession={handleMenteeAttendSession}
-            menteeMissedPrayerRequests={missedPrayerRequests.filter(r => r.menteeId === loggedInEmployee.id)}
-            onCreateMissedPrayerRequest={handleCreateMissedPrayerRequest}
             allUsersData={allUsersData}
             onUpdateProfile={handleUpdateProfile}
             allPrayers={PRAYERS}
@@ -1178,6 +1172,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onLogAudit={logAudit}
             onCreateAnnouncement={(data: any, imageFile?: File, documentFile?: File) => addAnnouncement({ ...data, authorId: loggedInEmployee.id, authorName: loggedInEmployee.name }, imageFile, documentFile)}
             onDeleteAnnouncement={deleteAnnouncement}
+            tadarusSessions={tadarusSessions}
+            loadDetailedEmployeeData={loadDetailedEmployeeData}
 
             history={allUsersData[loggedInEmployee.id]?.history || []}
             attendance={allUsersData[loggedInEmployee.id]?.attendance}

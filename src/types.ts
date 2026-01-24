@@ -140,17 +140,7 @@ export interface QuranReadingHistory {
   date: string; // YYYY-MM-DD
 }
 
-export interface ToDoItem {
-  id: string;
-  title: string;
-  notes?: string | null;
-  date?: string | null;
-  time?: string | null;
-  completed: boolean;
-  createdAt: number;
-  completedAt?: number | null;
-  completionNotes?: string | null;
-}
+
 
 export interface Hospital {
   id: string; // Could be the brand name like RSIJSP
@@ -194,7 +184,6 @@ export interface Employee extends RawEmployee {
   locationName?: string;
   readingHistory?: ReadingHistory[];
   quranReadingHistory?: QuranReadingHistory[];
-  todoList?: ToDoItem[];
   signature?: string | null;
   lastAnnouncementReadTimestamp?: number;
   managedHospitalIds?: string[];
@@ -436,13 +425,6 @@ export interface MyDashboardViewProps {
   submissions: WeeklyReportSubmission[];
   onNavigateToReport: (monthKey: string) => void;
   addToast: (message: string, type: 'success' | 'error') => void;
-  // Bimbingan Saya
-  menteeTadarusRequests: TadarusRequest[];
-  onTadarusRequest: (data: Omit<TadarusRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => void;
-  tadarusSessions: TadarusSession[];
-  onMenteeAttendSession: (sessionId: string) => void;
-  menteeMissedPrayerRequests: MissedPrayerRequest[];
-  onCreateMissedPrayerRequest: (data: Omit<MissedPrayerRequest, 'id' | 'menteeName' | 'requestedAt' | 'status'>) => void;
   // Panel Mentor
   onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
   allPrayers: Prayer[];
@@ -457,11 +439,12 @@ export interface MyDashboardViewProps {
   missedPrayerRequests: MissedPrayerRequest[];
   onReviewMissedPrayerRequest: (requestId: string, status: 'approved' | 'rejected', mentorNotes?: string) => void;
   onMentorAttendOwnSession: (sessionId: string) => void;
+  tadarusSessions: TadarusSession[];
+  loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
   // Aktivitas Pribadi
   onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
   onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
   onLogManualActivity: (activityId: string, date: string) => void;
-  onUpdateTodoList: (userId: string, todoList: ToDoItem[]) => void;
   // Audit & Pengumuman
   onLogAudit: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
   onCreateAnnouncement: (data: Omit<Announcement, 'id' | 'authorId' | 'authorName' | 'timestamp'>, imageFile?: File, documentFile?: File) => Promise<void> | void;

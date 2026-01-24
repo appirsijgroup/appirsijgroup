@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { type Employee, WeeklyReportSubmission, ToDoItem, DailyActivity, AuditLogEntry } from '../types';
-import { Pencil, GraduationCap, ShieldCheck, CheckSquare } from 'lucide-react';
-import { AktivitasPribadiView } from './AktivitasPribadi';
-import MenteeGuidanceView from './MenteeGuidanceView';
+import { type Employee, WeeklyReportSubmission, DailyActivity, AuditLogEntry } from '../types';
+import { Pencil, ShieldCheck, CheckSquare, BookOpen } from 'lucide-react';
+import { AktivitasPribadiView, RiwayatBacaan } from './AktivitasPribadi';
 import { MentorDashboard, type MentorDashboardView } from './MentorDashboard';
 import Persetujuan from './Persetujuan';
 import { getTodayLocalDateString } from '../utils/dateUtils';
@@ -15,17 +14,12 @@ interface AktivitasSayaProps {
     onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
     onLogManualActivity: (activityId: string, date: string) => void;
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
-    onUpdateTodoList: (userId: string, todoList: ToDoItem[]) => void;
     submissions: WeeklyReportSubmission[];
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
     weeklyReportSubmissions: WeeklyReportSubmission[];
-    onNavigateToReport: (monthKey: string) => void;
     tadarusRequests: any[];
-    onTadarusRequest: (data: any) => void;
     tadarusSessions: any[];
-    onMenteeAttendSession: (sessionId: string) => void;
     missedPrayerRequests: any[];
-    onCreateMissedPrayerRequest: (data: any) => void;
     onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'password'>>) => Promise<boolean>;
     onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
     onCreateTadarusSession: (data: any) => void;
@@ -63,7 +57,7 @@ const TabButton: React.FC<{
 );
 
 const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'aktivitas-pribadi' | 'bimbingan' | 'panel-mentor' | 'persetujuan'>('aktivitas-pribadi');
+    const [activeTab, setActiveTab] = useState<'aktivitas-pribadi' | 'riwayat-bacaan' | 'panel-mentor' | 'persetujuan'>('aktivitas-pribadi');
 
     // Role calculations
     const hasMentorRole = props.employee.canBeMentor === true;
@@ -144,24 +138,17 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                         onLogBookReading={props.onLogBookReading}
                         onLogManualActivity={props.onLogManualActivity}
                         onDeleteReadingHistory={props.onDeleteReadingHistory}
-                        onUpdateTodoList={props.onUpdateTodoList}
                         submissions={props.submissions}
                     />
                 );
-            case 'bimbingan':
+            case 'riwayat-bacaan':
                 return (
-                    <MenteeGuidanceView
+                    <RiwayatBacaan
                         employee={props.employee}
-                        submissions={props.submissions}
-                        onNavigateToReport={props.onNavigateToReport}
-                        tadarusRequests={props.tadarusRequests}
-                        onTadarusRequest={props.onTadarusRequest}
-                        tadarusSessions={props.tadarusSessions}
-                        onMenteeAttendSession={props.onMenteeAttendSession}
-                        missedPrayerRequests={props.missedPrayerRequests}
-                        onCreateMissedPrayerRequest={props.onCreateMissedPrayerRequest}
+                        onDeleteReadingHistory={props.onDeleteReadingHistory}
                     />
                 );
+
             case 'panel-mentor':
                 if (!hasMentorRole) return null;
                 return (
@@ -220,7 +207,7 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
                         <TabButton label="Aktivitas Pribadi" icon={Pencil} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                        <TabButton label="Bimbingan Saya" icon={GraduationCap} active={activeTab === 'bimbingan'} onClick={() => setActiveTab('bimbingan')} />
+                        <TabButton label="Riwayat Bacaan" icon={BookOpen} active={activeTab === 'riwayat-bacaan'} onClick={() => setActiveTab('riwayat-bacaan')} />
                         {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheck} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
                         {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquare} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
                     </div>

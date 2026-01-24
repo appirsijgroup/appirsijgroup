@@ -137,15 +137,18 @@ const MenteeDetailProgressView: React.FC<{
     mentees?: Employee[];
     currentMonth?: Date;
     onMonthChange?: (newDate: Date) => void;
-}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack }) => {
+    allUsersData?: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
+}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData }) => {
     const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(mentee?.id || (mentees && mentees.length > 0 ? mentees[0].id : null));
 
     const activeDate = useMemo(() => currentMonth || new Date(monthKey + '-02'), [currentMonth, monthKey]);
 
     const selectedMentee = useMemo(() => {
         if (!selectedMenteeId) return mentee;
-        return mentees?.find(m => m.id === selectedMenteeId) ?? mentee;
-    }, [selectedMenteeId, mentees, mentee]);
+        // 🔥 FIX: Prefer enriched data from allUsersData to ensure monthlyActivities are present
+        const enrichedMentee = allUsersData?.[selectedMenteeId]?.employee;
+        return enrichedMentee ?? mentees?.find(m => m.id === selectedMenteeId) ?? mentee;
+    }, [selectedMenteeId, mentees, mentee, allUsersData]);
 
     const activeMonthKey = useMemo(() => `${activeDate.getFullYear()}-${String(activeDate.getMonth() + 1).padStart(2, '0')}`, [activeDate]);
     const daysInMonth = useMemo(() => new Date(activeDate.getFullYear(), activeDate.getMonth() + 1, 0).getDate(), [activeDate]);
@@ -1371,6 +1374,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         mentees={mentees}
                         currentMonth={progressViewMonth}
                         onMonthChange={setProgressViewMonth}
+                        allUsersData={allUsersData}
                     />
                 )}
                 {mentorSubView === 'laporan-bacaan' && (

@@ -319,10 +319,29 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
 
         return announcements
             .filter(a => {
-                if (a.scope === 'alliansi' && (!a.targetHospitalIds || a.targetHospitalIds.length === 0)) return true;
-                if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
-                    if (isAnyAdmin(loggedInEmployee)) return true;
-                    return loggedInEmployee.hospitalId && a.targetHospitalIds.includes(loggedInEmployee.hospitalId);
+
+                // Normalize target IDs (handle camelCase and snake_case)
+                const targetIds = a.targetHospitalIds || (a as any).target_hospital_ids || [];
+
+                if (a.scope === 'alliansi') {
+                    // Global announcement (no specific targets) -> Show to everyone
+                    if (targetIds.length === 0) return true;
+
+                    // Targeted announcement -> Check permissions
+                    if (targetIds.length > 0) {
+                        // Admins see everything
+                        if (isAnyAdmin(loggedInEmployee)) return true;
+
+                        // 🔥 FIX: robust check for hospitalId (handle potential missing camelCase)
+                        const userHospitalId = loggedInEmployee.hospitalId || (loggedInEmployee as any).hospital_id;
+
+                        // If user has no hospital ID, they can't see hospital-specific announcements
+                        if (!userHospitalId) return false;
+
+                        // Force string comparison to avoid type mismatches
+                        // Case-insensitive too just in case
+                        return targetIds.some((id: any) => String(id).toLowerCase() === String(userHospitalId).toLowerCase());
+                    }
                 }
                 if (a.scope === 'mentor') {
                     if (isAnyAdmin(loggedInEmployee)) return true;

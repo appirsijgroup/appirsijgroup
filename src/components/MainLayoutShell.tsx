@@ -17,6 +17,7 @@ import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } f
 import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
+import { useAutoLogout } from '@/hooks/useAutoLogout';
 import { useMutabaah } from '@/contexts/MutabaahContext';
 import { logger } from '@/lib/logger';
 import { Suspense } from 'react';
@@ -71,6 +72,10 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         10 * 60 * 1000, // Refresh every 10 minutes
         isHydrated && !!loggedInEmployee // Only refresh if user is logged in
     );
+
+    // 🔥 AUTO-LOGOUT: Logout after 15 minutes of inactivity
+    // This applies to both Desktop and PWA
+    useAutoLogout(15 * 60 * 1000);
 
     // ⚡ OPTIMIZATION: Defer non-critical counts to prevent blocking initial render
     const [deferredUnreadAnnouncements, setDeferredUnreadAnnouncements] = useState(0);
@@ -236,21 +241,24 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             const announcementCount = announcements.filter(a => {
                 if (a.timestamp <= lastRead) return false;
 
-                // Alliansi scope without hospital targeting - everyone can see
-                if (a.scope === 'alliansi' && (!a.targetHospitalIds || a.targetHospitalIds.length === 0)) return true;
+                // Normalize target IDs (handle camelCase and snake_case)
+                const targetIds = a.targetHospitalIds || (a as any).target_hospital_ids || [];
 
-                // Alliansi scope with hospital targeting - only users from those hospitals can see
-                if (a.scope === 'alliansi' && a.targetHospitalIds && a.targetHospitalIds.length > 0) {
-                    const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin';
-                    if (isAdmin) return true;
+                // Alliansi scope
+                if (a.scope === 'alliansi') {
+                    // Global (no targets) - everyone can see
+                    if (targetIds.length === 0) return true;
 
-                    // 🔥 FIX: Handle potential missing camelCase conversion for hospitalId
-                    // Also ensure we have a valid ID to compare against
-                    const userHospitalId = loggedInEmployee.hospitalId || (loggedInEmployee as any).hospital_id;
+                    // Targeted
+                    if (targetIds.length > 0) {
+                        const isAdmin = loggedInEmployee.role === 'super-admin' || loggedInEmployee.role === 'admin';
+                        if (isAdmin) return true;
 
-                    if (!userHospitalId) return false;
+                        const userHospitalId = loggedInEmployee.hospitalId || (loggedInEmployee as any).hospital_id;
+                        if (!userHospitalId) return false;
 
-                    return a.targetHospitalIds.includes(userHospitalId);
+                        return targetIds.some((id: any) => String(id).toLowerCase() === String(userHospitalId).toLowerCase());
+                    }
                 }
 
                 // Mentor scope - mentors and their mentees can see

@@ -164,8 +164,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         ...prev[employeeId],
                         employee: {
                             ...prev[employeeId].employee,
-                            // 🔥 FIX: Use a different property name to avoid conflicts
-                            _monthlyReportsDataCache: mergedActivities
+                            // 🔥 FIX: Update the standard monthlyActivities property so UI components see the fresh data
+                            // This ensures Mentor sees the REAL data populated from all sources
+                            monthlyActivities: mergedActivities
                         }
                     }
                 };
@@ -175,7 +176,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             if (loggedInEmployee && loggedInEmployee.id === employeeId) {
                 setLoggedInEmployee({
                     ...loggedInEmployee,
-                    _monthlyReportsDataCache: mergedActivities
+                    monthlyActivities: mergedActivities
                 });
             }
 
@@ -192,7 +193,53 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         }
     }, [loggedInEmployee?.id, refreshMonthlyReportsData]);
 
-    // --- Handlers from App.tsx ---
+    // 🔥 FIX: Ensure mentees data is loaded for Mentors
+    useEffect(() => {
+        const fetchMentees = async () => {
+            // Only run for Mentors (or potential mentors)
+            if (loggedInEmployee && (loggedInEmployee.canBeMentor || isAnyAdmin(loggedInEmployee))) {
+                if (loggedInEmployee.canBeMentor) {
+                    try {
+                        const { getEmployeesByMentorId } = await import('@/services/employeeService');
+                        const mentees = await getEmployeesByMentorId(loggedInEmployee.id);
+
+                        // 1. Merge basic mentee data into store
+                        setAllUsersData(prev => {
+                            const newData = { ...prev };
+                            let hasChanges = false;
+
+                            mentees.forEach(mentee => {
+                                if (!newData[mentee.id]) {
+                                    newData[mentee.id] = {
+                                        employee: mentee,
+                                        attendance: {},
+                                        history: {}
+                                    };
+                                    hasChanges = true;
+                                }
+                            });
+
+                            return hasChanges ? newData : prev;
+                        });
+
+                        // 2. Refresh detailed activity data for each mentee
+                        // This ensures "Progres Anggota" graphs are populated
+                        mentees.forEach(mentee => {
+                            refreshMonthlyReportsData(mentee.id);
+                        });
+
+                    } catch (error) {
+                        console.error('Failed to load mentees for mentor:', error);
+                    }
+                }
+            }
+        };
+
+        if (loggedInEmployee?.id) {
+            fetchMentees();
+        }
+    }, [loggedInEmployee?.id, loggedInEmployee?.canBeMentor, refreshMonthlyReportsData, setAllUsersData]);
+
 
     const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Employee>): Promise<boolean> => {
         const oldUser = allUsersData[userId]?.employee;

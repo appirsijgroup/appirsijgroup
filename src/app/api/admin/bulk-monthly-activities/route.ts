@@ -121,6 +121,25 @@ export async function GET(request: NextRequest) {
 
         const { data: teamAttendance } = await teamAttendanceQuery;
 
+        // 5. Fetch activity_attendance
+        let activityAttendanceQuery = supabase
+            .from('activity_attendance')
+            .select('employee_id, status, activities!inner(date, activity_type)')
+            .eq('status', 'hadir');
+
+        if (targetEmployeeIds) {
+            activityAttendanceQuery = activityAttendanceQuery.in('employee_id', targetEmployeeIds);
+        }
+
+        if (startDate && endDate) {
+            // !inner is required for filtering by nested columns
+            activityAttendanceQuery = activityAttendanceQuery
+                .gte('activities.date', startDate)
+                .lte('activities.date', endDate);
+        }
+
+        const { data: activityAttendance } = await activityAttendanceQuery;
+
         // Merge everything into a map: employee_id -> monthKey -> dayKey -> { [activity_id]: true }
         const allActivitiesMap: Record<string, Record<string, any>> = {};
 
@@ -202,12 +221,29 @@ export async function GET(request: NextRequest) {
 
         // Process team attendance
         if (teamAttendance) {
-            teamAttendance.forEach(record => {
+            teamAttendance.forEach((record: any) => {
                 const date = record.session_date;
                 const monthKey = date.substring(0, 7);
                 const dayKey = date.substring(8, 10);
                 const activityId = record.session_type === 'KIE' ? 'tepat_waktu_kie' : (record.session_type === 'Doa Bersama' ? 'doa_bersama' : record.session_type);
                 addActivityEntry(record.user_id, monthKey, dayKey, activityId);
+            });
+        }
+
+        // Process scheduled activities (Kajian Selasa, etc)
+        if (activityAttendance) {
+            activityAttendance.forEach((record: any) => {
+                if (!record.activities) return;
+                const date = record.activities.date;
+                const monthKey = date.substring(0, 7);
+                const dayKey = date.substring(8, 10);
+                const type = record.activities.activity_type;
+
+                if (type === 'Kajian Selasa') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'kajian_selasa');
+                } else if (type === 'Pengajian Persyarikatan') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'persyarikatan');
+                }
             });
         }
 

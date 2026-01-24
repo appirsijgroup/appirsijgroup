@@ -84,10 +84,11 @@ export interface RawEmployee {
 // - super-admin: Can manage admins and users, full system access
 // - admin: Can manage regular users and content
 // - user: Regular employee
-export type Role = 'super-admin' | 'admin' | 'user';
+export type Role = 'owner' | 'super-admin' | 'admin' | 'user';
 
 // Role hierarchy level for permission checks
 export const ROLE_LEVELS: Record<Role, number> = {
+  'owner': 1000,
   'super-admin': 100,
   'admin': 50,
   'user': 1
@@ -199,6 +200,10 @@ export interface Employee extends RawEmployee {
   managedHospitalIds?: string[];
   achievements?: UserAchievement[];
   mustChangePassword?: boolean;
+  isProfileComplete?: boolean;
+  emailVerified?: boolean;
+  avatarUrl?: string | null;
+  authUserId?: string | null;
   _monthlyReportsDataCache?: Record<string, Record<string, Record<string, boolean>>>;
 }
 
@@ -512,6 +517,7 @@ export interface TadarusRequest {
   menteeName: string;
   mentorId: string;
   date: string;
+  category?: 'BBQ' | 'UMUM' | 'KIE' | 'Doa Bersama' | 'Kajian Selasa' | 'Pengajian Persyarikatan' | 'Umum';
   notes?: string;
   requestedAt: number;
   status: 'pending' | 'approved' | 'rejected';

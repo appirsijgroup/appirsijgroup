@@ -470,7 +470,7 @@ const MutabaahPerformanceReport: React.FC<{
                 const achievedCount = dailyProgressList.reduce((dayCount: number, dailyProgress: any) => {
                     // Defensive check for dailyProgress
                     if (!dailyProgress || typeof dailyProgress !== 'object') return dayCount;
-                    return dayCount + (dailyProgress[activity.id] ? 1 : 0);
+                    return dayCount + (dailyProgress[activity.id] === true || dailyProgress[activity.id] === 'hadir' ? 1 : 0);
                 }, 0);
 
                 activityTotals[activity.id].achieved += achievedCount;

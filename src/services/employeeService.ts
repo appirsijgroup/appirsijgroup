@@ -40,6 +40,10 @@ export const convertToCamelCase = (emp: any): Employee => {
         mustChangePassword: emp.must_change_password,
         hospitalId: emp.hospital_id,
         professionCategory: emp.profession_category,
+        isProfileComplete: emp.is_profile_complete,
+        emailVerified: emp.email_verified,
+        avatarUrl: emp.avatar_url,
+        authUserId: emp.auth_user_id,
     };
 };
 
@@ -257,6 +261,10 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         profession_category: employee.professionCategory,
         profession: employee.profession,
         gender: employee.gender,
+        is_profile_complete: employee.isProfileComplete ?? false,
+        email_verified: employee.emailVerified ?? false,
+        avatar_url: employee.avatarUrl,
+        auth_user_id: employee.authUserId,
     };
 
 
@@ -327,6 +335,10 @@ export const updateEmployee = async (
     if (updates.professionCategory !== undefined) dbUpdates.profession_category = updates.professionCategory;
     if (updates.profession !== undefined) dbUpdates.profession = updates.profession;
     if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
+    if (updates.isProfileComplete !== undefined) dbUpdates.is_profile_complete = updates.isProfileComplete;
+    if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+    if (updates.authUserId !== undefined) dbUpdates.auth_user_id = updates.authUserId;
 
 
     // 🔥 FIX: Validate and sanitize JSONB columns before sending

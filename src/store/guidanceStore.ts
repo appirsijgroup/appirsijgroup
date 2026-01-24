@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { WeeklyReportSubmission, TadarusSession, TadarusRequest, MissedPrayerRequest, MenteeTarget } from '@/types';
+import { useAppDataStore } from './store';
 
 interface GuidanceState {
     weeklyReportSubmissions: WeeklyReportSubmission[];
@@ -17,6 +18,7 @@ interface GuidanceState {
     deleteTadarusSession: (sessionId: string) => Promise<void>;
     loadTadarusSessionsFromSupabase: () => Promise<void>;
     loadTadarusRequestsFromSupabase: () => Promise<void>;
+    loadMissedPrayerRequestsFromSupabase: () => Promise<void>;
 
     addOrUpdateTadarusRequest: (request: TadarusRequest) => Promise<void>;
 
@@ -29,7 +31,7 @@ interface GuidanceState {
 
 export const useGuidanceStore = create<GuidanceState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             weeklyReportSubmissions: [],
             tadarusSessions: [],
             tadarusRequests: [],
@@ -52,9 +54,8 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             updateTadarusSession: async (sessionId, updates) => {
                 try {
-                    // Update to Supabase first
                     const { updateTadarusSession: updateService } = await import('@/services/tadarusService');
-                    const updateData = typeof updates === 'function' ? updates(null) : updates;
+                    const updateData = typeof updates === 'function' ? updates({} as TadarusSession) : updates;
                     await updateService(sessionId, updateData);
 
                     // Then update local state
@@ -99,9 +100,35 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             loadTadarusRequestsFromSupabase: async () => {
                 try {
-                    const { getAllTadarusRequests } = await import('@/services/tadarusService');
-                    const requests = await getAllTadarusRequests();
+                    const { getAllTadarusRequests, getTadarusRequestsForMentor } = await import('@/services/tadarusService');
+                    const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+
+                    let requests;
+                    if (loggedInEmployee && (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin')) {
+                        requests = await getTadarusRequestsForMentor(loggedInEmployee.id);
+                    } else {
+                        requests = await getAllTadarusRequests();
+                    }
                     set({ tadarusRequests: requests });
+                } catch (error) {
+                    throw error;
+                }
+            },
+
+            loadMissedPrayerRequestsFromSupabase: async () => {
+                try {
+                    const { getMissedPrayerRequestsForMentor, getMissedPrayerRequestsForMentee } = await import('@/services/prayerRequestService');
+                    const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+
+                    if (!loggedInEmployee) return;
+
+                    let requests;
+                    if (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                        requests = await getMissedPrayerRequestsForMentor(loggedInEmployee.id);
+                    } else {
+                        requests = await getMissedPrayerRequestsForMentee(loggedInEmployee.id);
+                    }
+                    set({ missedPrayerRequests: requests });
                 } catch (error) {
                     throw error;
                 }
@@ -112,12 +139,7 @@ export const useGuidanceStore = create<GuidanceState>()(
                     // Save to Supabase first
                     const { createTadarusRequest, updateTadarusRequest } = await import('@/services/tadarusService');
 
-                    const existingRequest = await new Promise<any>((resolve) => {
-                        set((state) => {
-                            const found = state.tadarusRequests.find(r => r.id === request.id);
-                            resolve(found);
-                        });
-                    });
+                    const existingRequest = get().tadarusRequests.find((r: TadarusRequest) => r.id === request.id);
 
                     if (!existingRequest) {
                         // Create new request
@@ -145,16 +167,36 @@ export const useGuidanceStore = create<GuidanceState>()(
                 }
             },
 
-            addOrUpdateMissedPrayerRequest: (request) => set((state) => {
-                const index = state.missedPrayerRequests.findIndex(r => r.id === request.id);
-                if (index !== -1) {
-                    const newRequests = [...state.missedPrayerRequests];
-                    newRequests[index] = request;
-                    return { missedPrayerRequests: newRequests };
+            addOrUpdateMissedPrayerRequest: async (request) => {
+                try {
+                    const { createMissedPrayerRequest, updateMissedPrayerRequest } = await import('@/services/prayerRequestService');
+
+                    const existingRequest = get().missedPrayerRequests.find((r: MissedPrayerRequest) => r.id === request.id);
+
+                    if (!existingRequest) {
+                        await createMissedPrayerRequest(request);
+                    } else if (existingRequest.status !== request.status || existingRequest.mentorNotes !== request.mentorNotes) {
+                        await updateMissedPrayerRequest(request.id, {
+                            status: request.status,
+                            reviewedAt: request.reviewedAt,
+                            mentorNotes: request.mentorNotes
+                        });
+                    }
+
+                    set((state) => {
+                        const index = state.missedPrayerRequests.findIndex(r => r.id === request.id);
+                        if (index !== -1) {
+                            const newRequests = [...state.missedPrayerRequests];
+                            newRequests[index] = request;
+                            return { missedPrayerRequests: newRequests };
+                        }
+                        return { missedPrayerRequests: [...state.missedPrayerRequests, request] };
+                    });
+                } catch (error) {
+                    throw error;
                 }
-                return { missedPrayerRequests: [...state.missedPrayerRequests, request] };
-            }),
-            
+            },
+
             addMenteeTarget: (target) => set((state) => ({
                 menteeTargets: [...state.menteeTargets, target]
             })),

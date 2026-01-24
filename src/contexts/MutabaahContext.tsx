@@ -321,7 +321,34 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
         console.error('❌ [MutabaahContext] Error refreshing team attendance:', error);
       }
 
-      // 4. Update state with refreshed data
+      // 4. Load data from activity_attendance table (Scheduled Activities: Kajian Selasa, etc)
+      try {
+        const { convertScheduledActivitiesToActivities } = await import('@/services/scheduledActivityService');
+
+        if (employee.id) {
+          const scheduledActivities = await convertScheduledActivitiesToActivities(employee.id);
+
+          Object.entries(scheduledActivities).forEach(([monthKey, monthData]) => {
+            if (!updatedActivities[monthKey]) {
+              updatedActivities[monthKey] = {};
+            }
+
+            Object.entries(monthData).forEach(([dayKey, dayData]) => {
+              if (!updatedActivities[monthKey][dayKey]) {
+                updatedActivities[monthKey][dayKey] = {};
+              }
+
+              Object.assign(updatedActivities[monthKey][dayKey], dayData);
+            });
+          });
+
+          console.log('✅ [MutabaahContext] Refreshed scheduled activities');
+        }
+      } catch (error) {
+        console.error('❌ [MutabaahContext] Error refreshing scheduled activities:', error);
+      }
+
+      // 5. Update state with refreshed data
       setMonthlyProgressData(updatedActivities);
 
       // 🔥 FIX: NO CACHE - Don't save to employee_monthly_activities anymore

@@ -2,15 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useUIStore } from '@/store/store';
 
 const Clock: React.FC = () => {
-  const [displayTime, setDisplayTime] = useState(() => useUIStore.getState().currentTime);
-
-  useEffect(() => {
-    // Subscribe to store changes
-    const unsubscribe = useUIStore.subscribe((state) => state.currentTime, setDisplayTime);
-
-    // Clean up subscription on component unmount
-    return () => unsubscribe();
-  }, []);
+  const displayTime = useUIStore(state => state.currentTime);
 
   // Format date and time
   const formattedTime = displayTime.toLocaleTimeString([], {

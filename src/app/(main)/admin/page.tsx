@@ -371,38 +371,70 @@ export default function AdminPage() {
         }
     };
 
-    const handleBulkUpdateUsers = async (usersToProcess: (RawEmployee & { id: string; })[]) => {
+    const handleBulkUpdateUsers = async (usersToProcess: (RawEmployee & { id: string; role?: Role })[]) => {
         let added = 0;
         let updated = 0;
-        const failed: { record: RawEmployee & { id: string; }; reason: string; }[] = [];
+        const failed: { record: RawEmployee & { id: string; role?: Role }; reason: string; }[] = [];
+
+        // Helper to generate password
+        const generatePassword = () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+            return Array.from(crypto.getRandomValues(new Uint32Array(10)))
+                .map((x) => chars[x % chars.length])
+                .join('');
+        };
 
         for (const user of usersToProcess) {
             try {
                 const existing = allUsersData[user.id];
 
                 if (existing) {
-                    await updateEmployeeSupabase(user.id, user);
+                    // Update existing - prioritize incoming data but keep identifier/password
+                    const { id: _, ...updates } = user;
+
+                    await updateEmployeeSupabase(user.id, updates);
                     updated++;
 
                     setAllUsersData((prev) => {
+                        if (!prev[user.id]) return prev;
                         const newData = { ...prev };
-                        if (newData[user.id]) {
-                            newData[user.id].employee = {
-                                ...newData[user.id].employee,
+                        newData[user.id] = {
+                            ...prev[user.id],
+                            employee: {
+                                ...prev[user.id].employee,
                                 ...user
-                            };
-                        }
+                            }
+                        };
                         return newData;
                     });
                 } else {
-                    await createEmployeeSupabase(user as Employee);
+                    // Create new
+                    const email = user.email || `${user.id.toLowerCase()}@rsi.co.id`;
+                    const password = generatePassword();
+
+                    const newEmployee: Employee = {
+                        ...user,
+                        email,
+                        password,
+                        role: user.role || 'user',
+                        isActive: true,
+                        notificationEnabled: true,
+                        profilePicture: null,
+                        monthlyActivities: {},
+                        activatedMonths: [],
+                        isProfileComplete: false,
+                        emailVerified: false,
+                        mustChangePassword: true, // Force password change for imported users
+                        lastVisitDate: new Date().toISOString().split('T')[0],
+                    } as Employee;
+
+                    await createEmployeeSupabase(newEmployee);
                     added++;
 
-                    // 🔥 OPTIMIZATION: Just add to local state
                     setAllUsersData((prev) => ({
                         ...prev,
                         [user.id]: {
-                            employee: user as Employee,
+                            employee: newEmployee,
                             attendance: {},
                             history: {}
                         }
@@ -885,29 +917,6 @@ export default function AdminPage() {
                 onToggleHospitalStatus={handleToggleHospitalStatus}
                 mutabaahLockingMode={mutabaahLockingMode}
                 onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
-                // ✅ NEW: Pagination props
-                pagination={{
-                    currentPage: page,
-                    totalPages: totalPages,
-                    totalCount: totalCount,
-                    hasNext: page < totalPages,
-                    hasPrev: page > 1,
-                    onNext: handleNextPage,
-                    onPrev: handlePrevPage,
-                    onSearch: handleSearch,
-                    onRoleFilter: handleRoleFilter,
-                    onIsActiveFilter: handleIsActiveFilter,
-                    onRefresh: handleRefresh,
-                    searchTerm: searchTerm,
-                    roleFilter: roleFilter,
-                    isActiveFilter: isActiveFilter
-                }}
-                // 🔥 NEW: Pass paginated results
-                paginatedEmployees={paginatedEmployees}
-                paginationInfo={paginationInfo}
-                // 🔥 NEW: On-demand employee loading
-                onLoadEmployees={loadEmployeesOnDemand}
-                isLoadingEmployees={isLoadingEmployees}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

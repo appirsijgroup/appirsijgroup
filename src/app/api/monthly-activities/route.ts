@@ -249,6 +249,62 @@ export async function GET(request: NextRequest) {
       console.error('❌ [API] Error fetching team attendance records:', error);
     }
 
+    // 🔥 NEW: Merge APPROVED tadarus_requests
+    try {
+      const { data: approvedTadarus, error: tadarusReqError } = await supabase
+        .from('tadarus_requests')
+        .select('date')
+        .eq('mentee_id', employeeId)
+        .eq('status', 'approved');
+
+      if (tadarusReqError) {
+        console.error('❌ [API] Error fetching approved tadarus requests:', tadarusReqError);
+      } else if (approvedTadarus && approvedTadarus.length > 0) {
+        approvedTadarus.forEach((req: any) => {
+          const monthKey = req.date.substring(0, 7);
+          const dayKey = req.date.substring(8, 10);
+
+          if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+          if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+
+          mergedActivities[monthKey][dayKey]['tadarus'] = true;
+        });
+        console.log('✅ [API] Merged approved tadarus requests:', approvedTadarus.length);
+      }
+    } catch (error) {
+      console.error('❌ [API] Error fetching tadarus requests:', error);
+    }
+
+    // 🔥 NEW: Merge APPROVED missed_prayer_requests
+    try {
+      const { data: approvedPrayers, error: prayerReqError } = await supabase
+        .from('missed_prayer_requests')
+        .select('date, prayer_id')
+        .eq('mentee_id', employeeId)
+        .eq('status', 'approved');
+
+      if (prayerReqError) {
+        console.error('❌ [API] Error fetching approved prayer requests:', prayerReqError);
+      } else if (approvedPrayers && approvedPrayers.length > 0) {
+        approvedPrayers.forEach((req: any) => {
+          const monthKey = req.date.substring(0, 7);
+          const dayKey = req.date.substring(8, 10);
+
+          // Map database IDs to Mutabaah activity IDs
+          // subuh -> subuh-default, etc.
+          const activityId = `${req.prayer_id}-default`;
+
+          if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+          if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+
+          mergedActivities[monthKey][dayKey][activityId] = true;
+        });
+        console.log('✅ [API] Merged approved prayer requests:', approvedPrayers.length);
+      }
+    } catch (error) {
+      console.error('❌ [API] Error fetching prayer requests:', error);
+    }
+
     return NextResponse.json({ activities: mergedActivities });
   } catch (error) {
     console.error('GET /api/monthly-activities error:', error);

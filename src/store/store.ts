@@ -437,11 +437,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 { convertMonthlyReportsToActivities },
                 { convertTadarusSessionsToActivities },
                 { convertTeamAttendanceToActivities },
+                { convertScheduledActivitiesToActivities },
                 { getEmployeeAttendance }
             ] = await Promise.all([
                 import('@/services/monthlyReportService'),
                 import('@/services/tadarusService'),
                 import('@/services/teamAttendanceService'),
+                import('@/services/scheduledActivityService'),
                 import('@/services/attendanceService')
             ]);
 
@@ -450,11 +452,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 monthlyReportsActivities,
                 tadarusActivities,
                 teamAttendanceActivities,
+                scheduledActivities,
                 attendanceRecords
             ] = await Promise.all([
                 convertMonthlyReportsToActivities(employeeId),
                 convertTadarusSessionsToActivities(employeeId),
                 convertTeamAttendanceToActivities(employeeId),
+                convertScheduledActivitiesToActivities(employeeId),
                 getEmployeeAttendance(employeeId).catch(() => ({}) as any)
             ]);
 
@@ -472,6 +476,15 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
             // Merge Team Attendance data
             Object.entries(teamAttendanceActivities).forEach(([monthKey, monthData]) => {
+                if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+                Object.entries(monthData as any).forEach(([dayKey, dayData]) => {
+                    if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+                    Object.assign(mergedActivities[monthKey][dayKey], dayData as any);
+                });
+            });
+
+            // Merge Scheduled Activities data
+            Object.entries(scheduledActivities).forEach(([monthKey, monthData]) => {
                 if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
                 Object.entries(monthData as any).forEach(([dayKey, dayData]) => {
                     if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};

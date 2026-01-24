@@ -677,3 +677,49 @@ export const getEmployeeActivitiesAttendance = async (
         throw error;
     }
 };
+/**
+ * convertScheduledActivitiesToActivities
+ * Converts scheduled activity attendance to monthly activities format
+ */
+export const convertScheduledActivitiesToActivities = async (
+    employeeId: string
+): Promise<Record<string, Record<string, Record<string, boolean>>>> => {
+    try {
+        const { data: attendanceRecords, error } = await supabase
+            .from('activity_attendance')
+            .select('*, activities:activity_id (date, activity_type)')
+            .eq('employee_id', employeeId)
+            .eq('status', 'hadir');
+
+        if (error) {
+            console.error('Error fetching activity attendance:', error);
+            return {};
+        }
+
+        const result: Record<string, Record<string, Record<string, boolean>>> = {};
+
+        (attendanceRecords as any[] || []).forEach(record => {
+            if (!record.activities) return;
+
+            const date = record.activities.date; // YYYY-MM-DD
+            const monthKey = date.substring(0, 7);
+            const dayKey = date.substring(8, 10);
+            const activityType = record.activities.activity_type;
+
+            if (!result[monthKey]) result[monthKey] = {};
+            if (!result[monthKey][dayKey]) result[monthKey][dayKey] = {};
+
+            // Map activity type to Mutabaah field ID
+            if (activityType === 'Kajian Selasa') {
+                result[monthKey][dayKey]['kajian_selasa'] = true;
+            } else if (activityType === 'Pengajian Persyarikatan') {
+                result[monthKey][dayKey]['persyarikatan'] = true;
+            }
+        });
+
+        return result;
+    } catch (error) {
+        console.error('Error converting scheduled activities to activities:', error);
+        return {};
+    }
+};

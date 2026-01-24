@@ -217,14 +217,14 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
 
                 const key = `${employee.id}-${year}`;
                 const accumulator = yearlyAccumulator.get(key);
-                
+
                 if (!accumulator) return; // Skip jika record tidak ditemukan
 
                 const allDaysProgress = Object.values(monthProgress);
 
                 const countProgress = (activityIds: string[]) => {
                     return allDaysProgress.reduce((total, dayProgress) => {
-                        return total + activityIds.filter((id) => dayProgress[id]).length;
+                        return total + activityIds.filter((id) => (dayProgress as any)[id] === true || (dayProgress as any)[id] === 'hadir').length;
                     }, 0);
                 };
 
@@ -469,7 +469,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                     </div>
                 </div>
                 <div className="lg:col-span-2 flex items-center justify-end gap-2" style={{ position: 'relative', zIndex: 40 }}>
-                    <button onClick={() => {}} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
+                    <button onClick={() => { }} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
                         <PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" />
                     </button>
                     <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel">
@@ -543,13 +543,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <td className="px-3 py-3 text-center whitespace-nowrap">{record.sidiqTarget}</td>
                                 <td className="px-3 py-3 text-center whitespace-nowrap">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                            record.sidiqPercentage >= 100
-                                                ? 'bg-green-500/20 text-green-300'
-                                                : record.sidiqPercentage >= 50
+                                        className={`px-2 py-1 rounded text-xs font-bold ${record.sidiqPercentage >= 100
+                                            ? 'bg-green-500/20 text-green-300'
+                                            : record.sidiqPercentage >= 50
                                                 ? 'bg-yellow-500/20 text-yellow-300'
                                                 : 'bg-red-500/20 text-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         {record.sidiqPercentage}%
                                     </span>
@@ -560,13 +559,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <td className="px-3 py-3 text-center whitespace-nowrap">{record.tablighTarget}</td>
                                 <td className="px-3 py-3 text-center whitespace-nowrap">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                            record.tablighPercentage >= 100
-                                                ? 'bg-green-500/20 text-green-300'
-                                                : record.tablighPercentage >= 50
+                                        className={`px-2 py-1 rounded text-xs font-bold ${record.tablighPercentage >= 100
+                                            ? 'bg-green-500/20 text-green-300'
+                                            : record.tablighPercentage >= 50
                                                 ? 'bg-yellow-500/20 text-yellow-300'
                                                 : 'bg-red-500/20 text-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         {record.tablighPercentage}%
                                     </span>
@@ -577,13 +575,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <td className="px-3 py-3 text-center whitespace-nowrap">{record.amanahTarget}</td>
                                 <td className="px-3 py-3 text-center whitespace-nowrap">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                            record.amanahPercentage >= 100
-                                                ? 'bg-green-500/20 text-green-300'
-                                                : record.amanahPercentage >= 50
+                                        className={`px-2 py-1 rounded text-xs font-bold ${record.amanahPercentage >= 100
+                                            ? 'bg-green-500/20 text-green-300'
+                                            : record.amanahPercentage >= 50
                                                 ? 'bg-yellow-500/20 text-yellow-300'
                                                 : 'bg-red-500/20 text-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         {record.amanahPercentage}%
                                     </span>
@@ -594,13 +591,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <td className="px-3 py-3 text-center whitespace-nowrap">{record.fatonahTarget}</td>
                                 <td className="px-3 py-3 text-center whitespace-nowrap">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                            record.fatonahPercentage >= 100
-                                                ? 'bg-green-500/20 text-green-300'
-                                                : record.fatonahPercentage >= 50
+                                        className={`px-2 py-1 rounded text-xs font-bold ${record.fatonahPercentage >= 100
+                                            ? 'bg-green-500/20 text-green-300'
+                                            : record.fatonahPercentage >= 50
                                                 ? 'bg-yellow-500/20 text-yellow-300'
                                                 : 'bg-red-500/20 text-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         {record.fatonahPercentage}%
                                     </span>
@@ -611,13 +607,12 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <td className="px-3 py-3 text-center whitespace-nowrap bg-white/5">{record.totalTarget}</td>
                                 <td className="px-3 py-3 text-center whitespace-nowrap bg-white/5">
                                     <span
-                                        className={`px-2 py-1 rounded text-xs font-bold ${
-                                            record.totalPercentage >= 100
-                                                ? 'bg-green-500/20 text-green-300'
-                                                : record.totalPercentage >= 50
+                                        className={`px-2 py-1 rounded text-xs font-bold ${record.totalPercentage >= 100
+                                            ? 'bg-green-500/20 text-green-300'
+                                            : record.totalPercentage >= 50
                                                 ? 'bg-yellow-500/20 text-yellow-300'
                                                 : 'bg-red-500/20 text-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         {record.totalPercentage}%
                                     </span>
@@ -663,11 +658,10 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -679,11 +673,10 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>

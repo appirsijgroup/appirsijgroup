@@ -54,7 +54,24 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         loadTeamAttendanceSessionsFromSupabase,
         loadActivitiesFromSupabase
     } = useActivityStore();
-    const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
+    const {
+        weeklyReportSubmissions,
+        tadarusSessions,
+        tadarusRequests,
+        missedPrayerRequests,
+        menteeTargets,
+        addOrUpdateWeeklyReportSubmission,
+        addTadarusSessions,
+        updateTadarusSession,
+        deleteTadarusSession,
+        addOrUpdateTadarusRequest,
+        addOrUpdateMissedPrayerRequest,
+        addMenteeTarget,
+        updateMenteeTarget,
+        deleteMenteeTarget,
+        loadTadarusRequestsFromSupabase,
+        loadMissedPrayerRequestsFromSupabase
+    } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
 
@@ -78,12 +95,16 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
     // 🔥 NEW: Function to refresh monthly reports data
     const refreshMonthlyReportsData = loadDetailedEmployeeData;
 
-    // 🔥 FIX: Trigger monthly reports refresh on load and when employee changes
+    // 🔥 FIX: Trigger monthly reports and manual requests refresh on load and when employee changes
     useEffect(() => {
         if (loggedInEmployee?.id) {
             refreshMonthlyReportsData(loggedInEmployee.id);
+
+            // 🚀 Load manual requests (Tadarus & Sholat)
+            loadTadarusRequestsFromSupabase().catch(err => console.error('Failed to load tadarus requests:', err));
+            loadMissedPrayerRequestsFromSupabase().catch(err => console.error('Failed to load missed prayer requests:', err));
         }
-    }, [loggedInEmployee?.id, refreshMonthlyReportsData]);
+    }, [loggedInEmployee?.id, refreshMonthlyReportsData, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase]);
 
     // 🔥 FIX: Ensure mentees data is loaded for Mentors
     useEffect(() => {
@@ -222,7 +243,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (!loggedInEmployee || !loggedInEmployee.mentorId) return;
         const newRequest: TadarusRequest = {
             ...data,
-            id: `${data.menteeId}-${data.date}`, // simple ID generation
+            id: `${data.menteeId}-${data.date}-${data.category || 'tadarus'}-${Date.now().toString().slice(-4)}`,
             menteeName: loggedInEmployee.name,
             requestedAt: Date.now(),
             status: 'pending',
@@ -231,12 +252,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         createNotification({
             userId: loggedInEmployee.mentorId,
             type: 'tadarus_request',
-            title: 'Permintaan Kehadiran Tadarus',
-            message: `${loggedInEmployee.name} mengajukan kehadiran tadarus manual untuk tanggal ${new Date(data.date).toLocaleDateString('id-ID')}.`,
-            linkTo: { view: 'dashboard-saya', tab: 'panel-mentor' } as any, // View type mismatch fix later
+            title: `Permintaan Kehadiran ${data.category || 'Sesi'}`,
+            message: `${loggedInEmployee.name} mengajukan kehadiran ${data.category || 'tadarus'} manual untuk tanggal ${new Date(data.date).toLocaleDateString('id-ID')}.`,
+            linkTo: { view: 'dashboard-saya', tab: 'panel-mentor' } as any,
             relatedEntityId: newRequest.id,
         });
-        addToast('Permintaan tadarus berhasil dikirim', 'success');
+        addToast('Permintaan berhasil dikirim', 'success');
     };
 
     const handleMenteeAttendSession = (sessionId: string) => {

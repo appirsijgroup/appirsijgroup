@@ -372,7 +372,7 @@ const generateChecklistPdf = (
             const row = [activity.title];
             for (let i = 1; i <= daysInMonth; i++) {
                 const dayKey = String(i).padStart(2, '0');
-                const isChecked = progress[dayKey]?.[activity.id] || false;
+                const isChecked = (progress[dayKey]?.[activity.id] as any) === true || (progress[dayKey]?.[activity.id] as any) === 'hadir';
                 row.push(isChecked ? '✓' : '✗');
             }
             tableBody.push(row);
@@ -583,7 +583,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                                         <td className="px-3 py-3 font-medium text-left sticky left-0 bg-white z-10 whitespace-nowrap">{activity.title}</td>
                                         {Array.from({ length: daysInMonth }, (_, i) => {
                                             const dayKey = (i + 1).toString().padStart(2, '0');
-                                            const isChecked = progress[dayKey]?.[activity.id] || false;
+                                            const isChecked = (progress[dayKey]?.[activity.id] as any) === true || (progress[dayKey]?.[activity.id] as any) === 'hadir';
                                             return (
                                                 <td key={dayKey} className={`text-center border-l border-slate-200 ${isCurrentMonthView && dayKey === todayDay ? 'bg-teal-50' : ''}`}>
                                                     <div className="w-full h-full flex items-center justify-center py-3 text-xl font-bold">
@@ -919,7 +919,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                 };
             }
             const achieved = Object.values(monthProgress).reduce((dayCount: number, dailyProgress: Record<string, boolean>) => {
-                return dayCount + (dailyProgress[activity.id] ? 1 : 0);
+                const val = (dailyProgress as any)[activity.id];
+                return dayCount + (val === true || val === 'hadir' ? 1 : 0);
             }, 0);
 
             const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((achieved / activity.monthlyTarget) * 100)) : 0;

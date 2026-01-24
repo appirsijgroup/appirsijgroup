@@ -215,6 +215,7 @@ CREATE TABLE tadarus_requests (
     mentee_name TEXT NOT NULL,
     mentor_id TEXT NOT NULL,
     date TEXT NOT NULL, -- YYYY-MM-DD
+    category TEXT,
     notes TEXT,
     requested_at BIGINT NOT NULL,
     status TEXT CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',

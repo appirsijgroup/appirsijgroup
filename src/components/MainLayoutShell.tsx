@@ -45,7 +45,6 @@ const allNavItemsRaw = [
     { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDays, href: '/aktivitas-bulanan' },
     { id: 'presensi', label: 'Presensi Harian', icon: ClipboardCheck, href: '/presensi' },
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, href: '/pengumuman' },
-    { id: 'kegiatan', label: 'Kegiatan Terjadwal', icon: Users, href: '/kegiatan' },
     { id: 'jadwal-sesi', label: 'Jadwal & Sesi', icon: CalendarClock, href: '/jadwal-sesi' },
     { id: 'alquran', label: 'Al-Qur\'an', icon: BookOpen, href: '/alquran' },
     { id: 'bookmarks', label: 'Bookmark', icon: Bookmark, href: '/bookmarks' },

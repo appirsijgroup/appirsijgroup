@@ -696,11 +696,12 @@ const UserModal: React.FC<{
     onSave: (id: string, data: RawEmployee) => Promise<{ success: boolean, error?: string }>;
     existingUser: Employee | null;
     hospitals: Hospital[];
-}> = ({ isOpen, onClose, onSave, existingUser, hospitals }) => {
+    loggedInEmployee: Employee | null;
+}> = ({ isOpen, onClose, onSave, existingUser, hospitals, loggedInEmployee }) => {
     const [id, setId] = useState('');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState<'super-admin' | 'admin' | 'user'>('user');
+    const [role, setRole] = useState<Role>('user');
     const [unit, setUnit] = useState('');
     const [bagian, setBagian] = useState('');
     const [professionCategory, setProfessionCategory] = useState<'MEDIS' | 'NON MEDIS'>('NON MEDIS');
@@ -878,13 +879,17 @@ const UserModal: React.FC<{
                                 <label className="text-sm font-medium text-blue-200 block mb-1">Role</label>
                                 <select
                                     value={role}
-                                    onChange={e => setRole(e.target.value as 'super-admin' | 'admin' | 'user')}
+                                    onChange={e => setRole(e.target.value as Role)}
                                     disabled={loading}
                                     className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
                                 >
                                     <option value="user" className="text-black bg-white">User</option>
                                     <option value="admin" className="text-black bg-white">Admin</option>
                                     <option value="super-admin" className="text-black bg-white">Super Admin</option>
+                                    {/* 🔥 NEW: Only show Owner option if current user is owner */}
+                                    {loggedInEmployee?.role === 'owner' && (
+                                        <option value="owner" className="text-black bg-white">Owner</option>
+                                    )}
                                 </select>
                             </div>
                             <div>
@@ -1132,7 +1137,7 @@ const UserImportModal: React.FC<{
                 const missingHeaders = expectedHeaders.filter(h => !actualHeaders.includes(h));
 
                 if (missingHeaders.length > 0) {
-                    setError(`Header file tidak sesuai. Kolom yang hilang: ${missingHeaders.join(', ')}.`);
+                    setError(`Header file tidak sesuai. Kolom yang wajib ada: ${missingHeaders.join(', ')}.`);
                     setIsProcessing(false);
                     return;
                 }
@@ -1147,16 +1152,23 @@ const UserImportModal: React.FC<{
                     if (genderStr === 'perempuan') return 'Perempuan';
                     return 'Laki-laki'; // Default
                 };
+                const getSanitizedRole = (rawRole: unknown): Role => {
+                    const roleStr = String(rawRole || '').trim().toLowerCase();
+                    if (['owner', 'super-admin', 'admin', 'user'].includes(roleStr)) return roleStr as Role;
+                    return 'user';
+                };
 
-                const usersToProcess: (RawEmployee & { id: string })[] = json.map(row => ({
+                const usersToProcess: (RawEmployee & { id: string, role?: Role })[] = json.map(row => ({
                     id: String(row.NIP).trim(),
                     name: String(row.Nama || '').trim(),
+                    email: row.Email ? String(row.Email).trim().toLowerCase() : undefined,
                     unit: String(row.Unit || '').trim(),
                     bagian: String(row.Bagian || '').trim(),
                     professionCategory: getSanitizedCategory(row['Kategori Profesi']),
                     profession: String(row.Profesi || '').trim(),
                     gender: getSanitizedGender(row['Jenis Kelamin']),
-                    hospitalId: row['RS ID'] ? String(row['RS ID']).trim().toUpperCase() : undefined
+                    hospitalId: row['RS ID'] ? String(row['RS ID']).trim().toUpperCase() : undefined,
+                    role: row.Role ? getSanitizedRole(row.Role) : 'user'
                 }));
 
                 const result = await onImport(usersToProcess);
@@ -1176,9 +1188,20 @@ const UserImportModal: React.FC<{
 
     const handleDownloadTemplate = () => {
         const templateData = [
-            { 'RS ID': 'RSIJSP', NIP: '12345', Nama: 'Contoh Pegawai', Unit: 'IT', Bagian: 'Perkantoran & Umum', 'Kategori Profesi': 'NON MEDIS', Profesi: 'Staff IT', 'Jenis Kelamin': 'Laki-laki' }
+            {
+                'RS ID': 'RSIJSP',
+                NIP: '12345',
+                Nama: 'Contoh Pegawai',
+                Email: 'pegawai@rsi.co.id',
+                Unit: 'IT',
+                Bagian: 'Perkantoran & Umum',
+                'Kategori Profesi': 'NON MEDIS',
+                Profesi: 'Staff IT',
+                'Jenis Kelamin': 'Laki-laki',
+                Role: 'user'
+            }
         ];
-        const ws = XLSX.utils.json_to_sheet(templateData, { header: ['RS ID', 'NIP', 'Nama', 'Unit', 'Bagian', 'Kategori Profesi', 'Profesi', 'Jenis Kelamin'] });
+        const ws = XLSX.utils.json_to_sheet(templateData, { header: ['RS ID', 'NIP', 'Nama', 'Email', 'Unit', 'Bagian', 'Kategori Profesi', 'Profesi', 'Jenis Kelamin', 'Role'] });
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Data Karyawan");
         XLSX.writeFile(wb, "template_import_karyawan.xlsx");
@@ -2803,6 +2826,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
     }, [searchTerm]);
 
     const roleConfig: Record<Role, { label: string; className: string }> = {
+        'owner': { label: 'Owner', className: 'bg-yellow-500/20 text-yellow-300' },
         'super-admin': { label: 'Super Admin', className: 'bg-purple-500/20 text-purple-300' },
         'admin': { label: 'Admin', className: 'bg-blue-500/20 text-blue-300' },
         'user': { label: 'User', className: 'bg-gray-500/20 text-gray-300' },
@@ -2898,12 +2922,14 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 
                                                         // Button styling based on role
                                                         const buttonStyles = {
+                                                            'owner': 'bg-yellow-600 hover:bg-yellow-500 text-white',
                                                             'super-admin': 'bg-purple-600 hover:bg-purple-500 text-white',
                                                             'admin': 'bg-blue-600 hover:bg-blue-500 text-white',
                                                             'user': 'bg-gray-600 hover:bg-gray-500 text-white'
                                                         };
 
                                                         const labels = {
+                                                            'owner': 'Jadikan Owner',
                                                             'super-admin': 'Jadikan Super Admin',
                                                             'admin': 'Jadikan Admin',
                                                             'user': 'Jadikan User'
@@ -3243,7 +3269,7 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
 interface ManageAdminAccessModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (hospitalIds: string[]) => void;
+    onSave: (hospitalIds: string[]) => Promise<boolean>;
     user: Employee | null;
     availableHospitals: Hospital[];
 }
@@ -3744,7 +3770,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 {activeView === 'manajemen-rs' && isSuperAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
             </div>
 
-            <UserModal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)} onSave={handleSaveUser} existingUser={editingUser} hospitals={hospitals} />
+            <UserModal
+                isOpen={isUserModalOpen}
+                onClose={() => setIsUserModalOpen(false)}
+                onSave={handleSaveUser}
+                existingUser={editingUser}
+                hospitals={hospitals}
+                loggedInEmployee={loggedInEmployee}
+            />
             <ActivityModal isOpen={isActivityModalOpen} onClose={() => setIsActivityModalOpen(false)} onSave={onAddActivity} onUpdate={onUpdateActivity} existingActivity={editingActivity} allEmployees={allUsers} hospitals={hospitals} />
             <DestructiveConfirmationModal
                 isOpen={!!confirmingDestructiveAction}

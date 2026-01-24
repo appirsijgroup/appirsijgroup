@@ -14,6 +14,7 @@ import type { Employee, Role } from '@/types';
  */
 export function getRoleLevel(role: Role): number {
   const levels: Record<Role, number> = {
+    'owner': 1000,
     'super-admin': 100,
     'admin': 50,
     'user': 1
@@ -31,7 +32,12 @@ export function canModifyUserRole(
 ): boolean {
   if (!modifier) return false;
 
+  if (modifier.role === 'owner') {
+    return true; // Owner can do anything
+  }
+
   if (modifier.role === 'super-admin') {
+    if (targetUser.role === 'owner') return false; // Cannot modify owner
     if (targetUser.role === 'super-admin' && modifier.id !== targetUser.id) {
       return false;
     }
@@ -54,7 +60,12 @@ export function canDeleteUser(
 ): boolean {
   if (!modifier) return false;
 
+  if (modifier.role === 'owner') {
+    return modifier.id === targetUser.id ? false : true; // Owner can delete anyone except self
+  }
+
   if (modifier.role === 'super-admin') {
+    if (targetUser.role === 'owner') return false;
     return targetUser.role !== 'super-admin' || modifier.id === targetUser.id;
   }
 
@@ -96,6 +107,8 @@ export function getAssignableRoles(modifier: Employee | null): Role[] {
   if (!modifier) return [];
 
   switch (modifier.role) {
+    case 'owner':
+      return ['super-admin', 'admin', 'user'];
     case 'super-admin':
       return ['admin', 'user'];
     case 'admin':
@@ -110,7 +123,7 @@ export function getAssignableRoles(modifier: Employee | null): Role[] {
  */
 export function isAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return ['super-admin', 'admin'].includes(user.role);
+  return ['owner', 'super-admin', 'admin'].includes(user.role);
 }
 
 /**
@@ -118,7 +131,7 @@ export function isAdmin(user: Employee | null): boolean {
  */
 export function isSuperAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return user.role === 'super-admin';
+  return ['owner', 'super-admin'].includes(user.role);
 }
 
 /**
@@ -126,7 +139,7 @@ export function isSuperAdmin(user: Employee | null): boolean {
  */
 export function isAnyAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return user.role === 'super-admin' || user.role === 'admin';
+  return ['owner', 'super-admin', 'admin'].includes(user.role);
 }
 
 /**
@@ -139,6 +152,12 @@ export function getRoleDisplay(role: Role): {
   level: number;
 } {
   const roleConfig = {
+    'owner': {
+      label: 'Owner',
+      color: 'text-yellow-700',
+      bgColor: 'bg-yellow-100',
+      level: 1000
+    },
     'super-admin': {
       label: 'Super Admin',
       color: 'text-red-700',

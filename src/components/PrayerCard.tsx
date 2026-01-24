@@ -11,10 +11,9 @@ interface PrayerCardProps {
   onHadir: () => void;
   onTidakHadir: () => void;
   onUbah: () => void;
-  onStartLateEntry: () => void;
 }
 
-const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isActive, isTimePast, onHadir, onTidakHadir, onUbah, onStartLateEntry }) => {
+const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isActive, isTimePast, onHadir, onTidakHadir, onUbah }) => {
   const isSubmitted = !!attendanceStatus?.submitted;
 
   const cardClasses = `
@@ -44,7 +43,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
 
       <div className="grow flex flex-col items-center justify-center text-center">
         <div className={`p-3 rounded-full mb-2 transition-colors ${isSubmitted && attendanceStatus.status === 'hadir' ? 'bg-green-500/50' :
-            isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`
+          isSubmitted && attendanceStatus.status === 'tidak-hadir' ? 'bg-red-500/50' : 'bg-white/10'}`
         }>
           {prayer.icon}
         </div>
@@ -69,17 +68,12 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
             </p>
           </div>
         ) : isTimePast ? (
-          <div className="flex flex-col items-center text-center gap-2">
-            <div className="flex items-center gap-1.5 text-yellow-300">
+          <div className="flex flex-col items-center text-center gap-1 opacity-60">
+            <div className="flex items-center gap-1.5 text-gray-400">
               <ClockIcon className="w-4 h-4" />
               <p className="text-xs font-semibold">Waktu Terlewat</p>
             </div>
-            <button
-              onClick={onStartLateEntry}
-              className="w-full py-2 px-2 rounded-lg font-semibold transition-all duration-300 bg-yellow-500/80 hover:bg-yellow-500 text-white shadow-md text-xs"
-            >
-              Ajukan Presensi Terlewat
-            </button>
+            <p className="text-[10px] text-gray-500 leading-tight">Gunakan menu Aktifitas Saya untuk pengajuan terlewat</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">

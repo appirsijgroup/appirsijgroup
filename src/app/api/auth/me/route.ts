@@ -40,6 +40,10 @@ const convertToCamelCase = (emp: any): any => {
     mustChangePassword: emp.must_change_password,
     hospitalId: emp.hospital_id,
     professionCategory: emp.profession_category,
+    isProfileComplete: emp.is_profile_complete,
+    emailVerified: emp.email_verified,
+    avatarUrl: emp.avatar_url,
+    authUserId: emp.auth_user_id,
   };
 };
 

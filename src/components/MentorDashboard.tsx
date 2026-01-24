@@ -994,8 +994,13 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                         {pendingTadarusRequests.map(req => (
                             <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <div>
-                                    <p className="font-semibold text-white">Pengajuan Tadarus: {req.menteeName}</p>
-                                    <p className="text-sm text-blue-200">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
+                                    <p className="font-semibold text-white">
+                                        Pengajuan {req.category || 'Tadarus'}: {req.menteeName}
+                                    </p>
+                                    <p className="text-sm text-blue-200">
+                                        Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}
+                                    </p>
+                                    {req.notes && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.notes}&quot;</p>}
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => onReviewTadarusRequest(req.id, 'rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>

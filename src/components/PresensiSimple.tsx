@@ -233,24 +233,38 @@ const PresensiComponent: React.FC = () => {
   // Prayer Attendance Mapping
   const prayerAttendance = useMemo(() => {
     const rawAtt = loggedInEmployee?.id ? (allUsersData[loggedInEmployee.id]?.attendance || {}) : {};
-    const now = new Date();
-    const jakartaNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-    const todayStart = new Date(jakartaNow); todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(jakartaNow); todayEnd.setHours(23, 59, 59, 999);
+    const todayStr = getTodayLocalDateString();
 
     const converted: Record<string, any> = {};
     Object.entries(rawAtt).forEach(([key, record]: [string, any]) => {
       if (record && record.status) {
-        const ts = record.timestamp ? new Date(record.timestamp) : null;
-        if (ts && ts >= todayStart && ts <= todayEnd) {
-          // 🔥 FIX: Match by prayerId prefix for dynamic entityIds (e.g., "subuh-2026-01-25")
-          const prayerId = key.split('-')[0];
+        // 🔥 REPAIR: Match by dynamic entityId (e.g. "subuh-2026-01-26")
+        const parts = key.split('-');
+        const prayerId = parts[0];
+        const dateInKey = parts.slice(1).join('-');
+
+        let isMatchesToday = false;
+        if (dateInKey === todayStr) {
+          isMatchesToday = true;
+        } else if (!dateInKey) {
+          // Fallback for old records: use robust date conversion
+          const tsValue = record.timestamp;
+          if (tsValue) {
+            const date = new Date(tsValue);
+            if (!isNaN(date.getTime())) {
+              const jakartaDateStr = date.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+              if (jakartaDateStr === todayStr) isMatchesToday = true;
+            }
+          }
+        }
+
+        if (isMatchesToday) {
           converted[prayerId] = {
             status: record.status,
             reason: record.reason || null,
-            timestamp: ts.getTime(),
+            timestamp: record.timestamp ? new Date(record.timestamp).getTime() : Date.now(),
             submitted: true,
-            isLateEntry: record.is_late_entry || false
+            isLateEntry: record.is_late_entry ?? record.isLateEntry ?? false
           };
         }
       }
@@ -308,7 +322,11 @@ const PresensiComponent: React.FC = () => {
           }
           // Store with the unique entityId
           newState[loggedInEmployee.id].attendance[entityId] = {
-            status, reason, timestamp: Date.now(), isLateEntry: isLate
+            status,
+            reason,
+            timestamp: Date.now(),
+            isLateEntry: isLate,
+            submitted: true // 🔥 FIX: Ensure UI changes immediately
           };
         }
         return newState;

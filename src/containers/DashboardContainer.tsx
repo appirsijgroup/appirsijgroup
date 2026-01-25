@@ -1149,19 +1149,195 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             }}
             onUpdateTadarusSession={updateTadarusSession}
             onDeleteTadarusSession={deleteTadarusSession}
-            onReviewTadarusRequest={(requestId, status) => {
+            onReviewTadarusRequest={async (requestId, status) => {
                 const req = tadarusRequests.find(r => r.id === requestId);
-                if (req) {
+                if (!req) return;
+
+                try {
+                    // 1. Update request status in DB
+                    const response = await fetch('/api/manual-requests/tadarus', {
+                        method: 'PATCH',
+                        body: JSON.stringify({ id: requestId, status })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update request');
+
+                    // 2. Update local state
                     addOrUpdateTadarusRequest({ ...req, status });
-                    // Notify mentee
+
+                    // 3. If Approved, update monthly activity (Mutabaah) for MENTEE
+                    if (status === 'approved') {
+                        // Mapping category to activity ID from dailyActivitiesConfig
+                        // Note: This matches IDs defined in your dailyActivities configuration
+                        const categoryMap: Record<string, string> = {
+                            'BBQ': 'bbq_tahsin',
+                            'UMUM': 'tadarus',
+                            'KIE': 'tepat_waktu_kie',
+                            'Doa Bersama': 'doa_bersama',
+                            'Kajian Selasa': 'kajian_selasa',
+                            'Pengajian Persyarikatan': 'pengajian_persyarikatan'
+                        };
+
+                        const activityId = categoryMap[req.category || 'UMUM'] || 'tadarus';
+
+                        try {
+                            const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+
+                            // Get mentee's current data first to avoid overwriting
+                            const menteeData = allUsersData[req.menteeId]?.employee;
+                            if (menteeData) {
+                                const dateObj = new Date(req.date + 'T12:00:00Z');
+                                const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+                                const dayKey = dateObj.getDate().toString().padStart(2, '0');
+
+                                const currentMonthAct = menteeData.monthlyActivities?.[monthKey] || {};
+                                const currentDayAct = currentMonthAct[dayKey] || {};
+
+                                const newMonthlyActivities = {
+                                    ...menteeData.monthlyActivities,
+                                    [monthKey]: {
+                                        ...currentMonthAct,
+                                        [dayKey]: {
+                                            ...currentDayAct,
+                                            [activityId]: true
+                                        }
+                                    }
+                                };
+
+                                // Update DB
+                                await updateMonthlyActivities(req.menteeId, newMonthlyActivities);
+
+                                // Update local store for Mentee
+                                setAllUsersData(prev => ({
+                                    ...prev,
+                                    [req.menteeId]: {
+                                        ...prev[req.menteeId],
+                                        employee: {
+                                            ...prev[req.menteeId].employee,
+                                            monthlyActivities: newMonthlyActivities
+                                        }
+                                    }
+                                }));
+                            }
+                        } catch (err) {
+                            console.error('Failed to update mentee mutabaah:', err);
+                        }
+                    }
+
+                    // 4. Notify Mentee
+                    createNotification({
+                        id: Date.now().toString(),
+                        userId: req.menteeId,
+                        type: status === 'approved' ? 'tadarus_approved' : 'tadarus_rejected',
+                        title: `Pengajuan ${req.category || 'Kegiatan'} ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
+                        message: `Pengajuan ${req.category || 'kegiatan'} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
+                        linkTo: '/dashboard',
+                        relatedEntityId: req.id,
+                        timestamp: Date.now(),
+                        isRead: false
+                    });
+
+                    addToast(`Pengajuan berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+
+                } catch (e) {
+                    console.error(e);
+                    addToast('Gagal memproses pengajuan', 'error');
                 }
             }}
             missedPrayerRequests={missedPrayerRequests}
-            onReviewMissedPrayerRequest={(requestId, status, notes) => {
+            onReviewMissedPrayerRequest={async (requestId, status, notes) => {
                 const req = missedPrayerRequests.find(r => r.id === requestId);
-                if (req) {
+                if (!req) return;
+
+                try {
+                    // 1. Update request status in DB
+                    const response = await fetch('/api/manual-requests/prayer', {
+                        method: 'PATCH',
+                        body: JSON.stringify({ id: requestId, status, mentorNotes: notes })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update request');
+
+                    // 2. Update local state
                     addOrUpdateMissedPrayerRequest({ ...req, status, mentorNotes: notes });
-                    // Logic to update attendance if approved
+
+                    // 3. If Approved, insert into attendance_records and update mutabaah
+                    if (status === 'approved') {
+                        // Insert attendance record
+                        try {
+                            const { submitAttendance } = await import('@/services/attendanceService');
+                            await submitAttendance(
+                                req.menteeId,
+                                req.prayerId, // e.g., 'subuh', 'dzuhur'
+                                'hadir',
+                                `Manual request approved: ${req.reason}`,
+                                false // isLateEntry ?? usually false for manual correction
+                                // location undefined
+                            );
+                        } catch (err) {
+                            console.error('Failed to insert attendance record:', err);
+                            addToast('Gagal mencatat kehadiran ke database presensi', 'error');
+                        }
+
+                        // ALSO Update Mutabaah (Checklist)
+                        try {
+                            const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                            const menteeData = allUsersData[req.menteeId]?.employee;
+                            if (menteeData) {
+                                const dateObj = new Date(req.date + 'T12:00:00Z');
+                                const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+                                const dayKey = dateObj.getDate().toString().padStart(2, '0');
+                                const prayerId = req.prayerId; // matches activity id usually (subuh, dzuhur...)
+
+                                const currentMonthAct = menteeData.monthlyActivities?.[monthKey] || {};
+                                const currentDayAct = currentMonthAct[dayKey] || {};
+
+                                const newMonthlyActivities = {
+                                    ...menteeData.monthlyActivities,
+                                    [monthKey]: {
+                                        ...currentMonthAct,
+                                        [dayKey]: {
+                                            ...currentDayAct,
+                                            [prayerId]: true
+                                        }
+                                    }
+                                };
+
+                                await updateMonthlyActivities(req.menteeId, newMonthlyActivities);
+                                setAllUsersData(prev => ({
+                                    ...prev,
+                                    [req.menteeId]: {
+                                        ...prev[req.menteeId],
+                                        employee: {
+                                            ...prev[req.menteeId].employee,
+                                            monthlyActivities: newMonthlyActivities
+                                        }
+                                    }
+                                }));
+                            }
+                        } catch (err) {
+                            console.error('Failed to update mutabaah for prayer:', err);
+                        }
+                    }
+
+                    // 4. Notify Mentee
+                    createNotification({
+                        id: Date.now().toString(),
+                        userId: req.menteeId,
+                        type: status === 'approved' ? 'missed_prayer_approved' : 'missed_prayer_rejected',
+                        title: `Presensi Sholat ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
+                        message: `Pengajuan presensi ${req.prayerName} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
+                        linkTo: '/dashboard',
+                        relatedEntityId: req.id,
+                        timestamp: Date.now(),
+                        isRead: false
+                    });
+
+                    addToast(`Pengajuan berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+
+                } catch (e) {
+                    console.error(e);
+                    addToast('Gagal memproses pengajuan', 'error');
                 }
             }}
             onMentorAttendOwnSession={(id) => updateTadarusSession(id, { mentorPresent: true })}

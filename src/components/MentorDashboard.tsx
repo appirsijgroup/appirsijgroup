@@ -978,60 +978,8 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     filterMonth, setFilterMonth
 }) => {
 
-    const hasPending = pendingMentorReviews.length > 0 || pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0;
-
     return (
         <div className="space-y-8">
-            <div>
-                <h3 className="text-xl font-bold text-white mb-4">Menunggu Tinjauan Anda</h3>
-                {!hasPending ? (
-                    <div className="text-center py-10 bg-black/20 rounded-lg"><p className="text-blue-200 text-sm">Tidak ada pengajuan</p></div>
-                ) : (
-                    <div className="space-y-4">
-                        {/* Render pending requests */}
-                        {pendingMentorReviews.map(sub => (
-                            <div key={sub.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div>
-                                    <p className="font-semibold text-white">Laporan Mingguan: {sub.menteeName}</p>
-                                    <p className="text-sm text-blue-200">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long' })}`}</p>
-                                </div>
-                                <button onClick={() => onViewReport(sub)} className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm">Lihat & Tinjau</button>
-                            </div>
-                        ))}
-                        {pendingTadarusRequests.map(req => (
-                            <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div>
-                                    <p className="font-semibold text-white">
-                                        Pengajuan {req.category || 'Tadarus'}: {req.menteeName}
-                                    </p>
-                                    <p className="text-sm text-blue-200">
-                                        Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}
-                                    </p>
-                                    {req.notes && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.notes}&quot;</p>}
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => onReviewTadarusRequest(req.id, 'rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
-                                    <button onClick={() => onReviewTadarusRequest(req.id, 'approved')} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
-                                </div>
-                            </div>
-                        ))}
-                        {pendingMissedPrayerRequests.map(req => (
-                            <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                <div>
-                                    <p className="font-semibold text-white">Presensi Terlewat: {req.menteeName}</p>
-                                    <p className="text-sm text-blue-200">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                    <p className="text-xs text-gray-400 italic mt-1">&quot;{req.reason}&quot;</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => onRejectMissedRequest(req.id)} className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
-                                    <button onClick={() => onApproveMissedRequest(req.id)} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
             <div>
                 <h3 className="text-xl font-bold text-white mb-4">Riwayat Tinjauan Laporan</h3>
                 <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">

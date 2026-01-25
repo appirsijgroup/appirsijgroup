@@ -19,7 +19,7 @@ interface NotificationState {
     markAsRead: (notificationId: string) => Promise<void>;
     markAllAsRead: (userId: string) => Promise<void>;
     clearAll: (userId: string) => Promise<void>;
-    dismissNotification: (notificationId: string) => void;
+    dismissNotification: (notificationId: string) => Promise<void>;
     deleteNotifications: (notificationIds: string[]) => Promise<void>;
     subscribeToRealtime: (userId: string) => (() => void);
 }
@@ -65,12 +65,11 @@ export const useNotificationStore = create<NotificationState>()(
                     return updated;
                 });
 
-                // Sync to Supabase (best-effort, tidak akan menghapus notifikasi lokal jika gagal)
+                // Sync to Supabase
                 try {
-                    await createNotificationSupabase(data);
+                    await createNotificationSupabase(newNotification);
                 } catch (error) {
-                    // JANGAN rollback local state - user tetap bisa melihat notifikasi di browser yang sama
-                    // Tambahkan flag bahwa ini belum sync ke Supabase
+                    console.error('❌ [notificationStore] Failed to sync new notification to Supabase:', error);
                 }
             },
 
@@ -132,10 +131,18 @@ export const useNotificationStore = create<NotificationState>()(
                 }
             },
 
-            dismissNotification: (notificationId) => {
+            dismissNotification: async (notificationId) => {
+                // Update local state first (optimistic update)
                 set((state) => ({
                     notifications: state.notifications.filter(n => n.id !== notificationId)
                 }));
+
+                // Sync to Supabase (DELETE from database so it doesn't come back on refresh)
+                try {
+                    await deleteNotificationsSupabase([notificationId]);
+                } catch (error) {
+                    console.error('❌ [notificationStore] Failed to persist dismissal to Supabase:', error);
+                }
             },
 
             deleteNotifications: async (notificationIds) => {
@@ -150,6 +157,7 @@ export const useNotificationStore = create<NotificationState>()(
                 try {
                     await deleteNotificationsSupabase(notificationIds);
                 } catch (error) {
+                    console.error('❌ [notificationStore] Failed to delete notifications from Supabase:', error);
                 }
             },
 

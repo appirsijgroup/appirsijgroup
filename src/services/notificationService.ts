@@ -19,14 +19,7 @@ interface NotificationsRow {
 /**
  * Create a new notification in Supabase
  */
-export async function createNotificationSupabase(data: Omit<Notification, 'id' | 'timestamp' | 'isRead'>): Promise<Notification> {
-    const notification: Notification = {
-        ...data,
-        id: `${Date.now()}-${Math.random()}`,
-        timestamp: Date.now(),
-        isRead: false,
-    };
-
+export async function createNotificationSupabase(notification: Notification): Promise<Notification> {
     // Map to database column names (snake_case)
     const dbNotification = {
         id: notification.id,

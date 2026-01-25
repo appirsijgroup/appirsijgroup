@@ -1324,7 +1324,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
                     <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
                     <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
-                    <SubTabButton label="Sesi Bimbingan" icon={Calendar} active={mentorSubView === 'sessions'} onClick={() => setMentorSubView('sessions')} />
+                    {/* Sesi Bimbingan menu removed as it is now integrated into Jadwal & Sesi */}
                     <SubTabButton label="Target Bimbingan" icon={Tag} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
                     <SubTabButton label="Progres Anggota" icon={BarChart3} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
                     <SubTabButton label="Laporan Bacaan" icon={BookOpen} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
@@ -1351,16 +1351,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         setFilterMonth={setFilterMonth}
                     />
                 )}
-                {mentorSubView === 'sessions' && (
-                    <SesiBimbingan
-                        upcomingSessions={upcomingSessions}
-                        employee={employee}
-                        onMentorAttendOwnSession={onMentorAttendOwnSession}
-                        onDeleteSession={(session) => setPendingSessionDelete(session)}
-                        onEditSession={openSessionModal}
-                        onNewSession={() => openSessionModal()}
-                    />
-                )}
+                {/* Sesi Bimbingan view removed */}
                 {mentorSubView === 'mentees' && (
                     <MenteeManagement
                         mentees={mentees}

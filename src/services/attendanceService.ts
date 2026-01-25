@@ -71,54 +71,42 @@ export const submitAttendance = async (
     }
 
     // Check if the entity date is in the future compared to validated time
-    // Assuming entityId contains date information in some form (like YYYY-MM-DD)
     const entityDateMatch = entityId.match(/\d{4}-\d{2}-\d{2}/);
     if (entityDateMatch) {
       const entityDate = new Date(entityDateMatch[0]);
       const correctedTime = timeValidation.correctedTime;
 
-      // If entity date is in the future compared to corrected server time, reject
       if (entityDate > correctedTime) {
         throw new Error('Cannot submit attendance for future dates.');
       }
     }
 
-    // Check if Supabase is configured
-    if (!supabase) {
-      throw new Error('Supabase client not initialized');
-    }
-
     const timestamp = timeValidation.correctedTime.toISOString();
 
-    // 🔥 REVERT: Gunakan upsert langsung ke attendance_records sesuai instruksi user
-    const { data: insertedData, error: upsertError } = await (supabase
-      .from('attendance_records') as any)
-      .upsert({
+    // Use API endpoint to bypass RLS
+    const response = await fetch('/api/attendance/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         employee_id: employeeId,
         entity_id: entityId,
-        status: status,
-        reason: reason,
-        timestamp: timestamp,
+        status,
+        reason,
+        timestamp,
         is_late_entry: isLateEntry,
         location: location ? JSON.stringify(location) : null
-      }, { onConflict: ['employee_id', 'entity_id'] })
-      .select()
-      .single();
+      }),
+    });
 
-    if (upsertError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error('❌ Error upserting attendance:', upsertError);
-      }
-      throw new Error(`Supabase error: ${upsertError.message} (Code: ${upsertError.code})`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Failed to submit attendance: ${errorData.error || 'Unknown error'}`);
     }
 
-    if (!insertedData) {
-      throw new Error('No data returned from Supabase after upsert');
-    }
-
-    const newRecord = insertedData;
-
-    return newRecord as AttendanceRecord;
+    const result = await response.json();
+    return result.data as AttendanceRecord;
   } catch (err: any) {
     throw err;
   }
@@ -126,14 +114,14 @@ export const submitAttendance = async (
 
 // Delete attendance record
 export const deleteAttendance = async (employeeId: string, entityId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('attendance_records')
-    .delete()
-    .eq('employee_id', employeeId)
-    .eq('entity_id', entityId);
+  // Use API endpoint to bypass RLS
+  const response = await fetch(`/api/attendance/submit?employeeId=${employeeId}&entityId=${entityId}`, {
+    method: 'DELETE',
+  });
 
-  if (error) {
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Failed to delete attendance: ${errorData.error || 'Unknown error'}`);
   }
 };
 
@@ -155,14 +143,23 @@ export const batchUpdateAttendance = async (
     timestamp: record.timestamp || timeValidation.correctedTime.toISOString()
   }));
 
-  const { data, error } = await (supabase
-    .from('attendance_records') as any)
-    .upsert(recordsWithIds, { onConflict: ['employee_id', 'entity_id'] })
-    .select();
+  // Use API endpoint to bypass RLS
+  const response = await fetch('/api/attendance/batch', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      employeeId,
+      records: recordsWithIds
+    }),
+  });
 
-  if (error) {
-    throw error;
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(`Failed to batch update attendance: ${errorData.error || 'Unknown error'}`);
   }
 
-  return data;
+  const result = await response.json();
+  return result.data as AttendanceRecord[];
 };

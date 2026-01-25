@@ -142,7 +142,7 @@ export default function AktivitasBulananPage() {
             <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
+                    <p className="text-white/60 text-sm font-medium animate-pulse">Memuat data mutabaah...</p>
                 </div>
             </div>
         );

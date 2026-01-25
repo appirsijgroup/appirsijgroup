@@ -227,80 +227,73 @@ export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
 
 // Get tadarus requests for a specific mentor
 export const getTadarusRequestsForMentor = async (mentorId: string): Promise<TadarusRequest[]> => {
-    const { data, error } = await supabase
-        .from('tadarus_requests')
-        .select('*')
-        .eq('mentor_id', mentorId)
-        .order('requested_at', { ascending: false });
+    try {
+        const response = await fetch(`/api/manual-requests/tadarus?mentorId=${mentorId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch tadarus requests');
+        }
 
-    if (error) {
-        throw error;
+        const result = await response.json();
+        const data = result.data || [];
+
+        return data.map((request: any) => ({
+            id: request.id,
+            menteeId: request.mentee_id,
+            menteeName: request.mentee_name,
+            mentorId: request.mentor_id,
+            date: request.date,
+            category: request.category,
+            notes: request.notes,
+            requestedAt: request.requested_at,
+            status: request.status,
+            reviewedAt: request.reviewed_at
+        }));
+    } catch (error) {
+        console.error('Error fetching tadarus requests for mentor:', error);
+        return [];
     }
-
-    return data.map((request: any) => ({
-        id: request.id,
-        menteeId: request.mentee_id,
-        menteeName: request.mentee_name,
-        mentorId: request.mentor_id,
-        date: request.date,
-        category: request.category,
-        notes: request.notes,
-        requestedAt: request.requested_at,
-        status: request.status,
-        reviewedAt: request.reviewed_at
-    }));
 };
 
 // Create new tadarus request
 export const createTadarusRequest = async (
     request: Omit<TadarusRequest, 'id'>
 ): Promise<TadarusRequest> => {
-    try {
+    const dbRequest = {
+        mentee_id: request.menteeId,
+        mentee_name: request.menteeName,
+        mentor_id: request.mentorId,
+        date: request.date,
+        category: request.category,
+        notes: request.notes,
+        requested_at: request.requestedAt || Date.now(),
+        status: request.status || 'pending'
+    };
 
-        // Convert camelCase to snake_case for Supabase
-        const dbRequest = {
-            mentee_id: request.menteeId,
-            mentee_name: request.menteeName,
-            mentor_id: request.mentorId,
-            date: request.date,
-            category: request.category,
-            notes: request.notes,
-            requested_at: request.requestedAt || Date.now(),
-            status: request.status || 'pending'
-        };
+    const response = await fetch('/api/manual-requests/tadarus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbRequest)
+    });
 
-
-        const { data, error } = await supabase
-            .from('tadarus_requests')
-            .insert(dbRequest as any)
-            .select()
-            .single() as any;
-
-        if (error) {
-            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
-        }
-
-        if (!data) {
-            throw new Error('No data returned from Supabase after insert');
-        }
-
-
-        // Convert back to camelCase
-        return {
-            id: data.id,
-            menteeId: data.mentee_id,
-            menteeName: data.mentee_name,
-            mentorId: data.mentor_id,
-            date: data.date,
-            category: data.category,
-            notes: data.notes,
-            requestedAt: data.requested_at,
-            status: data.status,
-            reviewedAt: data.reviewed_at
-        };
-    } catch (error) {
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to create tadarus request');
     }
+
+    const result = await response.json();
+    const data = result.data;
+
+    return {
+        id: data.id,
+        menteeId: data.mentee_id,
+        menteeName: data.mentee_name,
+        mentorId: data.mentor_id,
+        date: data.date,
+        category: data.category,
+        notes: data.notes,
+        requestedAt: data.requested_at,
+        status: data.status,
+        reviewedAt: data.reviewed_at
+    };
 };
 
 // Update tadarus request status
@@ -308,18 +301,19 @@ export const updateTadarusRequest = async (
     requestId: string,
     updates: Partial<Pick<TadarusRequest, 'status' | 'reviewedAt'>>
 ): Promise<void> => {
-    const dbUpdates: any = {};
+    const dbUpdates: any = { id: requestId };
 
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.reviewedAt !== undefined) dbUpdates.reviewed_at = updates.reviewedAt;
 
-    const { error } = await (supabase
-        .from('tadarus_requests') as any)
-        .update(dbUpdates)
-        .eq('id', requestId);
+    const response = await fetch('/api/manual-requests/tadarus', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbUpdates)
+    });
 
-    if (error) {
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to update tadarus request');
     }
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { Bell, LogOut } from 'lucide-react';
 
 export interface NavItem {
@@ -19,34 +20,20 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, unreadAnnouncementsCount, onLogout }) => {
   const pathname = usePathname();
-  const router = useRouter();
   const [clickedItem, setClickedItem] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleItemClick = useCallback((href: string, e?: React.MouseEvent) => {
-    // Prevent default if already navigating
-    if (isNavigating) {
-      e?.preventDefault();
-      return;
-    }
-
     // Instant visual feedback
     setClickedItem(href);
-    setIsNavigating(true);
 
     // Close mobile menu
     setIsOpen(false);
 
-    // 🔥 FIX: Use router.push for explicit navigation on ALL devices
-    // This fixes the PWA navigation issue where Link component might not work correctly
-    router.push(href);
-
     // Clear click state after navigation
     setTimeout(() => {
       setClickedItem(null);
-      setIsNavigating(false);
     }, 300);
-  }, [setIsOpen, router, isNavigating]);
+  }, [setIsOpen]);
 
   const handleLogout = useCallback(() => {
     onLogout();
@@ -97,19 +84,13 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
           {/* Nav items */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
             {navItems.map((item) => (
-              <div
+              <Link
                 key={item.href}
+                href={item.href}
                 onClick={(e) => handleItemClick(item.href, e)}
                 className={navItemClass(item.href)}
                 aria-current={isActive(item.href) ? 'page' : undefined}
-                role="button"
-                tabIndex={0}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleItemClick(item.href);
-                  }
-                }}
+              // Link handles accessibility roles automatically
               >
                 <item.icon className="w-6 h-6 shrink-0" />
                 <span>{item.label}</span>
@@ -119,7 +100,7 @@ const Navigation: React.FC<NavigationProps> = ({ navItems, isOpen, setIsOpen, un
                     <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full border border-gray-900 animate-pulse"></span>
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </nav>
 

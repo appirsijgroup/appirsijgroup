@@ -281,17 +281,13 @@ export const createActivity = async (
     }
 };
 
-/**
- * Update activity
- */
+// Update activity
 export const updateActivity = async (
     id: string,
     updates: Partial<Activity>
 ): Promise<Activity> => {
     try {
-        // ⚡ FIX: Convert camelCase to snake_case untuk database
-        // JANGAN pakai spread ...updates karena akan kirim field camelCase ke Supabase!
-        const dbData: any = {};
+        const dbData: any = { id }; // Include ID for the API to identify the record
 
         if (updates.name !== undefined) dbData.name = updates.name;
         if (updates.description !== undefined) dbData.description = updates.description;
@@ -306,17 +302,23 @@ export const updateActivity = async (
         if (updates.audienceType !== undefined) dbData.audience_type = updates.audienceType;
         if (updates.audienceRules !== undefined) dbData.audience_rules = updates.audienceRules;
 
-        const { data, error } = await supabase
-            .from('activities')
-            .update(dbData)
-            .eq('id', id)
-            .select()
-            .single();
+        const response = await fetch('/api/activities', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dbData),
+        });
 
-        if (error) throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to update activity: ${errorData.error || 'Unknown error'}`);
+        }
 
-        // Convert response back to camelCase
-        return mapDbToActivity(data as any as DbActivity);
+        const result = await response.json();
+        const data = result.data as DbActivity;
+
+        return mapDbToActivity(data);
     } catch (error) {
         throw error;
     }

@@ -54,3 +54,96 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
     }
 }
+
+export async function PATCH(request: NextRequest) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (session.role !== 'admin' && session.role !== 'super-admin') {
+            return NextResponse.json({ error: 'Higher privilege required' }, { status: 403 });
+        }
+
+        const { id, ...updates } = await request.json();
+
+        if (!id) {
+            return NextResponse.json({ error: 'Activity ID is required' }, { status: 400 });
+        }
+
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+        if (!supabaseServiceKey || !supabaseUrl) {
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+        });
+
+        const { data, error } = await supabase
+            .from('activities')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('❌ [API Activities PATCH] Supabase error:', error);
+            return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, data });
+    } catch (error: any) {
+        console.error('❌ [API Activities PATCH] Unexpected error:', error);
+        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const session = await getSession();
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (session.role !== 'admin' && session.role !== 'super-admin') {
+            return NextResponse.json({ error: 'Higher privilege required' }, { status: 403 });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: 'Activity ID is required' }, { status: 400 });
+        }
+
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+        if (!supabaseServiceKey || !supabaseUrl) {
+            return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+        });
+
+        const { error } = await supabase
+            .from('activities')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('❌ [API Activities DELETE] Supabase error:', error);
+            return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('❌ [API Activities DELETE] Unexpected error:', error);
+        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    }
+}

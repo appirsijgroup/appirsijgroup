@@ -8,54 +8,64 @@ import type { MissedPrayerRequest } from '../types';
 
 // Get all requests for a mentee
 export const getMissedPrayerRequestsForMentee = async (menteeId: string): Promise<MissedPrayerRequest[]> => {
-    const { data, error } = await supabase
-        .from('missed_prayer_requests')
-        .select('*')
-        .eq('mentee_id', menteeId)
-        .order('requested_at', { ascending: false });
+    try {
+        const response = await fetch(`/api/manual-requests/prayer?menteeId=${menteeId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch prayer requests');
+        }
 
-    if (error) throw error;
+        const result = await response.json();
+        const data = result.data || [];
 
-    return data.map((req: any) => ({
-        id: req.id,
-        menteeId: req.mentee_id,
-        menteeName: req.mentee_name,
-        mentorId: req.mentor_id,
-        date: req.date,
-        prayerId: req.prayer_id,
-        prayerName: req.prayer_name,
-        reason: req.reason,
-        requestedAt: req.requested_at,
-        status: req.status,
-        reviewedAt: req.reviewed_at,
-        mentorNotes: req.mentor_notes
-    }));
+        return data.map((req: any) => ({
+            id: req.id,
+            menteeId: req.mentee_id,
+            menteeName: req.mentee_name,
+            mentorId: req.mentor_id,
+            date: req.date,
+            prayerId: req.prayer_id,
+            prayerName: req.prayer_name,
+            reason: req.reason,
+            requestedAt: req.requested_at,
+            status: req.status,
+            reviewedAt: req.reviewed_at,
+            mentorNotes: req.mentor_notes
+        }));
+    } catch (error) {
+        console.error('Error fetching prayer requests:', error);
+        return []; // Return empty array on error to prevent crashes
+    }
 };
 
 // Get all requests for a mentor's team
 export const getMissedPrayerRequestsForMentor = async (mentorId: string): Promise<MissedPrayerRequest[]> => {
-    const { data, error } = await supabase
-        .from('missed_prayer_requests')
-        .select('*')
-        .eq('mentor_id', mentorId)
-        .order('requested_at', { ascending: false });
+    try {
+        const response = await fetch(`/api/manual-requests/prayer?mentorId=${mentorId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch prayer requests');
+        }
 
-    if (error) throw error;
+        const result = await response.json();
+        const data = result.data || [];
 
-    return data.map((req: any) => ({
-        id: req.id,
-        menteeId: req.mentee_id,
-        menteeName: req.mentee_name,
-        mentorId: req.mentor_id,
-        date: req.date,
-        prayerId: req.prayer_id,
-        prayerName: req.prayer_name,
-        reason: req.reason,
-        requestedAt: req.requested_at,
-        status: req.status,
-        reviewedAt: req.reviewed_at,
-        mentorNotes: req.mentor_notes
-    }));
+        return data.map((req: any) => ({
+            id: req.id,
+            menteeId: req.mentee_id,
+            menteeName: req.mentee_name,
+            mentorId: req.mentor_id,
+            date: req.date,
+            prayerId: req.prayer_id,
+            prayerName: req.prayer_name,
+            reason: req.reason,
+            requestedAt: req.requested_at,
+            status: req.status,
+            reviewedAt: req.reviewed_at,
+            mentorNotes: req.mentor_notes
+        }));
+    } catch (error) {
+        console.error('Error fetching prayer requests for mentor:', error);
+        return [];
+    }
 };
 
 // Create new request
@@ -74,13 +84,18 @@ export const createMissedPrayerRequest = async (
         status: request.status || 'pending'
     };
 
-    const { data, error } = await supabase
-        .from('missed_prayer_requests')
-        .insert(dbRequest as any)
-        .select()
-        .single() as any;
+    const response = await fetch('/api/manual-requests/prayer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbRequest)
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+        throw new Error('Failed to create prayer request');
+    }
+
+    const result = await response.json();
+    const data = result.data;
 
     return {
         id: data.id,
@@ -103,16 +118,19 @@ export const updateMissedPrayerRequest = async (
     requestId: string,
     updates: Partial<Pick<MissedPrayerRequest, 'status' | 'reviewedAt' | 'mentorNotes'>>
 ): Promise<void> => {
-    const dbUpdates: any = {};
+    const dbUpdates: any = { id: requestId };
 
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.reviewedAt !== undefined) dbUpdates.reviewed_at = updates.reviewedAt;
     if (updates.mentorNotes !== undefined) dbUpdates.mentor_notes = updates.mentorNotes;
 
-    const { error } = await (supabase
-        .from('missed_prayer_requests') as any)
-        .update(dbUpdates)
-        .eq('id', requestId);
+    const response = await fetch('/api/manual-requests/prayer', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbUpdates)
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+        throw new Error('Failed to update prayer request');
+    }
 };

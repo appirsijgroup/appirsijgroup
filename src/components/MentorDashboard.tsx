@@ -1168,7 +1168,7 @@ const SubTabButton: React.FC<{
         <Icon className="w-4 h-4" />
         {label}
         {count !== undefined && count > 0 && (
-            <span className="absolute -top-2 -right-2 flex items-center gap-0.5 h-6 min-w-[24px] px-1.5 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold shadow-lg shadow-red-500/50 animate-pulse border-2 border-white/20">
+            <span className="absolute -top-2 -right-2 flex items-center gap-0.5 h-6 min-w-[24px] px-1.5 rounded-full bg-linear-to-br from-red-500 to-red-600 text-white text-xs font-bold shadow-lg shadow-red-500/50 animate-pulse border-2 border-white/20">
                 <Bell className="w-3 h-3" />
                 <span>{count}</span>
             </span>

@@ -9,7 +9,14 @@ import { getSession } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await getSession();
+        let session;
+        try {
+            session = await getSession();
+        } catch (e: any) {
+            console.error('❌ [API Tadarus GET] getSession failed:', e);
+            return NextResponse.json({ error: 'Auth Check Failed', details: e.message }, { status: 401 });
+        }
+
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -22,6 +29,7 @@ export async function GET(request: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
         if (!supabaseServiceKey || !supabaseUrl) {
+            console.error('❌ [API Tadarus GET] Missing Env Vars');
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
@@ -40,7 +48,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await query;
 
         if (error) {
-            console.error('❌ [API Tadarus Requests GET] Error:', error);
+            console.error('❌ [API Tadarus Requests GET] DB Error:', error);
             return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
         }
 

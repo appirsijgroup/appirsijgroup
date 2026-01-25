@@ -35,6 +35,7 @@ interface AktivitasSayaProps {
     hospitals: any[];
     addToast?: (message: string, type: 'success' | 'error') => void;
     loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+    initialTab?: 'aktivitas-pribadi' | 'riwayat-bacaan' | 'panel-mentor' | 'persetujuan';
 }
 
 const TabButton: React.FC<{
@@ -57,7 +58,7 @@ const TabButton: React.FC<{
 );
 
 const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<'aktivitas-pribadi' | 'riwayat-bacaan' | 'panel-mentor' | 'persetujuan'>('aktivitas-pribadi');
+    const [activeTab, setActiveTab] = useState<'aktivitas-pribadi' | 'riwayat-bacaan' | 'panel-mentor' | 'persetujuan'>(props.initialTab || 'aktivitas-pribadi');
 
     // Role calculations
     const hasMentorRole = props.employee.canBeMentor === true;

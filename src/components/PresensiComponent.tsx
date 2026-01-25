@@ -9,6 +9,7 @@ import { PRAYERS } from '@/data/prayers';
 import { fetchPrayerTimes, PrayerTimesData } from '@/services/prayerTimeService';
 import AttendanceModalSimple from '@/components/AttendanceModalSimple';
 import { submitAttendance } from '@/services/attendanceService';
+import { getTodayLocalDateString } from '@/utils/dateUtils';
 
 const PresensiComponent: React.FC = () => {
   const { loggedInEmployee } = useAppDataStore();
@@ -149,10 +150,14 @@ const PresensiComponent: React.FC = () => {
         const { latitude, longitude } = position.coords;
         setLocationStatus(`Lokasi terverifikasi: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
 
+        // 🔥 FIX: Use unique entityId for each date to prevent overwriting
+        const dateStr = getTodayLocalDateString();
+        const fullEntityId = `${entityId}-${dateStr}`;
+
         // Submit to Supabase
         await submitAttendance(
           loggedInEmployee.id,
-          entityId,
+          fullEntityId,
           'hadir',
           null,
           false,
@@ -162,7 +167,7 @@ const PresensiComponent: React.FC = () => {
         // Update local state
         setAttendance(prev => ({
           ...prev,
-          [entityId]: {
+          [entityId]: { // Keep key as entityId (sholat id) for UI mapping
             status: 'hadir',
             reason: null,
             timestamp: Date.now(),
@@ -180,10 +185,14 @@ const PresensiComponent: React.FC = () => {
         return;
       }
     } else {
+      // 🔥 FIX: Use unique entityId for each date to prevent overwriting
+      const dateStr = getTodayLocalDateString();
+      const fullEntityId = `${entityId}-${dateStr}`;
+
       // Submit to Supabase for 'tidak-hadir'
       await submitAttendance(
         loggedInEmployee.id,
-        entityId,
+        fullEntityId,
         'tidak-hadir',
         reason,
         isLateEntry
@@ -192,7 +201,7 @@ const PresensiComponent: React.FC = () => {
       // Update local state
       setAttendance(prev => ({
         ...prev,
-        [entityId]: {
+        [entityId]: { // Keep key as entityId (sholat id) for UI mapping
           status,
           reason,
           timestamp: Date.now(),
@@ -277,7 +286,6 @@ const PresensiComponent: React.FC = () => {
                 onHadir={() => handleAttendance(prayer.id, 'hadir')}
                 onTidakHadir={() => handleAttendance(prayer.id, 'tidak-hadir')}
                 onUbah={() => { }}
-                onStartLateEntry={() => handleOpenModal(prayer.id, prayer.name, true)}
               />
             );
           })}

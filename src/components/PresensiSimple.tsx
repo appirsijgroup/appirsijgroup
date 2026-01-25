@@ -243,7 +243,9 @@ const PresensiComponent: React.FC = () => {
       if (record && record.status) {
         const ts = record.timestamp ? new Date(record.timestamp) : null;
         if (ts && ts >= todayStart && ts <= todayEnd) {
-          converted[key] = {
+          // 🔥 FIX: Match by prayerId prefix for dynamic entityIds (e.g., "subuh-2026-01-25")
+          const prayerId = key.split('-')[0];
+          converted[prayerId] = {
             status: record.status,
             reason: record.reason || null,
             timestamp: ts.getTime(),
@@ -289,13 +291,23 @@ const PresensiComponent: React.FC = () => {
     if (!loggedInEmployee) return;
     try {
       showMessage(status === 'hadir' ? '⌛ Mencatat kehadiran...' : '⌛ Mencatat alasan...', 'info');
-      const record = await submitAttendance(loggedInEmployee.id, prayerId, status, reason, isLate);
+
+      // 🔥 FIX: Use unique entityId for each date to prevent overwriting records from different days
+      const dateStr = getTodayLocalDateString();
+      const entityId = `${prayerId}-${dateStr}`;
+
+      await submitAttendance(loggedInEmployee.id, entityId, status, reason, isLate);
 
       // Update local UI
       setAllUsersData(prev => {
         const newState = { ...prev };
         if (newState[loggedInEmployee.id]) {
-          newState[loggedInEmployee.id].attendance[prayerId] = {
+          // Initialize attendance map if it doesn't exist
+          if (!newState[loggedInEmployee.id].attendance) {
+            newState[loggedInEmployee.id].attendance = {};
+          }
+          // Store with the unique entityId
+          newState[loggedInEmployee.id].attendance[entityId] = {
             status, reason, timestamp: Date.now(), isLateEntry: isLate
           };
         }

@@ -282,7 +282,8 @@ const PresensiComponent: React.FC = () => {
   const syncPrayerToMonthly = async (status: 'hadir' | 'tidak-hadir') => {
     if (!loggedInEmployee || status !== 'hadir') return;
     try {
-      const now = new Date();
+      const { timeValidationService } = require('@/services/timeValidationService');
+      const now = timeValidationService.getCorrectedTime();
       const monthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
       const dayKey = now.getDate().toString().padStart(2, '0');
       const currentActivities = loggedInEmployee.monthlyActivities || {};
@@ -458,9 +459,9 @@ const PresensiComponent: React.FC = () => {
 
   // Prayer Active Check Timer
   useEffect(() => {
+    const { timeValidationService } = require('@/services/timeValidationService');
     const timer = setInterval(() => {
-      const now = new Date();
-      const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+      const jakartaTime = timeValidationService.getCorrectedTime();
       let found: string | null = null;
 
       for (const p of prayersToDisplay) {
@@ -515,8 +516,8 @@ const PresensiComponent: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {prayersToDisplay.map(prayer => {
-              const now = new Date();
-              const jakartaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+              const { timeValidationService } = require('@/services/timeValidationService');
+              const jakartaTime = timeValidationService.getCorrectedTime();
               const endTime = new Date(jakartaTime);
               const [eh, em] = prayer.endTime.split(':').map(Number);
               endTime.setHours(eh, em, 0, 0);

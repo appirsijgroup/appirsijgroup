@@ -112,10 +112,22 @@ export default function AktivitasBulananPage() {
                 return;
             }
 
+            const submissionPayload = {
+                content: monthlyProgressData[monthKey] || {},
+                menteeName: loggedInEmployee.name,
+                mentorId: loggedInEmployee.mentorId,
+                supervisorId: loggedInEmployee.supervisorId,
+                managerId: loggedInEmployee.managerId,
+                kaUnitId: loggedInEmployee.kaUnitId,
+                hospitalId: loggedInEmployee.hospitalId,
+                unit: loggedInEmployee.unit,
+                bagian: loggedInEmployee.bagian
+            };
+
             const result = await submitReport(
                 loggedInEmployee.id,
                 monthKey,
-                monthlyProgressData[monthKey] || {}
+                submissionPayload
             );
 
             if (result) {

@@ -197,11 +197,12 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         const id = loggedInEmployee.id;
         return monthlyReportSubmissions.filter(s => {
             // 1. Snapshot check (data at submission time)
-            if (s.supervisorId === id || s.managerId === id || s.kaUnitId === id) return true;
+            if (s.mentorId === id || s.supervisorId === id || s.managerId === id || s.kaUnitId === id) return true;
 
             // 2. Real-time check (current assignment)
             const mentee = allUsersData[s.menteeId]?.employee;
             if (mentee) {
+                if (loggedInEmployee.canBeMentor && mentee.mentorId === id) return true;
                 if (loggedInEmployee.canBeSupervisor && mentee.supervisorId === id) return true;
                 if (loggedInEmployee.canBeManager && mentee.managerId === id) return true;
                 if (loggedInEmployee.canBeKaUnit && mentee.kaUnitId === id) return true;
@@ -231,14 +232,16 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
             } else if (statusFilter === 'pending') {
                 // Menunggu persetujuan user ini
                 statusMatch =
-                    (s.status === 'pending_supervisor' && isMySupervisor && !!loggedInEmployee.canBeSupervisor) ||
-                    (s.status === 'pending_manager' && isMyManager && !!loggedInEmployee.canBeManager) ||
-                    (s.status === 'pending_kaunit' && isMyKaUnit && !!loggedInEmployee.canBeKaUnit);
+                    (s.status === 'pending_mentor' && (s.mentorId === myId || mentee?.mentorId === myId) && !!loggedInEmployee.canBeMentor) ||
+                    (s.status === 'pending_supervisor' && (s.supervisorId === myId || mentee?.supervisorId === myId) && !!loggedInEmployee.canBeSupervisor) ||
+                    (s.status === 'pending_manager' && (s.managerId === myId || mentee?.managerId === myId) && !!loggedInEmployee.canBeManager) ||
+                    (s.status === 'pending_kaunit' && (s.kaUnitId === myId || mentee?.kaUnitId === myId) && !!loggedInEmployee.canBeKaUnit);
             } else if (statusFilter === 'approved') {
                 // Disetujui (final) atau sudah melewati user ini
                 statusMatch = s.status === 'approved' ||
-                    (isMySupervisor && ['pending_manager', 'pending_kaunit'].includes(s.status)) ||
-                    (isMyKaUnit && ['pending_manager'].includes(s.status)); // KaUnit approved, waiting for manager
+                    ((s.mentorId === myId || mentee?.mentorId === myId) && ['pending_supervisor', 'pending_manager', 'pending_kaunit'].includes(s.status)) ||
+                    ((s.supervisorId === myId || mentee?.supervisorId === myId) && ['pending_manager', 'pending_kaunit'].includes(s.status)) ||
+                    ((s.kaUnitId === myId || mentee?.kaUnitId === myId) && ['pending_manager'].includes(s.status));
             } else if (statusFilter === 'rejected') {
                 statusMatch = s.status.startsWith('rejected');
             }

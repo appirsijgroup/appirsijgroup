@@ -454,10 +454,15 @@ interface TranskripNilaiViewProps {
 
 const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, hospital }) => {
 
-    const mentorName = useMemo(() => {
-        if (!employee.mentorId) return 'Belum Diatur';
-        return allUsersData[employee.mentorId]?.employee.name || 'Belum Diatur';
-    }, [allUsersData, employee.mentorId]);
+    const bossInfo = useMemo(() => {
+        const getBossName = (id?: string) => (id && allUsersData[id]) ? allUsersData[id].employee.name : 'Belum Diatur';
+        return {
+            mentor: getBossName(employee.mentorId),
+            kaUnit: getBossName(employee.kaUnitId),
+            supervisor: getBossName(employee.supervisorId),
+            manager: getBossName(employee.managerId)
+        };
+    }, [allUsersData, employee.mentorId, employee.kaUnitId, employee.supervisorId, employee.managerId]);
 
     const selectedMonthLabel = useMemo(() => {
         return `JANUARI - DESEMBER ${selectedMonth.getFullYear()}`;
@@ -471,7 +476,17 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
         <div className="bg-gray-900/50 p-2 sm:p-6 rounded-lg">
             <div className="flex justify-end items-center mb-6">
                 <button
-                    onClick={async () => await generateTranscriptPdf(employee, performanceData, ipForMonth, selectedMonthLabel, signatoryName, signatoryNip, signatoryTitle, mentorName, hospital)}
+                    onClick={async () => await generateTranscriptPdf(
+                        employee,
+                        performanceData,
+                        ipForMonth,
+                        selectedMonthLabel,
+                        signatoryName,
+                        signatoryNip,
+                        signatoryTitle,
+                        bossInfo.mentor,
+                        hospital
+                    )}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
                 >
                     <PdfIcon className="w-5 h-5" />
@@ -499,7 +514,10 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Nama</strong>: {employee.name}</div>
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Unit Kerja</strong>: {employee.unit}</div>
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Nopeg</strong>: {employee.id}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Mentor</strong>: {mentorName}</div>
+                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Mentor</strong>: {bossInfo.mentor}</div>
+                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Ka. Unit</strong>: {bossInfo.kaUnit}</div>
+                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Supervisor</strong>: {bossInfo.supervisor}</div>
+                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Manajer</strong>: {bossInfo.manager}</div>
                 </div>
 
                 <div className="mt-8 p-4 bg-slate-100 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-4 text-center border border-slate-200">

@@ -12,12 +12,20 @@ import { useRouter } from 'next/navigation';
 import type { Activity, TeamAttendanceSession } from '@/types';
 
 const CreateActivityPage = () => {
-  const allUsers = Object.values(useAppDataStore.getState().allUsersData || {}).map(d => d.employee);
   const { addActivity, addTeamAttendanceSessions } = useActivityStore();
-  const { loggedInEmployee } = useAppDataStore();
+  const { loggedInEmployee, allUsersData, loadAllEmployees } = useAppDataStore();
+
+  // Transform allUsersData to array
+  const allUsers = React.useMemo(() => Object.values(allUsersData || {}).map(d => d.employee), [allUsersData]);
+
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load all employees on mount to ensure selection lists are populated
+  React.useEffect(() => {
+    loadAllEmployees();
+  }, [loadAllEmployees]);
 
   const handleCreateActivity = async (data: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => {
     setIsSubmitting(true);
@@ -39,6 +47,8 @@ const CreateActivityPage = () => {
       // ⚡ UPDATE: Sekarang async - insert ke Supabase
       await addActivity(newActivity);
 
+      // Update data di halaman jadwal
+      router.refresh();
       // Sukses - navigate ke halaman jadwal
       router.push('/jadwal-sesi');
     } catch (err) {
@@ -77,6 +87,8 @@ const CreateActivityPage = () => {
         await addTeamAttendanceSessions(sessionsWithCreator);
       }
 
+      // Update data di halaman jadwal
+      router.refresh();
       // Sukses - navigate ke halaman jadwal
       router.push('/jadwal-sesi');
     } catch (err) {

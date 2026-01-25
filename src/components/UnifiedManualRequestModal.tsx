@@ -7,6 +7,8 @@ import { createPortal } from 'react-dom';
 import { PRAYERS } from '../data/prayers';
 import { useUIStore } from '@/store/store';
 
+import { getTodayLocalDateString, createLocalDate } from '../utils/dateUtils';
+
 export interface UnifiedManualRequestModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -24,7 +26,8 @@ export const UnifiedManualRequestModal: React.FC<UnifiedManualRequestModalProps>
     const [requestType, setRequestType] = useState<'tadarus' | 'prayer'>('tadarus');
 
     // Shared state
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    // FIX: Use getTodayLocalDateString() to get the correct server/local date
+    const [date, setDate] = useState(getTodayLocalDateString());
     const [notes, setNotes] = useState('');
 
     // Tadarus spesific
@@ -35,9 +38,10 @@ export const UnifiedManualRequestModal: React.FC<UnifiedManualRequestModalProps>
     const wajibPrayers = useMemo(() => PRAYERS.filter(p => p.type === 'wajib' && p.id !== 'jumat'), []);
 
     // Max date for prayer is yesterday
-    const today = new Date();
-    today.setDate(today.getDate() - 1);
-    const maxPrayerDate = today.toISOString().split('T')[0];
+    // Calculate based on corrected today's date
+    const todayDate = createLocalDate(getTodayLocalDateString());
+    todayDate.setDate(todayDate.getDate() - 1);
+    const maxPrayerDate = todayDate.toISOString().split('T')[0];
 
     if (!isOpen) return null;
 
@@ -185,7 +189,7 @@ export const UnifiedManualRequestModal: React.FC<UnifiedManualRequestModalProps>
                             onClick={handleSubmit}
                             className={`flex-1 py-4 px-6 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 ${requestType === 'tadarus' ? 'bg-teal-500 hover:bg-teal-400' : 'bg-indigo-500 hover:bg-indigo-400'}`}
                         >
-                            Kirim {requestType === 'tadarus' ? 'Tadarus' : 'Sholat'}
+                            Kirim
                         </button>
                     </div>
                 </div>

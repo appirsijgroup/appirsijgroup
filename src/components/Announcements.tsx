@@ -24,8 +24,9 @@ const AnnouncementModal: React.FC<{
     onUpdate?: (announcementId: string, data: Omit<Announcement, 'id' | 'authorId' | 'timestamp'>, imageFile?: File, documentFile?: File) => void;
     editingAnnouncement?: Announcement | null;
     loggedInEmployee: Employee | null;
+    allUsers: Employee[];
     hospitals: Hospital[];
-}> = ({ isOpen, onClose, onCreate, onUpdate, editingAnnouncement, loggedInEmployee, hospitals }) => {
+}> = ({ isOpen, onClose, onCreate, onUpdate, editingAnnouncement, loggedInEmployee, hospitals, allUsers }) => {
     const { addToast } = useUIStore();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -33,6 +34,12 @@ const AnnouncementModal: React.FC<{
     const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
     const [file, setFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
+
+    // Get Mentees
+    const myMentees = useMemo(() => {
+        if (!loggedInEmployee) return [];
+        return allUsers.filter(u => u.mentorId === loggedInEmployee.id);
+    }, [allUsers, loggedInEmployee]);
 
     // Effect for file preview
     useEffect(() => {
@@ -235,6 +242,48 @@ const AnnouncementModal: React.FC<{
                                 </div>
                             </div>
 
+                            {/* Mentee List (Targeting Context) */}
+                            {scope === 'mentor' && (
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="text-sm font-bold text-white">Daftar Mentee</label>
+                                            <p className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">Otomatis Terpilih ({myMentees.length})</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                                        {myMentees.length === 0 ? (
+                                            <div className="text-center py-8 opacity-20 flex flex-col items-center">
+                                                <Users className="w-12 h-12 mb-2" />
+                                                <p className="text-xs font-bold">Belum ada mentee</p>
+                                            </div>
+                                        ) : (
+                                            myMentees.map(mentee => (
+                                                <div key={mentee.id} className="flex items-center gap-3 p-3 rounded-xl border bg-teal-500/10 border-teal-500/30">
+                                                    <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 font-bold text-xs uppercase border border-teal-500/30">
+                                                        {mentee.name.substring(0, 2)}
+                                                    </div>
+                                                    <div className="grow min-w-0">
+                                                        <div className="text-sm text-white font-bold leading-none">{mentee.name}</div>
+                                                        <div className="text-[10px] text-white/40 truncate mt-1">{mentee.unit || 'No Unit'} • {mentee.hospitalId || 'No RS'}</div>
+                                                    </div>
+                                                    <div className="text-teal-400">
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <div className="p-3 rounded-lg bg-teal-500/5 text-[11px] text-teal-200/60 leading-relaxed font-medium">
+                                            📢 Pengumuman ini akan dikirimkan secara otomatis kepada seluruh mentee yang terdaftar di bawah bimbingan Anda.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* RS/BRAND selector context */}
                             {isAdmin && scope === 'alliansi' && (
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
@@ -304,7 +353,7 @@ const AnnouncementModal: React.FC<{
         document.body
     );
 };
-const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers: _allUsers, onCreate, onUpdate, onDelete, onMarkAsRead, hospitals = [] }) => {
+const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEmployee, allUsers, onCreate, onUpdate, onDelete, onMarkAsRead, hospitals = [] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<Announcement | null>(null);
@@ -617,6 +666,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     editingAnnouncement={editingAnnouncement}
                     loggedInEmployee={loggedInEmployee}
                     hospitals={hospitals}
+                    allUsers={allUsers}
                 />
             )}
 

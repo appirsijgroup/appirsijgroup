@@ -480,37 +480,44 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       const success = await updateMonthlyProgressService(currentEmployee.id, monthKey, progress);
 
       if (success) {
-        // 🔥 FIX: Use functional update to get latest state
+        // 🔥 FIX: Calculate new state first, then update state and parent
+        // Use functional update to ensure we have value from latest render cycle if needed, 
+        // but here we need to trigger side effect 'onUpdateEmployee' which is forbidden in reducer.
+        // Given we are in an async function, we can rely on current 'monthlyProgressData' 
+        // IF we trust it's up to date, OR we just do the update cleanly.
+
+        let newMonthlyActivities: Record<string, MonthlyActivityProgress> | null = null;
+
         setMonthlyProgressData(prev => {
-          const newMonthlyActivities = {
+          newMonthlyActivities = {
             ...prev,
             [monthKey]: progress
           };
-
-          // Update localStorage
-          const storedUsers = localStorage.getItem('allUsersData');
-          if (storedUsers) {
-            try {
-              const allUsers = JSON.parse(storedUsers);
-              if (allUsers[currentEmployee.id]) {
-                allUsers[currentEmployee.id].employee.monthlyActivities = newMonthlyActivities;
-                localStorage.setItem('allUsersData', JSON.stringify(allUsers));
-              }
-            } catch (e) {
-            }
-          }
-
-          // Update employee in parent store if callback is provided
-          if (onUpdateEmployee && currentEmployee) {
-            const updatedEmployee = {
-              ...currentEmployee,
-              monthlyActivities: newMonthlyActivities
-            };
-            onUpdateEmployee(updatedEmployee);
-          }
-
           return newMonthlyActivities;
         });
+
+        // Update localStorage
+        const storedUsers = localStorage.getItem('allUsersData');
+        if (storedUsers) {
+          try {
+            const allUsers = JSON.parse(storedUsers);
+            if (allUsers[currentEmployee.id]) {
+              allUsers[currentEmployee.id].employee.monthlyActivities = newMonthlyActivities || { ...monthlyProgressData, [monthKey]: progress };
+              localStorage.setItem('allUsersData', JSON.stringify(allUsers));
+            }
+          } catch (e) {
+          }
+        }
+
+        // Update employee in parent store if callback is provided
+        // This is now SAFE because it's outside the state setter
+        if (onUpdateEmployee && currentEmployee) {
+          const updatedEmployee = {
+            ...currentEmployee,
+            monthlyActivities: newMonthlyActivities || { ...monthlyProgressData, [monthKey]: progress }
+          };
+          onUpdateEmployee(updatedEmployee);
+        }
 
         return true;
       } else {

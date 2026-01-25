@@ -7,7 +7,7 @@ import type { Announcement } from '@/types';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export default function PengumumanPage() {
-    const { loggedInEmployee, allUsersData, markAnnouncementAsRead, hospitalsData, loadHospitals } = useAppDataStore();
+    const { loggedInEmployee, allUsersData, markAnnouncementAsRead, hospitalsData, loadHospitals, loadAllEmployees } = useAppDataStore();
     const { announcements, addAnnouncement, updateAnnouncement, removeAnnouncement, loadAnnouncements, isLoading } = useAnnouncementStore();
     const { addToast } = useUIStore();
     const [initLoaded, setInitLoaded] = useState(false);
@@ -26,17 +26,29 @@ export default function PengumumanPage() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                await Promise.all([
+                const promises = [
                     loadAnnouncements(),
                     loadHospitals()
-                ]);
+                ];
+
+                // Load employees for mentors/admins to populate mentee lists
+                if (loggedInEmployee && (isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor)) {
+                    promises.push(loadAllEmployees());
+                }
+
+                await Promise.all(promises);
             } catch (error) {
             } finally {
                 setInitLoaded(true);
             }
         };
-        loadInitialData();
-    }, [loadAnnouncements, loadHospitals]);
+        if (loggedInEmployee) {
+            loadInitialData();
+        } else {
+            // Still load public data if not logged in (though page might redirect)
+            loadAnnouncements().then(() => setInitLoaded(true));
+        }
+    }, [loadAnnouncements, loadHospitals, loadAllEmployees, loggedInEmployee]);
 
     // Handler to create announcement with proper structure and save to Supabase
     const handleCreateAnnouncement = async (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => {

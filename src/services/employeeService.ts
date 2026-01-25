@@ -35,7 +35,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         quranReadingHistory: emp.quran_reading_history || [], // Default to empty array if not exists
         todoList: emp.todo_list || [], // Default to empty array if not exists
         signature: emp.signature,
-        lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
+
         managedHospitalIds: emp.managed_hospital_ids || [],
         mustChangePassword: emp.must_change_password,
         hospitalId: emp.hospital_id,
@@ -127,7 +127,7 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             functional_roles,
             manager_scope,
             signature,
-            last_announcement_read_timestamp,
+
             managed_hospital_ids,
             achievements,
             must_change_password,
@@ -185,7 +185,7 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             functional_roles,
             manager_scope,
             signature,
-            last_announcement_read_timestamp,
+
             managed_hospital_ids,
             achievements,
             must_change_password,
@@ -251,7 +251,7 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         // todo_list: employee.todoList,
 
         signature: employee.signature,
-        last_announcement_read_timestamp: employee.lastAnnouncementReadTimestamp,
+
         managed_hospital_ids: employee.managedHospitalIds,
         achievements: employee.achievements,
         must_change_password: employee.mustChangePassword,
@@ -325,7 +325,7 @@ export const updateEmployee = async (
     // if (updates.todoList !== undefined) dbUpdates.todo_list = updates.todoList;
 
     if (updates.signature !== undefined) dbUpdates.signature = updates.signature;
-    if (updates.lastAnnouncementReadTimestamp !== undefined) dbUpdates.last_announcement_read_timestamp = updates.lastAnnouncementReadTimestamp;
+
     if (updates.managedHospitalIds !== undefined) dbUpdates.managed_hospital_ids = updates.managedHospitalIds;
     if (updates.achievements !== undefined) dbUpdates.achievements = updates.achievements;
     if (updates.mustChangePassword !== undefined) dbUpdates.must_change_password = updates.mustChangePassword;

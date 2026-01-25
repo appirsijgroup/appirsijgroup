@@ -378,7 +378,7 @@ const PresensiComponent: React.FC = () => {
         type: 'tadarus_request',
         title: `Permintaan Kehadiran ${category || 'Sesi'}`,
         message: `${loggedInEmployee.name} mengajukan kehadiran ${category || 'tadarus'} manual untuk tanggal ${new Date(date).toLocaleDateString('id-ID')}.`,
-        linkTo: { view: 'dashboard-saya', tab: 'panel-mentor' } as any,
+        linkTo: '/dashboard' as any,
         relatedEntityId: newRequest.id,
       });
 
@@ -409,7 +409,7 @@ const PresensiComponent: React.FC = () => {
         type: 'missed_prayer_request',
         title: 'Permintaan Presensi Terlewat',
         message: `${loggedInEmployee.name} meminta persetujuan untuk presensi terlewat.`,
-        linkTo: { view: 'dashboard-saya', tab: 'panel-mentor' } as any,
+        linkTo: '/dashboard' as any,
         relatedEntityId: newRequest.id,
       });
 

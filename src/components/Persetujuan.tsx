@@ -1,6 +1,6 @@
 import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type WeeklyReportSubmission, type DailyActivity } from '../types';
+import { type Employee, type MonthlyReportSubmission, type DailyActivity } from '../types';
 import { ArrowLeftIcon, CheckIcon, XIcon, CheckSquareIcon, SquareIcon } from './Icons';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import ConfirmationModal from './ConfirmationModal';
@@ -138,28 +138,6 @@ const MenteeReportDetailView: React.FC<{
     );
 };
 
-// Approval tab button component
-interface ApprovalTabButtonProps {
-    role: 'supervisor' | 'kaunit';
-    label: string;
-    activeTab: 'supervisor' | 'kaunit';
-    onTabChange: (role: 'supervisor' | 'kaunit') => void;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
-    loggedInEmployee: Employee;
-}
-
-const ApprovalTabButton: React.FC<ApprovalTabButtonProps> = ({ role, label, activeTab, onTabChange, weeklyReportSubmissions, loggedInEmployee }) => {
-    const count = weeklyReportSubmissions.filter(s => s.status === `pending_${role}` && (role === 'supervisor' ? s.supervisorId === loggedInEmployee.id : s.kaUnitId === loggedInEmployee.id)).length;
-    return (
-        <button
-            onClick={() => onTabChange(role)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-colors ${activeTab === role ? 'bg-teal-500 text-white' : 'bg-white/10 text-blue-200 hover:bg-white/20'}`}
-        >
-            {label}
-            {count > 0 && <span className="h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full bg-red-500 text-white text-xs">{count}</span>}
-        </button>
-    );
-};
 
 // Status filter button component
 interface StatusFilterButtonProps {
@@ -178,8 +156,8 @@ const StatusFilterButton: React.FC<StatusFilterButtonProps> = ({ filter, label, 
 // Main Component
 interface PersetujuanProps {
     loggedInEmployee: Employee;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
-    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'kaunit') => void;
+    monthlyReportSubmissions: MonthlyReportSubmission[];
+    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'manager' | 'kaunit') => void;
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any; }>;
     // 🔥 NEW: Manual requests support
     pendingTadarusRequests?: any[]; // Using any[] for flexibility, but TadarusRequest[] is better
@@ -190,7 +168,7 @@ interface PersetujuanProps {
 
 const Persetujuan: React.FC<PersetujuanProps> = ({
     loggedInEmployee,
-    weeklyReportSubmissions,
+    monthlyReportSubmissions,
     onReviewReport,
     allUsersData,
     pendingTadarusRequests = [],
@@ -198,37 +176,39 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     onReviewTadarusRequest,
     onReviewMissedPrayerRequest
 }) => {
-    type ApprovalRole = 'supervisor' | 'kaunit';
-    const [activeApprovalTab, setActiveApprovalTab] = useState<ApprovalRole>('supervisor');
-    const [selectedSubmission, setSelectedSubmission] = useState<WeeklyReportSubmission | null>(null);
+
+    const [selectedSubmission, setSelectedSubmission] = useState<MonthlyReportSubmission | null>(null);
     const [approvalTarget, setApprovalTarget] = useState<{ type: 'report' | 'tadarus' | 'prayer', id: string } | null>(null);
-    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'report', submission: WeeklyReportSubmission } | { type: 'tadarus', id: string } | { type: 'prayer', id: string } | null>(null);
+    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'report', submission: MonthlyReportSubmission } | { type: 'tadarus', id: string } | { type: 'prayer', id: string } | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
-    const { isSupervisor, isKaUnit } = useMemo(() => ({
+    const { isSupervisor, isManager, isKaUnit } = useMemo(() => ({
         isSupervisor: loggedInEmployee.canBeSupervisor,
+        isManager: loggedInEmployee.canBeManager,
         isKaUnit: loggedInEmployee.canBeKaUnit,
     }), [loggedInEmployee]);
 
-    useEffect(() => {
-        if (isSupervisor) {
-            setActiveApprovalTab('supervisor');
-        } else if (isKaUnit) {
-            setActiveApprovalTab('kaunit');
-        }
-    }, [isSupervisor, isKaUnit]);
 
+
+    // Show all submissions where user has an approval role (Real-time & Snapshot)
     const submissionsForRole = useMemo(() => {
         const id = loggedInEmployee.id;
-        if (activeApprovalTab === 'supervisor') {
-            return weeklyReportSubmissions.filter(s => s.supervisorId === id);
-        } else if (activeApprovalTab === 'kaunit') {
-            return weeklyReportSubmissions.filter(s => s.kaUnitId === id);
-        }
-        return [];
-    }, [weeklyReportSubmissions, loggedInEmployee.id, activeApprovalTab]);
+        return monthlyReportSubmissions.filter(s => {
+            // 1. Snapshot check (data at submission time)
+            if (s.supervisorId === id || s.managerId === id || s.kaUnitId === id) return true;
+
+            // 2. Real-time check (current assignment)
+            const mentee = allUsersData[s.menteeId]?.employee;
+            if (mentee) {
+                if (loggedInEmployee.canBeSupervisor && mentee.supervisorId === id) return true;
+                if (loggedInEmployee.canBeManager && mentee.managerId === id) return true;
+                if (loggedInEmployee.canBeKaUnit && mentee.kaUnitId === id) return true;
+            }
+            return false;
+        });
+    }, [monthlyReportSubmissions, loggedInEmployee, allUsersData]);
 
     const availableYears = useMemo(() => {
         const years = new Set(submissionsForRole.map(s => s.monthKey.substring(0, 4)));
@@ -237,10 +217,31 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
     const filteredSubmissions = useMemo(() => {
         return submissionsForRole.filter(s => {
-            const statusMatch = statusFilter === 'all' ||
-                (statusFilter === 'pending' && s.status === `pending_${activeApprovalTab}`) ||
-                (statusFilter === 'approved' && (activeApprovalTab === 'supervisor' ? ['pending_kaunit', 'approved'].includes(s.status) : s.status === 'approved')) ||
-                (statusFilter === 'rejected' && s.status.startsWith('rejected_'));
+            let statusMatch = false;
+            const mentee = allUsersData[s.menteeId]?.employee;
+            const myId = loggedInEmployee.id;
+
+            // Helper to check if I am the assigned approver (Snapshot OR Real-time)
+            const isMySupervisor = s.supervisorId === myId || (mentee?.supervisorId === myId);
+            const isMyManager = s.managerId === myId || (mentee?.managerId === myId);
+            const isMyKaUnit = s.kaUnitId === myId || (mentee?.kaUnitId === myId);
+
+            if (statusFilter === 'all') {
+                statusMatch = true;
+            } else if (statusFilter === 'pending') {
+                // Menunggu persetujuan user ini
+                statusMatch =
+                    (s.status === 'pending_supervisor' && isMySupervisor && !!loggedInEmployee.canBeSupervisor) ||
+                    (s.status === 'pending_manager' && isMyManager && !!loggedInEmployee.canBeManager) ||
+                    (s.status === 'pending_kaunit' && isMyKaUnit && !!loggedInEmployee.canBeKaUnit);
+            } else if (statusFilter === 'approved') {
+                // Disetujui (final) atau sudah melewati user ini
+                statusMatch = s.status === 'approved' ||
+                    (isMySupervisor && ['pending_manager', 'pending_kaunit'].includes(s.status)) ||
+                    (isMyKaUnit && ['pending_manager'].includes(s.status)); // KaUnit approved, waiting for manager
+            } else if (statusFilter === 'rejected') {
+                statusMatch = s.status.startsWith('rejected');
+            }
 
             if (!statusMatch) return false;
 
@@ -250,13 +251,30 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
             return yearMatch && monthMatch;
         });
-    }, [submissionsForRole, statusFilter, filterYear, filterMonth, activeApprovalTab]);
+    }, [submissionsForRole, statusFilter, filterYear, filterMonth, loggedInEmployee, allUsersData]);
+
+    // Helper function to determine reviewer role for a submission
+    const getReviewerRole = (submission: MonthlyReportSubmission): 'supervisor' | 'manager' | 'kaunit' => {
+        const mentee = allUsersData[submission.menteeId]?.employee;
+        const myId = loggedInEmployee.id;
+
+        // Priority check: Check if current user is assigned as specific role
+        if (loggedInEmployee.canBeManager && (submission.managerId === myId || mentee?.managerId === myId)) return 'manager';
+        if (loggedInEmployee.canBeKaUnit && (submission.kaUnitId === myId || mentee?.kaUnitId === myId)) return 'kaunit';
+        if (loggedInEmployee.canBeSupervisor && (submission.supervisorId === myId || mentee?.supervisorId === myId)) return 'supervisor';
+
+        return 'supervisor'; // fallback
+    };
 
     const handleConfirmApproval = () => {
         if (!approvalTarget) return;
 
         if (approvalTarget.type === 'report') {
-            onReviewReport(approvalTarget.id, 'approved', 'Laporan telah disetujui.', activeApprovalTab);
+            const submission = monthlyReportSubmissions.find(s => s.id === approvalTarget.id);
+            if (submission) {
+                const reviewerRole = getReviewerRole(submission);
+                onReviewReport(approvalTarget.id, 'approved', 'Laporan telah disetujui.', reviewerRole);
+            }
         } else if (approvalTarget.type === 'tadarus') {
             onReviewTadarusRequest?.(approvalTarget.id, 'approved');
         } else if (approvalTarget.type === 'prayer') {
@@ -271,7 +289,8 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         if (!rejectionTarget) return;
 
         if (rejectionTarget.type === 'report') {
-            onReviewReport(rejectionTarget.submission.id, 'rejected', notes, activeApprovalTab);
+            const reviewerRole = getReviewerRole(rejectionTarget.submission);
+            onReviewReport(rejectionTarget.submission.id, 'rejected', notes, reviewerRole);
         } else if (rejectionTarget.type === 'tadarus') {
             onReviewTadarusRequest?.(rejectionTarget.id, 'rejected');
         } else if (rejectionTarget.type === 'prayer') {
@@ -284,7 +303,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
     const menteeDataForDetail = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
-    const hasPending = filteredSubmissions.some(s => s.status === `pending_${activeApprovalTab}`) || (activeApprovalTab === 'supervisor' && (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0));
+    const hasPending = filteredSubmissions.some(s => s.status.startsWith('pending_')) || (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0);
 
     return (
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[60vh]">
@@ -294,14 +313,14 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                     <div className="mt-8 flex justify-end gap-4 p-4 bg-black/20 rounded-lg">
                         <button
                             onClick={() => setRejectionTarget({ type: 'report', submission: selectedSubmission })}
-                            disabled={selectedSubmission.status !== `pending_${activeApprovalTab}`}
+                            disabled={!selectedSubmission.status.startsWith('pending_')}
                             className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
                         >
                             Tolak Laporan
                         </button>
                         <button
                             onClick={() => setApprovalTarget({ type: 'report', id: selectedSubmission.id })}
-                            disabled={selectedSubmission.status !== `pending_${activeApprovalTab}`}
+                            disabled={!selectedSubmission.status.startsWith('pending_')}
                             className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
                         >
                             Setujui Laporan
@@ -311,7 +330,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
             ) : (
                 <div className="space-y-8">
                     {/* Pending Requests Section (Manual Requests) */}
-                    {activeApprovalTab === 'supervisor' && (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0) && (
+                    {(pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0) && (
                         <div>
                             <h3 className="text-xl font-bold text-white mb-4">Permohonan Manual Menunggu</h3>
                             <div className="space-y-4">
@@ -346,11 +365,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                     )}
 
                     <div>
-                        <h3 className="text-xl font-bold text-white mb-4">Riwayat Persetujuan Laporan Mingguan</h3>
-                        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-black/20 rounded-full self-start mb-4">
-                            {isSupervisor && <ApprovalTabButton role="supervisor" label="Persetujuan Supervisor" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
-                            {isKaUnit && <ApprovalTabButton role="kaunit" label="Persetujuan Ka. Unit" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
-                        </div>
+                        <h3 className="text-xl font-bold text-white mb-4">Riwayat Persetujuan Laporan Bulanan</h3>
 
                         <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
                             <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
@@ -390,7 +405,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                         {filteredSubmissions.map(sub => (
                                             <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
                                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{`${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
                                                 <td className="px-4 py-3 text-center">
                                                     <button onClick={() => setSelectedSubmission(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">

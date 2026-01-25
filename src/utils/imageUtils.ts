@@ -74,3 +74,23 @@ export const dataURLToBlob = (dataURL: string): Blob => {
 
     return new Blob([u8arr], { type: mime });
 };
+
+/**
+ * Fetch an image from a URL and convert it to a Base64 string
+ * Useful for jsPDF which works better with Base64/locally cached data
+ */
+export const imageUrlToBase64 = async (url: string): Promise<string> => {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Failed to convert image URL to base64:', error);
+        throw error;
+    }
+};

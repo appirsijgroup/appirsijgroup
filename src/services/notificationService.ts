@@ -19,10 +19,13 @@ interface NotificationsRow {
 /**
  * Create a new notification in Supabase
  */
+/**
+ * Create a new notification in Supabase
+ */
 export async function createNotificationSupabase(notification: Notification): Promise<Notification> {
     // Map to database column names (snake_case)
+    // NOTE: We do NOT send 'id' so Supabase generates a valid UUID
     const dbNotification = {
-        id: notification.id,
         user_id: notification.userId,
         type: notification.type,
         title: notification.title,
@@ -36,9 +39,9 @@ export async function createNotificationSupabase(notification: Notification): Pr
     };
 
     // Store in Supabase
-    const { data: result, error } = await supabase
+    const { data, error } = await supabase
         .from('notifications')
-        .insert(dbNotification)
+        .insert(dbNotification as any)
         .select()
         .single();
 
@@ -47,7 +50,22 @@ export async function createNotificationSupabase(notification: Notification): Pr
         throw new Error(`Failed to create notification: ${error.message}`);
     }
 
-    return notification; // Return local notification, not DB result
+    const result = data as any;
+
+    // Return the ACTUAL created notification (with DB-generated ID)
+    return {
+        id: result.id,
+        userId: result.user_id,
+        type: result.type,
+        title: result.title,
+        message: result.message,
+        timestamp: result.timestamp,
+        isRead: result.is_read,
+        relatedEntityId: result.related_entity_id,
+        linkTo: result.link_to,
+        expiresAt: result.expires_at,
+        dismissOnClick: result.dismiss_on_click,
+    };
 }
 
 /**
@@ -75,16 +93,14 @@ export async function getUserNotifications(userId: string): Promise<Notification
             title: row.title,
             message: row.message,
             timestamp: row.timestamp,
-            isRead: row.is_read, // 🔥 CRITICAL: This should reflect the DB state
-            relatedEntityId: row.related_entity_id,
-            linkTo: row.link_to,
-            expiresAt: row.expires_at,
-            dismissOnClick: row.dismiss_on_click,
+            isRead: row.is_read,
+            relatedEntityId: row.related_entity_id || undefined,
+            linkTo: row.link_to || undefined,
+            expiresAt: row.expires_at || undefined,
+            dismissOnClick: row.dismiss_on_click || false,
         };
         return notification;
     });
-
-    const unreadCount = mapped.filter(n => !n.isRead).length;
 
     return mapped;
 }

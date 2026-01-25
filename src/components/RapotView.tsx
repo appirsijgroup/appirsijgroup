@@ -1,9 +1,10 @@
 import React, { useMemo, useState, Fragment } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { type Employee, type WeeklyReportSubmission, type DailyActivity, type Hospital } from '../types';
+import { type Employee, type DailyActivity, type Hospital } from '../types';
 import { PdfIcon, ChartBarIcon, DocumentTextIcon, ArrowLeftIcon } from './Icons';
+import { imageUrlToBase64 } from '@/utils/imageUtils';
 
 interface RapotViewProps {
     employee: Employee;
@@ -28,7 +29,7 @@ const getPredicate = (ipk: number) => {
     return 'Kurang  ';
 };
 
-const generateTranscriptPdf = (
+const generateTranscriptPdf = async (
     employee: Employee,
     performanceData: {
         categories: {
@@ -57,44 +58,61 @@ const generateTranscriptPdf = (
     const pageWidth = doc.internal.pageSize.getWidth();
     let finalY = 0;
 
-    const logoBase64 = hospital?.logo;
-    const hospitalName = hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP';
-    const hospitalAddress = hospital?.address || 'Alamat tidak terdaftar';
+    const groupName = 'RUMAH SAKIT ISLAM JAKARTA GROUP';
+    const hospitalName = (hospital?.name && hospital.name.toUpperCase() !== groupName)
+        ? hospital.name.toUpperCase()
+        : '';
+    const hospitalAddress = hospital?.address || 'Alamat Terdaftar di Sistem';
 
     const headerTopMargin = 15;
-    let headerTextX = pageWidth / 2;
     let logoBottomY = headerTopMargin;
     let textBlockBottomY = headerTopMargin;
 
-    // 1. Header with LOGO logic
-    if (logoBase64) {
-        const logoSize = 20;
-        const logoY = headerTopMargin - 5; // Position logo higher
-        const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
-        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
-        logoBottomY = logoY + logoSize;
+    const logoSize = 25;
+    const logoY = headerTopMargin - 4;
+    const logoX = pageMargin;
 
-        const textStartX = logoX + logoSize + 10;
-        headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
+    // 1. Header with LOGO logic (Standard Kop Surat - Logo on Left)
+    if (hospital?.logo) {
+        try {
+            // 🔥 FIX: Convert URL to Base64 for jsPDF reliability
+            const logoBase64 = hospital.logo.startsWith('http')
+                ? await imageUrlToBase64(hospital.logo)
+                : hospital.logo;
+
+            doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+            logoBottomY = logoY + logoSize;
+        } catch (e) {
+            console.error('Failed to add logo to PDF', e);
+        }
     }
 
-    const hospitalNameY = headerTopMargin + 5;
+    const groupNameY = headerTopMargin + 2;
+    const hospitalNameY = groupNameY + 7;
     const hospitalAddressY = hospitalNameY + 6;
 
+    // Header Text is centered relative to the PAGE width
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor('#115E59'); // Teal-800
-    doc.text(hospitalName.toUpperCase(), headerTextX, hospitalNameY, { align: 'center' });
+    doc.text(groupName, pageWidth / 2, groupNameY, { align: 'center' });
 
-    doc.setFontSize(10);
+    if (hospitalName) {
+        doc.setFontSize(12);
+        doc.setTextColor('#0D9488'); // Teal-600
+        doc.text(hospitalName, pageWidth / 2, hospitalNameY, { align: 'center' });
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
     doc.setTextColor('#475569'); // Slate-600
-    doc.text(hospitalAddress, headerTextX, hospitalAddressY, { align: 'center' });
+    doc.text(hospitalAddress, pageWidth / 2, hospitalAddressY, { align: 'center' });
 
-    const addressTextHeight = doc.getTextDimensions(hospitalAddress, { fontSize: 10 }).h;
+    const addressTextHeight = doc.getTextDimensions(hospitalAddress, { fontSize: 9 }).h;
     textBlockBottomY = hospitalAddressY + addressTextHeight;
 
     const headerBottom = Math.max(logoBottomY, textBlockBottomY);
-    const lineY = headerBottom + 4; // Add padding below the lowest element
+    const lineY = headerBottom + 5;
 
     doc.setDrawColor('#0F766E'); // Teal-700
     doc.setLineWidth(1);
@@ -124,7 +142,7 @@ const generateTranscriptPdf = (
 
     // 4. IPK Summary Table
     const ipkSummaryBody = [
-        ['PERIODE', 'INDEKS PRESTASI BULANAN (IPB)', 'PREDIKAT'],
+        ['PERIODE', 'INDEKS PRESTASI TAHUNAN (IPA)', 'PREDIKAT'],
         [selectedMonthLabel.toUpperCase(), ipForMonth.toFixed(2), getPredicate(ipForMonth)]
     ];
     autoTable(doc, {
@@ -154,322 +172,171 @@ const generateTranscriptPdf = (
                 percentage: number;
             }) => {
                 tableBody.push([
-                    { content: `- ${detail.title}`, styles: { cellPadding: { left: 8 } } },
-                    `${detail.achieved}/${detail.target}`,
+                    { content: `- ${detail.title}`, styles: { cellPadding: { left: 6 } } },
+                    { content: `${detail.achieved}/${detail.target}`, styles: { halign: 'right' as const } },
                     '', '', ''
                 ]);
             });
         });
 
         autoTable(doc, {
-            startY: finalY + 5,
-            head: [[
-                { content: 'Kategori & Indikator Penilaian', colSpan: 2 },
-                { content: 'Nilai', styles: { halign: 'center' as const } }, { content: 'Huruf', styles: { halign: 'center' as const } }, { content: 'Bobot', styles: { halign: 'center' as const } }
-            ]],
+            startY: finalY + 6,
+            head: [['Kategori & Indikator Penilaian', 'Detail Capaian', 'Nilai', 'Huruf', 'Bobot']],
             body: tableBody,
             theme: 'grid',
-            headStyles: { valign: 'middle' as const, fillColor: [226, 232, 240], textColor: [51, 65, 85], fontStyle: 'bold' as const, fontSize: 9, lineWidth: 0.1, lineColor: [203, 213, 225] },
-            bodyStyles: { valign: 'middle' as const, fontSize: 9, lineWidth: 0.1, lineColor: [203, 213, 225] },
-            columnStyles: { 1: { halign: 'center' as const } }
+            headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105], fontStyle: 'bold' as const, fontSize: 8, halign: 'left' as const },
+            styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1, lineColor: [226, 232, 240] },
+            columnStyles: {
+                1: { cellWidth: 30 },
+                2: { cellWidth: 15, fontStyle: 'bold' as const },
+                3: { cellWidth: 15, fontStyle: 'bold' as const },
+                4: { cellWidth: 15, fontStyle: 'bold' as const }
+            }
         });
         finalY = (doc as any).lastAutoTable.finalY;
     }
 
     // 6. Signatures
-    let signatureY = finalY + 15;
-    if (signatureY > doc.internal.pageSize.getHeight() - 60) {
-        doc.addPage();
-        signatureY = 30;
-    }
+    const signatureY = finalY + 15;
+    const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    const todayForPdf = new Date().toLocaleDateString('id-ID', {
-        day: 'numeric', month: 'long', year: 'numeric'
-    });
+    doc.setFontSize(9);
+    doc.setTextColor('#1e293b');
+    doc.text(`Jakarta, ${today}`, pageWidth - pageMargin - 15, signatureY, { align: 'center' });
 
-    const tableWidth = pageWidth - (pageMargin * 2);
-    const leftX = pageMargin + (tableWidth * 0.25);
-    const rightX = pageWidth - pageMargin - (tableWidth * 0.25);
+    const tableSignBody = [
+        [signatoryTitle + ',', 'Pegawai,'],
+        ['', ''],
+        ['', ''],
+        [signatoryName, employee.name],
+        [`NIP. ${signatoryNip}`, `NIP. ${employee.id}`],
+    ];
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-
-    // Date
-    doc.text(`Jakarta, ${todayForPdf}`, rightX, signatureY, { align: 'center' });
-    let currentY = signatureY + 5;
-
-    // Titles
-    doc.text(`${signatoryTitle},`, leftX, currentY, { align: 'center' });
-    doc.text('Pegawai,', rightX, currentY, { align: 'center' });
-    currentY += 30; // Space for signature
-
-    // Signature image for employee
+    // Pre-load signature Base64 if it's a URL
+    let signatureBase64 = null;
     if (employee.signature) {
-        const imgWidth = 40, imgHeight = 20;
-        const x = rightX - (imgWidth / 2);
-        const y = currentY - 25;
+        try {
+            signatureBase64 = employee.signature.startsWith('http')
+                ? await imageUrlToBase64(employee.signature)
+                : employee.signature;
+        } catch (e) {
+            console.error('Failed to load signature for PDF', e);
+        }
     }
 
-    // Names
-    doc.setFont('helvetica', 'bold');
-    doc.text(signatoryName, leftX, currentY, { align: 'center' });
-    doc.text(employee.name, rightX, currentY, { align: 'center' });
-
-    // Underlines for names
-    doc.setLineWidth(0.2);
-    const dirutNameWidth = doc.getTextWidth(signatoryName);
-    doc.line(leftX - (dirutNameWidth / 2), currentY + 1.2, leftX + (dirutNameWidth / 2), currentY + 1.2);
-
-    const employeeNameWidth = doc.getTextWidth(employee.name);
-    doc.line(rightX - (employeeNameWidth / 2), currentY + 1.2, rightX + (employeeNameWidth / 2), currentY + 1.2);
-    currentY += 5;
-
-    // NIPs
-    doc.setFont('helvetica', 'normal');
-    doc.text(`NIP. ${signatoryNip}`, leftX, currentY, { align: 'center' });
-    doc.text(`NIP. ${employee.id}`, rightX, currentY, { align: 'center' });
+    autoTable(doc, {
+        startY: signatureY + 4,
+        body: tableSignBody,
+        theme: 'plain',
+        styles: { fontSize: 9, halign: 'center' as const, cellPadding: 1 },
+        columnStyles: {
+            0: { cellWidth: pageWidth / 2 - pageMargin },
+            1: { cellWidth: pageWidth / 2 - pageMargin },
+        },
+        willDrawCell: (data) => {
+            if (data.row.index === 3) {
+                doc.setFont('helvetica', 'bold');
+                doc.setDrawColor('#000');
+                const textWidth = doc.getTextWidth(data.cell.text[0]);
+                const x = data.cell.x + (data.cell.width - textWidth) / 2;
+                doc.line(x, data.cell.y + data.cell.height - 1, x + textWidth, data.cell.y + data.cell.height - 1);
+            }
+        },
+        didDrawCell: (data) => {
+            if (data.row.index === 1 && data.column.index === 1 && signatureBase64) {
+                try {
+                    doc.addImage(signatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                } catch (e) { }
+            }
+        }
+    });
 
     doc.save(`transkrip_nilai_${employee.name.replace(/\s/g, '_')}_${selectedMonthLabel.replace(/\s/g, '_')}.pdf`);
 };
 
-const generateChecklistPdf = (
+const generateChecklistPdf = async (
     employee: Employee,
     dailyActivitiesConfig: DailyActivity[],
     selectedMonth: Date,
-    allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>,
+    allUsersData: Record<string, { employee: Employee; attendance: Record<string, any>; history: Record<string, any>; }>,
     hospital: Hospital | null
 ) => {
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
-    const pageMargin = 15; // Increased horizontal margin
+    const pageMargin = 14;
     const pageWidth = doc.internal.pageSize.getWidth();
-    let finalY = 0;
-
     const monthKey = `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`;
+    const monthLabel = selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
-    // 🔥 FIX: Enrich progress data to match Dashboard logic
-    // We use a consolidated approach: Base Monthly Items + Cached Reports (which includes Attendance, Team Sessions, etc.)
-    const baseProgress = employee.monthlyActivities?.[monthKey] || {};
-    const enrichedProgress = { ...baseProgress };
-
-    // 2. Sync Reading History (Books)
-    if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
-        employee.readingHistory.forEach(history => {
-            const date = history.dateCompleted; // YYYY-MM-DD
-            if (date.startsWith(monthKey)) {
-                const dayKey = date.substring(8, 10);
-                if (!enrichedProgress[dayKey]) {
-                    enrichedProgress[dayKey] = {};
-                }
-                enrichedProgress[dayKey]['baca_alquran_buku'] = true;
-            }
-        });
-    }
-
-    // 3. Sync Quran History
-    if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
-        employee.quranReadingHistory.forEach((history: any) => {
-            const date = history.date; // YYYY-MM-DD
-            if (date.startsWith(monthKey)) {
-                const dayKey = date.substring(8, 10);
-                if (!enrichedProgress[dayKey]) {
-                    enrichedProgress[dayKey] = {};
-                }
-                enrichedProgress[dayKey]['baca_alquran_buku'] = true;
-            }
-        });
-    }
-
-    const progress = enrichedProgress;
-    const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
-
-    const logoBase64 = hospital?.logo;
     const hospitalName = hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP';
-    const hospitalAddress = hospital?.address || 'Alamat tidak terdaftar';
 
-    // Helper to get names
-    const getUserName = (id?: string) => id ? allUsersData[id]?.employee.name || '.........................' : '.........................';
-    const mentorName = getUserName(employee.mentorId);
-    const supervisorName = getUserName(employee.supervisorId);
-    const kaUnitName = getUserName(employee.kaUnitId);
-
-    // 1. Header Section
-    const headerTopMargin = 15;
-    let headerTextX = pageWidth / 2;
-    let logoBottomY = headerTopMargin;
-    let textBlockBottomY = headerTopMargin;
-
-    if (logoBase64) {
-        const logoSize = 20;
-        const logoY = headerTopMargin - 5; // Position logo higher
-        const logoX = pageMargin + 2; // Geser logo sedikit ke kanan
-        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
-        logoBottomY = logoY + logoSize;
-
-        const textStartX = logoX + logoSize + 10;
-        headerTextX = textStartX + (pageWidth - textStartX - pageMargin) / 2;
+    // Header
+    if (hospital?.logo) {
+        try {
+            const logoBase64 = hospital.logo.startsWith('http')
+                ? await imageUrlToBase64(hospital.logo)
+                : hospital.logo;
+            doc.addImage(logoBase64, 'PNG', pageMargin, 10, 15, 15);
+        } catch (e) { }
     }
-
-    const hospitalNameY = headerTopMargin + 5;
-    const hospitalAddressY = hospitalNameY + 6;
-
-    doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.setTextColor('#115E59'); // Teal-800
-    doc.text(hospitalName.toUpperCase(), headerTextX, hospitalNameY, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor('#475569'); // Slate-600
-    doc.text(hospitalAddress, headerTextX, hospitalAddressY, { align: 'center' });
-
-    const addressTextHeight = doc.getTextDimensions(hospitalAddress, { fontSize: 10 }).h;
-    textBlockBottomY = hospitalAddressY + addressTextHeight;
-
-    const headerBottom = Math.max(logoBottomY, textBlockBottomY);
-    const lineY = headerBottom + 4; // Add padding below the lowest element
-
-    doc.setDrawColor('#0F766E'); // Teal-700
-    doc.setLineWidth(1);
-    doc.line(pageMargin, lineY, pageWidth - pageMargin, lineY);
-
-    // 2. Title
     doc.setFont('helvetica', 'bold');
+    doc.text(hospitalName.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(12);
-    doc.setTextColor('#334155'); // Slate-700
-    const titleY = lineY + 8;
-    doc.text('LEMBAR MUTABAAH HARIAN', pageWidth / 2, titleY, { align: 'center' });
+    doc.text('LEMBAR MUTABAAH HARIAN KARYAWAN', pageWidth / 2, 22, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Periode: ${monthLabel.toUpperCase()}`, pageWidth / 2, 28, { align: 'center' });
 
-    // 3. Employee Info
-    autoTable(doc, {
-        startY: titleY + 4,
-        body: [
-            ['Nama', `: ${employee.name}`, 'Bulan', `: ${selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`],
-            ['Nopeg', `: ${employee.id}`, 'Unit', `: ${employee.unit}`],
-        ],
-        theme: 'plain',
-        styles: { fontSize: 9, cellPadding: 1, textColor: '#1e293b' },
-        columnStyles: {
-            0: { fontStyle: 'bold' as const, textColor: '#64748b' },
-            2: { fontStyle: 'bold' as const, textColor: '#64748b' },
-        },
-    });
-    finalY = (doc as any).lastAutoTable.finalY;
-
-    // 4. Table
-    const groupedActivities = dailyActivitiesConfig.reduce((acc, activity) => {
-        if (!acc[activity.category]) acc[activity.category] = [];
-        acc[activity.category].push(activity);
-        return acc;
-    }, {} as Record<string, DailyActivity[]>);
-
-    const tableHead = [['Indikator Penilaian', ...Array.from({ length: daysInMonth }, (_, i) => String(i + 1))]];
-    const tableBody: any[] = [];
-
-    Object.entries(groupedActivities).forEach(([category, activities]) => {
-        tableBody.push([
-            { content: category.toUpperCase(), colSpan: daysInMonth + 1, styles: { fontStyle: 'bold' as const, fillColor: [241, 245, 249] } }
-        ]);
-        activities.forEach(activity => {
-            const row = [activity.title];
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dayKey = String(i).padStart(2, '0');
-                const isChecked = (progress[dayKey]?.[activity.id] as any) === true || (progress[dayKey]?.[activity.id] as any) === 'hadir';
-                row.push(isChecked ? '✓' : '✗');
-            }
-            tableBody.push(row);
-        });
-    });
-
-    autoTable(doc, {
-        startY: finalY + 5,
-        head: tableHead,
-        body: tableBody,
-        theme: 'grid',
-        margin: { left: pageMargin, right: pageMargin, bottom: 5 },
-        headStyles: { valign: 'middle' as const, fillColor: [226, 232, 240], textColor: [51, 65, 85], fontStyle: 'bold' as const, fontSize: 7, cellPadding: 1, lineWidth: 0.1, lineColor: [203, 213, 225] },
-        bodyStyles: { valign: 'middle' as const, fontSize: 7, cellPadding: 1, lineWidth: 0.1, lineColor: [203, 213, 225], minCellHeight: 6 },
-        columnStyles: {
-            0: { cellWidth: 60, fontStyle: 'bold' as const },
-            ...Object.fromEntries(Array.from({ length: daysInMonth }, (_, i) => [i + 1, { cellWidth: 7, halign: 'center' as const }]))
-        },
-        didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index > 0) {
-                if (data.cell.raw === '✓' || data.cell.raw === '✗') {
-                    data.cell.text = ['']; // Clear the text to prevent font rendering issues
-                }
-            }
-        },
-        didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index > 0) {
-                const { cell, doc } = data;
-                const isChecked = cell.raw === '✓';
-                const isCrossed = cell.raw === '✗';
-
-                if (isChecked) {
-                    // Draw a green checkmark with fixed size
-                    doc.setDrawColor(13, 148, 136); // Teal-600
-                    doc.setLineWidth(0.5);
-                    const x = cell.x + cell.width / 2;
-                    const y = cell.y + cell.height / 2;
-                    const size = 1.8; // Fixed size for aesthetics
-
-                    doc.line(x - size, y, x - size / 2, y + size);
-                    doc.line(x - size / 2, y + size, x + size, y - size * 0.8);
-
-                } else if (isCrossed) {
-                    // Draw a slate gray cross with fixed size
-                    doc.setDrawColor(100, 116, 139); // Slate-500
-                    doc.setLineWidth(0.5);
-                    const padding = 1.8; // Fixed padding for aesthetics
-                    const x1 = cell.x + padding;
-                    const y1 = cell.y + padding;
-                    const x2 = cell.x + cell.width - padding;
-                    const y2 = cell.y + cell.height - padding;
-                    doc.line(x1, y1, x2, y2);
-                    doc.line(x2, y1, x1, y2);
-                }
-            }
-        }
-    });
-    finalY = (doc as any).lastAutoTable.finalY;
-
-    // 5. Signatures
-    let signatureY = doc.internal.pageSize.getHeight() - 40;
-    if (signatureY < finalY + 10) {
-        signatureY = finalY + 10;
-    }
-
-    const signatureXPositions = [41, 113, 184, 256];
-    const signatureTitles = ['Ka. Unit Kerja', 'Supervisor', 'Mentor', 'Pegawai'];
-    const signatureNames = [kaUnitName, supervisorName, mentorName, employee.name];
-    const signatureNips = [employee.kaUnitId || '', employee.supervisorId || '', employee.mentorId || '', employee.id];
-    const signatures = [null, null, null, employee.signature]; // Only employee signature for now
-
+    // Info
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
+    doc.text(`Nama: ${employee.name}`, pageMargin, 38);
+    doc.text(`Bagian/Unit: ${employee.bagian}/${employee.unit}`, pageMargin, 43);
+    doc.text(`Nopeg: ${employee.id}`, pageWidth - pageMargin - 40, 38);
 
-    signatureTitles.forEach((title, index) => {
-        doc.text(title + ',', signatureXPositions[index], signatureY, { align: 'center' });
+    const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
+    const headers = [['No', 'Indikator Penilaian', ...Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString()), 'Total']];
+
+    const data = dailyActivitiesConfig.map((activity, idx) => {
+        const row = [
+            (idx + 1).toString(),
+            activity.title,
+        ];
+
+        let total = 0;
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayKey = i.toString().padStart(2, '0');
+            const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
+            const val = (progress as any)?.[activity.id];
+            const isDone = val === true || val === 'hadir';
+            row.push(isDone ? 'v' : '');
+            if (isDone) total++;
+        }
+        row.push(total.toString());
+        return row;
     });
 
-    signatureNames.forEach((name, index) => {
-        const yPos = signatureY + 25;
-
-        if (signatures[index]) {
-            const imgWidth = 40, imgHeight = 20;
-            const x = signatureXPositions[index] - (imgWidth / 2);
-            const y = yPos - 20;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.text(name, signatureXPositions[index], yPos, { align: 'center' });
-        doc.setLineWidth(0.2);
-        const nameWidth = doc.getTextWidth(name);
-        doc.line(signatureXPositions[index] - (nameWidth / 2), yPos + 1, signatureXPositions[index] + (nameWidth / 2), yPos + 1);
-        if (signatureNips[index]) {
-            doc.setFont('helvetica', 'normal');
-            doc.text(`NIP. ${signatureNips[index]}`, signatureXPositions[index], yPos + 5, { align: 'center' });
-        }
+    autoTable(doc, {
+        startY: 48,
+        head: headers,
+        body: data,
+        theme: 'grid',
+        styles: { fontSize: 6, cellPadding: 1, halign: 'center' },
+        columnStyles: {
+            1: { halign: 'left', cellWidth: 50 },
+            [daysInMonth + 2]: { fontStyle: 'bold' }
+        },
+        headStyles: { fillColor: [13, 148, 136] }
     });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(9);
+    doc.text('Mengetahui,', pageMargin + 20, finalY);
+    doc.text('Mentor,', pageMargin + 20, finalY + 5);
+    doc.text('Karyawan,', pageWidth - pageMargin - 40, finalY + 5);
+
+    const mentorName = employee.mentorId ? allUsersData[employee.mentorId]?.employee.name : '.........................';
+    doc.text(mentorName, pageMargin + 20, finalY + 25);
+    doc.text(employee.name, pageWidth - pageMargin - 40, finalY + 25);
 
     doc.save(`mutabaah_${employee.name.replace(/\s/g, '_')}_${monthKey}.pdf`);
 };
@@ -485,141 +352,75 @@ interface CeklisMutabaahViewProps {
 const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack }) => {
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);
 
-    // 🔥 FIX: Enrich progress data
-    const progress = useMemo(() => {
-        const baseProgress = employee.monthlyActivities?.[monthKey] || {};
-        const enriched = { ...baseProgress };
+    const daysInMonth = useMemo(() => {
+        return new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
+    }, [selectedMonth]);
 
-        // 2. Sync Reading History (Books)
-        if (employee.readingHistory && Array.isArray(employee.readingHistory)) {
-            employee.readingHistory.forEach(history => {
-                const date = history.dateCompleted;
-                if (date.startsWith(monthKey)) {
-                    const dayKey = date.substring(8, 10);
-                    if (!enriched[dayKey]) {
-                        enriched[dayKey] = {};
-                    }
-                    enriched[dayKey]['baca_alquran_buku'] = true;
-                }
-            });
-        }
+    const isCurrentMonthView = useMemo(() => {
+        const now = new Date();
+        return now.getFullYear() === selectedMonth.getFullYear() && now.getMonth() === selectedMonth.getMonth();
+    }, [selectedMonth]);
 
-        // 3. Sync Quran History
-        if (employee.quranReadingHistory && Array.isArray(employee.quranReadingHistory)) {
-            employee.quranReadingHistory.forEach((history: any) => {
-                const date = history.date;
-                if (date.startsWith(monthKey)) {
-                    const dayKey = date.substring(8, 10);
-                    if (!enriched[dayKey]) {
-                        enriched[dayKey] = {};
-                    }
-                    enriched[dayKey]['baca_alquran_buku'] = true;
-                }
-            });
-        }
-
-        return enriched;
-    }, [employee, monthKey]);
-    const daysInMonth = useMemo(() => new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate(), [selectedMonth]);
-    const today = useMemo(() => new Date(), []);
-    const todayDay = today.getDate().toString().padStart(2, '0');
-    const isCurrentMonthView = today.getFullYear() === selectedMonth.getFullYear() && today.getMonth() === selectedMonth.getMonth();
-
-    const mentorName = useMemo(() => allUsersData[employee.mentorId || '']?.employee.name || '.........................', [allUsersData, employee.mentorId]);
-    const supervisorName = useMemo(() => allUsersData[employee.supervisorId || '']?.employee.name || '.........................', [allUsersData, employee.supervisorId]);
-    const kaUnitName = useMemo(() => allUsersData[employee.kaUnitId || '']?.employee.name || '.........................', [allUsersData, employee.kaUnitId]);
-
-    const groupedActivities = useMemo(() => {
-        return dailyActivitiesConfig.reduce((acc, activity) => {
-            if (!acc[activity.category]) acc[activity.category] = [];
-            acc[activity.category].push(activity);
-            return acc;
-        }, {} as Record<string, DailyActivity[]>);
-    }, [dailyActivitiesConfig]);
+    const today = new Date().getDate();
 
     return (
-        <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl text-slate-800 max-w-7xl mx-auto">
-            {onBack && (
-                <button
-                    onClick={onBack}
-                    className="mb-6 flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
-                >
-                    <ArrowLeftIcon className="w-5 h-5" />
-                    Kembali ke Daftar
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </button>
-            )}
-            <div className="text-center pb-4">
-                <h3 className="text-xl font-extrabold text-teal-700">RUMAH SAKIT ISLAM JAKARTA SUKAPURA</h3>
-                <p className="text-sm text-slate-600">Jl. Tipar Cakung No.5, Sukapura, Kec. Cilincing, Jakarta Utara</p>
-            </div>
-            <hr className="border-t-4 border-teal-600 mb-4" />
-            <h4 className="text-center font-bold text-lg text-slate-700 mt-6">LEMBAR MUTABAAH HARIAN</h4>
-
-            <div className="mt-6 text-sm grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
-                <strong className="text-slate-500">Nama</strong><span>: {employee.name}</span>
-                <strong className="text-slate-500">Bulan</strong><span>: {selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-                <strong className="text-slate-500">Nopeg</strong><span>: {employee.id}</span>
-                <strong className="text-slate-500">Unit</strong><span>: {employee.unit}</span>
+                <h2 className="text-xl font-bold text-white">
+                    Checklist Mutabaah - {selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                </h2>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-300 mt-6">
-                <table className="min-w-full text-sm text-left border-collapse">
-                    <thead className="sticky top-0 z-10">
-                        <tr>
-                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-slate-100 border-b-2 border-slate-300 whitespace-nowrap">Indikator Penilaian</th>
-                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                                <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] border-b-2 border-l border-slate-300 whitespace-nowrap ${isCurrentMonthView && day.toString().padStart(2, '0') === todayDay ? 'bg-teal-100 text-teal-800' : 'bg-slate-50'}`}>
-                                    {day}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {Object.entries(groupedActivities).map(([category, activities]) => (
-                            <Fragment key={category}>
-                                <tr><td colSpan={daysInMonth + 1} className="px-3 py-2 font-bold text-teal-700 sticky left-0 z-10 bg-slate-200 border-b border-slate-300 whitespace-nowrap">{category}</td></tr>
-                                {activities.map((activity, actIndex) => (
-                                    <tr key={activity.id} className={`border-b border-slate-200 ${actIndex === activities.length - 1 ? 'border-b-2 border-slate-300' : ''}`}>
-                                        <td className="px-3 py-3 font-medium text-left sticky left-0 bg-white z-10 whitespace-nowrap">{activity.title}</td>
+            <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+                <div className="overflow-x-auto max-h-[70vh]">
+                    <table className="min-w-full text-[10px] sm:text-xs text-left text-white border-collapse">
+                        <thead className="sticky top-0 z-20 bg-[#1e293b]">
+                            <tr>
+                                <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-0 z-30">No</th>
+                                <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-[30px] z-30 min-w-[150px]">Indikator Penilaian</th>
+                                {Array.from({ length: daysInMonth }, (_, i) => (
+                                    <th key={i} className={`p-1 border border-white/20 text-center min-w-[25px] ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/30' : ''}`}>
+                                        {i + 1}
+                                    </th>
+                                ))}
+                                <th className="p-2 border border-white/20 text-center font-bold bg-[#1e293b] sticky right-0 z-30">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dailyActivitiesConfig.map((activity, index) => {
+                                let rowTotal = 0;
+                                return (
+                                    <tr key={activity.id} className="hover:bg-white/5 group">
+                                        <td className="p-2 border border-white/20 text-center sticky left-0 bg-[#28364d] group-hover:bg-[#32435e]">{index + 1}</td>
+                                        <td className="p-2 border border-white/20 sticky left-[30px] bg-[#28364d] group-hover:bg-[#32435e]">{activity.title}</td>
                                         {Array.from({ length: daysInMonth }, (_, i) => {
                                             const dayKey = (i + 1).toString().padStart(2, '0');
-                                            const isChecked = (progress[dayKey]?.[activity.id] as any) === true || (progress[dayKey]?.[activity.id] as any) === 'hadir';
+                                            const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
+                                            const val = (progress as any)?.[activity.id];
+                                            const isDone = val === true || val === 'hadir';
+                                            if (isDone) rowTotal++;
                                             return (
-                                                <td key={dayKey} className={`text-center border-l border-slate-200 ${isCurrentMonthView && dayKey === todayDay ? 'bg-teal-50' : ''}`}>
-                                                    <div className="w-full h-full flex items-center justify-center py-3 text-xl font-bold">
-                                                        {isChecked ? <span className="text-green-700">✓</span> : <span className="text-slate-400">✗</span>}
-                                                    </div>
+                                                <td key={i} className={`p-1 border border-white/20 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/10' : ''}`}>
+                                                    {isDone ? <span className="text-teal-400 font-bold">✓</span> : <span className="text-white/10">-</span>}
                                                 </td>
                                             );
                                         })}
+                                        <td className="p-2 border border-white/20 text-center font-bold sticky right-0 bg-[#28364d] group-hover:bg-[#32435e] text-teal-300">
+                                            {rowTotal}
+                                        </td>
                                     </tr>
-                                ))}
-                            </Fragment>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="mt-12 text-slate-800 text-sm">
-                <div className="flex justify-end mb-4">
-                    <div className="w-1/4 text-center"><p>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
-                <div className="flex justify-between">
-                    {[
-                        { title: 'Ka. Unit Kerja', name: kaUnitName, nip: employee.kaUnitId },
-                        { title: 'Supervisor', name: supervisorName, nip: employee.supervisorId },
-                        { title: 'Mentor', name: mentorName, nip: employee.mentorId },
-                        { title: 'Pegawai', name: employee.name, nip: employee.id, signature: employee.signature }
-                    ].map(signer => (
-                        <div key={signer.title} className="w-1/4 text-center">
-                            <p>{signer.title},</p>
-                            <div className="h-20 flex items-center justify-center">
-                                {signer.signature && <Image src={signer.signature} alt="Tanda Tangan" width={64} height={64} className="h-16" />}
-                            </div>
-                            <p className="font-bold underline">{signer.name}</p>
-                            {signer.nip && <p>NIP. {signer.nip}</p>}
-                        </div>
-                    ))}
+                <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400">
+                    <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
+                    <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
+                    {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
                 </div>
             </div>
         </div>
@@ -659,7 +460,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
     }, [allUsersData, employee.mentorId]);
 
     const selectedMonthLabel = useMemo(() => {
-        return selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        return `JANUARI - DESEMBER ${selectedMonth.getFullYear()}`;
     }, [selectedMonth]);
 
     const todayForView = useMemo(() => new Date().toLocaleDateString('id-ID', {
@@ -670,7 +471,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
         <div className="bg-gray-900/50 p-2 sm:p-6 rounded-lg">
             <div className="flex justify-end items-center mb-6">
                 <button
-                    onClick={() => generateTranscriptPdf(employee, performanceData, ipForMonth, selectedMonthLabel, signatoryName, signatoryNip, signatoryTitle, mentorName, hospital)}
+                    onClick={async () => await generateTranscriptPdf(employee, performanceData, ipForMonth, selectedMonthLabel, signatoryName, signatoryNip, signatoryTitle, mentorName, hospital)}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
                 >
                     <PdfIcon className="w-5 h-5" />
@@ -678,14 +479,21 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                 </button>
             </div>
             <div className="bg-slate-50 p-6 sm:p-10 rounded shadow-2xl text-gray-800" id="transcript-content">
-                <div className="text-center pb-4 flex items-center justify-center">
-                    {hospital?.logo && <Image src={hospital.logo} alt="Hospital Logo" width={80} height={80} className="h-20 mr-4" />}
-                    <div>
-                        <h3 className="text-xl sm:text-3xl font-extrabold text-teal-700">{(hospital?.name || 'Rumah Sakit Islam Jakarta Group').toUpperCase()}</h3>
-                        <p className="text-sm text-gray-600">{hospital?.address || 'Alamat tidak terdaftar'}</p>
+                {/* Standard Letterhead (Kop Surat) Layout */}
+                <div className="flex items-start gap-4 pb-4 border-b-4 border-teal-600 mb-6">
+                    {hospital?.logo && (
+                        <div className="shrink-0 pt-2">
+                            <NextImage src={hospital.logo} alt="Hospital Logo" width={100} height={100} className="h-24 w-auto" />
+                        </div>
+                    )}
+                    <div className="flex-1 text-center">
+                        <h3 className="text-xl sm:text-3xl font-extrabold text-teal-800 leading-tight">RUMAH SAKIT ISLAM JAKARTA GROUP</h3>
+                        {hospital?.name && hospital.name.toUpperCase() !== 'RUMAH SAKIT ISLAM JAKARTA GROUP' && (
+                            <h4 className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">{hospital.name.toUpperCase()}</h4>
+                        )}
+                        <p className="text-sm sm:text-base text-gray-500 font-medium mt-1 italic">{hospital?.address || 'Alamat RS belum diatur di Manajemen RS'}</p>
                     </div>
                 </div>
-                <hr className="border-t-4 border-teal-600 mb-4" />
 
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm sm:text-base">
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Nama</strong>: {employee.name}</div>
@@ -700,7 +508,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                         <p className="text-2xl sm:text-3xl font-bold text-teal-600">{selectedMonthLabel.toUpperCase()}</p>
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">INDEKS PRESTASI BULANAN (IPB)</p>
+                        <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">INDEKS PRESTASI TAHUNAN (IPA)</p>
                         <p className="text-2xl sm:text-3xl font-bold text-teal-600">{ipForMonth.toFixed(2)}</p>
                     </div>
                     <div>
@@ -790,7 +598,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                             <p>Pegawai,</p>
                             <div className="h-20 flex items-center justify-center">
                                 {employee.signature && (
-                                    <Image src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16" />
+                                    <NextImage src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16" />
                                 )}
                             </div>
                             <p className="font-bold underline">{employee.name}</p>
@@ -828,9 +636,17 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     const [viewingChecklistFor, setViewingChecklistFor] = useState<Date | null>(null);
 
     const hospital = useMemo(() => {
-        if (!hospitals || !employee.hospitalId) return null;
-        return hospitals.find(h => h.id === employee.hospitalId) || null;
-    }, [hospitals, employee.hospitalId]);
+        // Gabungkan pemeriksaan hospitalId (frontend) dan hospital_id (backend/Supabase)
+        const targetId = employee.hospitalId || (employee as any).hospital_id;
+
+        if (!hospitals || hospitals.length === 0 || !targetId) return null;
+
+        // Cari berdasarkan ID atau Brand (Contoh: RSIJSP) secara case-insensitive
+        return hospitals.find(h =>
+            String(h.id).toUpperCase() === String(targetId).toUpperCase() ||
+            String(h.brand).toUpperCase() === String(targetId).toUpperCase()
+        ) || null;
+    }, [hospitals, employee.hospitalId, (employee as any).hospital_id]);
 
     const navigateMonth = (direction: 'prev' | 'next') => {
         setSelectedMonth(prev => {
@@ -894,6 +710,91 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
         return enriched;
     }, [employee, monthKey]);
+
+    // 🔥 NEW: Yearly Performance Data Calculation (Jan - Dec accumulation)
+    const yearlyPerformanceData = useMemo(() => {
+        const year = selectedMonth.getFullYear();
+        const yearPrefix = `${year}-`;
+
+        // 🔥 Akumulasi dari Januari sampai Bulan Ini (Bukan hanya yang diaktivasi)
+        const now = new Date();
+        const isCurrentYear = year === now.getFullYear();
+        const maxMonthIdx = isCurrentYear ? (now.getMonth() + 1) : 12; // Jan=1
+
+        // Generate list semu Januari - Bulan Aktif untuk memastikan target terkalkulasi secara tahunan (PRO-RATA)
+        const monthsToCalculate = Array.from({ length: maxMonthIdx }, (_, i) =>
+            `${year}-${(i + 1).toString().padStart(2, '0')}`
+        );
+
+        if (monthsToCalculate.length === 0) return { categories: [], ipResult: 0 };
+
+        const categoriesRaw: Record<string, {
+            name: string;
+            details: Record<string, { title: string; yearlyTarget: number; yearlyAchieved: number }>;
+        }> = {};
+
+        // Loop setiap bulan untuk menjumlahkan target dan capaian
+        monthsToCalculate.forEach((mKey: string) => {
+            const mProgress = employee.monthlyActivities?.[mKey] || {};
+            // Sync with cached reports if available
+            const monthlyReports = (employee as any)._monthlyReportsDataCache?.[mKey] || {};
+
+            dailyActivitiesConfig.forEach(act => {
+                if (!categoriesRaw[act.category]) {
+                    categoriesRaw[act.category] = { name: act.category, details: {} };
+                }
+                if (!categoriesRaw[act.category].details[act.id]) {
+                    categoriesRaw[act.category].details[act.id] = { title: act.title, yearlyTarget: 0, yearlyAchieved: 0 };
+                }
+
+                // Tambahkan target bulanan ke akumulasi tahunan
+                categoriesRaw[act.category].details[act.id].yearlyTarget += act.monthlyTarget;
+
+                // Hitung capaian di bulan ini (gabungan base progress + cached reports)
+                const combinedMonthProgress = { ...mProgress };
+                if (monthlyReports) {
+                    Object.entries(monthlyReports).forEach(([day, data]: [string, any]) => {
+                        combinedMonthProgress[day] = { ...(combinedMonthProgress[day] || {}), ...data };
+                    });
+                }
+
+                const achievedInMonth = Object.values(combinedMonthProgress).reduce((count: number, daily: any) => {
+                    const val = daily[act.id];
+                    return count + (val === true || val === 'hadir' ? 1 : 0);
+                }, 0);
+
+                categoriesRaw[act.category].details[act.id].yearlyAchieved += achievedInMonth;
+            });
+        });
+
+        // Convert raw stats to standard performanceData format
+        let totalBobot = 0;
+        const finalCategories = Object.values(categoriesRaw).map(cat => {
+            const details = Object.values(cat.details).map(d => ({
+                title: d.title,
+                target: d.yearlyTarget,
+                achieved: d.yearlyAchieved,
+                percentage: d.yearlyTarget > 0 ? Math.min(100, Math.round((d.yearlyAchieved / d.yearlyTarget) * 100)) : 0
+            }));
+
+            const totalPercentage = details.reduce((sum, d) => sum + d.percentage, 0);
+            const averageScore = details.length > 0 ? Math.round(totalPercentage / details.length) : 0;
+            const { grade, bobot } = getGradeDetails(averageScore);
+            totalBobot += bobot;
+
+            return {
+                name: cat.name,
+                details,
+                score: averageScore,
+                grade,
+                bobot
+            };
+        });
+
+        const ipResult = finalCategories.length > 0 ? totalBobot / finalCategories.length : 0;
+
+        return { categories: finalCategories, ipResult };
+    }, [employee, dailyActivitiesConfig, selectedMonth]);
 
     const performanceData = useMemo(() => {
         const monthProgress = enrichedProgress;
@@ -986,10 +887,17 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     }, [allUsersData, employee]);
 
     const availableMonths = useMemo(() => {
-        if (!employee.monthlyActivities) return [];
-        return Object.keys(employee.monthlyActivities)
-            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    }, [employee.monthlyActivities]);
+        // Collect months from both activity history AND manual activation list
+        const activityMonths = employee.monthlyActivities ? Object.keys(employee.monthlyActivities) : [];
+        const activatedMonths = employee.activatedMonths || (employee as any).activated_months || [];
+
+        // Merge and deduplicate
+        const allUniqueMonths = Array.from(new Set([...activityMonths, ...activatedMonths]))
+            .filter(m => typeof m === 'string' && /^\d{4}-\d{2}$/.test(m));
+
+        // Sort chronologically (Oldest to Newest) "berurutan"
+        return allUniqueMonths.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    }, [employee.monthlyActivities, employee.activatedMonths, (employee as any).activated_months]);
 
     const currentMonthKey = useMemo(() => {
         const now = new Date();
@@ -1002,10 +910,6 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h2 className="text-2xl font-bold text-white">APPI</h2>
-            </div>
-
             <div className="border-b border-white/10">
                 <nav className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
@@ -1026,7 +930,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Deskripsi</th>
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Bulan</th>
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Tahun</th>
-                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Periode Penilaian</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
                                         <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                                     </tr>
                                 </thead>
@@ -1041,8 +945,12 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                 <td className="px-4 py-3 whitespace-nowrap">{monthDate.toLocaleDateString('id-ID', { month: 'long' })}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap">{monthDate.getFullYear()}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${isCurrent ? 'bg-green-500/20 text-green-300' : 'bg-blue-500/20 text-blue-300'}`}>
-                                                        {isCurrent ? 'AKTIF' : 'SELESAI'}
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold rounded-full border shadow-sm ${isCurrent
+                                                        ? 'bg-teal-500/20 text-teal-400 border-teal-500/30'
+                                                        : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                                                        }`}>
+                                                        <div className={`w-1 h-1 rounded-full ${isCurrent ? 'bg-teal-400 animate-pulse' : 'bg-blue-400'}`}></div>
+                                                        {isCurrent ? 'Aktif' : 'Selesai'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -1050,7 +958,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                         <button onClick={() => setViewingChecklistFor(monthDate)} className="p-2 text-blue-300 hover:text-white rounded-full hover:bg-white/10" title="Lihat Checklist">
                                                             <DocumentTextIcon className="w-5 h-5" />
                                                         </button>
-                                                        <button onClick={() => generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital)} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Unduh PDF">
+                                                        <button onClick={async () => await generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital)} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Unduh PDF">
                                                             <PdfIcon className="w-5 h-5" />
                                                         </button>
                                                     </div>
@@ -1071,7 +979,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                         <div className="flex justify-center">
                             <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto max-w-sm">
                                 <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
-                                <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
+                                <span className="font-semibold text-base text-teal-300 px-2 grow text-center">Tahun {selectedMonth.getFullYear()} (Jan - Des)</span>
                                 <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
                             </div>
                         </div>
@@ -1079,8 +987,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                             employee={employee}
                             allUsersData={allUsersData}
                             selectedMonth={selectedMonth}
-                            performanceData={performanceData}
-                            ipForMonth={performanceData.ipForMonth}
+                            performanceData={yearlyPerformanceData}
+                            ipForMonth={yearlyPerformanceData.ipResult}
                             signatoryName={signatory.name}
                             signatoryNip={signatory.nip}
                             signatoryTitle={signatory.title}

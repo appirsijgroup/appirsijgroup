@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { Surah, SurahDetail, Employee, WeeklyReportSubmission } from '../types';
+import type { Surah, SurahDetail, Employee, MonthlyReportSubmission } from '../types';
 import type { Bookmark } from '../services/bookmarkService';
 import { fetchSurahs, fetchSurahDetail } from '../services/quranService';
 import { Search, ArrowLeft, Bookmark as BookmarkIcon, CheckSquare, Lock, Share2 } from 'lucide-react';
@@ -13,7 +13,7 @@ interface AlquranProps {
     goToAyah: { surah: number; ayah: number } | null;
     clearGoToAyah: () => void;
     onQuranReadingSubmission: (details: { surahName: string; surahNumber: number; startAyah: number; endAyah: number; date: string; }) => void;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
+    monthlyReportSubmissions: MonthlyReportSubmission[];
     loggedInEmployee: Employee;
     setGoToAyah: (target: { surah: number; ayah: number } | null) => void;
 }
@@ -56,9 +56,9 @@ const ReportReadingModal: React.FC<{
     onSubmit: (startAyah: number, endAyah: number, date: string) => void;
     surah: SurahDetail;
     targetEndAyah: number | null;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
+    monthlyReportSubmissions: MonthlyReportSubmission[];
     todayForMaxDate: string;
-}> = ({ isOpen, onClose, onSubmit, surah, targetEndAyah, weeklyReportSubmissions, todayForMaxDate }) => {
+}> = ({ isOpen, onClose, onSubmit, surah, targetEndAyah, monthlyReportSubmissions, todayForMaxDate }) => {
     const [startAyah, setStartAyah] = useState('');
     const [endAyah, setEndAyah] = useState('');
     // 🔥 FIX: Gunakan timeValidationService untuk initial state tanggal
@@ -108,32 +108,13 @@ const ReportReadingModal: React.FC<{
 
         const monthKey = date.slice(0, 7);
 
-        const selectedMonthDate = new Date(monthKey + '-02T12:00:00Z');
-        const weeksForSelectedMonth = getBalancedWeeks(selectedMonthDate);
-        const dayOfMonth = selectedDateObj.getDate();
-        const weekIndexOfSelected = weeksForSelectedMonth.findIndex(w => w.days.includes(dayOfMonth));
-
-        if (weekIndexOfSelected === -1) return [true, "Tanggal tidak valid"];
-
-        const currentMonthForToday = new Date(today.getFullYear(), today.getMonth(), 1);
-        const weeksForCurrentMonth = getBalancedWeeks(currentMonthForToday);
-        const currentDay = today.getDate();
-        const currentWeekIndexForToday = weeksForCurrentMonth.findIndex(w => w.days.includes(currentDay));
-
-        const isSameMonthAndYearAsToday = selectedDateObj.getFullYear() === today.getFullYear() && selectedDateObj.getMonth() === today.getMonth();
-        const isCurrentWeek = isSameMonthAndYearAsToday && weekIndexOfSelected === currentWeekIndexForToday;
-
-        if (!isCurrentWeek) {
-            return [true, "Hanya pekan berjalan yang bisa diisi."];
-        }
-
-        const currentWeeklySubmission = weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndexOfSelected);
-        if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-            return [true, "Pekan ini sudah diajukan."];
+        const currentMonthlySubmission = monthlyReportSubmissions.find((s: MonthlyReportSubmission) => s.monthKey === monthKey);
+        if (currentMonthlySubmission && (currentMonthlySubmission.status.startsWith('pending_') || currentMonthlySubmission.status === 'approved')) {
+            return [true, "Bulan ini sudah diajukan."];
         }
 
         return [false, ""];
-    }, [date, weeklyReportSubmissions]);
+    }, [date, monthlyReportSubmissions]);
 
     const handleSubmit = () => {
         const start = parseInt(startAyah, 10);
@@ -233,7 +214,7 @@ const ReportReadingModal: React.FC<{
     );
 };
 
-export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goToAyah, clearGoToAyah, onQuranReadingSubmission, weeklyReportSubmissions, loggedInEmployee: _loggedInEmployee, setGoToAyah }) => {
+export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goToAyah, clearGoToAyah, onQuranReadingSubmission, monthlyReportSubmissions, loggedInEmployee: _loggedInEmployee, setGoToAyah }) => {
     const [surahs, setSurahs] = useState<Surah[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<SurahDetail | null>(null);
     const [isLoadingList, setIsLoadingList] = useState(true);
@@ -459,7 +440,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                             onSubmit={handleReportSubmit}
                             surah={selectedSurah}
                             targetEndAyah={targetEndAyah}
-                            weeklyReportSubmissions={weeklyReportSubmissions}
+                            monthlyReportSubmissions={monthlyReportSubmissions}
                             todayForMaxDate={todayForMaxDate}
                         />
                     </>

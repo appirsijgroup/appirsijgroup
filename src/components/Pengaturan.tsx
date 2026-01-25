@@ -460,17 +460,6 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contoh@email.com" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                             </div>
                         </div>
-                        <div className="relative" ref={cityDropdownRef}>
-                            <label htmlFor="location" className="block text-sm font-medium text-blue-200 mb-1">Lokasi Jadwal Sholat</label>
-                            <input id="location" type="text" value={locationSearch} onChange={(e) => { setLocationSearch(e.target.value); if (!isCityDropdownOpen) setIsCityDropdownOpen(true); }} onFocus={() => setIsCityDropdownOpen(true)} placeholder="Cari kota (min. 3 huruf)..." className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" autoComplete="off" />
-                            {isCityDropdownOpen && filteredCities.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-white/20 rounded-md shadow-lg max-h-60 overflow-auto">
-                                    <ul className="py-1">
-                                        {filteredCities.map(city => (<li key={city.id} onClick={() => handleLocationSelect(city)} className="px-4 py-2 text-sm text-white hover:bg-teal-600 cursor-pointer">{city.lokasi}</li>))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
                         <div className="text-left sm:text-right pt-2">
                             <button type="submit" className="w-full sm:w-auto bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-500 transition-all duration-300 text-sm sm:text-base">
                                 Simpan Perubahan

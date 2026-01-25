@@ -454,13 +454,19 @@ export const convertTeamAttendanceToActivities = async (
                 result[monthKey][dayKey] = {};
             }
 
-            // Map session type to activity ID
+            // Map session type to activity ID from DAILY_ACTIVITIES
             if (sessionType === 'KIE') {
                 result[monthKey][dayKey]['tepat_waktu_kie'] = true;
             } else if (sessionType === 'Doa Bersama') {
                 result[monthKey][dayKey]['doa_bersama'] = true;
             } else if (sessionType === 'BBQ' || sessionType === 'UMUM') {
                 result[monthKey][dayKey]['tadarus'] = true;
+            } else if (sessionType === 'Kajian Selasa') {
+                result[monthKey][dayKey]['kajian_selasa'] = true;
+            } else if (sessionType === 'Pengajian Persyarikatan') {
+                result[monthKey][dayKey]['persyarikatan'] = true;
+            } else if (sessionType === 'Membaca Al-Quran dan buku') {
+                result[monthKey][dayKey]['baca_alquran_buku'] = true;
             }
         });
 

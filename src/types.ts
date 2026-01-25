@@ -172,10 +172,12 @@ export interface Employee extends RawEmployee {
   monthly_activities?: Record<string, MonthlyActivityProgress>; // snake_case from Supabase
   kaUnitId?: string;
   supervisorId?: string;
+  managerId?: string;
   mentorId?: string;
   dirutId?: string;
   canBeMentor?: boolean;
   canBeSupervisor?: boolean;
+  canBeManager?: boolean;
   canBeKaUnit?: boolean; // Added for Ka. Unit role
   canBeDirut?: boolean;
   functionalRoles?: FunctionalRole[];
@@ -313,27 +315,31 @@ export type AdminView = 'manajemen-pengguna' | 'manajemen-konten' | 'reports' | 
 export type MonthlyReportStatus =
   | 'pending_mentor'
   | 'pending_supervisor'
+  | 'pending_manager'
   | 'pending_kaunit'
   | 'approved'
   | 'rejected_mentor'
   | 'rejected_supervisor'
+  | 'rejected_manager'
   | 'rejected_kaunit';
 
-export interface WeeklyReportSubmission {
+export interface MonthlyReportSubmission {
   id: string;
   menteeId: string;
   menteeName: string;
   monthKey: string;
-  weekIndex: number;
   submittedAt: number;
   status: MonthlyReportStatus;
   mentorId: string;
   supervisorId?: string;
+  managerId?: string;
   kaUnitId?: string;
   mentorReviewedAt?: number;
   mentorNotes?: string;
   supervisorReviewedAt?: number;
   supervisorNotes?: string;
+  managerReviewedAt?: number;
+  managerNotes?: string;
   kaUnitReviewedAt?: number;
   kaUnitNotes?: string;
 }
@@ -387,7 +393,7 @@ export interface TeamAttendanceSession {
   id: string;
   creatorId: string;
   creatorName: string;
-  type: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM';
+  type: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM
@@ -411,7 +417,7 @@ export interface TeamAttendanceRecord {
   attendedAt: number; // Unix timestamp - kapan user klik HADIR
   createdAt: number;
   // Metadata dari session (denormalized untuk query performance)
-  sessionType: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM';
+  sessionType: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
   sessionDate: string; // YYYY-MM-DD
   sessionStartTime: string; // HH:MM
   sessionEndTime: string; // HH:MM
@@ -423,14 +429,14 @@ export interface MyDashboardViewProps {
   history: Record<string, Attendance>;
   attendance: Attendance;
   dailyActivitiesConfig: DailyActivity[];
-  submissions: WeeklyReportSubmission[];
+  submissions: MonthlyReportSubmission[];
   onNavigateToReport: (monthKey: string) => void;
   addToast: (message: string, type: 'success' | 'error') => void;
   // Panel Mentor
   onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
   allPrayers: Prayer[];
   activities: Activity[];
-  weeklyReportSubmissions: WeeklyReportSubmission[];
+  monthlyReportSubmissions: MonthlyReportSubmission[];
   onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
   tadarusRequests: TadarusRequest[];
   onCreateTadarusSession: (data: Omit<TadarusSession, 'id' | 'createdAt' | 'presentMenteeIds'>) => void;
@@ -471,7 +477,7 @@ export interface MyDashboardViewProps {
   // Missing handlers
   onActivateMonth?: (userId: string, monthKey: string) => void;
   onUpdateMonthlyActivities?: (userId: string, monthKey: string, monthProgress: any) => void;
-  onSubmitReport?: (monthKey: string, weekIndex: number) => void;
+  onSubmitReport?: (monthKey: string) => void;
   // Assignment Letter
   onOpenAssignmentLetter?: (notification: any) => void;
   onLoadEmployees?: (limit?: number) => Promise<void>;

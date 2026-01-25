@@ -179,6 +179,10 @@ const PresensiComponent: React.FC = () => {
 
         // Clear status after delay
         setTimeout(() => setLocationStatus(null), 3000);
+
+        // 🔥 NEW: Trigger global refresh for charts
+        const { refreshActivityStats } = useAppDataStore.getState();
+        refreshActivityStats();
       } catch (error) {
         setLocationStatus('Gagal mendapatkan lokasi. Pastikan GPS aktif.');
         setTimeout(() => setLocationStatus(null), 3000);
@@ -209,6 +213,10 @@ const PresensiComponent: React.FC = () => {
           isLateEntry
         }
       }));
+
+      // 🔥 NEW: Trigger global refresh for charts
+      const { refreshActivityStats } = useAppDataStore.getState();
+      refreshActivityStats();
     }
   };
 

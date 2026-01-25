@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { type Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmission, DailyActivity } from '../types';
+import { type Employee, ReadingHistory, QuranReadingHistory, MonthlyReportSubmission, DailyActivity } from '../types';
 import { CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, Lock, PlusCircle, List, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import MonthlyReportCard from './MonthlyReportCard';
@@ -40,11 +40,56 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 
     return weeks.map((days, index) => ({ weekIndex: index, days }));
 };
+
+const MonthlySubmissionPanel: React.FC<{
+    submissions: MonthlyReportSubmission[];
+    onSubmit: (monthKey: string) => void;
+}> = ({ submissions, onSubmit }) => {
+    const today = new Date();
+    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const submission = submissions.find(s => s.monthKey === currentMonthKey);
+
+    return (
+        <div className="mt-8 bg-blue-900/40 border border-blue-400/30 rounded-2xl p-6 shadow-xl backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-500/20 rounded-xl">
+                        <CheckSquare className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Laporan Bulanan {today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3>
+                        <p className="text-blue-200 text-sm">Pastikan semua aktivitas sudah tercatat sebelum mengirim laporan.</p>
+                    </div>
+                </div>
+
+                {!submission ? (
+                    <button
+                        onClick={() => onSubmit(currentMonthKey)}
+                        className="px-8 py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl shadow-lg shadow-teal-500/20 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        Kirim Laporan Bulan Ini
+                    </button>
+                ) : (
+                    <div className="flex items-center gap-3 px-6 py-3 bg-green-500/20 border border-green-500/30 rounded-xl">
+                        <CheckCircle2 className="w-6 h-6 text-green-400" />
+                        <div>
+                            <p className="text-green-400 font-bold leading-tight">Laporan Terkirim</p>
+                            <p className="text-green-300 text-xs uppercase text-center">
+                                {submission.status === 'approved' ? 'DISETUJUI' :
+                                    submission.status.startsWith('rejected_') ? 'DITOLAK' : 'MENUNGGU'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 const ReadingActivityCard: React.FC<{
     employee: Employee;
     onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
     todayForMaxDate: string;
     dailyActivitiesConfig: DailyActivity[];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -238,7 +283,7 @@ const SimpleActivityCard: React.FC<{
     activity: { id: string; title: string };
     employee: Employee;
     onLogManualActivity: (activityId: string, date: string) => void;
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
     todayForMaxDate: string;
 }> = ({ activity, employee, onLogManualActivity, submissions, todayForMaxDate }) => {
     const { addToast } = useUIStore();
@@ -499,7 +544,7 @@ export const RiwayatBacaan: React.FC<{
     );
 };
 
-const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, submissions }) => {
+const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, submissions, onSubmitMonthlyReport }) => {
     const todayForMaxDate = useMemo(() => getTodayLocalDateString(), []);
     const currentMonthKey = useMemo(() => {
         const today = new Date();
@@ -534,6 +579,8 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                     />
                 ))}
             </div>
+
+            {/* MonthlySubmissionPanel removed as requested */}
         </div>
     );
 };
@@ -544,7 +591,8 @@ export interface AktivitasPribadiViewProps {
     onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
     onLogManualActivity: (activityId: string, date: string) => void;
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
+    onSubmitMonthlyReport: (monthKey: string) => void;
 }
 
 export { AktivitasPribadiView };

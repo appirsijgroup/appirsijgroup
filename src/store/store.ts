@@ -46,7 +46,7 @@ export interface AppDataState {
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
     refreshActivityStats: () => void; // 🔥 NEW: Trigger refresh activity stats setelah attendance submission
-    loadDetailedEmployeeData: (employeeId: string) => Promise<void>; // 🔥 NEW: Centralized detailed data loading
+    loadDetailedEmployeeData: (employeeId: string, force?: boolean) => Promise<void>; // 🔥 NEW: Centralized detailed data loading
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -420,13 +420,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
     // 🔥 NEW: Centralized detailed data loading logic (Previously scattered in containers)
     // Aggregates data from multiple sources: Reports, Tadarus, Team Attendance, and Presensi
-    loadDetailedEmployeeData: async (employeeId: string) => {
+    loadDetailedEmployeeData: async (employeeId: string, force = false) => {
         if (!employeeId) return;
 
-        // 🧠 OPTIMIZATION: Prevent redundant loading within 30 seconds
+        // 🧠 OPTIMIZATION: Prevent redundant loading within 30 seconds unless forced
         const now = Date.now();
         const lastLoad = get().lastDetailedLoad[employeeId] || 0;
-        if (now - lastLoad < 30000) {
+        if (!force && now - lastLoad < 30000) {
             console.log(`🚀 [AppDataStore] Skipping detailed load for ${employeeId} (Fresh data exists)`);
             return;
         }
@@ -672,8 +672,8 @@ export const useUIStore = create<UIState>((set, get) => ({
 
     deepLink: null,
     setDeepLink: (link) => {
-        if (link?.tab) {
-            set({ deepLink: link, initialTab: link.tab });
+        if (link && typeof link === 'object' && 'tab' in link && link.tab) {
+            set({ deepLink: link, initialTab: link.tab as string });
         } else {
             set({ deepLink: link, initialTab: undefined });
         }

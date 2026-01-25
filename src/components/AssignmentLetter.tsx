@@ -5,7 +5,7 @@ import { XIcon, MosqueIcon } from './Icons';
 
 interface AssignmentLetterProps {
     recipient: Employee;
-    roleName: 'Mentor' | 'Supervisor' | 'Kepala Unit';
+    roleName: 'Mentor' | 'Supervisor' | 'Manajer' | 'Kepala Unit';
     assignmentType: 'assignment' | 'removal' | 'change' | 'designation' | 'revocation';
     assigneeName?: string;
     previousAssigneeName?: string;

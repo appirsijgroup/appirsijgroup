@@ -24,7 +24,8 @@ import type {
     TadarusRequest,
     MissedPrayerRequest,
     Employee,
-    ReadingHistory
+    ReadingHistory,
+    MonthlyReportSubmission
 } from '@/types';
 // Helper imported from utils
 
@@ -55,12 +56,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         loadActivitiesFromSupabase
     } = useActivityStore();
     const {
-        weeklyReportSubmissions,
+        monthlyReportSubmissions,
         tadarusSessions,
         tadarusRequests,
         missedPrayerRequests,
         menteeTargets,
-        addOrUpdateWeeklyReportSubmission,
+        addOrUpdateMonthlyReportSubmission,
         addTadarusSessions,
         updateTadarusSession,
         deleteTadarusSession,
@@ -71,7 +72,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         deleteMenteeTarget,
         loadTadarusRequestsFromSupabase,
         loadMissedPrayerRequestsFromSupabase,
-        loadWeeklyReportSubmissionsFromSupabase
+        loadMonthlyReportSubmissionsFromSupabase
     } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
@@ -104,9 +105,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             // 🚀 Load manual requests (Tadarus & Sholat) & Weekly Reports
             loadTadarusRequestsFromSupabase().catch(err => console.error('Failed to load tadarus requests:', err));
             loadMissedPrayerRequestsFromSupabase().catch(err => console.error('Failed to load missed prayer requests:', err));
-            loadWeeklyReportSubmissionsFromSupabase().catch(err => console.error('Failed to load weekly reports:', err));
+            loadMonthlyReportSubmissionsFromSupabase().catch(err => console.error('Failed to load monthly reports:', err));
         }
-    }, [loggedInEmployee?.id, refreshMonthlyReportsData, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase, loadWeeklyReportSubmissionsFromSupabase]);
+    }, [loggedInEmployee?.id, refreshMonthlyReportsData, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase, loadMonthlyReportSubmissionsFromSupabase]);
 
     // 🔥 FIX: Ensure mentees data is loaded for Mentors
     useEffect(() => {
@@ -154,6 +155,14 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             fetchMentees();
         }
     }, [loggedInEmployee?.id, loggedInEmployee?.canBeMentor, refreshMonthlyReportsData, setAllUsersData]);
+
+    // 🔥 NEW: Trigger detailed load when activityStatsRefreshCounter changes
+    useEffect(() => {
+        if (loggedInEmployee?.id && activityStatsRefreshCounter > 0) {
+            console.log(`🔄 [DashboardContainer] Triggering detailed data refresh (Counter: ${activityStatsRefreshCounter})`);
+            loadDetailedEmployeeData(loggedInEmployee.id, true); // Force refresh
+        }
+    }, [activityStatsRefreshCounter, loggedInEmployee?.id, loadDetailedEmployeeData]);
 
 
     const handleUpdateProfile = useCallback(async (userId: string, updates: Partial<Employee>): Promise<boolean> => {
@@ -481,20 +490,25 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teamAttendanceSessions.length, hasSyncedOldAttendance]); // Only trigger on count change, not on function reference change
 
-    const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
+    const handleSubmitMonthlyReport = async (monthKey: string) => {
         if (!loggedInEmployee) return;
-        const subId = `${loggedInEmployee.id}-${monthKey}-${weekIndex}`;
-        addOrUpdateWeeklyReportSubmission({
-            id: subId,
-            menteeId: loggedInEmployee.id,
-            menteeName: loggedInEmployee.name,
-            monthKey,
-            weekIndex,
-            submittedAt: Date.now(),
-            status: 'pending_mentor',
-            mentorId: loggedInEmployee.mentorId || '',
-        });
-        addToast('Laporan mingguan berhasil dikirim', 'success');
+
+        try {
+            const { submitMonthlyReport } = await import('@/services/monthlySubmissionService');
+            const newSubmission = await submitMonthlyReport(loggedInEmployee.id, monthKey, {
+                menteeName: loggedInEmployee.name,
+                mentorId: loggedInEmployee.mentorId || '',
+            });
+
+            if (newSubmission) {
+                addOrUpdateMonthlyReportSubmission(newSubmission);
+                addToast('Laporan bulanan berhasil dikirim', 'success');
+            } else {
+                addToast('Gagal mengirim laporan bulanan. Mungkin Anda sudah mengirim laporan untuk bulan ini.', 'error');
+            }
+        } catch (error: any) {
+            addToast(`Gagal mengirim laporan: ${error.message}`, 'error');
+        }
     };
 
     // Helper function to validate if a date is within the current week and not locked
@@ -523,21 +537,15 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             return false;
         }
 
-        // 3. Check submission status for the current week
+        // 3. Check if month is already submitted
         const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        const weeksForCurrentMonth = getBalancedWeeks(new Date(today.getFullYear(), today.getMonth(), 1));
-        const currentWeekIndexForToday = weeksForCurrentMonth.findIndex(w => w.days.includes(today.getDate()));
-
-        if (currentWeekIndexForToday !== -1) {
-            const userSubmissions = weeklyReportSubmissions.filter(s => s.menteeId === employee.id);
-            const currentWeeklySubmission = userSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === currentWeekIndexForToday);
-            if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-                return false;
-            }
+        const hasSubmitted = monthlyReportSubmissions.some((s: MonthlyReportSubmission) => s.menteeId === employee.id && s.monthKey === monthKey && (s.status.startsWith('pending_') || s.status === 'approved'));
+        if (hasSubmitted) {
+            return false;
         }
 
         return true;
-    }, [weeklyReportSubmissions]);
+    }, [monthlyReportSubmissions]);
 
     const handleLogManualActivity = useCallback(async (activityId: string, date: string): Promise<boolean> => {
         if (!loggedInEmployee) return false;
@@ -1067,7 +1075,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         <MyDashboard
             employee={loggedInEmployee}
             dailyActivitiesConfig={dailyActivitiesConfig}
-            submissions={weeklyReportSubmissions.filter(s => s.menteeId === loggedInEmployee.id)}
+            submissions={monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.menteeId === loggedInEmployee.id)}
             onNavigateToReport={handleNavigateToReport}
             allUsersData={allUsersData}
             onUpdateProfile={handleUpdateProfile}
@@ -1076,11 +1084,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             // Handlers
             onActivateMonth={handleActivateMonth}
             onUpdateMonthlyActivities={handleUpdateMonthlyActivities}
-            onSubmitReport={handleSubmitWeeklyReport}
+            onSubmitReport={handleSubmitMonthlyReport}
             onLoadEmployees={loadAllEmployees} // 🔥 FIX: Pass loadAllEmployees so MyDashboard can trigger it
             isLoadingEmployees={isLoadingEmployees} // 🔥 FIX: Pass loading state
-            // ...
-            weeklyReportSubmissions={weeklyReportSubmissions}
+            monthlyReportSubmissions={monthlyReportSubmissions}
             onReviewReport={async (id, decision, notes, reviewerRole) => {
                 try {
                     // 1. Determine new status based on decision and reviewer role
@@ -1091,7 +1098,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                         // Approved
                         if (reviewerRole === 'mentor') newStatus = 'pending_supervisor';
                         else if (reviewerRole === 'supervisor') newStatus = 'pending_kaunit';
-                        else if (reviewerRole === 'kaunit') newStatus = 'approved';
+                        else if (reviewerRole === 'kaunit') newStatus = 'pending_manager';
+                        else if (reviewerRole === 'manager') newStatus = 'approved';
                     }
 
                     // 2. Prepare update payload
@@ -1109,19 +1117,19 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     }
 
                     // 3. Call service
-                    const { reviewWeeklyReport } = await import('@/services/weeklyReportService');
-                    const updatedSubmission = await reviewWeeklyReport(id, updates);
+                    const { reviewMonthlyReport } = await import('@/services/monthlySubmissionService');
+                    const updatedSubmission = await reviewMonthlyReport(id, updates);
 
                     if (updatedSubmission) {
                         // 4. Update local store
-                        addOrUpdateWeeklyReportSubmission(updatedSubmission);
+                        addOrUpdateMonthlyReportSubmission(updatedSubmission);
 
                         // 5. Notify mentee
-                        const submission = weeklyReportSubmissions.find(s => s.id === id);
+                        const submission = monthlyReportSubmissions.find((s: MonthlyReportSubmission) => s.id === id);
                         if (submission) {
                             const message = decision === 'approved'
-                                ? `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} telah disetujui oleh ${reviewerRole}.`
-                                : `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} DITOLAK oleh ${reviewerRole}.`;
+                                ? `Laporan bulanan bulan ${submission.monthKey} telah disetujui oleh ${reviewerRole}.`
+                                : `Laporan bulanan bulan ${submission.monthKey} DITOLAK oleh ${reviewerRole}.`;
 
                             createNotification({
                                 id: Date.now().toString(),

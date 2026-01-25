@@ -1,6 +1,6 @@
 import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { type Employee, TadarusSession, TadarusRequest, MissedPrayerRequest, AuditLogEntry, type WeeklyReportSubmission, MenteeTarget, Attendance } from '../types';
+import { type Employee, TadarusSession, TadarusRequest, MissedPrayerRequest, AuditLogEntry, type MonthlyReportSubmission, MenteeTarget, Attendance } from '../types';
 import {
     ArrowLeft,
     CheckSquare,
@@ -22,6 +22,7 @@ import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
 import { useUIStore } from '@/store/store';
+import UniversalPersetujuan from './Persetujuan';
 
 export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
@@ -29,7 +30,7 @@ interface MentorDashboardProps {
     employee: Employee;
     allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
     onUpdateProfile: (userId: string, updates: Partial<Employee>) => Promise<boolean>;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
+    monthlyReportSubmissions: MonthlyReportSubmission[];
     onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => void;
     tadarusSessions: TadarusSession[];
     tadarusRequests: TadarusRequest[];
@@ -936,13 +937,13 @@ const TargetManagement: React.FC<TargetManagementProps> = ({
 };
 
 interface PersetujuanProps {
-    pendingMentorReviews: WeeklyReportSubmission[];
+    pendingMentorReviews: MonthlyReportSubmission[];
     pendingTadarusRequests: TadarusRequest[];
     pendingMissedPrayerRequests: MissedPrayerRequest[];
     onReviewTadarusRequest: (requestId: string, status: "approved" | "rejected") => void;
     onApproveMissedRequest: (id: string) => void;
     onRejectMissedRequest: (id: string) => void;
-    onViewReport: (submission: WeeklyReportSubmission) => void;
+    onViewReport: (submission: MonthlyReportSubmission) => void;
     filteredItems: any[]; // Unified items for the table
     statusFilter: 'all' | 'pending' | 'approved' | 'rejected';
     setStatusFilter: React.Dispatch<React.SetStateAction<'all' | 'pending' | 'approved' | 'rejected'>>;
@@ -1165,7 +1166,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     employee,
     allUsersData,
     onUpdateProfile,
-    weeklyReportSubmissions,
+    monthlyReportSubmissions,
     onReviewReport,
     tadarusSessions,
     tadarusRequests,
@@ -1195,9 +1196,9 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
 
     // Unified state for confirmations
     const [approvalTarget, setApprovalTarget] = useState<{ type: 'missed-prayer', id: string } | { type: 'report', id: string } | null>(null);
-    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'missed-prayer', id: string } | { type: 'report', submission: WeeklyReportSubmission } | null>(null);
+    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'missed-prayer', id: string } | { type: 'report', submission: MonthlyReportSubmission } | null>(null);
     const [pendingSessionDelete, setPendingSessionDelete] = useState<TadarusSession | null>(null);
-    const [selectedSubmission, setSelectedSubmission] = useState<WeeklyReportSubmission | null>(null);
+    const [selectedSubmission, setSelectedSubmission] = useState<MonthlyReportSubmission | null>(null);
 
     // State for Tadarus session modal
     const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
@@ -1222,8 +1223,8 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     }, [missedPrayerRequests, employee.id]);
 
     const pendingMentorReviews = useMemo(() => {
-        return weeklyReportSubmissions.filter(s => s.mentorId === employee.id && s.status === 'pending_mentor');
-    }, [weeklyReportSubmissions, employee.id]);
+        return monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.mentorId === employee.id && s.status === 'pending_mentor');
+    }, [monthlyReportSubmissions, employee.id]);
 
     const upcomingSessions = useMemo(() => {
         const today = new Date().toISOString().split('T')[0];
@@ -1232,15 +1233,15 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     }, [tadarusSessions, employee.id]);
 
     const submissionsForMentor = useMemo(() => {
-        return weeklyReportSubmissions.filter(s => s.mentorId === employee.id);
-    }, [weeklyReportSubmissions, employee.id]);
+        return monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.mentorId === employee.id);
+    }, [monthlyReportSubmissions, employee.id]);
 
     const unifiedHistory = useMemo(() => {
-        const reports = weeklyReportSubmissions.filter(s => s.mentorId === employee.id).map(s => ({
+        const reports = monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.mentorId === employee.id).map((s: MonthlyReportSubmission) => ({
             id: s.id,
             type: 'report' as const,
             menteeName: s.menteeName,
-            periode: `Pekan ${s.weekIndex + 1}, ${new Date(s.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+            periode: `${new Date(s.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
             submittedAt: s.submittedAt,
             monthKey: s.monthKey,
             status: s.status,
@@ -1270,7 +1271,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         }));
 
         return [...reports, ...tadarus, ...missedPrayers].sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-    }, [weeklyReportSubmissions, tadarusRequests, missedPrayerRequests, employee.id]);
+    }, [monthlyReportSubmissions, tadarusRequests, missedPrayerRequests, employee.id]);
 
     const availableYears = useMemo(() => {
         const years = new Set(unifiedHistory.map(item => item.monthKey.substring(0, 4)));
@@ -1307,9 +1308,9 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
             onReviewReport(approvalTarget.id, 'approved', 'Disetujui oleh Mentor.', 'mentor');
         }
 
-        const submission = weeklyReportSubmissions.find(s => s.id === approvalTarget.id);
+        const submission = monthlyReportSubmissions.find((s: MonthlyReportSubmission) => s.id === approvalTarget.id);
         if (submission) {
-            onLogAudit({ adminId: employee.id, adminName: employee.name, action: `Persetujuan Laporan`, target: `Karyawan: ${submission.menteeName}`, reason: 'Menyetujui laporan mingguan.' });
+            onLogAudit({ adminId: employee.id, adminName: employee.name, action: `Persetujuan Laporan`, target: `Karyawan: ${submission.menteeName}`, reason: 'Menyetujui laporan bulanan.' });
         }
 
         setSelectedSubmission(null);
@@ -1352,33 +1353,31 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         <div className="space-y-6">
             <div className="overflow-x-auto overflow-y-visible touch-pan-x pb-3 pt-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
-                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
-                    <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
-                    {/* Sesi Bimbingan menu removed as it is now integrated into Jadwal & Sesi */}
-                    <SubTabButton label="Target Bimbingan" icon={Tag} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
-                    <SubTabButton label="Progres Anggota" icon={BarChart3} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
-                    <SubTabButton label="Laporan Bacaan" icon={BookOpen} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
+                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={employee.canBeMentor ? (pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length) : undefined} />
+
+                    {employee.canBeMentor && (
+                        <>
+                            <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
+                            <SubTabButton label="Target Bimbingan" icon={Tag} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />
+                            <SubTabButton label="Progres Anggota" icon={BarChart3} active={mentorSubView === 'progress'} onClick={() => setMentorSubView('progress')} />
+                            <SubTabButton label="Laporan Bacaan" icon={BookOpen} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
+                        </>
+                    )}
                 </div>
             </div>
 
             <div className="animate-view-change">
                 {mentorSubView === 'persetujuan' && (
-                    <Persetujuan
-                        pendingMentorReviews={pendingMentorReviews}
-                        pendingTadarusRequests={pendingTadarusRequests}
-                        pendingMissedPrayerRequests={pendingMissedPrayerRequests}
+                    <UniversalPersetujuan
+                        loggedInEmployee={employee}
+                        monthlyReportSubmissions={monthlyReportSubmissions}
+                        // @ts-ignore
+                        onReviewReport={onReviewReport}
+                        allUsersData={allUsersData}
+                        pendingTadarusRequests={tadarusRequests?.filter(r => r.status === 'pending') || []}
+                        pendingMissedPrayerRequests={missedPrayerRequests?.filter(r => r.status === 'pending') || []}
                         onReviewTadarusRequest={onReviewTadarusRequest}
-                        onApproveMissedRequest={(id) => handleApprove('missed-prayer', id)}
-                        onRejectMissedRequest={(id) => setRejectionTarget({ type: 'missed-prayer', id })}
-                        onViewReport={setSelectedSubmission}
-                        filteredItems={filteredItems}
-                        statusFilter={statusFilter}
-                        setStatusFilter={setStatusFilter}
-                        filterYear={filterYear}
-                        setFilterYear={setFilterYear}
-                        availableYears={availableYears}
-                        filterMonth={filterMonth}
-                        setFilterMonth={setFilterMonth}
+                        onReviewMissedPrayerRequest={onReviewMissedPrayerRequest}
                     />
                 )}
                 {/* Sesi Bimbingan view removed */}

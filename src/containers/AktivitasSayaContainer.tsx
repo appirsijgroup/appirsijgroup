@@ -43,7 +43,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     const { logAudit } = useAuditLogStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const { activities, teamAttendanceSessions, teamAttendanceRecords, addActivity, addTeamAttendanceSessions, createTeamAttendanceRecord, updateTeamAttendanceSessionData, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
-    const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase } = useGuidanceStore();
+    const { monthlyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateMonthlyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
 
@@ -76,6 +76,15 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             }
         }
     }, [loggedInEmployee?.id, loadDetailedEmployeeData]);
+
+    const { activityStatsRefreshCounter } = useAppDataStore();
+    // 🔥 NEW: Trigger detailed load when activityStatsRefreshCounter changes
+    useEffect(() => {
+        if (loggedInEmployee?.id && activityStatsRefreshCounter > 0) {
+            console.log(`🔄 [AktivitasSayaContainer] Triggering detailed data refresh (Counter: ${activityStatsRefreshCounter})`);
+            loadDetailedEmployeeData(loggedInEmployee.id, true); // Force refresh
+        }
+    }, [activityStatsRefreshCounter, loggedInEmployee?.id, loadDetailedEmployeeData]);
 
     // 🔥 FIX: Load all employees data for mentors to display mentee list
     // This is necessary because mentee data comes from allUsersData
@@ -295,23 +304,28 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teamAttendanceSessions.length, hasSyncedOldAttendance]); // Only trigger on count change, not on function reference change
 
-    const handleSubmitWeeklyReport = (monthKey: string, weekIndex: number) => {
+    const handleSubmitMonthlyReport = async (monthKey: string) => {
         if (!loggedInEmployee) return;
-        const subId = `${loggedInEmployee.id}-${monthKey}-${weekIndex}`;
-        addOrUpdateWeeklyReportSubmission({
-            id: subId,
-            menteeId: loggedInEmployee.id,
-            menteeName: loggedInEmployee.name,
-            monthKey,
-            weekIndex,
-            submittedAt: Date.now(),
-            status: 'pending_mentor',
-            mentorId: loggedInEmployee.mentorId || '',
-        });
-        addToast('Laporan mingguan berhasil dikirim', 'success');
+
+        try {
+            const { submitMonthlyReport } = await import('@/services/monthlySubmissionService');
+            const newSubmission = await submitMonthlyReport(loggedInEmployee.id, monthKey, {
+                menteeName: loggedInEmployee.name,
+                mentorId: loggedInEmployee.mentorId || '',
+            });
+
+            if (newSubmission) {
+                addOrUpdateMonthlyReportSubmission(newSubmission);
+                addToast('Laporan bulanan berhasil dikirim', 'success');
+            } else {
+                addToast('Gagal mengirim laporan bulanan. Mungkin Anda sudah mengirim laporan untuk bulan ini.', 'error');
+            }
+        } catch (error: any) {
+            addToast(`Gagal mengirim laporan: ${error.message}`, 'error');
+        }
     };
 
-    // Helper function to validate if a date is within the current week and not locked
+    // Helper function to validate if a date is within the current month and not locked
     const isDateValidForMutabaahUpdate = useCallback((dateString: string, employee: Employee): boolean => {
         if (!dateString) return false;
 
@@ -326,31 +340,26 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             return false;
         }
 
-        // 2. Check if selectedDate is in the current week (Monday to Sunday)
-        const currentDayOfWeek = today.getDay();
-        const firstDayOfThisWeek = new Date(today);
-        const dayOffset = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
-        firstDayOfThisWeek.setDate(today.getDate() - dayOffset);
+        // 2. Check if selectedDate is in the current month
+        // "Tepat jam 00 akhir bulan laporan di tutup"
+        const todayMonth = today.getMonth();
+        const todayYear = today.getFullYear();
+        const selectedMonth = selectedDate.getMonth();
+        const selectedYear = selectedDate.getFullYear();
 
-        if (selectedDate < firstDayOfThisWeek) {
+        if (todayYear !== selectedYear || todayMonth !== selectedMonth) {
             return false;
         }
 
-        // 3. Check submission status for the current week
-        const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        const weeksForCurrentMonth = getBalancedWeeks(new Date(today.getFullYear(), today.getMonth(), 1));
-        const currentWeekIndexForToday = weeksForCurrentMonth.findIndex(w => w.days.includes(today.getDate()));
-
-        if (currentWeekIndexForToday !== -1) {
-            const userSubmissions = weeklyReportSubmissions.filter(s => s.menteeId === employee.id);
-            const currentWeeklySubmission = userSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === currentWeekIndexForToday);
-            if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) {
-                return false;
-            }
+        // 3. Check if month is already submitted
+        const monthKey = `${todayYear}-${String(todayMonth + 1).padStart(2, '0')}`;
+        const hasSubmitted = monthlyReportSubmissions.some(s => s.menteeId === employee.id && s.monthKey === monthKey && (s.status.startsWith('pending_') || s.status === 'approved'));
+        if (hasSubmitted) {
+            return false;
         }
 
         return true;
-    }, [weeklyReportSubmissions]);
+    }, [monthlyReportSubmissions]);
 
     const handleLogManualActivity = useCallback(async (activityId: string, date: string): Promise<boolean> => {
         if (!loggedInEmployee) return false;
@@ -475,7 +484,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     }, [loggedInEmployee, handleUpdateProfile, dailyActivitiesConfig, isDateValidForMutabaahUpdate, addToast]);
 
 
-    const handleReviewReport = useCallback(async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'kaunit') => {
+    const handleReviewReport = useCallback(async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'mentor' | 'supervisor' | 'manager' | 'kaunit') => {
         if (!loggedInEmployee) return;
 
         try {
@@ -486,7 +495,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             } else {
                 if (reviewerRole === 'mentor') status = 'pending_supervisor';
                 else if (reviewerRole === 'supervisor') status = 'pending_kaunit';
-                else if (reviewerRole === 'kaunit') status = 'approved';
+                else if (reviewerRole === 'kaunit') status = 'pending_manager';
+                else if (reviewerRole === 'manager') status = 'approved';
             }
 
             // 2. Prepare update payload
@@ -501,27 +511,25 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             } else if (reviewerRole === 'kaunit') {
                 updates.kaUnitNotes = notes;
                 updates.kaUnitReviewedAt = now;
+            } else if (reviewerRole === 'manager') {
+                updates.managerNotes = notes;
+                updates.managerReviewedAt = now;
             }
 
             // 3. Call service
-            const { updateWeeklyReport } = await import('@/services/weeklyReportService');
-            // Note: updateWeeklyReport service args might differ a bit, check service definition.
-            // In weeklyReportService.ts: updateWeeklyReport(reportId, userId, reportData) -> this is for EDITING by mentee.
-            // Review logic uses reviewWeeklyReport(reportId, reviews)
-
-            const { reviewWeeklyReport } = await import('@/services/weeklyReportService');
-            const updatedSubmission = await reviewWeeklyReport(submissionId, updates);
+            const { reviewMonthlyReport } = await import('@/services/monthlySubmissionService');
+            const updatedSubmission = await reviewMonthlyReport(submissionId, updates);
 
             if (updatedSubmission) {
                 // 4. Update local store
-                addOrUpdateWeeklyReportSubmission(updatedSubmission);
+                addOrUpdateMonthlyReportSubmission(updatedSubmission);
 
                 // 5. Notify mentee
-                const submission = weeklyReportSubmissions.find(s => s.id === submissionId);
+                const submission = monthlyReportSubmissions.find(s => s.id === submissionId);
                 if (submission) {
                     const message = decision === 'approved'
-                        ? `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} telah disetujui oleh ${reviewerRole}.`
-                        : `Laporan mingguan ${submission.weekIndex} bulan ${submission.monthKey} DITOLAK oleh ${reviewerRole}.`;
+                        ? `Laporan bulanan bulan ${submission.monthKey} telah disetujui oleh ${reviewerRole}.`
+                        : `Laporan bulanan bulan ${submission.monthKey} DITOLAK oleh ${reviewerRole}.`;
 
                     createNotification({
                         userId: submission.menteeId,
@@ -540,7 +548,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             console.error('Error reviewing report:', error);
             addToast('Gagal memperbarui status laporan. Silakan coba lagi.', 'error');
         }
-    }, [loggedInEmployee, weeklyReportSubmissions, addOrUpdateWeeklyReportSubmission, createNotification, addToast]);
+    }, [loggedInEmployee, monthlyReportSubmissions, addOrUpdateMonthlyReportSubmission, createNotification, addToast]);
 
     const handleOpenAssignmentLetter = (detail: {
         recipient: Employee;
@@ -563,9 +571,10 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             onDeleteReadingHistory={(type, id, date) => {
                 // Implementation would go here
             }}
-            submissions={weeklyReportSubmissions}
+            submissions={monthlyReportSubmissions}
             allUsersData={allUsersData}
-            weeklyReportSubmissions={weeklyReportSubmissions}
+            monthlyReportSubmissions={monthlyReportSubmissions}
+            onSubmitMonthlyReport={handleSubmitMonthlyReport}
             initialTab={(searchParams?.get('tab') as any) || initialTab}
             tadarusRequests={tadarusRequests}
             tadarusSessions={tadarusSessions}
@@ -585,6 +594,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
                 try {
                     // 1. Update request status in DB
+                    // 🔥 Side effect: Backend API will now automatically update monthly_reports AND team_attendance_records
                     const response = await fetch('/api/manual-requests/tadarus', {
                         method: 'PATCH',
                         body: JSON.stringify({ id: requestId, status })
@@ -600,61 +610,46 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     };
                     await addOrUpdateTadarusRequest(updatedRequest);
 
-                    // 3. If Approved, update monthly activity (Mutabaah) for MENTEE
+                    // 3. If Approved, update local performance UI (Optimistic)
                     if (status === 'approved') {
-                        // Mapping category to activity ID from dailyActivitiesConfig
                         const categoryMap: Record<string, string> = {
-                            'BBQ': 'bbq_tahsin',
-                            'UMUM': 'tadarus',
-                            'KIE': 'tepat_waktu_kie',
-                            'Doa Bersama': 'doa_bersama',
-                            'Kajian Selasa': 'kajian_selasa',
-                            'Pengajian Persyarikatan': 'pengajian_persyarikatan'
+                            'BBQ': 'tadarus', 'UMUM': 'tadarus', 'KIE': 'tepat_waktu_kie',
+                            'Doa Bersama': 'doa_bersama', 'Kajian Selasa': 'kajian_selasa',
+                            'Pengajian Persyarikatan': 'persyarikatan'
                         };
-
                         const activityId = categoryMap[req.category || 'UMUM'] || 'tadarus';
 
                         try {
-                            const { addManualReportByDate } = await import('@/services/monthlyReportService');
-
-                            // Get mentee's current data first logic
                             const menteeData = allUsersData[req.menteeId]?.employee;
                             if (menteeData) {
                                 const dateObj = new Date(req.date + 'T12:00:00Z');
                                 const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
                                 const dayKey = dateObj.getDate().toString().padStart(2, '0');
 
+                                // Local checklist update
                                 const currentMonthAct = menteeData.monthlyActivities?.[monthKey] || {};
                                 const currentDayAct = currentMonthAct[dayKey] || {};
-
                                 const newMonthlyActivities = {
                                     ...menteeData.monthlyActivities,
                                     [monthKey]: {
                                         ...currentMonthAct,
-                                        [dayKey]: {
-                                            ...currentDayAct,
-                                            [activityId]: true
-                                        }
+                                        [dayKey]: { ...currentDayAct, [activityId]: true }
                                     }
                                 };
 
-                                // Handled by API
-                                // await addManualReportByDate(req.menteeId, monthKey, activityId, req.date);
-
-                                // Update local store for Mentee
                                 setAllUsersData(prev => ({
                                     ...prev,
                                     [req.menteeId]: {
                                         ...prev[req.menteeId],
-                                        employee: {
-                                            ...prev[req.menteeId].employee,
-                                            monthlyActivities: newMonthlyActivities
-                                        }
+                                        employee: { ...prev[req.menteeId].employee, monthlyActivities: newMonthlyActivities }
                                     }
                                 }));
+
+                                // FORCE REFRESH: Reload from backend to sync side-effects
+                                await loadDetailedEmployeeData(req.menteeId, true);
                             }
                         } catch (err) {
-                            console.error('Failed to update mentee mutabaah:', err);
+                            console.error('Failed to update local activity UI:', err);
                         }
                     }
 
@@ -664,11 +659,11 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                         type: status === 'approved' ? 'tadarus_approved' : 'tadarus_rejected',
                         title: `Pengajuan ${req.category || 'Kegiatan'} ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
                         message: `Pengajuan ${req.category || 'kegiatan'} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
-                        linkTo: '/aktifitas-saya', // Changed to aktifitas-saya as requested
+                        linkTo: '/aktifitas-saya',
                         relatedEntityId: req.id,
                     });
 
-                    addToast(`Pengajuan tadarus berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
+                    addToast(`Pengajuan ${req.category || 'tadarus'} berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
                 } catch (error) {
                     addToast('Gagal memproses pengajuan tadarus.', 'error');
                 }
@@ -679,13 +674,10 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
                 try {
                     // 1. Update request status in DB
+                    // 🔥 Side effect: Backend API will now automatically insert into attendance_records
                     const response = await fetch('/api/manual-requests/prayer', {
                         method: 'PATCH',
-                        body: JSON.stringify({
-                            id: requestId,
-                            status,
-                            mentor_notes: mentorNotes
-                        })
+                        body: JSON.stringify({ id: requestId, status, mentor_notes: mentorNotes })
                     });
 
                     if (!response.ok) throw new Error('Failed to update request');
@@ -699,26 +691,9 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     };
                     addOrUpdateMissedPrayerRequest(updatedRequest);
 
-                    // 3. If Approved, insert into attendance_records and update mutabaah
+                    // 3. If Approved, update local performance UI
                     if (status === 'approved') {
-                        // Insert attendance record
                         try {
-                            const { submitAttendance } = await import('@/services/attendanceService');
-                            await submitAttendance(
-                                req.menteeId,
-                                req.prayerId,
-                                'hadir',
-                                `Manual request approved: ${req.reason}`,
-                                false
-                            );
-                        } catch (err) {
-                            console.error('Failed to insert attendance record:', err);
-                            addToast('Gagal mencatat kehadiran ke database presensi', 'error');
-                        }
-
-                        // ALSO Update Mutabaah (Checklist)
-                        try {
-                            const { addManualReportByDate } = await import('@/services/monthlyReportService');
                             const menteeData = allUsersData[req.menteeId]?.employee;
                             if (menteeData) {
                                 const dateObj = new Date(req.date + 'T12:00:00Z');
@@ -726,40 +701,30 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                                 const dayKey = dateObj.getDate().toString().padStart(2, '0');
                                 const prayerId = req.prayerId;
 
+                                // Update local checklist
                                 const currentMonthAct = menteeData.monthlyActivities?.[monthKey] || {};
                                 const currentDayAct = currentMonthAct[dayKey] || {};
-
                                 const newMonthlyActivities = {
                                     ...menteeData.monthlyActivities,
                                     [monthKey]: {
                                         ...currentMonthAct,
-                                        [dayKey]: {
-                                            ...currentDayAct,
-                                            [prayerId]: true
-                                        }
+                                        [dayKey]: { ...currentDayAct, [prayerId]: true }
                                     }
                                 };
 
-                                const prayerMap: Record<string, string> = {
-                                    'subuh': 'subuh-default', 'dzuhur': 'dzuhur-default', 'ashar': 'ashar-default',
-                                    'maghrib': 'maghrib-default', 'isya': 'isya-default', 'tahajud': 'tahajud-default'
-                                };
-                                const actId = prayerMap[req.prayerId] || req.prayerId;
-                                // Handled by API
-                                // await addManualReportByDate(req.menteeId, monthKey, actId, req.date);
                                 setAllUsersData(prev => ({
                                     ...prev,
                                     [req.menteeId]: {
                                         ...prev[req.menteeId],
-                                        employee: {
-                                            ...prev[req.menteeId].employee,
-                                            monthlyActivities: newMonthlyActivities
-                                        }
+                                        employee: { ...prev[req.menteeId].employee, monthlyActivities: newMonthlyActivities }
                                     }
                                 }));
+
+                                // FORCE REFRESH: Reload detailed data to sync charts with backend side-effects
+                                await loadDetailedEmployeeData(req.menteeId, true);
                             }
                         } catch (err) {
-                            console.error('Failed to update mutabaah for prayer:', err);
+                            console.error('Failed to update local performance UI:', err);
                         }
                     }
 
@@ -769,7 +734,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                         type: status === 'approved' ? 'missed_prayer_approved' : 'missed_prayer_rejected',
                         title: `Presensi Sholat ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
                         message: `Pengajuan presensi ${req.prayerName} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
-                        linkTo: '/aktifitas-saya', // Changed
+                        linkTo: '/aktifitas-saya',
                         relatedEntityId: req.id,
                     });
 

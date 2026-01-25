@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import MonthlyActivities from '@/components/MonthlyActivities';
 import { useAppDataStore, useDailyActivitiesStore, useMutabaahStore, useUIStore } from '@/store/store';
 import { useMutabaah } from '@/contexts/MutabaahContext';
-import { submitWeeklyReport, hasSubmittedReport } from '@/services/weeklyReportService';
+import { submitMonthlyReport as submitReport, hasSubmittedReport } from '@/services/monthlySubmissionService';
 import { getAllEmployees } from '@/services/employeeService';
 
 export default function AktivitasBulananPage() {
@@ -20,7 +20,7 @@ export default function AktivitasBulananPage() {
         monthlyProgressData,
         activateMonth,
         updateMonthlyProgress,
-        weeklyReportSubmissions,
+        monthlyReportSubmissions,
         refreshData,
         isLoading,
     } = useMutabaah();
@@ -94,7 +94,7 @@ export default function AktivitasBulananPage() {
         }
     };
 
-    const handleSubmitReport = async (monthKey: string, weekIndex: number) => {
+    const handleSubmitReport = async (monthKey: string) => {
         if (!loggedInEmployee) {
             addToast('User tidak ditemukan', 'error');
             return;
@@ -104,28 +104,22 @@ export default function AktivitasBulananPage() {
             // Check if already submitted
             const alreadySubmitted = await hasSubmittedReport(
                 loggedInEmployee.id,
-                monthKey,
-                weekIndex
+                monthKey
             );
 
             if (alreadySubmitted) {
-                addToast('Laporan untuk minggu ini sudah dikirim. Silakan edit jika ingin mengubah.', 'error');
+                addToast('Laporan untuk bulan ini sudah dikirim.', 'error');
                 return;
             }
 
-            // Submit the report - get current month progress data
-            const monthProgress = monthlyProgressData[monthKey] || {};
-            const reportData = monthProgress[weekIndex] || {};
-
-            const result = await submitWeeklyReport(
+            const result = await submitReport(
                 loggedInEmployee.id,
                 monthKey,
-                weekIndex,
-                reportData
+                monthlyProgressData[monthKey] || {}
             );
 
             if (result) {
-                addToast('Laporan mingguan berhasil dikirim!', 'success');
+                addToast('Laporan bulanan berhasil dikirim!', 'success');
                 // Refresh data to update the UI
                 await refreshData();
             } else {
@@ -166,7 +160,7 @@ export default function AktivitasBulananPage() {
             monthlyProgressData={enrichedMonthlyProgressData}
             onUpdate={handleUpdateMonthlyActivities}
             onActivateMonth={handleActivateMonth}
-            weeklyReportSubmissions={weeklyReportSubmissions}
+            monthlyReportSubmissions={monthlyReportSubmissions}
             onSubmitReport={handleSubmitReport}
             date={date}
             onDateChange={setDate}

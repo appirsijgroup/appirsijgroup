@@ -6,6 +6,37 @@
 import { supabase } from '@/lib/supabase';
 import type { MissedPrayerRequest } from '../types';
 
+// Get all requests (admin/superior view)
+export const getAllMissedPrayerRequests = async (): Promise<MissedPrayerRequest[]> => {
+    try {
+        const response = await fetch('/api/manual-requests/prayer');
+        if (!response.ok) {
+            throw new Error('Failed to fetch all prayer requests');
+        }
+
+        const result = await response.json();
+        const data = result.data || [];
+
+        return data.map((req: any) => ({
+            id: req.id,
+            menteeId: req.mentee_id,
+            menteeName: req.mentee_name,
+            mentorId: req.mentor_id,
+            date: req.date,
+            prayerId: req.prayer_id,
+            prayerName: req.prayer_name,
+            reason: req.reason,
+            requestedAt: req.requested_at,
+            status: req.status,
+            reviewedAt: req.reviewed_at,
+            mentorNotes: req.mentor_notes
+        }));
+    } catch (error) {
+        console.error('Error fetching all prayer requests:', error);
+        return [];
+    }
+};
+
 // Get all requests for a mentee
 export const getMissedPrayerRequestsForMentee = async (menteeId: string): Promise<MissedPrayerRequest[]> => {
     try {

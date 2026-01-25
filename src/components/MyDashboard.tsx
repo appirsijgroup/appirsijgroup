@@ -1,11 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistory, WeeklyReportSubmission, MenteeTarget, DailyActivity } from '../types';
+import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistory, MonthlyReportSubmission, MenteeTarget, DailyActivity } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { BarChart3, FileText, TrendingUp, CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, PlusCircle, List, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
-import { MentorDashboard, type MentorDashboardView } from './MentorDashboard';
+import { BarChart3, FileText, TrendingUp, CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, PlusCircle, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import RapotView from './RapotView';
-import Persetujuan from './Persetujuan';
 import { createPortal } from 'react-dom';
 import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
@@ -262,7 +260,7 @@ const ReadingActivityCard: React.FC<{
     employee: Employee;
     onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
     onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
     todayForMaxDate: string;
     dailyActivitiesConfig: DailyActivity[];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -456,7 +454,7 @@ const SimpleActivityCard: React.FC<{
     activity: { id: string; title: string };
     employee: Employee;
     onLogManualActivity: (activityId: string, date: string) => void;
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
     todayForMaxDate: string;
 }> = ({ activity, employee, onLogManualActivity, submissions, todayForMaxDate }) => {
     const { addToast } = useUIStore();
@@ -673,9 +671,55 @@ const RiwayatBacaan: React.FC<{
 };
 
 interface AktivitasPribadiViewProps extends Pick<MyDashboardViewProps, 'dailyActivitiesConfig' | 'onLogBookReading' | 'onLogManualActivity' | 'onDeleteReadingHistory'> {
-    submissions: WeeklyReportSubmission[];
+    submissions: MonthlyReportSubmission[];
     employee: Employee;
+    onSubmitReport: (monthKey: string) => void;
 }
+
+const MonthlySubmissionPanel: React.FC<{
+    submissions: MonthlyReportSubmission[];
+    onSubmit: (monthKey: string) => void;
+}> = ({ submissions, onSubmit }) => {
+    const today = new Date();
+    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const submission = submissions.find(s => s.monthKey === currentMonthKey);
+
+    return (
+        <div className="mt-8 bg-blue-900/40 border border-blue-400/30 rounded-2xl p-6 shadow-xl backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-500/20 rounded-xl">
+                        <CheckSquare className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-white">Laporan Bulanan {today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3>
+                        <p className="text-blue-200 text-sm">Pastikan semua aktivitas sudah tercatat sebelum mengirim laporan.</p>
+                    </div>
+                </div>
+
+                {!submission ? (
+                    <button
+                        onClick={() => onSubmit(currentMonthKey)}
+                        className="px-8 py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl shadow-lg shadow-teal-500/20 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        Kirim Laporan Bulan Ini
+                    </button>
+                ) : (
+                    <div className="flex items-center gap-3 px-6 py-3 bg-green-500/20 border border-green-500/30 rounded-xl">
+                        <CheckCircle2 className="w-6 h-6 text-green-400" />
+                        <div>
+                            <p className="text-green-400 font-bold leading-tight">Laporan Terkirim</p>
+                            <p className="text-green-300 text-xs uppercase text-center">
+                                {submission.status === 'approved' ? 'DISETUJUI' :
+                                    submission.status.startsWith('rejected_') ? 'DITOLAK' : 'MENUNGGU'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const SubTabButton: React.FC<{
     label: string;
@@ -692,7 +736,7 @@ const SubTabButton: React.FC<{
     </button>
 );
 
-const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, submissions }) => {
+const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, dailyActivitiesConfig, onLogBookReading, onLogManualActivity, onDeleteReadingHistory, submissions, onSubmitReport }) => {
     const [activeSubTab, setActiveSubTab] = useState<'laporan' | 'riwayat'>('laporan');
     const todayForMaxDate = useMemo(() => getTodayLocalDateString(), []);
 
@@ -757,6 +801,11 @@ const AktivitasPribadiView: React.FC<AktivitasPribadiViewProps> = ({ employee, d
                     <RiwayatBacaan employee={employee} onDeleteReadingHistory={onDeleteReadingHistory} />
                 </div>
             )}
+
+            <MonthlySubmissionPanel
+                submissions={submissions}
+                onSubmit={onSubmitReport}
+            />
         </div>
     );
 };
@@ -777,10 +826,12 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
         onUpdateTeamAttendance,
         onDeleteTeamAttendanceSession,
         addToast,
+        monthlyReportSubmissions,
+        onSubmitReport,
     } = props;
     /* eslint-enable */
 
-    type DashboardTab = 'kinerja' | 'analytics' | 'rapot' | 'aktivitas-pribadi' | 'panel-mentor' | 'persetujuan';
+    type DashboardTab = 'kinerja' | 'analytics' | 'rapot';
 
     const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab as DashboardTab || 'kinerja');
     const isInitializedRef = useRef(false);
@@ -818,27 +869,26 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     const mentorPanelCount = useMemo(() => {
         const tadarusPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
         const sholatPending = (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
-        const reportsPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_mentor' && s.mentorId === employee.id).length;
+        const reportsPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_mentor' && s.mentorId === employee.id).length;
         return tadarusPending + sholatPending + reportsPending;
-    }, [props.tadarusRequests, props.missedPrayerRequests, props.weeklyReportSubmissions, employee.id]);
+    }, [props.tadarusRequests, props.missedPrayerRequests, (props as any).monthlyReportSubmissions, employee.id]);
 
     const approvalTabCount = useMemo(() => {
-        const supervisorPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_supervisor' && s.supervisorId === employee.id).length;
-        const kaUnitPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_kaunit' && s.kaUnitId === employee.id).length;
+        const supervisorPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_supervisor' && s.supervisorId === employee.id).length;
+        const kaUnitPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_kaunit' && s.kaUnitId === employee.id).length;
         // Manual requests are also visible in the top-level Persetujuan tab now
         const manualPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length +
             (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
         return supervisorPending + kaUnitPending + manualPending;
-    }, [props.weeklyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, employee.id]);
+    }, [(props as any).monthlyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, employee.id]);
 
-    // State for MentorDashboard subview
-    const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
+
 
     // 🔥 FIX: Auto-load all employees data if user is a mentor/approver OR when entering Analytics
     useEffect(() => {
         const shouldLoadEmployees =
             (hasMentorRole || hasApprovalRole) || // Eagerly load for mentors/approvers
-            (activeTab === 'analytics' || activeTab === 'panel-mentor'); // Or if explicit tab requires it
+            activeTab === 'analytics'; // Or if Analytics tab requires it
 
         if (shouldLoadEmployees && props.onLoadEmployees) {
             // Check if we need to load data (if allUsersData is empty or just has current user)
@@ -906,7 +956,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     };
 
     const renderContent = () => {
-        if (props.isLoadingEmployees && (activeTab === 'analytics' || activeTab === 'panel-mentor')) {
+        if (props.isLoadingEmployees && activeTab === 'analytics') {
             return (
                 <div className="flex flex-col items-center justify-center p-12 sm:p-20 bg-black/20 rounded-2xl border border-white/5">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
@@ -914,6 +964,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                 </div>
             );
         }
+
 
         switch (activeTab) {
             case 'kinerja':
@@ -926,62 +977,6 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                 return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
             case 'rapot':
                 return <RapotView employee={employee} dailyActivitiesConfig={props.dailyActivitiesConfig} allUsersData={props.allUsersData} hospitals={props.hospitals} />;
-            case 'aktivitas-pribadi':
-                return <AktivitasPribadiView
-                    employee={employee}
-                    dailyActivitiesConfig={props.dailyActivitiesConfig}
-                    onLogBookReading={props.onLogBookReading}
-                    onLogManualActivity={props.onLogManualActivity}
-                    onDeleteReadingHistory={props.onDeleteReadingHistory}
-                    submissions={props.weeklyReportSubmissions}
-                />;
-
-            case 'panel-mentor':
-                if (!hasMentorRole) return null;
-                return <MentorDashboard
-                    employee={employee}
-                    allUsersData={props.allUsersData}
-                    onUpdateProfile={props.onUpdateProfile}
-                    weeklyReportSubmissions={props.weeklyReportSubmissions}
-                    onReviewReport={props.onReviewReport}
-                    tadarusSessions={props.tadarusSessions}
-                    tadarusRequests={props.tadarusRequests}
-                    onCreateTadarusSession={props.onCreateTadarusSession}
-                    onUpdateTadarusSession={props.onUpdateTadarusSession}
-                    onDeleteTadarusSession={props.onDeleteTadarusSession}
-                    onReviewTadarusRequest={props.onReviewTadarusRequest}
-                    missedPrayerRequests={props.missedPrayerRequests}
-                    onReviewMissedPrayerRequest={props.onReviewMissedPrayerRequest}
-                    onMentorAttendOwnSession={props.onMentorAttendOwnSession}
-                    onLogAudit={props.onLogAudit}
-                    onDeleteMenteeTarget={handleDeleteMenteeTarget}
-                    mentorSubView={mentorSubView}
-                    setMentorSubView={setMentorSubView}
-                    menteesOfMentor={menteesOfMentor}
-                    targetMenteeId={targetMenteeId}
-                    setTargetMenteeId={setTargetMenteeId}
-                    targetTitle={targetTitle}
-                    setTargetTitle={setTargetTitle}
-                    targetDescription={targetDescription}
-                    setTargetDescription={setTargetDescription}
-                    handleCreateTarget={handleCreateTarget}
-                    setConfirmDeleteTarget={setConfirmDeleteTarget}
-                    menteeTargets={menteeTargets.filter(t => t.mentorId === employee.id)}
-                    loadDetailedEmployeeData={props.loadDetailedEmployeeData}
-                />;
-            case 'persetujuan':
-                if (!hasApprovalRole) return null;
-                return <Persetujuan
-                    loggedInEmployee={employee}
-                    weeklyReportSubmissions={props.weeklyReportSubmissions}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Persetujuan component uses a simpler signature
-                    onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
-                    allUsersData={props.allUsersData}
-                    pendingTadarusRequests={(props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending')}
-                    pendingMissedPrayerRequests={(props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending')}
-                    onReviewTadarusRequest={props.onReviewTadarusRequest}
-                    onReviewMissedPrayerRequest={props.onReviewMissedPrayerRequest}
-                />
             default:
                 return null;
         }
@@ -995,9 +990,6 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                         <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
                         {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
                         <TabButton label="APPI" icon={FileText} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                        <TabButton label="Aktivitas Saya" icon={List} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
-                        {hasMentorRole && <TabButton label="Panel Mentor" icon={CheckSquare} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} count={mentorPanelCount} />}
-                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckCircle2} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} count={approvalTabCount} />}
                     </div>
                 </div>
             </nav>

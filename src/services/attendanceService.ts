@@ -60,7 +60,8 @@ export const submitAttendance = async (
   status: 'hadir' | 'tidak-hadir',
   reason: string | null = null,
   isLateEntry: boolean = false,
-  location?: { latitude: number; longitude: number }
+  location?: { latitude: number; longitude: number },
+  customTimestamp?: string
 ): Promise<AttendanceRecord> => {
   try {
     // Validate time before submitting attendance
@@ -81,7 +82,7 @@ export const submitAttendance = async (
       }
     }
 
-    const timestamp = timeValidation.correctedTime.toISOString();
+    const timestamp = customTimestamp || timeValidation.correctedTime.toISOString();
 
     // Use API endpoint to bypass RLS
     const response = await fetch('/api/attendance/submit', {

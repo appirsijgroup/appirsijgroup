@@ -150,14 +150,15 @@ export async function PATCH(request: NextRequest) {
                 const date = data.date;
                 const category = data.category || 'UMUM';
 
-                // Map category
+                // Map category to official DAILY_ACTIVITIES IDs
                 const categoryMap: Record<string, string> = {
-                    'BBQ': 'bbq_tahsin',
+                    'BBQ': 'tadarus',
                     'UMUM': 'tadarus',
                     'KIE': 'tepat_waktu_kie',
                     'Doa Bersama': 'doa_bersama',
                     'Kajian Selasa': 'kajian_selasa',
-                    'Pengajian Persyarikatan': 'pengajian_persyarikatan'
+                    'Pengajian Persyarikatan': 'persyarikatan',
+                    'Membaca Al-Quran dan buku': 'baca_alquran_buku'
                 };
                 const activityId = categoryMap[category] || 'tadarus';
 
@@ -188,6 +189,49 @@ export async function PATCH(request: NextRequest) {
                         updated_at: new Date().toISOString()
                     });
                     console.log(`✅ [API Tadarus] Updated monthly report for ${data.mentee_id}`);
+
+                    // 🔥 NEW: Insert into team_attendance_records so it shows up in official logs
+                    try {
+                        // 1. Ensure a "Manual Session" exists to link to (FK requirement)
+                        const manualSessionId = '00000000-0000-0000-0000-000000000000';
+                        const { data: sessionExists } = await supabase
+                            .from('team_attendance_sessions')
+                            .select('id')
+                            .eq('id', manualSessionId)
+                            .single();
+
+                        if (!sessionExists) {
+                            await supabase.from('team_attendance_sessions').insert({
+                                id: manualSessionId,
+                                creator_id: 'SYSTEM',
+                                creator_name: 'System Approval',
+                                type: 'UMUM',
+                                date: '2000-01-01',
+                                start_time: '00:00',
+                                end_time: '23:59',
+                                audience_type: 'public'
+                            });
+                        }
+
+                        // 2. Insert the record
+                        await supabase.from('team_attendance_records').insert({
+                            session_id: manualSessionId,
+                            user_id: data.mentee_id,
+                            user_name: data.mentee_name || 'User',
+                            attended_at: new Date().toISOString(),
+                            session_type: category === 'BBQ' ? 'BBQ' :
+                                (category === 'KIE' ? 'KIE' :
+                                    (category === 'Doa Bersama' ? 'Doa Bersama' :
+                                        (category === 'Kajian Selasa' ? 'Kajian Selasa' :
+                                            (category === 'Pengajian Persyarikatan' ? 'Pengajian Persyarikatan' : 'UMUM')))),
+                            session_date: date,
+                            session_start_time: '00:00',
+                            session_end_time: '23:59'
+                        });
+                        console.log(`✅ [API Tadarus] Inserted record into team_attendance_records`);
+                    } catch (teamError) {
+                        console.error('⚠️ [API Tadarus] Failed to insert team attendance record:', teamError);
+                    }
                 }
             } catch (err) {
                 console.error('⚠️ [API Tadarus] Failed to update monthly report:', err);

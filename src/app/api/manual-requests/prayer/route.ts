@@ -183,6 +183,26 @@ export async function PATCH(request: NextRequest) {
                         updated_at: new Date().toISOString()
                     });
                     console.log(`✅ [API Prayer] Updated monthly report for ${data.mentee_id}`);
+
+                    // 🔥 NEW: Insert into attendance_records so it shows up in official logs
+                    try {
+                        const entityId = `${prayerId}-${date}`;
+                        // Use historical timestamp so it doesn't appear as "today"
+                        const historicalTimestamp = new Date(date + 'T12:00:00Z').toISOString();
+
+                        await supabase.from('attendance_records').upsert({
+                            employee_id: data.mentee_id,
+                            entity_id: entityId,
+                            status: 'hadir',
+                            reason: `Approved via Manual Request: ${data.reason}`,
+                            timestamp: historicalTimestamp,
+                            is_late_entry: false
+                        }, { onConflict: 'employee_id,entity_id' });
+
+                        console.log(`✅ [API Prayer] Inserted record into attendance_records`);
+                    } catch (attError) {
+                        console.error('⚠️ [API Prayer] Failed to insert attendance record:', attError);
+                    }
                 }
             } catch (err) {
                 console.error('⚠️ [API Prayer] Failed to update monthly report:', err);

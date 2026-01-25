@@ -72,10 +72,14 @@ export async function GET(request: NextRequest) {
 
     const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
+    // 🔥 OPTIMIZATION: Select specific columns to reduce egress
+    // Excluded: signature (heavy), password (security)
+    const columns = 'id, name, email, last_visit_date, role, is_active, notification_enabled, profile_picture, activated_months, ka_unit_id, supervisor_id, mentor_id, dirut_id, can_be_mentor, can_be_supervisor, can_be_ka_unit, can_be_dirut, can_be_manager, functional_roles, manager_id, manager_scope, location_id, location_name, managed_hospital_ids, must_change_password, hospital_id, unit, bagian, profession_category, profession, gender, is_profile_complete, email_verified, avatar_url, auth_user_id';
+
     // Build query
     let query = supabaseService
       .from('employees')
-      .select('*', { count: 'exact' }) // ✅ Get ALL employee fields for complete data
+      .select(columns, { count: 'exact' });
 
     // Apply filters
     if (search) {

@@ -7,7 +7,8 @@ import { useAppDataStore, useUIStore } from '@/store/store';
 import { useBookmarks, useToggleBookmark } from '@/store/bookmarkStore';
 import type { Bookmark } from '@/types';
 import { submitQuranReading, getQuranSubmissions, type QuranReadingSubmission } from '@/services/quranSubmissionService';
-import { getUserWeeklyReports, type WeeklyReportSubmission } from '@/services/weeklyReportService';
+import { getUserMonthlyReports } from '@/services/monthlySubmissionService';
+import type { MonthlyReportSubmission } from '@/types';
 import { useMutabaah } from '@/contexts/MutabaahContext';
 
 /**
@@ -16,10 +17,10 @@ import { useMutabaah } from '@/contexts/MutabaahContext';
  * SEBELUM: 10 useState/useEffect occurrences
  * SEKARANG: 5 useState/useEffect occurrences
  *
- * Catatan: Masih menggunakan useState untuk goToAyah dan weeklyReportSubmissions
+ * Catatan: Masih menggunakan useState untuk goToAyah dan monthlyReportSubmissions
  * karena goToAyah adalah UI state spesifik untuk page ini.
  *
- * TODO: Pindahkan weeklyReportSubmissions ke React Query hook
+ * TODO: Pindahkan monthlyReportSubmissions ke React Query hook
  */
 export default function AlquranPage() {
     const searchParams = useSearchParams();
@@ -27,7 +28,7 @@ export default function AlquranPage() {
     const { addToast } = useUIStore();
     const { monthlyProgressData, updateMonthlyProgress } = useMutabaah();
     const [goToAyah, setGoToAyah] = useState<{ surah: number; ayah: number } | null>(null);
-    const [weeklyReportSubmissions, setWeeklyReportSubmissions] = useState<WeeklyReportSubmission[]>([]);
+    const [monthlyReportSubmissions, setMonthlyReportSubmissions] = useState<MonthlyReportSubmission[]>([]);
     const [loading, setLoading] = useState(true);
 
     // React Query untuk bookmarks (otomatis caching, loading, error handling)
@@ -52,19 +53,19 @@ export default function AlquranPage() {
         }
     }, [searchParams]);
 
-    // Load weekly reports on mount (TODO: pindahkan ke React Query)
+    // Load monthly reports on mount (TODO: pindahkan ke React Query)
     useEffect(() => {
         if (loggedInEmployee) {
-            loadWeeklyReports();
+            loadMonthlyReports();
         }
     }, [loggedInEmployee]);
 
-    const loadWeeklyReports = async () => {
+    const loadMonthlyReports = async () => {
         if (!loggedInEmployee) return;
 
         try {
-            const data = await getUserWeeklyReports(loggedInEmployee.id);
-            setWeeklyReportSubmissions(data);
+            const data = await getUserMonthlyReports(loggedInEmployee.id);
+            setMonthlyReportSubmissions(data);
         } catch (error) {
         } finally {
             setLoading(false);
@@ -156,7 +157,7 @@ export default function AlquranPage() {
                 }
 
                 // Reload data to refresh UI
-                await loadWeeklyReports();
+                await loadMonthlyReports();
             } else {
                 addToast('❌ Gagal menyimpan bacaan. Silakan coba lagi.', 'error');
             }
@@ -181,7 +182,7 @@ export default function AlquranPage() {
             goToAyah={goToAyah}
             clearGoToAyah={() => setGoToAyah(null)}
             onQuranReadingSubmission={handleQuranReadingSubmission}
-            weeklyReportSubmissions={weeklyReportSubmissions}
+            monthlyReportSubmissions={monthlyReportSubmissions}
             loggedInEmployee={loggedInEmployee!}
             setGoToAyah={setGoToAyah}
         />

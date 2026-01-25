@@ -35,22 +35,24 @@ import {
     Bookmark,
     HandHeart,
     UserCircle,
-    ShieldCheck
+    ShieldCheck,
+    CheckCircle2
 } from 'lucide-react';
 import type { Notification } from '@/types';
 
 const allNavItemsRaw = [
     { id: 'dashboard-saya', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { id: 'aktifitas-saya', label: 'Aktifitas Saya', icon: History, href: '/aktifitas-saya' },
-    { id: 'aktivitas-bulanan', label: 'Lembar Mutaba\'ah', icon: CalendarDays, href: '/aktivitas-bulanan' },
+    { id: 'aktifitas-saya', label: "Lapor Aktifitas", icon: History, href: '/aktifitas-saya' },
     { id: 'presensi', label: 'Presensi Harian', icon: ClipboardCheck, href: '/presensi' },
-    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, href: '/pengumuman' },
+    { id: 'aktivitas-bulanan', label: "Lembar Mutaba'ah", icon: CalendarDays, href: '/aktivitas-bulanan' },
     { id: 'jadwal-sesi', label: 'Jadwal & Sesi', icon: CalendarClock, href: '/jadwal-sesi' },
-    { id: 'alquran', label: 'Al-Qur\'an', icon: BookOpen, href: '/alquran' },
+    { id: 'panel-mentor', label: 'Panel Supervisi', icon: Users, href: '/panel-mentor' },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, href: '/pengumuman' },
+    { id: 'alquran', label: "Al-Qur'an", icon: BookOpen, href: '/alquran' },
     { id: 'bookmarks', label: 'Bookmark', icon: Bookmark, href: '/bookmarks' },
     { id: 'panduan-doa', label: 'Panduan & Doa', icon: HandHeart, href: '/panduan-doa' },
-    { id: 'profile', label: 'Profil', icon: UserCircle, href: '/profile' },
     { id: 'admin', label: 'Admin Dashboard', icon: ShieldCheck, href: '/admin' },
+    { id: 'profile', label: 'Profil', icon: UserCircle, href: '/profile' },
 ];
 
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
@@ -304,13 +306,22 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             // Hide Admin menu for non-admins
             if (item.id === 'admin' && !isAdmin) return false;
 
-            // 🔥 Hide 'Jadwal & Sesi' for basic users without special assignments/roles
-            // Only Admins, Mentors, SPVs, KaUnits, etc. can access this menu
+            // Hide 'Jadwal & Sesi' for basic users without special assignments/roles
             if (item.id === 'jadwal-sesi' && !hasManagementRole) return false;
+
+            // 🔥 Panel Supervisi (Universal): Untuk Mentor, Supervisor, Manager, KaUnit (atau Admin)
+            if (item.id === 'panel-mentor') {
+                const canAccess = isAdmin ||
+                    loggedInEmployee.canBeMentor ||
+                    loggedInEmployee.canBeSupervisor ||
+                    loggedInEmployee.canBeManager ||
+                    loggedInEmployee.canBeKaUnit;
+                return canAccess;
+            }
 
             return true;
         });
-    }, [userId, userRole, isAdmin, loggedInEmployee?.canBeMentor, loggedInEmployee?.canBeSupervisor, loggedInEmployee?.canBeKaUnit, loggedInEmployee?.canBeDirut]); // 🔥 CRITICAL FIX: Add assignment flags to deps
+    }, [userId, userRole, isAdmin, loggedInEmployee?.canBeMentor, loggedInEmployee?.canBeSupervisor, loggedInEmployee?.canBeKaUnit, loggedInEmployee?.canBeDirut, loggedInEmployee?.canBeManager]); // 🔥 CRITICAL FIX: Add all assignment flags to deps
 
     // 🔥 DEBUG: Log when filtered nav items change
     React.useEffect(() => {

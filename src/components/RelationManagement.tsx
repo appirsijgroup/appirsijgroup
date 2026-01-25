@@ -51,6 +51,7 @@ const ToggleSwitch: React.FC<{
 };
 
 const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile }) => {
+    const { addToast } = useUIStore();
     const { createNotification } = useNotificationStore();
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -63,6 +64,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
     const userMap = useMemo(() => new Map(safeAllUsers.map(u => [u.id, u.name])), [safeAllUsers]);
     const potentialMentors = useMemo(() => safeAllUsers.filter(u => u.canBeMentor === true), [safeAllUsers]);
     const potentialSupervisors = useMemo(() => safeAllUsers.filter(u => u.canBeSupervisor === true), [safeAllUsers]);
+    const potentialManagers = useMemo(() => safeAllUsers.filter(u => u.canBeManager === true), [safeAllUsers]);
     const potentialKaUnits = useMemo(() => safeAllUsers.filter(u => u.canBeKaUnit === true), [safeAllUsers]);
     const designatedDirut = useMemo(() => safeAllUsers.find(u => u.canBeDirut === true), [safeAllUsers]);
 
@@ -124,7 +126,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
 
     const handleRelationChange = async (
         userToUpdate: Employee,
-        field: 'mentorId' | 'supervisorId' | 'kaUnitId', // dirutId is now automated
+        field: 'mentorId' | 'supervisorId' | 'managerId' | 'kaUnitId', // dirutId is now automated
         newId: string | undefined
     ) => {
         // Defensive check
@@ -140,6 +142,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                 const fieldNameMap = {
                     mentorId: 'Mentor',
                     supervisorId: 'Supervisor',
+                    managerId: 'Manajer',
                     kaUnitId: 'Kepala Unit',
                 };
 
@@ -169,7 +172,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                         linkTo: {
                             view: 'assignment_letter' as const,
                             params: {
-                                roleName: fieldNameMap[field] as 'Mentor' | 'Supervisor' | 'Kepala Unit',
+                                roleName: fieldNameMap[field] as any,
                                 assignmentType: assignmentType,
                                 assigneeName: newRelationName, // 🔥 FIX: Kirim nama, bukan ID
                                 previousAssigneeName: oldRelationName || undefined, // 🔥 FIX: Kirim nama, bukan ID
@@ -190,6 +193,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     const fieldNameMap = {
                         mentorId: 'Mentor',
                         supervisorId: 'Supervisor',
+                        managerId: 'Manajer',
                         kaUnitId: 'Kepala Unit',
                     };
 
@@ -207,7 +211,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                             linkTo: {
                                 view: 'assignment_letter' as const,
                                 params: {
-                                    roleName: fieldNameMap[field] as 'Mentor' | 'Supervisor' | 'Kepala Unit',
+                                    roleName: fieldNameMap[field] as any,
                                     assignmentType: 'removal' as const,
                                     previousAssigneeName: oldRelationName,
                                 }
@@ -246,22 +250,24 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
 
             <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
                 <table className="min-w-[1300px] w-full text-sm text-left text-white">
-                     <thead className="bg-white/10 text-xs uppercase text-blue-200 align-middle">
+                    <thead className="bg-white/10 text-xs uppercase text-blue-200 align-middle">
                         <tr>
                             <th rowSpan={2} className="px-3 py-2 sm:px-4 align-middle border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[200px]">Nama Karyawan</th>
-                            <th colSpan={4} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Kapabilitas Peran</th>
-                            <th colSpan={4} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Penugasan Atasan</th>
+                            <th colSpan={5} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Kapabilitas Peran</th>
+                            <th colSpan={5} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Penugasan Atasan</th>
                             <th rowSpan={2} className="px-3 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Aksi</th>
                         </tr>
                         <tr>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Dirut</th>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Mentor</th>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Supervisor</th>
-                            <th className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[100px]">Ka. Unit</th>
+                            <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Ka. Unit</th>
+                            <th className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[100px]">Manajer</th>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[160px]">Dirut</th>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[160px]">Mentor</th>
                             <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[160px]">Supervisor</th>
-                            <th className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[160px]">Ka. Unit</th>
+                            <th className="px-2 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[160px]">Ka. Unit</th>
+                            <th className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[160px]">Manajer</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -337,101 +343,149 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                 <td className="px-2 py-3 text-center min-w-[80px]">
                                     <div className="flex justify-center">
                                         <ToggleSwitch
-                                        checked={!!user.canBeSupervisor}
-                                        onChange={async (checked) => {
-                                            const result = await onUpdateProfile(user.id, { canBeSupervisor: checked });
-                                            if (!result) {
-                                                throw new Error('Update failed');
-                                            }
+                                            checked={!!user.canBeSupervisor}
+                                            onChange={async (checked) => {
+                                                const result = await onUpdateProfile(user.id, { canBeSupervisor: checked });
+                                                if (!result) {
+                                                    throw new Error('Update failed');
+                                                }
 
-                                            // 🔥 Create notification for role capability change
-                                            if (checked && !user.canBeSupervisor) {
-                                                // Designation - user baru bisa jadi Supervisor
-                                                await createNotification({
-                                                    userId: user.id,
-                                                    type: 'account_role_changed',
-                                                    title: 'Penugasan Sebagai Supervisor',
-                                                    message: 'Selamat! Anda telah ditugaskan sebagai Supervisor. Lihat surat penugasan Anda.',
-                                                    linkTo: {
-                                                        view: 'assignment_letter',
-                                                        params: {
-                                                            roleName: 'Supervisor',
-                                                            assignmentType: 'designation',
+                                                // 🔥 Create notification for role capability change
+                                                if (checked && !user.canBeSupervisor) {
+                                                    // Designation - user baru bisa jadi Supervisor
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Penugasan Sebagai Supervisor',
+                                                        message: 'Selamat! Anda telah ditugaskan sebagai Supervisor. Lihat surat penugasan Anda.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Supervisor',
+                                                                assignmentType: 'designation',
+                                                            }
                                                         }
-                                                    }
-                                                });
-                                            } else if (!checked && user.canBeSupervisor) {
-                                                // Revocation - user tidak bisa lagi jadi Supervisor
-                                                await createNotification({
-                                                    userId: user.id,
-                                                    type: 'account_role_changed',
-                                                    title: 'Pencabutan Penugasan Supervisor',
-                                                    message: 'Penugasan Anda sebagai Supervisor telah berakhir. Lihat surat pemberitahuan.',
-                                                    linkTo: {
-                                                        view: 'assignment_letter',
-                                                        params: {
-                                                            roleName: 'Supervisor',
-                                                            assignmentType: 'revocation',
+                                                    });
+                                                } else if (!checked && user.canBeSupervisor) {
+                                                    // Revocation - user tidak bisa lagi jadi Supervisor
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Pencabutan Penugasan Supervisor',
+                                                        message: 'Penugasan Anda sebagai Supervisor telah berakhir. Lihat surat pemberitahuan.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Supervisor',
+                                                                assignmentType: 'revocation',
+                                                            }
                                                         }
-                                                    }
-                                                });
-                                            }
+                                                    });
+                                                }
 
-                                            return result;
-                                        }}
-                                    />
-                                     </div>
+                                                return result;
+                                            }}
+                                        />
+                                    </div>
+                                </td>
+                                <td className="px-2 py-3 text-center min-w-[80px]">
+                                    <div className="flex justify-center">
+                                        <ToggleSwitch
+                                            checked={!!user.canBeKaUnit}
+                                            onChange={async (checked) => {
+                                                const result = await onUpdateProfile(user.id, { canBeKaUnit: checked });
+                                                if (!result) {
+                                                    throw new Error('Update failed');
+                                                }
+
+                                                // 🔥 Create notification for role capability change
+                                                if (checked && !user.canBeKaUnit) {
+                                                    // Designation - user baru bisa jadi Ka.Unit
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Penugasan Sebagai Kepala Unit',
+                                                        message: 'Selamat! Anda telah ditugaskan sebagai Kepala Unit. Lihat surat penugasan Anda.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Kepala Unit',
+                                                                assignmentType: 'designation',
+                                                            }
+                                                        }
+                                                    });
+                                                } else if (!checked && user.canBeKaUnit) {
+                                                    // Revocation - user tidak bisa lagi jadi Ka.Unit
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Pencabutan Penugasan Kepala Unit',
+                                                        message: 'Penugasan Anda sebagai Kepala Unit telah berakhir. Lihat surat pemberitahuan.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Kepala Unit',
+                                                                assignmentType: 'revocation',
+                                                            }
+                                                        }
+                                                    });
+                                                }
+
+                                                return result;
+                                            }}
+                                        />
+                                    </div>
                                 </td>
                                 <td className="px-2 py-3 text-center border-r border-gray-700 min-w-[80px]">
-                                     <div className="flex justify-center">
+                                    <div className="flex justify-center">
                                         <ToggleSwitch
-                                        checked={!!user.canBeKaUnit}
-                                        onChange={async (checked) => {
-                                            const result = await onUpdateProfile(user.id, { canBeKaUnit: checked });
-                                            if (!result) {
-                                                throw new Error('Update failed');
-                                            }
+                                            checked={!!user.canBeManager}
+                                            onChange={async (checked) => {
+                                                const result = await onUpdateProfile(user.id, { canBeManager: checked });
+                                                if (!result) {
+                                                    throw new Error('Update failed');
+                                                }
 
-                                            // 🔥 Create notification for role capability change
-                                            if (checked && !user.canBeKaUnit) {
-                                                // Designation - user baru bisa jadi Ka.Unit
-                                                await createNotification({
-                                                    userId: user.id,
-                                                    type: 'account_role_changed',
-                                                    title: 'Penugasan Sebagai Kepala Unit',
-                                                    message: 'Selamat! Anda telah ditugaskan sebagai Kepala Unit. Lihat surat penugasan Anda.',
-                                                    linkTo: {
-                                                        view: 'assignment_letter',
-                                                        params: {
-                                                            roleName: 'Kepala Unit',
-                                                            assignmentType: 'designation',
+                                                // 🔥 Create notification for role capability change
+                                                if (checked && !user.canBeManager) {
+                                                    // Designation - user baru bisa jadi Manajer
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Penugasan Sebagai Manajer',
+                                                        message: 'Selamat! Anda telah ditugaskan sebagai Manajer. Lihat surat penugasan Anda.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Manajer' as any,
+                                                                assignmentType: 'designation',
+                                                            }
                                                         }
-                                                    }
-                                                });
-                                            } else if (!checked && user.canBeKaUnit) {
-                                                // Revocation - user tidak bisa lagi jadi Ka.Unit
-                                                await createNotification({
-                                                    userId: user.id,
-                                                    type: 'account_role_changed',
-                                                    title: 'Pencabutan Penugasan Kepala Unit',
-                                                    message: 'Penugasan Anda sebagai Kepala Unit telah berakhir. Lihat surat pemberitahuan.',
-                                                    linkTo: {
-                                                        view: 'assignment_letter',
-                                                        params: {
-                                                            roleName: 'Kepala Unit',
-                                                            assignmentType: 'revocation',
+                                                    });
+                                                } else if (!checked && user.canBeManager) {
+                                                    // Revocation - user tidak bisa lagi jadi Manajer
+                                                    await createNotification({
+                                                        userId: user.id,
+                                                        type: 'account_role_changed',
+                                                        title: 'Pencabutan Penugasan Manajer',
+                                                        message: 'Penugasan Anda sebagai Manajer telah berakhir. Lihat surat pemberitahuan.',
+                                                        linkTo: {
+                                                            view: 'assignment_letter',
+                                                            params: {
+                                                                roleName: 'Manajer' as any,
+                                                                assignmentType: 'revocation',
+                                                            }
                                                         }
-                                                    }
-                                                });
-                                            }
+                                                    });
+                                                }
 
-                                            return result;
-                                        }}
-                                    />
-                                     </div>
+                                                return result;
+                                            }}
+                                        />
+                                    </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                     <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.dirutId ? userMap.get(user.dirutId) : 'Otomatis'}>
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.dirutId ? userMap.get(user.dirutId) : 'Otomatis'}>
                                         {user.dirutId ? userMap.get(user.dirutId) : <span className="text-gray-400 italic">Otomatis</span>}
                                     </div>
                                 </td>
@@ -450,6 +504,11 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                         {user.kaUnitId ? userMap.get(user.kaUnitId) : <span className="text-gray-400 italic">-</span>}
                                     </div>
                                 </td>
+                                <td className="px-2 py-3 min-w-[160px]">
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.managerId ? userMap.get(user.managerId) : 'Belum ditugaskan'}>
+                                        {user.managerId ? userMap.get(user.managerId) : <span className="text-gray-400 italic">-</span>}
+                                    </div>
+                                </td>
                                 <td className="px-3 py-3 text-center min-w-[100px]">
                                     <button
                                         onClick={() => setEditAssignmentModal(user)}
@@ -461,7 +520,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                 </td>
                             </tr>
                         ))}
-                         {sortedUsers.length === 0 && (
+                        {sortedUsers.length === 0 && (
                             <tr>
                                 <td colSpan={9} className="text-center p-8 text-blue-200">
                                     Tidak ada karyawan yang cocok dengan pencarian Anda.
@@ -500,11 +559,10 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                 <button
                                     key={pageNum}
                                     onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === pageNum
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        }`}
                                 >
                                     {pageNum}
                                 </button>
@@ -516,11 +574,10 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                 <span className="text-gray-400 px-2">...</span>
                                 <button
                                     onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                                        currentPage === totalPages
-                                            ? 'bg-teal-500 text-white'
-                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                    }`}
+                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
+                                        ? 'bg-teal-500 text-white'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                        }`}
                                 >
                                     {totalPages}
                                 </button>
@@ -591,6 +648,17 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                     value={editAssignmentModal.kaUnitId}
                                     onChange={id => handleRelationChange(editAssignmentModal, 'kaUnitId', id)}
                                     placeholder="Pilih Ka. Unit"
+                                />
+                            </div>
+
+                            {/* Manajer */}
+                            <div>
+                                <label className="text-sm font-medium text-blue-200 block mb-2">Manajer</label>
+                                <EmployeeSearchableInput
+                                    allUsers={potentialManagers.filter(m => m.id !== editAssignmentModal.id)}
+                                    value={editAssignmentModal.managerId}
+                                    onChange={id => handleRelationChange(editAssignmentModal, 'managerId', id)}
+                                    placeholder="Pilih Manajer"
                                 />
                             </div>
                         </div>

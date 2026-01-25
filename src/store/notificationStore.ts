@@ -52,9 +52,12 @@ export const useNotificationStore = create<NotificationState>()(
 
             // 🔥 Create notification and sync to Supabase
             createNotification: async (data) => {
+                // Use temporary ID for optimistic update
+                const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
                 const newNotification: Notification = {
                     ...data,
-                    id: `${Date.now()}-${Math.random()}`,
+                    id: tempId,
                     timestamp: Date.now(),
                     isRead: false,
                 };
@@ -67,7 +70,14 @@ export const useNotificationStore = create<NotificationState>()(
 
                 // Sync to Supabase
                 try {
-                    await createNotificationSupabase(newNotification);
+                    // Update local notification with REAL ID from DB
+                    const savedNotification = await createNotificationSupabase(newNotification);
+
+                    set((state) => ({
+                        notifications: state.notifications.map(n =>
+                            n.id === tempId ? { ...savedNotification } : n
+                        )
+                    }));
                 } catch (error) {
                     console.error('❌ [notificationStore] Failed to sync new notification to Supabase:', error);
                 }

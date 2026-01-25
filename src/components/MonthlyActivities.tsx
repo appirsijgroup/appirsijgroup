@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type MonthlyActivityProgress, type WeeklyReportSubmission, type DailyActivity, type MutabaahLockingMode } from '../types';
+import { type Employee, type MonthlyActivityProgress, type MonthlyReportSubmission, type DailyActivity, type MutabaahLockingMode } from '../types';
 import { CheckSquare, Square, Send, CalendarDays, Lock } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { useUIStore } from '@/store/store';
@@ -11,8 +11,8 @@ interface MonthlyActivitiesProps {
     monthlyProgressData: Record<string, MonthlyActivityProgress>;
     onUpdate: (userId: string, monthKey: string, updates: MonthlyActivityProgress) => void;
     onActivateMonth: (userId: string, monthKey: string) => void;
-    weeklyReportSubmissions: WeeklyReportSubmission[];
-    onSubmitReport: (monthKey: string, weekIndex: number) => void;
+    monthlyReportSubmissions: MonthlyReportSubmission[];
+    onSubmitReport: (monthKey: string) => void;
     date: Date;
     onDateChange: (newDate: Date) => void;
     dailyActivitiesConfig: DailyActivity[];
@@ -52,7 +52,7 @@ const getBalancedWeeks = (date: Date): { weekIndex: number, days: number[] }[] =
 };
 
 
-const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUsers, monthlyProgressData, onUpdate, onActivateMonth, weeklyReportSubmissions, onSubmitReport, date, onDateChange, dailyActivitiesConfig, mutabaahLockingMode }) => {
+const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUsers, monthlyProgressData, onUpdate, onActivateMonth, monthlyReportSubmissions, onSubmitReport, date, onDateChange, dailyActivitiesConfig, mutabaahLockingMode }) => {
     const { addToast } = useUIStore();
     const [isDirty, setIsDirty] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -102,9 +102,9 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
 
     const weeks = useMemo(() => getBalancedWeeks(date), [date]);
 
-    const currentWeeklySubmission = useMemo(() => {
-        return weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === currentWeekIndex);
-    }, [weeklyReportSubmissions, monthKey, currentWeekIndex]);
+    const currentMonthlySubmission = useMemo(() => {
+        return monthlyReportSubmissions.find(s => s.monthKey === monthKey);
+    }, [monthlyReportSubmissions, monthKey]);
 
     const isPastWeek = useMemo(() => {
         const today = new Date();
@@ -132,14 +132,16 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         return lastDateOfMonth < today;
     }, [date, daysInMonth]);
 
-    const isReadOnlyForWeek = useMemo(() => {
-        // 🔥 locking mode: jika 'monthly', user bebas mengisi kapan saja (tidak dikunci per pekan)
-        const shouldLockPastWeek = mutabaahLockingMode === 'weekly';
+    const isReadOnly = useMemo(() => {
+        // 1. If report is submitted (pending or approved) -> LOCKED
+        if (currentMonthlySubmission && (currentMonthlySubmission.status.startsWith('pending_') || currentMonthlySubmission.status === 'approved')) return true;
 
-        if (shouldLockPastWeek && isPastWeek && !currentWeeklySubmission) return true;
-        if (currentWeeklySubmission && (currentWeeklySubmission.status.startsWith('pending_') || currentWeeklySubmission.status === 'approved')) return true;
+        // 2. If month is in the past -> LOCKED (Strict locking per user request)
+        // User cannot modify data for past months, only view or submit what was already recorded.
+        if (isPastMonth) return true;
+
         return false;
-    }, [isPastWeek, currentWeeklySubmission, mutabaahLockingMode]);
+    }, [currentMonthlySubmission, isPastMonth]);
 
     useEffect(() => {
         setIsDirty(false);
@@ -174,7 +176,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     }, [date.getFullYear(), date.getMonth(), onDateChange]);
 
     const handleProgressChange = (day: string, activityId: string, value: boolean) => {
-        if (isReadOnlyForWeek) return;
+        if (isReadOnly) return;
 
         // Create a deep copy of the current month's progress to modify
         const newMonthProgress = JSON.parse(JSON.stringify(progress));
@@ -204,7 +206,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     };
 
     const navigateMonth = (direction: 'prev' | 'next') => {
-        if (isDirty && !isReadOnlyForWeek && isMonthActivated) {
+        if (isDirty && !isReadOnly && isMonthActivated) {
             setPendingNavigation(direction);
             return;
         }
@@ -226,7 +228,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     };
 
     const handleSubmission = () => {
-        if (isDirty && !isReadOnlyForWeek) {
+        if (isDirty && !isReadOnly) {
             addToast("Harap simpan perubahan Anda terlebih dahulu sebelum mengajukan laporan.", 'error');
             return;
         }
@@ -234,8 +236,8 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
     };
 
     const executeSubmission = () => {
-        onSubmitReport(monthKey, currentWeekIndex);
-        setSuccessMessage('Laporan mingguan berhasil diajukan ke mentor!');
+        onSubmitReport(monthKey);
+        setSuccessMessage('Laporan bulanan berhasil diajukan ke mentor!');
         setSubmissionConfirmation(false);
         setTimeout(() => setSuccessMessage(''), 5000);
     };
@@ -391,6 +393,72 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
         return selectedDate > today;
     }, [date]);
 
+    // Check if report submission is allowed based on date (End of month only)
+    const canSubmitThisMonth = useMemo(() => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+
+        const viewYear = date.getFullYear();
+        const viewMonth = date.getMonth();
+
+        // Cannot submit future months
+        if (viewYear > currentYear || (viewYear === currentYear && viewMonth > currentMonth)) return false;
+
+        // If viewing past month, ALWAYS ALLOW (Late submission)
+        if (viewYear < currentYear || (viewYear === currentYear && viewMonth < currentMonth)) return true;
+
+        // If viewing CURRENT MONTH, only allow if date >= 28
+        return today.getDate() >= 28;
+    }, [date]);
+
+    // Generate modal content based on validation
+    const submissionConfirmationModal = createPortal(
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20">
+                <h3 className="text-lg font-bold text-white mb-2">
+                    {canSubmitThisMonth ? "Konfirmasi Pengajuan Laporan" : "Laporan Belum Dapat Dikirim"}
+                </h3>
+
+                <div className="text-blue-200 mb-4">
+                    {canSubmitThisMonth ? (
+                        <>
+                            <p>Apakah Anda yakin ingin mengajukan laporan untuk bulan <strong>{date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</strong> kepada mentor Anda?</p>
+                            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm text-blue-200">
+                                <p className="font-semibold text-blue-300 mb-1">Penting:</p>
+                                <p>Pastikan semua data aktivitas sudah terisi lengkap. Setelah dikirim, Anda tidak dapat mengubah data kecuali laporan ditolak.</p>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                            <p className="text-yellow-200 font-medium mb-2">
+                                Laporan bulan {date.toLocaleDateString('id-ID', { month: 'long' })} belum bisa dikirim.
+                            </p>
+                            <p className="text-sm text-yellow-100/80">
+                                Pengiriman laporan baru dibuka pada akhir bulan (tanggal <strong>28 - 31</strong>).
+                                <br /><br />
+                                Silakan lanjutkan pengisian mutaba'ah harian Anda.
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button onClick={() => setSubmissionConfirmation(false)} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold focus:ring-2 focus:ring-gray-400 focus:outline-none">
+                        {canSubmitThisMonth ? "Batal" : "Tutup"}
+                    </button>
+
+                    {canSubmitThisMonth && (
+                        <button onClick={executeSubmission} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none shadow-lg shadow-blue-600/20">
+                            Ya, Ajukan
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+
     return (
         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
             {/* Enterprise-style Filter Grid */}
@@ -480,19 +548,26 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                 </div>
             ) : (
                 <>
+                    {isPastMonth && !currentMonthlySubmission && (
+                        <div className="mb-6 mx-auto w-full max-w-7xl p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-4 animate-fade-in shadow-sm">
+                            <div className="p-2 bg-yellow-500/20 rounded-lg shrink-0">
+                                <Lock className="w-6 h-6 text-yellow-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-yellow-400 text-lg">Periode Pelaporan Berakhir</h3>
+                                <p className="text-sm text-yellow-200/90 mt-1 leading-relaxed">
+                                    Lembar mutaba'ah untuk bulan ini telah dikunci karena periode bulan telah berakhir.
+                                    Anda tidak dapat menambah atau mengubah data aktivitas, namun Anda masih dapat mengirim laporan ini kepada mentor jika belum dikirim.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'weekly' && (
                         <div className="animate-view-change">
                             <div className="overflow-x-auto overflow-y-hidden touch-pan-x mb-6">
                                 <div className="flex items-center justify-center gap-2 min-w-max">
                                     {weeks.map(({ weekIndex, days }) => {
-                                        const submission = weeklyReportSubmissions.find(s => s.monthKey === monthKey && s.weekIndex === weekIndex);
-                                        let statusDot: React.ReactNode = null;
-                                        if (submission) {
-                                            statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 ${statusConfig[submission.status].dot}`}></span>;
-                                        } else if (isPastWeek && currentWeekIndex === weekIndex) {
-                                            statusDot = <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-800 bg-green-400`}></span>;
-                                        }
-
                                         return (
                                             <button
                                                 key={weekIndex}
@@ -501,7 +576,6 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                                                     }`}
                                             >
                                                 Pekan {weekIndex + 1}
-                                                {statusDot}
                                             </button>
                                         );
                                     })}
@@ -593,15 +667,18 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                             </div>
 
                             <div className="mt-6 flex flex-col items-center gap-4">
-                                {mutabaahLockingMode === 'weekly' && isPastWeek && !currentWeeklySubmission ? (
-                                    <div className="px-2.5 py-1.5 text-sm font-semibold rounded-full bg-green-500/20 text-green-300">
-                                        Status: Disetujui Otomatis (Waktu Terlewat)
+                                {currentMonthlySubmission ? (
+                                    <div className={`px-2.5 py-1.5 text-sm font-semibold rounded-full ${(statusConfig as any)[currentMonthlySubmission.status]?.color || 'bg-blue-500/20 text-blue-300'}`}>
+                                        Status Laporan: {(statusConfig as any)[currentMonthlySubmission.status]?.label || currentMonthlySubmission.status}
                                     </div>
-                                ) : currentWeeklySubmission ? (
-                                    <div className={`px-2.5 py-1.5 text-sm font-semibold rounded-full ${statusConfig[currentWeeklySubmission.status].color}`}>
-                                        Status: {statusConfig[currentWeeklySubmission.status].label}
-                                    </div>
-                                ) : null}
+                                ) : (
+                                    <button
+                                        onClick={handleSubmission}
+                                        className="px-6 py-2 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-lg shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                                    >
+                                        <Send className="w-5 h-5" /> Kirim Laporan Bulan Ini
+                                    </button>
+                                )}
                             </div>
                         </div>
                     )}
@@ -686,21 +763,7 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                 </>
             )}
 
-            {submissionConfirmation && createPortal(
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md border border-white/20">
-                        <h3 className="text-lg font-bold text-white mb-2">Konfirmasi Pengajuan Laporan</h3>
-                        <p className="text-blue-200 mb-4">Apakah Anda yakin ingin mengajukan laporan untuk <strong>Pekan {currentWeekIndex + 1} - {date.toLocaleDateString('id-ID', { month: 'long' })}</strong> kepada mentor Anda?</p>
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button onClick={() => setSubmissionConfirmation(false)} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                            <button onClick={executeSubmission} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-500">
-                                Ya, Ajukan
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            {submissionConfirmation && submissionConfirmationModal}
 
             <ConfirmationModal
                 isOpen={!!pendingNavigation}

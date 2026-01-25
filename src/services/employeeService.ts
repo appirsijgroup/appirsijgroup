@@ -27,7 +27,10 @@ export const convertToCamelCase = (emp: any): Employee => {
         canBeSupervisor: emp.can_be_supervisor,
         canBeKaUnit: emp.can_be_ka_unit,
         canBeDirut: emp.can_be_dirut,
+        canBeDirut: emp.can_be_dirut,
+        canBeManager: emp.can_be_manager,
         functionalRoles: emp.functional_roles,
+        managerId: emp.manager_id,
         managerScope: emp.manager_scope,
         locationId: emp.location_id,
         locationName: emp.location_name,
@@ -126,6 +129,9 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             can_be_dirut,
             functional_roles,
             manager_scope,
+            manager_scope,
+            manager_id,
+            can_be_manager,
             signature,
 
             managed_hospital_ids,
@@ -184,6 +190,10 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             can_be_dirut,
             functional_roles,
             manager_scope,
+            functional_roles,
+            manager_scope,
+            manager_id,
+            can_be_manager,
             signature,
 
             managed_hospital_ids,
@@ -240,6 +250,10 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         can_be_supervisor: employee.canBeSupervisor,
         can_be_ka_unit: employee.canBeKaUnit,
         can_be_dirut: employee.canBeDirut,
+        functional_roles: employee.functionalRoles as string[] | null, // Keep this cast
+        can_be_dirut: employee.canBeDirut,
+        can_be_manager: employee.canBeManager,
+        manager_id: employee.managerId,
         functional_roles: employee.functionalRoles as string[] | null, // Keep this cast
         manager_scope: employee.managerScope ? JSON.stringify(employee.managerScope) : null, // Keep this stringify
         location_id: employee.locationId,
@@ -314,6 +328,10 @@ export const updateEmployee = async (
     if (updates.canBeSupervisor !== undefined) dbUpdates.can_be_supervisor = updates.canBeSupervisor;
     if (updates.canBeKaUnit !== undefined) dbUpdates.can_be_ka_unit = updates.canBeKaUnit;
     if (updates.canBeDirut !== undefined) dbUpdates.can_be_dirut = updates.canBeDirut;
+    if (updates.canBeKaUnit !== undefined) dbUpdates.can_be_ka_unit = updates.canBeKaUnit;
+    if (updates.canBeDirut !== undefined) dbUpdates.can_be_dirut = updates.canBeDirut;
+    if (updates.canBeManager !== undefined) dbUpdates.can_be_manager = updates.canBeManager;
+    if (updates.managerId !== undefined) dbUpdates.manager_id = updates.managerId;
     if (updates.functionalRoles !== undefined) dbUpdates.functional_roles = updates.functionalRoles as string[] | null;
     if (updates.managerScope !== undefined) dbUpdates.manager_scope = updates.managerScope ? JSON.stringify(updates.managerScope) : null;
     if (updates.locationId !== undefined) dbUpdates.location_id = updates.locationId;

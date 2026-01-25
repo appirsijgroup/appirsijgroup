@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase, setSupabaseSession } from '@/lib/supabase';
 import { useAppDataStore } from '@/store/store';
-import type { Employee, MonthlyActivityProgress, WeeklyReportSubmission } from '@/types';
+import type { Employee, MonthlyActivityProgress, MonthlyReportSubmission } from '@/types';
 import {
   getEmployeeMonthlyData,
   activateMonth as activateMonthService,
@@ -14,7 +14,7 @@ interface MutabaahContextType {
   isCurrentMonthActivated: boolean;
   activatedMonths: string[];
   monthlyProgressData: Record<string, MonthlyActivityProgress>;
-  weeklyReportSubmissions: WeeklyReportSubmission[];
+  monthlyReportSubmissions: MonthlyReportSubmission[];
   isLoading: boolean;
   error: string | null;
   activateMonth: (monthKey: string) => Promise<boolean>;
@@ -43,7 +43,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   const [isCurrentMonthActivated, setIsCurrentMonthActivated] = useState(false);
   const [activatedMonths, setActivatedMonths] = useState<string[]>([]);
   const [monthlyProgressData, setMonthlyProgressData] = useState<Record<string, MonthlyActivityProgress>>({});
-  const [weeklyReportSubmissions, setWeeklyReportSubmissions] = useState<WeeklyReportSubmission[]>([]);
+  const [monthlyReportSubmissions, setMonthlyReportSubmissions] = useState<MonthlyReportSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -354,21 +354,21 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
       // 🔥 FIX: NO CACHE - Don't save to employee_monthly_activities anymore
       console.log('✅ [MutabaahContext] Successfully refreshed data from all sources (NO CACHE)');
 
-      // 5. Refresh weekly report submissions
-      let submissions: WeeklyReportSubmission[] = [];
+      // 5. Refresh monthly report submissions
+      let submissions: MonthlyReportSubmission[] = [];
       try {
-        const { getUserWeeklyReports } = await import('@/services/weeklyReportService');
+        const { getUserMonthlyReports } = await import('@/services/monthlySubmissionService');
 
         // 🔥 CRITICAL: Only proceed if employee ID is valid
         if (employee.id) {
-          submissions = await getUserWeeklyReports(employee.id);
+          submissions = await getUserMonthlyReports(employee.id);
         } else {
-          console.log('⏭️ [MutabaahContext] Skipping weekly reports refresh - no employee ID');
+          console.log('⏭️ [MutabaahContext] Skipping monthly reports refresh - no employee ID');
         }
       } catch (error) {
       }
 
-      setWeeklyReportSubmissions(submissions);
+      setMonthlyReportSubmissions(submissions);
     } catch (err) {
       setError('Gagal menyegarkan data');
     } finally {
@@ -557,7 +557,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
                 const newEmployee = payload.new as any;
                 setActivatedMonths(newEmployee.activated_months || []);
                 setMonthlyProgressData(newEmployee.monthly_activities || {});
-                setWeeklyReportSubmissions(newEmployee.weekly_report_submissions || []);
+                setMonthlyReportSubmissions(newEmployee.monthly_report_submissions || []);
 
                 const currentMonth = getCurrentMonthKey();
                 setIsCurrentMonthActivated((newEmployee.activated_months || []).includes(currentMonth));
@@ -624,7 +624,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     isCurrentMonthActivated,
     activatedMonths,
     monthlyProgressData,
-    weeklyReportSubmissions,
+    monthlyReportSubmissions,
     isLoading,
     error,
     activateMonth,
@@ -635,7 +635,7 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
     isCurrentMonthActivated,
     activatedMonths,
     monthlyProgressData,
-    weeklyReportSubmissions,
+    monthlyReportSubmissions,
     isLoading,
     error,
     activateMonth,

@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { WeeklyReportSubmission, TadarusSession, TadarusRequest, MissedPrayerRequest, MenteeTarget } from '@/types';
+import type { MonthlyReportSubmission, TadarusSession, TadarusRequest, MissedPrayerRequest, MenteeTarget } from '@/types';
 import { useAppDataStore } from './store';
 
 interface GuidanceState {
-    weeklyReportSubmissions: WeeklyReportSubmission[];
+    monthlyReportSubmissions: MonthlyReportSubmission[];
     tadarusSessions: TadarusSession[];
     tadarusRequests: TadarusRequest[];
     missedPrayerRequests: MissedPrayerRequest[];
     menteeTargets: MenteeTarget[];
 
     // Actions
-    addOrUpdateWeeklyReportSubmission: (submission: WeeklyReportSubmission) => void;
+    addOrUpdateMonthlyReportSubmission: (submission: MonthlyReportSubmission) => void;
 
     addTadarusSessions: (sessions: TadarusSession[]) => void;
     updateTadarusSession: (sessionId: string, updates: Partial<TadarusSession> | ((session: TadarusSession) => TadarusSession)) => Promise<void>;
@@ -19,7 +19,7 @@ interface GuidanceState {
     loadTadarusSessionsFromSupabase: () => Promise<void>;
     loadTadarusRequestsFromSupabase: () => Promise<void>;
     loadMissedPrayerRequestsFromSupabase: () => Promise<void>;
-    loadWeeklyReportSubmissionsFromSupabase: () => Promise<void>;
+    loadMonthlyReportSubmissionsFromSupabase: () => Promise<void>;
 
     addOrUpdateTadarusRequest: (request: TadarusRequest) => Promise<void>;
 
@@ -33,20 +33,20 @@ interface GuidanceState {
 export const useGuidanceStore = create<GuidanceState>()(
     persist(
         (set, get) => ({
-            weeklyReportSubmissions: [],
+            monthlyReportSubmissions: [],
             tadarusSessions: [],
             tadarusRequests: [],
             missedPrayerRequests: [],
             menteeTargets: [],
 
-            addOrUpdateWeeklyReportSubmission: (submission) => set((state) => {
-                const index = state.weeklyReportSubmissions.findIndex(s => s.id === submission.id);
+            addOrUpdateMonthlyReportSubmission: (submission) => set((state) => {
+                const index = state.monthlyReportSubmissions.findIndex(s => s.id === submission.id);
                 if (index !== -1) {
-                    const newSubmissions = [...state.weeklyReportSubmissions];
+                    const newSubmissions = [...state.monthlyReportSubmissions];
                     newSubmissions[index] = submission;
-                    return { weeklyReportSubmissions: newSubmissions };
+                    return { monthlyReportSubmissions: newSubmissions };
                 }
-                return { weeklyReportSubmissions: [...state.weeklyReportSubmissions, submission] };
+                return { monthlyReportSubmissions: [...state.monthlyReportSubmissions, submission] };
             }),
 
             addTadarusSessions: (sessions) => set((state) => ({
@@ -104,11 +104,18 @@ export const useGuidanceStore = create<GuidanceState>()(
                     const { getAllTadarusRequests, getTadarusRequestsForMentor } = await import('@/services/tadarusService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
 
+                    if (!loggedInEmployee) return;
+
                     let requests;
-                    if (loggedInEmployee && (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin')) {
-                        requests = await getTadarusRequestsForMentor(loggedInEmployee.id);
-                    } else {
+                    // Broaden: If user has ANY superior role, load all to filter locally (safest)
+                    if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
                         requests = await getAllTadarusRequests();
+                    } else {
+                        // Regular user only sees their own
+                        const { searchParams } = new URL(window.location.href); // Fallback: the API supports menteeId
+                        const response = await fetch(`/api/manual-requests/tadarus?menteeId=${loggedInEmployee.id}`);
+                        const result = await response.json();
+                        requests = result.data || [];
                     }
                     set({ tadarusRequests: requests });
                 } catch (error) {
@@ -118,14 +125,14 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             loadMissedPrayerRequestsFromSupabase: async () => {
                 try {
-                    const { getMissedPrayerRequestsForMentor, getMissedPrayerRequestsForMentee } = await import('@/services/prayerRequestService');
+                    const { getAllMissedPrayerRequests, getMissedPrayerRequestsForMentor, getMissedPrayerRequestsForMentee } = await import('@/services/prayerRequestService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
 
                     if (!loggedInEmployee) return;
 
                     let requests;
-                    if (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
-                        requests = await getMissedPrayerRequestsForMentor(loggedInEmployee.id);
+                    if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                        requests = await getAllMissedPrayerRequests();
                     } else {
                         requests = await getMissedPrayerRequestsForMentee(loggedInEmployee.id);
                     }
@@ -135,42 +142,43 @@ export const useGuidanceStore = create<GuidanceState>()(
                 }
             },
 
-            loadWeeklyReportSubmissionsFromSupabase: async () => {
+            loadMonthlyReportSubmissionsFromSupabase: async () => {
                 try {
-                    const { getWeeklyReportsForMentor, getUserWeeklyReports } = await import('@/services/weeklyReportService');
+                    const { getMonthlyReportsForSuperior, getUserMonthlyReports } = await import('@/services/monthlySubmissionService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
 
                     if (!loggedInEmployee) return;
 
-                    let submissions: WeeklyReportSubmission[] = [];
+                    let submissions: MonthlyReportSubmission[] = [];
 
-                    // If mentor, load submissions where I am mentor
-                    if (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
-                        submissions = await getWeeklyReportsForMentor(loggedInEmployee.id);
+                    // Aggregation for superiors
+                    if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeManager || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                        const rolesToFetch: Array<'mentorId' | 'supervisorId' | 'managerId' | 'kaUnitId'> = [];
+                        if (loggedInEmployee.canBeMentor) rolesToFetch.push('mentorId');
+                        if (loggedInEmployee.canBeSupervisor) rolesToFetch.push('supervisorId');
+                        if (loggedInEmployee.canBeManager) rolesToFetch.push('managerId');
+                        if (loggedInEmployee.canBeKaUnit) rolesToFetch.push('kaUnitId');
+
+                        const results = await Promise.all(rolesToFetch.map(role => getMonthlyReportsForSuperior(loggedInEmployee.id, role)));
+
+                        // Merge and deduplicate
+                        const mergedSubmissions = new Map<string, MonthlyReportSubmission>();
+                        results.flat().forEach(sub => mergedSubmissions.set(sub.id, sub));
+                        submissions = Array.from(mergedSubmissions.values());
                     }
 
-                    // If mentee (or also checking my own reports), load my reports
-                    // Ideally we might want to merge them if user is BOTH/has both roles content
-                    // For now, let's just use the mentor logic if mentor (MentorDashboard priority)
-                    if (!loggedInEmployee.canBeMentor && loggedInEmployee.role === 'user') {
-                        submissions = await getUserWeeklyReports(loggedInEmployee.id);
+                    // If mentee also load my own
+                    if (loggedInEmployee.role === 'user') {
+                        const myReports = await getUserMonthlyReports(loggedInEmployee.id);
+                        const mergedWithMe = new Map<string, MonthlyReportSubmission>();
+                        submissions.forEach(s => mergedWithMe.set(s.id, s));
+                        myReports.forEach(s => mergedWithMe.set(s.id, s));
+                        submissions = Array.from(mergedWithMe.values());
                     }
 
-                    // If user is mentor but also has personal reports, simple logic might hide personal.
-                    // But current UI only uses this for MentorDashboard -> Persetujuan.
-                    // Mentee Dashboard uses 'submissions' prop in DashboardContainer usually loaded differently?
-                    // No, DashboardContainer passes 'weeklyReportSubmissions' from this store.
-
-                    // Let's safe bet: always load my own too and merge? 
-                    // Or keep it simple: Mentor sees Mentor stuff. Mentee sees Mentee stuff.
-                    // The UI for Mentee Dashboard might need fixing if I break it.
-
-                    // Wait, getUserWeeklyReports gets ALL reports for a mentee.
-                    // If I am Supervisor, getWeeklyReportsForMentor might not work if logic is different.
-
-                    set({ weeklyReportSubmissions: submissions });
+                    set({ monthlyReportSubmissions: submissions });
                 } catch (error) {
-                    console.error("Failed to load weekly reports:", error);
+                    console.error("Failed to load monthly reports:", error);
                 }
             },
 

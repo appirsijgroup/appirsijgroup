@@ -3092,7 +3092,8 @@ const HospitalModal: React.FC<HospitalModalProps> = ({ isOpen, onClose, onSave, 
                 brand,
                 name,
                 address,
-                logo: logo || null
+                logo: logo || null,
+                logoFile: logoFile || undefined // 🔥 PASS ACTUAL FILE!
             },
             existingHospital?.id
         );

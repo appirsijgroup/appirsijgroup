@@ -515,9 +515,6 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Unit Kerja</strong>: {employee.unit}</div>
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Nopeg</strong>: {employee.id}</div>
                     <div><strong className="font-medium text-gray-500 w-24 inline-block">Mentor</strong>: {bossInfo.mentor}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Ka. Unit</strong>: {bossInfo.kaUnit}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Supervisor</strong>: {bossInfo.supervisor}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Manajer</strong>: {bossInfo.manager}</div>
                 </div>
 
                 <div className="mt-8 p-4 bg-slate-100 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-4 text-center border border-slate-200">

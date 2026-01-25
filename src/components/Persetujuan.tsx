@@ -53,11 +53,11 @@ const MenteeReportDetailView: React.FC<{
     monthKey: string;
     onBack: () => void;
 }> = ({ mentee, monthKey, onBack }) => {
-    
+
     const currentMonth = useMemo(() => new Date(monthKey + '-02'), [monthKey]);
     const progress = useMemo(() => mentee.monthlyActivities?.[monthKey] || {}, [mentee, monthKey]);
     const daysInMonth = useMemo(() => new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate(), [currentMonth]);
-    
+
     const groupedActivities = useMemo(() => {
         return DAILY_ACTIVITIES.reduce((acc, activity) => {
             if (!acc[activity.category]) acc[activity.category] = [];
@@ -77,7 +77,7 @@ const MenteeReportDetailView: React.FC<{
         <div className="animate-view-change">
             <div className="flex items-center gap-4 mb-6">
                 <button onClick={onBack} className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 rounded-lg font-bold text-white transition-all shadow-lg">
-                    <ArrowLeftIcon className="w-5 h-5"/>
+                    <ArrowLeftIcon className="w-5 h-5" />
                     <span>Kembali</span>
                 </button>
                 <div className="border-l-4 border-teal-400 pl-4">
@@ -85,9 +85,9 @@ const MenteeReportDetailView: React.FC<{
                     <p className="text-base sm:text-lg text-teal-200">{mentee.name} - {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</p>
                 </div>
             </div>
-            
+
             <div className="overflow-x-auto rounded-lg border border-white/20">
-                 <table className="min-w-full text-sm text-left text-white border-collapse">
+                <table className="min-w-full text-sm text-left text-white border-collapse">
                     <thead className="sticky top-0 z-10">
                         <tr>
                             <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sticky left-0 z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
@@ -133,7 +133,7 @@ const MenteeReportDetailView: React.FC<{
                         ))}
                     </tbody>
                 </table>
-             </div>
+            </div>
         </div>
     );
 };
@@ -177,18 +177,32 @@ const StatusFilterButton: React.FC<StatusFilterButtonProps> = ({ filter, label, 
 
 // Main Component
 interface PersetujuanProps {
-  loggedInEmployee: Employee;
-  weeklyReportSubmissions: WeeklyReportSubmission[];
-  onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'kaunit') => void;
-  allUsersData: Record<string, { employee: Employee; attendance: any; history: any; }>;
+    loggedInEmployee: Employee;
+    weeklyReportSubmissions: WeeklyReportSubmission[];
+    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'kaunit') => void;
+    allUsersData: Record<string, { employee: Employee; attendance: any; history: any; }>;
+    // 🔥 NEW: Manual requests support
+    pendingTadarusRequests?: any[]; // Using any[] for flexibility, but TadarusRequest[] is better
+    pendingMissedPrayerRequests?: any[];
+    onReviewTadarusRequest?: (requestId: string, status: 'approved' | 'rejected') => void;
+    onReviewMissedPrayerRequest?: (requestId: string, status: 'approved' | 'rejected', mentorNotes?: string) => void;
 }
 
-const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyReportSubmissions, onReviewReport, allUsersData }) => {
+const Persetujuan: React.FC<PersetujuanProps> = ({
+    loggedInEmployee,
+    weeklyReportSubmissions,
+    onReviewReport,
+    allUsersData,
+    pendingTadarusRequests = [],
+    pendingMissedPrayerRequests = [],
+    onReviewTadarusRequest,
+    onReviewMissedPrayerRequest
+}) => {
     type ApprovalRole = 'supervisor' | 'kaunit';
     const [activeApprovalTab, setActiveApprovalTab] = useState<ApprovalRole>('supervisor');
     const [selectedSubmission, setSelectedSubmission] = useState<WeeklyReportSubmission | null>(null);
-    const [approvalTarget, setApprovalTarget] = useState<string | null>(null);
-    const [rejectionTarget, setRejectionTarget] = useState<WeeklyReportSubmission | null>(null);
+    const [approvalTarget, setApprovalTarget] = useState<{ type: 'report' | 'tadarus' | 'prayer', id: string } | null>(null);
+    const [rejectionTarget, setRejectionTarget] = useState<{ type: 'report', submission: WeeklyReportSubmission } | { type: 'tadarus', id: string } | { type: 'prayer', id: string } | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
@@ -227,53 +241,66 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                 (statusFilter === 'pending' && s.status === `pending_${activeApprovalTab}`) ||
                 (statusFilter === 'approved' && (activeApprovalTab === 'supervisor' ? ['pending_kaunit', 'approved'].includes(s.status) : s.status === 'approved')) ||
                 (statusFilter === 'rejected' && s.status.startsWith('rejected_'));
-            
+
             if (!statusMatch) return false;
 
             const [year, month] = s.monthKey.split('-');
             const yearMatch = filterYear === 'all' || year === filterYear;
             const monthMatch = filterMonth === 'all' || parseInt(month, 10) === parseInt(filterMonth, 10);
-            
+
             return yearMatch && monthMatch;
         });
     }, [submissionsForRole, statusFilter, filterYear, filterMonth, activeApprovalTab]);
 
-    const handleApprove = (submissionId: string) => { setApprovalTarget(submissionId); };
-    
     const handleConfirmApproval = () => {
         if (!approvalTarget) return;
-        onReviewReport(approvalTarget, 'approved', 'Laporan telah disetujui.', activeApprovalTab);
+
+        if (approvalTarget.type === 'report') {
+            onReviewReport(approvalTarget.id, 'approved', 'Laporan telah disetujui.', activeApprovalTab);
+        } else if (approvalTarget.type === 'tadarus') {
+            onReviewTadarusRequest?.(approvalTarget.id, 'approved');
+        } else if (approvalTarget.type === 'prayer') {
+            onReviewMissedPrayerRequest?.(approvalTarget.id, 'approved', 'Disetujui via panel persetujuan');
+        }
+
         setSelectedSubmission(null);
         setApprovalTarget(null);
     };
 
-    const handleInitiateReject = (submission: WeeklyReportSubmission) => { setRejectionTarget(submission); };
-    
     const handleRejectSubmit = (notes: string) => {
-        if (rejectionTarget) {
-            onReviewReport(rejectionTarget.id, 'rejected', notes, activeApprovalTab);
-            setSelectedSubmission(null);
-            setRejectionTarget(null);
+        if (!rejectionTarget) return;
+
+        if (rejectionTarget.type === 'report') {
+            onReviewReport(rejectionTarget.submission.id, 'rejected', notes, activeApprovalTab);
+        } else if (rejectionTarget.type === 'tadarus') {
+            onReviewTadarusRequest?.(rejectionTarget.id, 'rejected');
+        } else if (rejectionTarget.type === 'prayer') {
+            onReviewMissedPrayerRequest?.(rejectionTarget.id, 'rejected', notes);
         }
+
+        setSelectedSubmission(null);
+        setRejectionTarget(null);
     };
 
     const menteeDataForDetail = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
+    const hasPending = filteredSubmissions.some(s => s.status === `pending_${activeApprovalTab}`) || (activeApprovalTab === 'supervisor' && (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0));
+
     return (
-         <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[60vh]">
+        <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[60vh]">
             {selectedSubmission && menteeDataForDetail ? (
                 <div>
                     <MenteeReportDetailView mentee={menteeDataForDetail} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} />
                     <div className="mt-8 flex justify-end gap-4 p-4 bg-black/20 rounded-lg">
                         <button
-                            onClick={() => handleInitiateReject(selectedSubmission)}
+                            onClick={() => setRejectionTarget({ type: 'report', submission: selectedSubmission })}
                             disabled={selectedSubmission.status !== `pending_${activeApprovalTab}`}
                             className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
                         >
                             Tolak Laporan
                         </button>
                         <button
-                            onClick={() => handleApprove(selectedSubmission.id)}
+                            onClick={() => setApprovalTarget({ type: 'report', id: selectedSubmission.id })}
                             disabled={selectedSubmission.status !== `pending_${activeApprovalTab}`}
                             className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
                         >
@@ -282,68 +309,105 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                     </div>
                 </div>
             ) : (
-                <div>
-                    <h3 className="text-xl font-bold text-white mb-4">Riwayat Persetujuan Laporan</h3>
-                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-black/20 rounded-full self-start mb-4">
-                        {isSupervisor && <ApprovalTabButton role="supervisor" label="Persetujuan Supervisor" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
-                        {isKaUnit && <ApprovalTabButton role="kaunit" label="Persetujuan Ka. Unit" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
-                    </div>
-
-                    <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
-                        <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
-                            <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full min-w-max">
-                                <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                <div className="space-y-8">
+                    {/* Pending Requests Section (Manual Requests) */}
+                    {activeApprovalTab === 'supervisor' && (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0) && (
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-4">Permohonan Manual Menunggu</h3>
+                            <div className="space-y-4">
+                                {pendingTadarusRequests.map(req => (
+                                    <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                        <div>
+                                            <p className="font-semibold text-white">Pengajuan {req.category || 'Tadarus'}: {req.menteeName}</p>
+                                            <p className="text-sm text-blue-200">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
+                                            {req.notes && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.notes}&quot;</p>}
+                                        </div>
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <button onClick={() => setRejectionTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
+                                            <button onClick={() => setApprovalTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {pendingMissedPrayerRequests.map(req => (
+                                    <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                        <div>
+                                            <p className="font-semibold text-white">Presensi Terlewat: {req.menteeName}</p>
+                                            <p className="text-sm text-blue-200">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
+                                            {req.reason && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.reason}&quot;</p>}
+                                        </div>
+                                        <div className="flex gap-2 w-full sm:w-auto">
+                                            <button onClick={() => setRejectionTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
+                                            <button onClick={() => setApprovalTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                         <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                                <option value="all" className="text-black bg-white">Semua Tahun</option>
-                                {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
-                            </select>
-                            <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                                <option value="all" className="text-black bg-white">Semua Bulan</option>
-                                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                                    <option key={month} value={month} className="text-black bg-white">{new Date(0, month - 1).toLocaleString('id-ID', { month: 'long' })}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {filteredSubmissions.length > 0 ? (
-                        <div className="overflow-x-auto rounded-lg border border-white/20">
-                            <table className="min-w-full text-sm text-left text-white">
-                                <thead className="bg-white/10 text-xs uppercase text-blue-200">
-                                    <tr>
-                                        <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
-                                        <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
-                                        <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredSubmissions.map(sub => (
-                                        <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
-                                            <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <button onClick={() => setSelectedSubmission(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                                                    Lihat & Tinjau
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="text-center py-10 bg-black/20 rounded-lg">
-                            <p className="text-lg text-blue-200">Tidak ada pengajuan laporan yang cocok dengan filter.</p>
-                        </div>
                     )}
+
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Riwayat Persetujuan Laporan Mingguan</h3>
+                        <div className="flex flex-wrap items-center gap-2 p-1.5 bg-black/20 rounded-full self-start mb-4">
+                            {isSupervisor && <ApprovalTabButton role="supervisor" label="Persetujuan Supervisor" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
+                            {isKaUnit && <ApprovalTabButton role="kaunit" label="Persetujuan Ka. Unit" activeTab={activeApprovalTab} onTabChange={setActiveApprovalTab} weeklyReportSubmissions={weeklyReportSubmissions} loggedInEmployee={loggedInEmployee} />}
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
+                            <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
+                                <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full min-w-max">
+                                    <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                    <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                    <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                    <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                </div>
+                            </div>
+                            <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                                    <option value="all" className="text-black bg-white">Semua Tahun</option>
+                                    {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
+                                </select>
+                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                                    <option value="all" className="text-black bg-white">Semua Bulan</option>
+                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                                        <option key={month} value={month} className="text-black bg-white">{new Date(0, month - 1).toLocaleString('id-ID', { month: 'long' })}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {filteredSubmissions.length > 0 ? (
+                            <div className="overflow-x-auto rounded-lg border border-white/20">
+                                <table className="min-w-full text-sm text-left text-white">
+                                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                                        <tr>
+                                            <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
+                                            <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
+                                            <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
+                                            <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredSubmissions.map(sub => (
+                                            <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
+                                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <button onClick={() => setSelectedSubmission(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                                                        Lihat & Tinjau
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-10 bg-black/20 rounded-lg">
+                                <p className="text-lg text-blue-200">Tidak ada pengajuan laporan yang cocok dengan filter.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -352,17 +416,17 @@ const Persetujuan: React.FC<PersetujuanProps> = ({ loggedInEmployee, weeklyRepor
                 onClose={() => setApprovalTarget(null)}
                 onConfirm={handleConfirmApproval}
                 title="Konfirmasi Persetujuan"
-                message="Apakah Anda yakin ingin menyetujui laporan ini?"
+                message="Apakah Anda yakin ingin menyetujui pengajuan ini?"
                 confirmText="Ya, Setujui"
                 confirmColorClass="bg-green-600 hover:bg-green-500"
             />
-            
+
             <RejectionModal
                 isOpen={!!rejectionTarget}
                 onClose={() => setRejectionTarget(null)}
                 onSubmit={handleRejectSubmit}
-                title="Tolak Laporan Aktivitas"
-                prompt="Berikan alasan penolakan laporan ini."
+                title="Tolak Pengajuan"
+                prompt="Berikan alasan penolakan pengajuan ini."
             />
         </div>
     );

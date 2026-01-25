@@ -43,7 +43,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
     const { logAudit } = useAuditLogStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const { activities, teamAttendanceSessions, teamAttendanceRecords, addActivity, addTeamAttendanceSessions, createTeamAttendanceRecord, updateTeamAttendanceSessionData, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
-    const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget } = useGuidanceStore();
+    const { weeklyReportSubmissions, tadarusSessions, tadarusRequests, missedPrayerRequests, menteeTargets, addOrUpdateWeeklyReportSubmission, addTadarusSessions, updateTadarusSession, deleteTadarusSession, addOrUpdateTadarusRequest, addOrUpdateMissedPrayerRequest, addMenteeTarget, updateMenteeTarget, deleteMenteeTarget, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
 
@@ -68,6 +68,12 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             loadDetailedEmployeeData(loggedInEmployee.id).catch(err => {
                 console.error('⚠️ [AktivitasSayaContainer] Pre-load failed:', err);
             });
+
+            // 🔥 FIX: Load Requests for Mentor Approval
+            if (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                loadTadarusRequestsFromSupabase().catch(console.error);
+                loadMissedPrayerRequestsFromSupabase().catch(console.error);
+            }
         }
     }, [loggedInEmployee?.id, loadDetailedEmployeeData]);
 

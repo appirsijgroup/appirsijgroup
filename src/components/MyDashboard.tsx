@@ -20,10 +20,11 @@ const TabButton: React.FC<{
     icon: any;
     active: boolean;
     onClick: () => void;
-}> = ({ label, icon: Icon, active, onClick }) => (
+    count?: number;
+}> = ({ label, icon: Icon, active, onClick, count }) => (
     <button
         onClick={onClick}
-        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap relative
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
@@ -31,6 +32,11 @@ const TabButton: React.FC<{
     >
         <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
+        {count !== undefined && count > 0 && (
+            <span className="absolute top-2 right-2 flex items-center justify-center h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg animate-pulse">
+                {count}
+            </span>
+        )}
     </button>
 );
 
@@ -808,6 +814,23 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
         employee.role === 'admin' ||
         (employee.role === 'user' && functionalRoles.length > 0);
 
+    // Calculate pending counts for notification badges
+    const mentorPanelCount = useMemo(() => {
+        const tadarusPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
+        const sholatPending = (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
+        const reportsPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_mentor' && s.mentorId === employee.id).length;
+        return tadarusPending + sholatPending + reportsPending;
+    }, [props.tadarusRequests, props.missedPrayerRequests, props.weeklyReportSubmissions, employee.id]);
+
+    const approvalTabCount = useMemo(() => {
+        const supervisorPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_supervisor' && s.supervisorId === employee.id).length;
+        const kaUnitPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_kaunit' && s.kaUnitId === employee.id).length;
+        // Manual requests are also visible in the top-level Persetujuan tab now
+        const manualPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length +
+            (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
+        return supervisorPending + kaUnitPending + manualPending;
+    }, [props.weeklyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, employee.id]);
+
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
 
@@ -954,6 +977,10 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Persetujuan component uses a simpler signature
                     onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
                     allUsersData={props.allUsersData}
+                    pendingTadarusRequests={(props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending')}
+                    pendingMissedPrayerRequests={(props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending')}
+                    onReviewTadarusRequest={props.onReviewTadarusRequest}
+                    onReviewMissedPrayerRequest={props.onReviewMissedPrayerRequest}
                 />
             default:
                 return null;
@@ -965,12 +992,12 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             <nav className="border-b border-white/20">
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
-                        {/* Remove Aktivitas Pribadi tab group since it's now in AktivitasSaya component */}
-                        <>
-                            <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
-                            {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
-                            <TabButton label="APPI" icon={FileText} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
-                        </>
+                        <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
+                        {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
+                        <TabButton label="APPI" icon={FileText} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
+                        <TabButton label="Aktivitas Saya" icon={List} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
+                        {hasMentorRole && <TabButton label="Panel Mentor" icon={CheckSquare} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} count={mentorPanelCount} />}
+                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckCircle2} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} count={approvalTabCount} />}
                     </div>
                 </div>
             </nav>

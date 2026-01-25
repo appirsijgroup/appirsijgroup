@@ -943,7 +943,7 @@ interface PersetujuanProps {
     onApproveMissedRequest: (id: string) => void;
     onRejectMissedRequest: (id: string) => void;
     onViewReport: (submission: WeeklyReportSubmission) => void;
-    filteredSubmissions: WeeklyReportSubmission[];
+    filteredItems: any[]; // Unified items for the table
     statusFilter: 'all' | 'pending' | 'approved' | 'rejected';
     setStatusFilter: React.Dispatch<React.SetStateAction<'all' | 'pending' | 'approved' | 'rejected'>>;
     filterYear: string;
@@ -972,7 +972,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     onApproveMissedRequest,
     onRejectMissedRequest,
     onViewReport,
-    filteredSubmissions,
+    filteredItems,
     statusFilter, setStatusFilter,
     filterYear, setFilterYear, availableYears,
     filterMonth, setFilterMonth
@@ -1059,25 +1059,62 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                         <thead className="bg-white/10 text-xs uppercase text-blue-200">
                             <tr>
                                 <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
-                                <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
+                                <th className="px-4 py-3 whitespace-nowrap">Keterangan / Periode</th>
                                 <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
                                 <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredSubmissions.map(sub => (
-                                <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
-                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
-                                    <td className="px-4 py-3">{`Pekan ${sub.weekIndex + 1}, ${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
-                                    <td className="px-4 py-3">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
+                            {filteredItems.map(item => (
+                                <tr key={`${item.type}-${item.id}`} className="border-b border-gray-700 hover:bg-white/5">
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span>{item.menteeName}</span>
+                                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded w-fit mt-1 
+                                                ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
+                                                    item.type === 'tadarus' ? 'bg-teal-500/20 text-teal-300' :
+                                                        'bg-purple-500/20 text-purple-300'}`}>
+                                                {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">{item.periode}</td>
+                                    <td className="px-4 py-3 text-xs text-gray-400">
+                                        {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID') : '-'}
+                                    </td>
                                     <td className="px-4 py-3 text-center">
-                                        <button onClick={() => onViewReport(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                                            Lihat Detail
-                                        </button>
+                                        {item.type === 'report' ? (
+                                            <button onClick={() => onViewReport(item.originalData)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
+                                                Lihat Detail
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center justify-center gap-2">
+                                                {item.status === 'pending' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => item.type === 'tadarus' ? onReviewTadarusRequest(item.id, 'rejected') : onRejectMissedRequest(item.id)}
+                                                            className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-bold"
+                                                        >
+                                                            Tolak
+                                                        </button>
+                                                        <button
+                                                            onClick={() => item.type === 'tadarus' ? onReviewTadarusRequest(item.id, 'approved') : onApproveMissedRequest(item.id)}
+                                                            className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white rounded text-[10px] font-bold"
+                                                        >
+                                                            Setujui
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${item.status === 'approved' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                        {item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
-                            {filteredSubmissions.length === 0 && <tr><td colSpan={4} className="text-center p-4 text-blue-200">Tidak ada data.</td></tr>}
+                            {filteredItems.length === 0 && <tr><td colSpan={4} className="text-center p-8 text-blue-200">Tidak ada pengajuan untuk filter ini.</td></tr>}
                         </tbody>
                     </table>
                 </div>
@@ -1250,27 +1287,64 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         return weeklyReportSubmissions.filter(s => s.mentorId === employee.id);
     }, [weeklyReportSubmissions, employee.id]);
 
-    const availableYears = useMemo(() => {
-        const years = new Set(submissionsForMentor.map(s => s.monthKey.substring(0, 4)));
-        return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-    }, [submissionsForMentor]);
+    const unifiedHistory = useMemo(() => {
+        const reports = weeklyReportSubmissions.filter(s => s.mentorId === employee.id).map(s => ({
+            id: s.id,
+            type: 'report' as const,
+            menteeName: s.menteeName,
+            periode: `Pekan ${s.weekIndex + 1}, ${new Date(s.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+            submittedAt: s.submittedAt,
+            monthKey: s.monthKey,
+            status: s.status,
+            originalData: s
+        }));
 
-    const filteredSubmissions = useMemo(() => {
-        return submissionsForMentor.filter(s => {
+        const tadarus = tadarusRequests.filter(r => r.mentorId === employee.id).map(r => ({
+            id: r.id,
+            type: 'tadarus' as const,
+            menteeName: r.menteeName,
+            periode: `${r.category || 'Tadarus'} (${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })})`,
+            submittedAt: r.requestedAt,
+            monthKey: r.date.substring(0, 7),
+            status: r.status,
+            originalData: r
+        }));
+
+        const missedPrayers = missedPrayerRequests.filter(r => r.mentorId === employee.id).map(r => ({
+            id: r.id,
+            type: 'missed_prayer' as const,
+            menteeName: r.menteeName,
+            periode: `Terlewat: ${r.prayerName} (${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })})`,
+            submittedAt: r.requestedAt,
+            monthKey: r.date.substring(0, 7),
+            status: r.status,
+            originalData: r
+        }));
+
+        return [...reports, ...tadarus, ...missedPrayers].sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+    }, [weeklyReportSubmissions, tadarusRequests, missedPrayerRequests, employee.id]);
+
+    const availableYears = useMemo(() => {
+        const years = new Set(unifiedHistory.map(item => item.monthKey.substring(0, 4)));
+        return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+    }, [unifiedHistory]);
+
+    const filteredItems = useMemo(() => {
+        return unifiedHistory.filter(item => {
             const statusMatch = statusFilter === 'all' ||
-                (statusFilter === 'pending' && s.status === 'pending_mentor') ||
-                (statusFilter === 'approved' && ['pending_supervisor', 'pending_kaunit', 'approved'].includes(s.status)) ||
-                (statusFilter === 'rejected' && s.status.startsWith('rejected_'));
+                (statusFilter === 'pending' && (item.type === 'report' ? item.status === 'pending_mentor' : item.status === 'pending')) ||
+                (statusFilter === 'approved' && (item.type === 'report' ? ['pending_supervisor', 'pending_kaunit', 'approved'].includes(item.status) : item.status === 'approved')) ||
+                (statusFilter === 'rejected' && (item.type === 'report' ? item.status.startsWith('rejected_') : item.status === 'rejected'));
 
             if (!statusMatch) return false;
 
-            const [year, month] = s.monthKey.split('-');
+            const [year, month] = item.monthKey.split('-');
             const yearMatch = filterYear === 'all' || year === filterYear;
             const monthMatch = filterMonth === 'all' || parseInt(month, 10) === parseInt(filterMonth, 10);
 
             return yearMatch && monthMatch;
         });
-    }, [submissionsForMentor, statusFilter, filterYear, filterMonth]);
+    }, [unifiedHistory, statusFilter, filterYear, filterMonth]);
 
     const handleApprove = (type: 'missed-prayer' | 'report', id: string) => {
         setApprovalTarget({ type, id });
@@ -1349,7 +1423,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         onApproveMissedRequest={(id) => handleApprove('missed-prayer', id)}
                         onRejectMissedRequest={(id) => setRejectionTarget({ type: 'missed-prayer', id })}
                         onViewReport={setSelectedSubmission}
-                        filteredSubmissions={filteredSubmissions}
+                        filteredItems={filteredItems}
                         statusFilter={statusFilter}
                         setStatusFilter={setStatusFilter}
                         filterYear={filterYear}

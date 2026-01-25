@@ -43,10 +43,11 @@ const TabButton: React.FC<{
     icon: any;
     active: boolean;
     onClick: () => void;
-}> = ({ label, icon: Icon, active, onClick }) => (
+    count?: number;
+}> = ({ label, icon: Icon, active, onClick, count }) => (
     <button
         onClick={onClick}
-        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap
+        className={`grow flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap relative
           ${active
                 ? 'border-teal-400 text-teal-300'
                 : 'border-transparent text-gray-400 hover:border-gray-500 hover:text-gray-200'
@@ -54,6 +55,11 @@ const TabButton: React.FC<{
     >
         <Icon className="w-5 h-5 hidden sm:block" />
         <span>{label}</span>
+        {count !== undefined && count > 0 && (
+            <span className="absolute top-2 right-2 flex items-center justify-center h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg animate-pulse">
+                {count}
+            </span>
+        )}
     </button>
 );
 
@@ -64,6 +70,40 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
     const hasMentorRole = props.employee.canBeMentor === true;
     const hasApprovalRole = props.employee.canBeSupervisor === true || props.employee.canBeKaUnit === true;
     const functionalRoles = props.employee.functionalRoles || [];
+
+    // Calculate pending counts for notification badges
+    const pendingManualRequestsCount = useMemo(() => {
+        const tadarusPending = (props.tadarusRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length;
+        const sholatPending = (props.missedPrayerRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length;
+        return tadarusPending + sholatPending;
+    }, [props.tadarusRequests, props.missedPrayerRequests, props.employee.id]);
+
+    const pendingWeeklyReportsCount = useMemo(() => {
+        return props.weeklyReportSubmissions.filter(s => {
+            const isMentorPending = s.status === 'pending_mentor' && s.mentorId === props.employee.id;
+            const isSupervisorPending = s.status === 'pending_supervisor' && s.supervisorId === props.employee.id;
+            const isKaUnitPending = s.status === 'pending_kaunit' && s.kaUnitId === props.employee.id;
+            return isMentorPending || isSupervisorPending || isKaUnitPending;
+        }).length;
+    }, [props.weeklyReportSubmissions, props.employee.id]);
+
+    const mentorPanelCount = useMemo(() => {
+        // Mentor Panel includes manual requests + reports where they are the mentor
+        const tadarusPending = (props.tadarusRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length;
+        const sholatPending = (props.missedPrayerRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length;
+        const reportsPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_mentor' && s.mentorId === props.employee.id).length;
+        return tadarusPending + sholatPending + reportsPending;
+    }, [props.tadarusRequests, props.missedPrayerRequests, props.weeklyReportSubmissions, props.employee.id]);
+
+    const approvalTabCount = useMemo(() => {
+        // Top level approval tab includes supervisor/kaunit approvals + mentor-role manual requests if visible there
+        const supervisorPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_supervisor' && s.supervisorId === props.employee.id).length;
+        const kaUnitPending = props.weeklyReportSubmissions.filter(s => s.status === 'pending_kaunit' && s.kaUnitId === props.employee.id).length;
+        // Manual requests are also visible in the top-level Persetujuan tab now
+        const manualPending = (props.tadarusRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length +
+            (props.missedPrayerRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending').length;
+        return supervisorPending + kaUnitPending + manualPending;
+    }, [props.weeklyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, props.employee.id]);
 
     // State for MentorDashboard subview
     const [mentorSubView, setMentorSubView] = useState<MentorDashboardView>('persetujuan');
@@ -195,6 +235,10 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Persetujuan component uses a simpler signature
                         onReviewReport={props.onReviewReport as any} // Cast because this component is simpler
                         allUsersData={props.allUsersData}
+                        pendingTadarusRequests={(props.tadarusRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending')}
+                        pendingMissedPrayerRequests={(props.missedPrayerRequests || []).filter(r => r.mentorId === props.employee.id && r.status === 'pending')}
+                        onReviewTadarusRequest={props.onReviewTadarusRequest}
+                        onReviewMissedPrayerRequest={props.onReviewMissedPrayerRequest}
                     />
                 );
             default:
@@ -209,8 +253,8 @@ const AktivitasSaya: React.FC<AktivitasSayaProps> = (props) => {
                     <div className="flex items-center gap-2 -mb-px min-w-max">
                         <TabButton label="Aktivitas Pribadi" icon={Pencil} active={activeTab === 'aktivitas-pribadi'} onClick={() => setActiveTab('aktivitas-pribadi')} />
                         <TabButton label="Riwayat Bacaan" icon={BookOpen} active={activeTab === 'riwayat-bacaan'} onClick={() => setActiveTab('riwayat-bacaan')} />
-                        {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheck} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} />}
-                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquare} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} />}
+                        {hasMentorRole && <TabButton label="Panel Mentor" icon={ShieldCheck} active={activeTab === 'panel-mentor'} onClick={() => setActiveTab('panel-mentor')} count={mentorPanelCount} />}
+                        {hasApprovalRole && <TabButton label="Persetujuan" icon={CheckSquare} active={activeTab === 'persetujuan'} onClick={() => setActiveTab('persetujuan')} count={approvalTabCount} />}
                     </div>
                 </div>
             </nav>

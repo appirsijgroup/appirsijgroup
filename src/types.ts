@@ -669,7 +669,7 @@ export interface Notification {
     view: View | 'assignment_letter';
     tab?: string;
     params?: Record<string, any>;
-  };
+  } | string;
   expiresAt?: number;
   dismissOnClick?: boolean;
 }

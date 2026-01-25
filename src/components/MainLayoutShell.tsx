@@ -399,9 +399,15 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         setIsNotificationPanelOpen(false);
     }, [setIsNotificationPanelOpen]);
 
-    const handleNotificationNavigate = useCallback((link: Notification['linkTo']) => {
+    const handleNotificationNavigate = useCallback((link: Notification['linkTo'] | string) => {
         if (link) {
             setIsNotificationPanelOpen(false);
+
+            // Handle string link (legacy or direct path)
+            if (typeof link === 'string') {
+                router.push(link);
+                return;
+            }
 
             // Special handling for assignment_letter - dispatch custom event
             if (link.view === 'assignment_letter') {
@@ -412,14 +418,35 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             }
 
             // Build the URL based on the link structure
-            const basePath = `/${link.view}`;
-            const queryString = link.params
+            let viewPath = link.view as string;
+
+            // 🔥 FIX: Map legacy 'dashboard-saya' to '/dashboard'
+            if (viewPath === 'dashboard-saya') {
+                viewPath = 'dashboard';
+            }
+
+            const basePath = `/${viewPath}`;
+
+            let queryString = link.params
                 ? '?' + new URLSearchParams(
                     Object.entries(link.params).map(([key, value]) => [key, String(value)])
                 ).toString()
                 : '';
 
-            const tabSuffix = link.tab ? `/${link.tab}` : '';
+            // 🔥 FIX: Dashboard doesn't support path-based tabs (e.g. /dashboard/panel-mentor is 404)
+            // Convert tab to query param if view is dashboard
+            let tabSuffix = link.tab ? `/${link.tab}` : '';
+
+            if (viewPath === 'dashboard' && link.tab) {
+                tabSuffix = ''; // Remove from path
+                // Add to query params if not exists
+                if (!queryString) {
+                    queryString = `?tab=${link.tab}`;
+                } else {
+                    queryString += `&tab=${link.tab}`;
+                }
+            }
+
             const fullPath = `${basePath}${tabSuffix}${queryString}`;
 
             router.push(fullPath);
@@ -429,7 +456,13 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     // --- Handle Assignment Letter from Notification Click ---
     const handleOpenAssignmentLetter = useCallback((notification: Notification) => {
         logger.info('Assignment letter notification clicked:', notification);
-        const params = notification.linkTo?.params;
+
+        // Safety check if linkTo is string or undefined
+        if (!notification.linkTo || typeof notification.linkTo === 'string') {
+            return;
+        }
+
+        const params = notification.linkTo.params;
 
         if (!loggedInEmployee || !params) {
             logger.error('Missing employee or params for assignment letter');

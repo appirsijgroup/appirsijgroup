@@ -120,7 +120,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
 
         if (notification.linkTo) {
             // Check if this is an assignment letter notification
-            if (notification.linkTo.view === 'assignment_letter' && onOpenAssignmentLetter) {
+            if (typeof notification.linkTo === 'object' && notification.linkTo.view === 'assignment_letter' && onOpenAssignmentLetter) {
                 onOpenAssignmentLetter(notification);
             } else {
                 onNavigate(notification.linkTo);

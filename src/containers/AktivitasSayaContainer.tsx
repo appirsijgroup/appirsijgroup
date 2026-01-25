@@ -675,7 +675,11 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     // 1. Update request status in DB
                     const response = await fetch('/api/manual-requests/prayer', {
                         method: 'PATCH',
-                        body: JSON.stringify({ id: requestId, status, mentorNotes })
+                        body: JSON.stringify({
+                            id: requestId,
+                            status,
+                            mentor_notes: mentorNotes
+                        })
                     });
 
                     if (!response.ok) throw new Error('Failed to update request');

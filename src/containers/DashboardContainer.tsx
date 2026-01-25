@@ -1252,7 +1252,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                     // 1. Update request status in DB
                     const response = await fetch('/api/manual-requests/prayer', {
                         method: 'PATCH',
-                        body: JSON.stringify({ id: requestId, status, mentorNotes: notes })
+                        body: JSON.stringify({ id: requestId, status, mentor_notes: notes })
                     });
 
                     if (!response.ok) throw new Error('Failed to update request');

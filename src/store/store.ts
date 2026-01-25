@@ -353,7 +353,10 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 }
             });
 
-            set({ allUsersData: newData, isLoadingEmployees: false });
+            set(state => ({
+                allUsersData: { ...state.allUsersData, ...newData },
+                isLoadingEmployees: false
+            }));
         } catch (error) {
             console.error('❌ [loadAllEmployees] Error:', error);
             set({ isLoadingEmployees: false });
@@ -370,11 +373,33 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             const { getEmployeesPaginated } = await import('@/services/employeeService');
             const { employees, pagination } = await getEmployeesPaginated(page, limit, search, role, isActive);
 
-            set({
+            // 🔥 SYNC: Merge paginated employees into global allUsersData
+            // This ensures they are visible to Analytics and other global features
+            const newUsersToMerge: Record<string, UserData> = {};
+            employees.forEach(emp => {
+                // Only create new entry if it doesn't exist, to avoid resetting activities
+                if (!get().allUsersData[emp.id]) {
+                    newUsersToMerge[emp.id] = {
+                        employee: emp,
+                        attendance: {},
+                        history: {}
+                    };
+                } else {
+                    // Update the employee object but KEEP activities
+                    const existing = get().allUsersData[emp.id];
+                    newUsersToMerge[emp.id] = {
+                        ...existing,
+                        employee: { ...emp, monthlyActivities: existing.employee.monthlyActivities }
+                    };
+                }
+            });
+
+            set(state => ({
+                allUsersData: { ...state.allUsersData, ...newUsersToMerge },
                 paginatedEmployees: employees,
                 paginationInfo: pagination,
                 isLoadingEmployees: false
-            });
+            }));
         } catch (error) {
             console.error('❌ [loadPaginatedEmployees] Error:', error);
             set({ isLoadingEmployees: false });

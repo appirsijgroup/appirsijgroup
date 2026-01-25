@@ -170,6 +170,13 @@ export default function AdminPage() {
         if (loggedInEmployee && isHydrated) {
             loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter)
                 .catch(err => console.error('Failed to load paginated employees:', err));
+
+            // 🔥 COMPREHENSION REPAIR: Also trigger a background FULL load if we seem to be starting fresh
+            // This ensures relations and analytics have everyone available
+            if (Object.keys(allUsersData).length < 5 && !isLoadingEmployees) {
+                console.log('🛡️ [AdminPage] Triggering background full sync for management tools...');
+                loadAllEmployees().catch(err => console.error('Background sync failed:', err));
+            }
         }
     }, [page, searchTerm, roleFilter, isActiveFilter, loggedInEmployee, isHydrated]);
 

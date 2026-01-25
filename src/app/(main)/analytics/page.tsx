@@ -15,50 +15,42 @@ const Analytics = dynamic(() => import('@/components/Analytics'), {
 });
 
 export default function AnalyticsPage() {
-    const { allUsersData, loadAllEmployees } = useAppDataStore();
+    const { allUsersData, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // 🔥 FIX: Use loadAllEmployees from store - ensures data is loaded for ALL users
+    // 🔥 REPAIR: Eager load ALL employee data for Analytics
     useEffect(() => {
         const loadAnalyticsData = async () => {
             try {
-                // Check if we already have data loaded
-                const employeeCount = Object.keys(allUsersData).length;
+                // If already loading, don't double trigger
+                if (isLoadingEmployees) return;
 
-                // 🔥 FIX: Validate data completeness
-                // If we have employees but NO activities (likely due to previous 401 error or partial load),
-                // we must force a reload.
-                const firstUser = Object.values(allUsersData)[0];
-                const hasActivities = firstUser &&
-                    firstUser.employee &&
-                    (firstUser.employee.monthlyActivities || (firstUser.employee as any).monthly_activities) &&
-                    Object.keys(firstUser.employee.monthlyActivities || (firstUser.employee as any).monthly_activities || {}).length > 0;
-
-                // If data is sufficient, stop loading
-                if (employeeCount >= 15 && hasActivities) {
-                    setIsLoading(false);
-                    return;
-                }
-
+                // For Analytics, we ALWAYS want to try a fresh full load to ensure analysis is up to date
+                // and to fill any gaps from previous paginated loads.
                 setIsLoading(true);
                 setError(null);
 
-                // 🔥 OPTIMIZATION: Load only top 50 employees initially for faster dashboard
-                // loadAllEmployees handles the fetching logic. 
-                // We'll trust the store to handle caching if it's already loading.
-                await loadAllEmployees(50);
+                console.log('📊 [AnalyticsPage] Triggering full employee load for analysis...');
+                await loadAllEmployees();
 
                 setIsLoading(false);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to load employees data');
+                setError(err instanceof Error ? err.message : 'Gagal memuat data karyawan');
                 setIsLoading(false);
             }
         };
 
-        loadAnalyticsData();
-    }, [allUsersData, loadAllEmployees]);
+        // Trigger on mount or if store state indicates we are severely under-loaded
+        if (Object.keys(allUsersData).length < 5) {
+            loadAnalyticsData();
+        } else {
+            // If we have some data, still trigger a background refresh but don't show full page spinner
+            loadAllEmployees().catch(e => console.error('Silent refresh failed:', e));
+            setIsLoading(false);
+        }
+    }, [loadAllEmployees]); // Removed allUsersData to prevent loops
 
     // Show loading state
     if (isLoading) {

@@ -4,121 +4,60 @@ import { verifyToken } from '@/lib/jwt'
 
 /**
  * GET /api/employees/paginated
- *
- * Get employees with pagination and filtering
- *
- * Query params:
- * - page: number (default: 1)
- * - limit: number (default: 20, max: 100)
- * - search: string (filter by name/email)
- * - role: string (filter by role)
- * - isActive: boolean (filter by active status)
- *
- * Example:
- * GET /api/employees/paginated?page=1&limit=20&search=budi&role=employee&isActive=true
+ * Get employees with pagination and filters
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authentication
     const sessionCookie = request.cookies.get('session')?.value
-
-    if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized - No session cookie found. Please login again.' },
-        { status: 401 }
-      )
-    }
+    if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const session = await verifyToken(sessionCookie)
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid session. Please login again.' },
-        { status: 401 }
-      )
-    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !supabaseServiceKey) return NextResponse.json({ error: 'Server error' }, { status: 500 })
 
+    const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
-    // Parse query parameters
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '15'), 100) // Default 15, Max 100
+    const limit = Math.min(parseInt(searchParams.get('limit') || '15'), 100)
     const search = searchParams.get('search') || ''
     const role = searchParams.get('role') || ''
     const isActive = searchParams.get('isActive')
 
-    // Calculate offset for pagination
     const from = (page - 1) * limit
     const to = from + limit - 1
 
-
-    // Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl) {
-      return NextResponse.json(
-        { error: 'Server configuration error - Missing Supabase URL' },
-        { status: 500 }
-      )
-    }
-
-    if (!supabaseServiceKey) {
-      return NextResponse.json(
-        { error: 'Server configuration error - Missing Supabase service key' },
-        { status: 500 }
-      )
-    }
-
-    const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
-
-    // 🔥 OPTIMIZATION: Select specific columns to reduce egress
-    // Excluded: signature (heavy), password (security)
-    const columns = 'id, name, email, last_visit_date, role, is_active, notification_enabled, profile_picture, activated_months, ka_unit_id, supervisor_id, mentor_id, dirut_id, can_be_mentor, can_be_supervisor, can_be_ka_unit, can_be_dirut, can_be_manager, functional_roles, manager_id, manager_scope, location_id, location_name, managed_hospital_ids, must_change_password, hospital_id, unit, bagian, profession_category, profession, gender, is_profile_complete, email_verified, avatar_url, auth_user_id';
-
-    // Build query
     let query = supabaseService
       .from('employees')
-      .select(columns, { count: 'exact' });
+      .select('*', { count: 'exact' })
 
-    // Apply filters
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
-    }
+    if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
+    if (role) query = query.eq('role', role)
+    if (isActive !== null && isActive !== undefined && isActive !== '') query = query.eq('is_active', isActive === 'true')
 
-    if (role) {
-      query = query.eq('role', role)
-    }
-
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
-      query = query.eq('is_active', isActive === 'true')
-    }
-
-    // Apply pagination and ordering
     const { data: employees, error, count } = await query
       .order('name', { ascending: true })
       .range(from, to)
 
-    if (error) {
-      return NextResponse.json(
-        {
-          error: 'Database query failed',
-          details: error.message,
-          code: error.code
-        },
-        { status: 500 }
-      )
-    }
+    if (error) return NextResponse.json({ error: 'Database query failed' }, { status: 500 })
 
-    if (!employees || employees.length === 0) {
-    }
+    // 🔥 BANDWIDTH SAFETY
+    const sanitizedEmployees = (employees || []).map(emp => {
+      const { signature, profile_picture, password, ...rest } = emp;
+      return {
+        ...rest,
+        signature: null,
+        profilePicture: rest.avatar_url || null
+      };
+    });
 
-    // Calculate pagination info
     const totalPages = Math.ceil((count || 0) / limit)
 
-
     return NextResponse.json({
-      employees: employees || [],
+      employees: sanitizedEmployees,
       pagination: {
         page,
         limit,
@@ -130,9 +69,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

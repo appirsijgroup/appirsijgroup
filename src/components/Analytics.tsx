@@ -627,8 +627,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
     const allUsers = useMemo(() => {
         const employees = Object.values(allUsersData).map((d: { employee: Employee }) => d.employee);
-        // Filter: isActive = true OR undefined/null (treat undefined as active)
-        return employees.filter(e => e.isActive !== false);
+        // 🔥 REPAIR: Be extremely inclusive for analytics.
+        // If it has an ID, it's a valid employee record.
+        // Only exclude ceux qui sont explicitement inactifs (isActive === false).
+        // This ensures that even if some fields are null during loading, they show up in counts.
+        return employees.filter(e => e && e.id && e.isActive !== false);
     }, [allUsersData]);
 
     // Check if we likely have partial data (e.g., exactly 50 records)

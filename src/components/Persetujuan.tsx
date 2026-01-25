@@ -1,7 +1,7 @@
 import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Employee, type MonthlyReportSubmission, type DailyActivity } from '../types';
-import { ArrowLeftIcon, CheckIcon, XIcon, CheckSquareIcon, SquareIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, XIcon, CheckSquareIcon, SquareIcon, CheckCircleIcon } from './Icons';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -157,7 +157,7 @@ const StatusFilterButton: React.FC<StatusFilterButtonProps> = ({ filter, label, 
 interface PersetujuanProps {
     loggedInEmployee: Employee;
     monthlyReportSubmissions: MonthlyReportSubmission[];
-    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'manager' | 'kaunit') => void;
+    onReviewReport: (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'manager' | 'kaunit' | 'mentor') => void;
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any; }>;
     // 🔥 NEW: Manual requests support
     pendingTadarusRequests?: any[]; // Using any[] for flexibility, but TadarusRequest[] is better
@@ -257,7 +257,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     }, [submissionsForRole, statusFilter, filterYear, filterMonth, loggedInEmployee, allUsersData]);
 
     // Helper function to determine reviewer role for a submission
-    const getReviewerRole = (submission: MonthlyReportSubmission): 'supervisor' | 'manager' | 'kaunit' => {
+    const getReviewerRole = (submission: MonthlyReportSubmission): 'supervisor' | 'manager' | 'kaunit' | 'mentor' => {
         const mentee = allUsersData[submission.menteeId]?.employee;
         const myId = loggedInEmployee.id;
 
@@ -265,6 +265,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         if (loggedInEmployee.canBeManager && (submission.managerId === myId || mentee?.managerId === myId)) return 'manager';
         if (loggedInEmployee.canBeKaUnit && (submission.kaUnitId === myId || mentee?.kaUnitId === myId)) return 'kaunit';
         if (loggedInEmployee.canBeSupervisor && (submission.supervisorId === myId || mentee?.supervisorId === myId)) return 'supervisor';
+        if (loggedInEmployee.canBeMentor && (submission.mentorId === myId || mentee?.mentorId === myId)) return 'mentor';
 
         return 'supervisor'; // fallback
     };
@@ -309,57 +310,60 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     const hasPending = filteredSubmissions.some(s => s.status.startsWith('pending_')) || (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0);
 
     return (
-        <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[60vh]">
+        <div className="w-full animate-fade-in">
             {selectedSubmission && menteeDataForDetail ? (
-                <div>
+                <div className="bg-gray-900 shadow-2xl rounded-2xl border border-white/10 p-4 sm:p-8">
                     <MenteeReportDetailView mentee={menteeDataForDetail} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} />
-                    <div className="mt-8 flex justify-end gap-4 p-4 bg-black/20 rounded-lg">
+                    <div className="mt-8 flex flex-col sm:flex-row justify-end gap-3 p-4 bg-black/40 rounded-xl border border-white/5">
                         <button
                             onClick={() => setRejectionTarget({ type: 'report', submission: selectedSubmission })}
                             disabled={!selectedSubmission.status.startsWith('pending_')}
-                            className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
+                            className="px-6 py-3 bg-red-600/90 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                         >
                             Tolak Laporan
                         </button>
                         <button
                             onClick={() => setApprovalTarget({ type: 'report', id: selectedSubmission.id })}
                             disabled={!selectedSubmission.status.startsWith('pending_')}
-                            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
+                            className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                         >
                             Setujui Laporan
                         </button>
                     </div>
                 </div>
             ) : (
-                <div className="space-y-8">
+                <div className="space-y-6">
                     {/* Pending Requests Section (Manual Requests) */}
                     {(pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0) && (
-                        <div>
-                            <h3 className="text-xl font-bold text-white mb-4">Permohonan Manual Menunggu</h3>
-                            <div className="space-y-4">
+                        <div className="space-y-4">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <span className="w-2 h-6 bg-amber-400 rounded-full"></span>
+                                Permohonan Manual
+                            </h3>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {pendingTadarusRequests.map(req => (
-                                    <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                        <div>
-                                            <p className="font-semibold text-white">Pengajuan {req.category || 'Tadarus'}: {req.menteeName}</p>
-                                            <p className="text-sm text-blue-200">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                            {req.notes && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.notes}&quot;</p>}
+                                    <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
+                                        <div className="w-full sm:w-auto">
+                                            <p className="font-bold text-white">Pengajuan {req.category || 'Tadarus'}: {req.menteeName}</p>
+                                            <p className="text-sm text-teal-300">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
+                                            {req.notes && <p className="text-xs text-gray-400 mt-2 p-2 bg-black/20 rounded-md italic">&quot;{req.notes}&quot;</p>}
                                         </div>
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <button onClick={() => setRejectionTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
-                                            <button onClick={() => setApprovalTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
+                                        <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                                            <button onClick={() => setRejectionTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/30 font-semibold rounded-lg text-sm transition-all">Tolak</button>
+                                            <button onClick={() => setApprovalTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg text-sm transition-all shadow-md">Setujui</button>
                                         </div>
                                     </div>
                                 ))}
                                 {pendingMissedPrayerRequests.map(req => (
-                                    <div key={req.id} className="bg-black/20 p-4 rounded-lg border border-yellow-400/30 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                        <div>
-                                            <p className="font-semibold text-white">Presensi Terlewat: {req.menteeName}</p>
-                                            <p className="text-sm text-blue-200">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                            {req.reason && <p className="text-xs text-gray-400 mt-1 italic">&quot;{req.reason}&quot;</p>}
+                                    <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
+                                        <div className="w-full sm:w-auto">
+                                            <p className="font-bold text-white">Presensi Terlewat: {req.menteeName}</p>
+                                            <p className="text-sm text-teal-300">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
+                                            {req.reason && <p className="text-xs text-gray-400 mt-2 p-2 bg-black/20 rounded-md italic">&quot;{req.reason}&quot;</p>}
                                         </div>
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <button onClick={() => setRejectionTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg text-sm">Tolak</button>
-                                            <button onClick={() => setApprovalTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-sm">Setujui</button>
+                                        <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                                            <button onClick={() => setRejectionTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/30 font-semibold rounded-lg text-sm transition-all">Tolak</button>
+                                            <button onClick={() => setApprovalTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg text-sm transition-all shadow-md">Setujui</button>
                                         </div>
                                     </div>
                                 ))}
@@ -367,24 +371,26 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                         </div>
                     )}
 
-                    <div>
-                        <h3 className="text-xl font-bold text-white mb-4">Riwayat Persetujuan Laporan Bulanan</h3>
+                    <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
+                            Riwayat Laporan Bulanan
+                        </h3>
 
-                        <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-black/20 rounded-lg border border-white/10">
-                            <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
-                                <div className="flex items-center gap-2 p-1.5 bg-black/30 rounded-full min-w-max">
-                                    <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                    <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                    <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                    <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                </div>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                                <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
                             </div>
-                            <div className="grow grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+
+                            <div className="grid grid-cols-2 lg:flex items-center gap-2">
+                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full lg:w-40 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
                                     <option value="all" className="text-black bg-white">Semua Tahun</option>
                                     {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
                                 </select>
-                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full lg:w-48 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
                                     <option value="all" className="text-black bg-white">Semua Bulan</option>
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
                                         <option key={month} value={month} className="text-black bg-white">{new Date(0, month - 1).toLocaleString('id-ID', { month: 'long' })}</option>
@@ -394,25 +400,25 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                         </div>
 
                         {filteredSubmissions.length > 0 ? (
-                            <div className="overflow-x-auto rounded-lg border border-white/20">
-                                <table className="min-w-full text-sm text-left text-white">
-                                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                            <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20">
+                                <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
+                                    <thead className="bg-gray-800/80 text-xs uppercase text-teal-300">
                                         <tr>
-                                            <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
-                                            <th className="px-4 py-3 whitespace-nowrap">Periode Laporan</th>
-                                            <th className="px-4 py-3 whitespace-nowrap">Tanggal Pengajuan</th>
-                                            <th className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
+                                            <th className="px-4 py-4 font-bold border-b border-white/10">Nama</th>
+                                            <th className="px-4 py-4 font-bold border-b border-white/10">Periode</th>
+                                            <th className="hidden md:table-cell px-4 py-4 font-bold border-b border-white/10">Diajukan</th>
+                                            <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-white/5">
                                         {filteredSubmissions.map(sub => (
-                                            <tr key={sub.id} className="border-b border-gray-700 hover:bg-white/5">
-                                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{sub.menteeName}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap">{`${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <button onClick={() => setSelectedSubmission(sub)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                                                        Lihat & Tinjau
+                                            <tr key={sub.id} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-4 py-4 font-semibold whitespace-nowrap">{sub.menteeName}</td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-blue-200">{`${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
+                                                <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-gray-400 text-xs">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <button onClick={() => setSelectedSubmission(sub)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
+                                                        Tinjau
                                                     </button>
                                                 </td>
                                             </tr>
@@ -421,8 +427,10 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                 </table>
                             </div>
                         ) : (
-                            <div className="text-center py-10 bg-black/20 rounded-lg">
-                                <p className="text-lg text-blue-200">Tidak ada pengajuan laporan yang cocok dengan filter.</p>
+                            <div className="text-center py-20 bg-gray-800/20 rounded-2xl border border-dashed border-white/10">
+                                <CheckCircleIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                                <p className="text-lg text-gray-400 font-medium">Tidak ada pengajuan laporan ditemukan.</p>
+                                <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
                             </div>
                         )}
                     </div>

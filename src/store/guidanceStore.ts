@@ -144,38 +144,53 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             loadMonthlyReportSubmissionsFromSupabase: async () => {
                 try {
-                    const { getMonthlyReportsForSuperior, getUserMonthlyReports } = await import('@/services/monthlySubmissionService');
+                    const { getMonthlyReportsForSuperior, getUserMonthlyReports, getMonthlyReportsByMenteeIds } = await import('@/services/monthlySubmissionService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+                    const allUsersData = useAppDataStore.getState().allUsersData;
 
                     if (!loggedInEmployee) return;
 
                     let submissions: MonthlyReportSubmission[] = [];
+                    const mergedSubmissions = new Map<string, MonthlyReportSubmission>();
 
                     // Aggregation for superiors
                     if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeManager || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+
+                        // 1. Snapshot Search (Reports where I was officially assigned at the time)
                         const rolesToFetch: Array<'mentorId' | 'supervisorId' | 'managerId' | 'kaUnitId'> = [];
                         if (loggedInEmployee.canBeMentor) rolesToFetch.push('mentorId');
                         if (loggedInEmployee.canBeSupervisor) rolesToFetch.push('supervisorId');
                         if (loggedInEmployee.canBeManager) rolesToFetch.push('managerId');
                         if (loggedInEmployee.canBeKaUnit) rolesToFetch.push('kaUnitId');
 
-                        const results = await Promise.all(rolesToFetch.map(role => getMonthlyReportsForSuperior(loggedInEmployee.id, role)));
+                        const snapshotResults = await Promise.all(rolesToFetch.map(role => getMonthlyReportsForSuperior(loggedInEmployee.id, role)));
+                        snapshotResults.flat().forEach(sub => mergedSubmissions.set(sub.id, sub));
 
-                        // Merge and deduplicate
-                        const mergedSubmissions = new Map<string, MonthlyReportSubmission>();
-                        results.flat().forEach(sub => mergedSubmissions.set(sub.id, sub));
-                        submissions = Array.from(mergedSubmissions.values());
+                        // 2. Real-time Mentee Search (Fallback for "Data Lama" missing snapshots)
+                        const currentMenteeIds: string[] = [];
+                        Object.values(allUsersData).forEach(u => {
+                            const emp = u.employee;
+                            if (loggedInEmployee.canBeMentor && emp.mentorId === loggedInEmployee.id) currentMenteeIds.push(emp.id);
+                            if (loggedInEmployee.canBeSupervisor && emp.supervisorId === loggedInEmployee.id) currentMenteeIds.push(emp.id);
+                            if (loggedInEmployee.canBeManager && emp.managerId === loggedInEmployee.id) currentMenteeIds.push(emp.id);
+                            if (loggedInEmployee.canBeKaUnit && emp.kaUnitId === loggedInEmployee.id) currentMenteeIds.push(emp.id);
+                        });
+
+                        if (currentMenteeIds.length > 0) {
+                            const menteeResults = await getMonthlyReportsByMenteeIds(currentMenteeIds);
+                            menteeResults.forEach(sub => mergedSubmissions.set(sub.id, sub));
+                        }
+
+                        // 3. Admin view (Optional: allow admins to see ALL if needed, but here we stick to assignments)
                     }
 
                     // If mentee also load my own
                     if (loggedInEmployee.role === 'user') {
                         const myReports = await getUserMonthlyReports(loggedInEmployee.id);
-                        const mergedWithMe = new Map<string, MonthlyReportSubmission>();
-                        submissions.forEach(s => mergedWithMe.set(s.id, s));
-                        myReports.forEach(s => mergedWithMe.set(s.id, s));
-                        submissions = Array.from(mergedWithMe.values());
+                        myReports.forEach(s => mergedSubmissions.set(s.id, s));
                     }
 
+                    submissions = Array.from(mergedSubmissions.values());
                     set({ monthlyReportSubmissions: submissions });
                 } catch (error) {
                     console.error("Failed to load monthly reports:", error);

@@ -144,6 +144,9 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                             refreshMonthlyReportsData(mentee.id);
                         });
 
+                        // 3. Load reports again (now that mentees are known for legacy support)
+                        loadMonthlyReportSubmissionsFromSupabase();
+
                     } catch (error) {
                         console.error('Failed to load mentees for mentor:', error);
                     }

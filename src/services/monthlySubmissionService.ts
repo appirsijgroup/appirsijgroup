@@ -272,3 +272,24 @@ export const getMonthlyReportsForSuperior = async (userId: string, roleKey: 'men
     return [];
   }
 };
+
+/**
+ * Get monthly reports for a list of mentees (Fallback/Legacy support)
+ */
+export const getMonthlyReportsByMenteeIds = async (menteeIds: string[]): Promise<MonthlyReportSubmission[]> => {
+  if (!menteeIds || menteeIds.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from('weekly_report_submissions')
+      .select('*')
+      .in('mentee_id', menteeIds)
+      .order('month_key', { ascending: false });
+
+    if (error) throw error;
+
+    return (data as unknown as MonthlyReportSubmissionDB[]).map(item => mapDbToApp(item));
+  } catch (error) {
+    console.error("Error fetching reports by mentee IDs:", error);
+    return [];
+  }
+};

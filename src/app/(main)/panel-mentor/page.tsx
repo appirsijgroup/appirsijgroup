@@ -60,6 +60,16 @@ export default function MentorPanelPage() {
         }
     }, [loggedInEmployee.canBeMentor, loggedInEmployee.canBeSupervisor, loggedInEmployee.canBeManager, loggedInEmployee.canBeKaUnit]);
 
+    // 🔥 FIX: Load monthly reports and manual requests on mount
+    useEffect(() => {
+        if (loggedInEmployee?.id) {
+            const { loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase, loadMonthlyReportSubmissionsFromSupabase } = useGuidanceStore.getState();
+            loadTadarusRequestsFromSupabase().catch(err => console.error('Failed to load tadarus requests:', err));
+            loadMissedPrayerRequestsFromSupabase().catch(err => console.error('Failed to load missed prayer requests:', err));
+            loadMonthlyReportSubmissionsFromSupabase().catch(err => console.error('Failed to load monthly reports:', err));
+        }
+    }, [loggedInEmployee?.id]);
+
     // Local handler for profile update
     const handleLocalUpdateProfile = async (userId: string, updates: Partial<any>) => {
         try {
@@ -84,19 +94,38 @@ export default function MentorPanelPage() {
         try {
             const { reviewMonthlyReport } = await import('@/services/monthlySubmissionService');
 
-            // Logic transition status for Mentor
-            let newStatus = 'pending_supervisor';
+            // Logic transition status based on role and decision
+            let newStatus = '';
             if (decision === 'rejected') {
-                newStatus = 'rejected_mentor';
+                if (reviewerRole === 'mentor') newStatus = 'rejected_mentor';
+                else if (reviewerRole === 'supervisor') newStatus = 'rejected_supervisor';
+                else if (reviewerRole === 'kaunit') newStatus = 'rejected_kaunit';
+                else if (reviewerRole === 'manager') newStatus = 'rejected_manager';
             } else {
-                newStatus = 'pending_supervisor';
+                if (reviewerRole === 'mentor') newStatus = 'pending_supervisor';
+                else if (reviewerRole === 'supervisor') newStatus = 'pending_kaunit';
+                else if (reviewerRole === 'kaunit') newStatus = 'pending_manager';
+                else if (reviewerRole === 'manager') newStatus = 'approved';
             }
 
             const reviews: any = {
                 status: newStatus,
-                mentorNotes: notes,
-                mentorReviewedAt: Date.now()
             };
+
+            // Add role-specific notes and timestamps
+            if (reviewerRole === 'mentor') {
+                reviews.mentorNotes = notes;
+                reviews.mentorReviewedAt = Date.now();
+            } else if (reviewerRole === 'supervisor') {
+                reviews.supervisorNotes = notes;
+                reviews.supervisorReviewedAt = Date.now();
+            } else if (reviewerRole === 'kaunit') {
+                reviews.kaUnitNotes = notes;
+                reviews.kaUnitReviewedAt = Date.now();
+            } else if (reviewerRole === 'manager') {
+                reviews.managerNotes = notes;
+                reviews.managerReviewedAt = Date.now();
+            }
 
             const result = await reviewMonthlyReport(submissionId, reviews);
 

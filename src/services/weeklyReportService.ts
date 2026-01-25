@@ -323,3 +323,26 @@ export const getMonthlySubmissions = async (
     return [];
   }
 };
+
+/**
+ * Get all weekly report submissions for a specific mentor
+ */
+export const getWeeklyReportsForMentor = async (mentorId: string): Promise<WeeklyReportSubmission[]> => {
+  try {
+    // Note: mentorId is stored inside the JSONB column 'report_data'
+    const { data, error } = await supabase
+      .from('weekly_report_submissions')
+      .select('*')
+      // Use arrow operator ->> to get value as text
+      .eq('report_data->>mentorId', mentorId)
+      .order('month_key', { ascending: false })
+      .order('week_index', { ascending: false });
+
+    if (error) throw error;
+
+    return (data as unknown as WeeklyReportSubmissionDB[]).map(item => mapDbToApp(item));
+  } catch (error) {
+    console.error("Error fetching mentor reports:", error);
+    return [];
+  }
+};

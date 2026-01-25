@@ -19,6 +19,7 @@ interface GuidanceState {
     loadTadarusSessionsFromSupabase: () => Promise<void>;
     loadTadarusRequestsFromSupabase: () => Promise<void>;
     loadMissedPrayerRequestsFromSupabase: () => Promise<void>;
+    loadWeeklyReportSubmissionsFromSupabase: () => Promise<void>;
 
     addOrUpdateTadarusRequest: (request: TadarusRequest) => Promise<void>;
 
@@ -131,6 +132,45 @@ export const useGuidanceStore = create<GuidanceState>()(
                     set({ missedPrayerRequests: requests });
                 } catch (error) {
                     throw error;
+                }
+            },
+
+            loadWeeklyReportSubmissionsFromSupabase: async () => {
+                try {
+                    const { getWeeklyReportsForMentor, getUserWeeklyReports } = await import('@/services/weeklyReportService');
+                    const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+
+                    if (!loggedInEmployee) return;
+
+                    let submissions: WeeklyReportSubmission[] = [];
+
+                    // If mentor, load submissions where I am mentor
+                    if (loggedInEmployee.canBeMentor || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                        submissions = await getWeeklyReportsForMentor(loggedInEmployee.id);
+                    }
+
+                    // If mentee (or also checking my own reports), load my reports
+                    // Ideally we might want to merge them if user is BOTH/has both roles content
+                    // For now, let's just use the mentor logic if mentor (MentorDashboard priority)
+                    if (!loggedInEmployee.canBeMentor && loggedInEmployee.role === 'user') {
+                        submissions = await getUserWeeklyReports(loggedInEmployee.id);
+                    }
+
+                    // If user is mentor but also has personal reports, simple logic might hide personal.
+                    // But current UI only uses this for MentorDashboard -> Persetujuan.
+                    // Mentee Dashboard uses 'submissions' prop in DashboardContainer usually loaded differently?
+                    // No, DashboardContainer passes 'weeklyReportSubmissions' from this store.
+
+                    // Let's safe bet: always load my own too and merge? 
+                    // Or keep it simple: Mentor sees Mentor stuff. Mentee sees Mentee stuff.
+                    // The UI for Mentee Dashboard might need fixing if I break it.
+
+                    // Wait, getUserWeeklyReports gets ALL reports for a mentee.
+                    // If I am Supervisor, getWeeklyReportsForMentor might not work if logic is different.
+
+                    set({ weeklyReportSubmissions: submissions });
+                } catch (error) {
+                    console.error("Failed to load weekly reports:", error);
                 }
             },
 

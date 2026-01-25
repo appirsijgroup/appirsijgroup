@@ -70,7 +70,8 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         updateMenteeTarget,
         deleteMenteeTarget,
         loadTadarusRequestsFromSupabase,
-        loadMissedPrayerRequestsFromSupabase
+        loadMissedPrayerRequestsFromSupabase,
+        loadWeeklyReportSubmissionsFromSupabase
     } = useGuidanceStore();
     const { addAnnouncement, deleteAnnouncement } = useAnnouncementStore();
     const { hospitals } = useHospitalStore();
@@ -100,11 +101,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
         if (loggedInEmployee?.id) {
             refreshMonthlyReportsData(loggedInEmployee.id);
 
-            // 🚀 Load manual requests (Tadarus & Sholat)
+            // 🚀 Load manual requests (Tadarus & Sholat) & Weekly Reports
             loadTadarusRequestsFromSupabase().catch(err => console.error('Failed to load tadarus requests:', err));
             loadMissedPrayerRequestsFromSupabase().catch(err => console.error('Failed to load missed prayer requests:', err));
+            loadWeeklyReportSubmissionsFromSupabase().catch(err => console.error('Failed to load weekly reports:', err));
         }
-    }, [loggedInEmployee?.id, refreshMonthlyReportsData, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase]);
+    }, [loggedInEmployee?.id, refreshMonthlyReportsData, loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase, loadWeeklyReportSubmissionsFromSupabase]);
 
     // 🔥 FIX: Ensure mentees data is loaded for Mentors
     useEffect(() => {
@@ -1226,15 +1228,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     // 4. Notify Mentee
                     createNotification({
-                        id: Date.now().toString(),
                         userId: req.menteeId,
                         type: status === 'approved' ? 'tadarus_approved' : 'tadarus_rejected',
                         title: `Pengajuan ${req.category || 'Kegiatan'} ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
                         message: `Pengajuan ${req.category || 'kegiatan'} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
                         linkTo: '/dashboard',
                         relatedEntityId: req.id,
-                        timestamp: Date.now(),
-                        isRead: false
                     });
 
                     addToast(`Pengajuan berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');
@@ -1322,15 +1321,12 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
 
                     // 4. Notify Mentee
                     createNotification({
-                        id: Date.now().toString(),
                         userId: req.menteeId,
                         type: status === 'approved' ? 'missed_prayer_approved' : 'missed_prayer_rejected',
                         title: `Presensi Sholat ${status === 'approved' ? 'Disetujui' : 'Ditolak'}`,
                         message: `Pengajuan presensi ${req.prayerName} tanggal ${new Date(req.date).toLocaleDateString('id-ID')} telah ${status === 'approved' ? 'disetujui' : 'ditolak'}.`,
                         linkTo: '/dashboard',
                         relatedEntityId: req.id,
-                        timestamp: Date.now(),
-                        isRead: false
                     });
 
                     addToast(`Pengajuan berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`, 'success');

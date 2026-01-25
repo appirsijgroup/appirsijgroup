@@ -609,7 +609,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                         const activityId = categoryMap[req.category || 'UMUM'] || 'tadarus';
 
                         try {
-                            const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                            const { addManualReportByDate } = await import('@/services/monthlyReportService');
 
                             // Get mentee's current data first logic
                             const menteeData = allUsersData[req.menteeId]?.employee;
@@ -632,8 +632,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                                     }
                                 };
 
-                                // Update DB
-                                await updateMonthlyActivities(req.menteeId, newMonthlyActivities);
+                                // Update DB (New Service)
+                                await addManualReportByDate(req.menteeId, monthKey, activityId, req.date);
 
                                 // Update local store for Mentee
                                 setAllUsersData(prev => ({
@@ -708,7 +708,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
                         // ALSO Update Mutabaah (Checklist)
                         try {
-                            const { updateMonthlyActivities } = await import('@/services/monthlyActivityService');
+                            const { addManualReportByDate } = await import('@/services/monthlyReportService');
                             const menteeData = allUsersData[req.menteeId]?.employee;
                             if (menteeData) {
                                 const dateObj = new Date(req.date + 'T12:00:00Z');
@@ -730,7 +730,12 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                                     }
                                 };
 
-                                await updateMonthlyActivities(req.menteeId, newMonthlyActivities);
+                                const prayerMap: Record<string, string> = {
+                                    'subuh': 'subuh-default', 'dzuhur': 'dzuhur-default', 'ashar': 'ashar-default',
+                                    'maghrib': 'maghrib-default', 'isya': 'isya-default', 'tahajud': 'tahajud-default'
+                                };
+                                const actId = prayerMap[req.prayerId] || req.prayerId;
+                                await addManualReportByDate(req.menteeId, monthKey, actId, req.date);
                                 setAllUsersData(prev => ({
                                     ...prev,
                                     [req.menteeId]: {

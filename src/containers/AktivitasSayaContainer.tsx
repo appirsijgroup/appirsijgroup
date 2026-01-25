@@ -632,8 +632,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                                     }
                                 };
 
-                                // Update DB (New Service)
-                                await addManualReportByDate(req.menteeId, monthKey, activityId, req.date);
+                                // Handled by API
+                                // await addManualReportByDate(req.menteeId, monthKey, activityId, req.date);
 
                                 // Update local store for Mentee
                                 setAllUsersData(prev => ({
@@ -739,7 +739,8 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                                     'maghrib': 'maghrib-default', 'isya': 'isya-default', 'tahajud': 'tahajud-default'
                                 };
                                 const actId = prayerMap[req.prayerId] || req.prayerId;
-                                await addManualReportByDate(req.menteeId, monthKey, actId, req.date);
+                                // Handled by API
+                                // await addManualReportByDate(req.menteeId, monthKey, actId, req.date);
                                 setAllUsersData(prev => ({
                                     ...prev,
                                     [req.menteeId]: {

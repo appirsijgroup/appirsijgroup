@@ -135,6 +135,60 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
         }
 
+        // SIDE EFFECT: If Approved, update employee_monthly_reports
+        if (data && data.status === 'approved') {
+            try {
+                // 1. Get current reports
+                const { data: reportData } = await supabase
+                    .from('employee_monthly_reports')
+                    .select('reports')
+                    .eq('employee_id', data.mentee_id)
+                    .single();
+
+                let reports = reportData?.reports || {};
+                const date = data.date;
+                const prayerId = data.prayer_id;
+
+                // Map prayer ID
+                const prayerMap: Record<string, string> = {
+                    'subuh': 'subuh-default', 'dzuhur': 'dzuhur-default', 'ashar': 'ashar-default',
+                    'maghrib': 'maghrib-default', 'isya': 'isya-default', 'tahajud': 'tahajud-default'
+                };
+                const activityId = prayerMap[prayerId] || prayerId;
+
+                const dateObj = new Date(date + 'T12:00:00Z');
+                const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                if (!reports[monthKey]) reports[monthKey] = {};
+
+                const activity = reports[monthKey][activityId] || { count: 0, entries: [] };
+                if (!activity.entries) activity.entries = [];
+
+                // Prevent duplicate
+                if (!activity.entries.some((e: any) => e.date === date)) {
+                    activity.entries.push({
+                        date,
+                        completedAt: new Date().toISOString(),
+                        note: `Approved via Missed Prayer Request: ${id}`
+                    });
+                    activity.count = activity.entries.length;
+                    activity.completedAt = new Date().toISOString();
+
+                    reports[monthKey][activityId] = activity;
+
+                    // Upsert
+                    await supabase.from('employee_monthly_reports').upsert({
+                        employee_id: data.mentee_id,
+                        reports,
+                        updated_at: new Date().toISOString()
+                    });
+                    console.log(`✅ [API Prayer] Updated monthly report for ${data.mentee_id}`);
+                }
+            } catch (err) {
+                console.error('⚠️ [API Prayer] Failed to update monthly report:', err);
+            }
+        }
+
         return NextResponse.json({ success: true, data });
 
     } catch (error: any) {

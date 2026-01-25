@@ -123,6 +123,7 @@ export async function PATCH(request: NextRequest) {
             auth: { autoRefreshToken: false, persistSession: false }
         });
 
+        // Update request status
         const { data, error } = await supabase
             .from('tadarus_requests')
             .update(updates)
@@ -133,6 +134,65 @@ export async function PATCH(request: NextRequest) {
         if (error) {
             console.error('❌ [API Tadarus Requests PATCH] Error:', error);
             return NextResponse.json({ error: error.message, code: error.code }, { status: 500 });
+        }
+
+        // SIDE EFFECT: If Approved, update employee_monthly_reports
+        if (data && data.status === 'approved') {
+            try {
+                // 1. Get current reports
+                const { data: reportData } = await supabase
+                    .from('employee_monthly_reports')
+                    .select('reports')
+                    .eq('employee_id', data.mentee_id)
+                    .single();
+
+                let reports = reportData?.reports || {};
+                const date = data.date;
+                const category = data.category || 'UMUM';
+
+                // Map category
+                const categoryMap: Record<string, string> = {
+                    'BBQ': 'bbq_tahsin',
+                    'UMUM': 'tadarus',
+                    'KIE': 'tepat_waktu_kie',
+                    'Doa Bersama': 'doa_bersama',
+                    'Kajian Selasa': 'kajian_selasa',
+                    'Pengajian Persyarikatan': 'pengajian_persyarikatan'
+                };
+                const activityId = categoryMap[category] || 'tadarus';
+
+                const dateObj = new Date(date + 'T12:00:00Z');
+                const monthKey = `${dateObj.getFullYear()}-${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                if (!reports[monthKey]) reports[monthKey] = {};
+
+                const activity = reports[monthKey][activityId] || { count: 0, entries: [] };
+                if (!activity.entries) activity.entries = [];
+
+                // Prevent duplicate
+                if (!activity.entries.some((e: any) => e.date === date)) {
+                    activity.entries.push({
+                        date,
+                        completedAt: new Date().toISOString(),
+                        note: `Approved via Tadarus Request: ${id}`
+                    });
+                    activity.count = activity.entries.length;
+                    activity.completedAt = new Date().toISOString();
+
+                    reports[monthKey][activityId] = activity;
+
+                    // Upsert
+                    await supabase.from('employee_monthly_reports').upsert({
+                        employee_id: data.mentee_id,
+                        reports,
+                        updated_at: new Date().toISOString()
+                    });
+                    console.log(`✅ [API Tadarus] Updated monthly report for ${data.mentee_id}`);
+                }
+            } catch (err) {
+                console.error('⚠️ [API Tadarus] Failed to update monthly report:', err);
+                // Non-blocking error
+            }
         }
 
         return NextResponse.json({ success: true, data });

@@ -313,30 +313,36 @@ const MenteeDetailProgressView: React.FC<{
                         </div>
 
                         {/* Scrollable container for mobile */}
-                        <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
-                            <div className="min-w-[700px] md:min-w-0" style={{ height: 500 }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart
-                                        layout="vertical"
-                                        data={chartSummaryData}
-                                        margin={{ top: 5, right: 40, left: 20, bottom: 20 }}
-                                    >
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                        <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                        <YAxis dataKey="name" type="category" stroke="#94a3b8" width={150} tick={{ fontSize: 11 }} interval={0} />
-                                        <Bar dataKey="percentage" name="Capaian" isAnimationActive={false} barSize={20}>
-                                            <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => {
-                                                const numValue = typeof value === 'number' ? value : typeof value === 'string' ? parseInt(value) : 0;
-                                                return (typeof numValue === 'number' && numValue > 0) ? `${numValue}%` : '';
-                                            }} />
-                                            {chartSummaryData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={PREMIUM_COLORS[index % PREMIUM_COLORS.length]} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                        {chartSummaryData && chartSummaryData.length > 0 ? (
+                            <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
+                                <div className="min-w-[700px] md:min-w-0 w-full" style={{ height: 500, minHeight: 500 }}>
+                                    <ResponsiveContainer width="100%" height={500} minHeight={500}>
+                                        <BarChart
+                                            layout="vertical"
+                                            data={chartSummaryData}
+                                            margin={{ top: 5, right: 40, left: 20, bottom: 20 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                            <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                            <YAxis dataKey="name" type="category" stroke="#94a3b8" width={150} tick={{ fontSize: 11 }} interval={0} />
+                                            <Bar dataKey="percentage" name="Capaian" isAnimationActive={false} barSize={20}>
+                                                <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => {
+                                                    const numValue = typeof value === 'number' ? value : typeof value === 'string' ? parseInt(value) : 0;
+                                                    return (typeof numValue === 'number' && numValue > 0) ? `${numValue}%` : '';
+                                                }} />
+                                                {chartSummaryData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={PREMIUM_COLORS[index % PREMIUM_COLORS.length]} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="text-center py-10 text-blue-200">
+                                Tidak ada data untuk ditampilkan
+                            </div>
+                        )}
                     </div>
                 </>
             ) : (

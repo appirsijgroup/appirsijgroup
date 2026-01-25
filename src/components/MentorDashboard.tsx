@@ -14,7 +14,8 @@ import {
     BookOpen,
     Tag,
     Trash2,
-    Calendar
+    Calendar,
+    Bell
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
@@ -1158,7 +1159,7 @@ const SubTabButton: React.FC<{
 }> = ({ active, onClick, label, icon: Icon, count }) => (
     <button
         onClick={onClick}
-        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm relative whitespace-nowrap shrink-0
+        className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md font-medium transition-all duration-300 ease-in-out text-sm relative whitespace-nowrap shrink-0 overflow-visible
           ${active
                 ? 'bg-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.3)]'
                 : 'text-blue-200 hover:text-white hover:bg-white/10'
@@ -1167,8 +1168,9 @@ const SubTabButton: React.FC<{
         <Icon className="w-4 h-4" />
         {label}
         {count !== undefined && count > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
-                {count}
+            <span className="absolute -top-2 -right-2 flex items-center gap-0.5 h-6 min-w-[24px] px-1.5 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold shadow-lg shadow-red-500/50 animate-pulse border-2 border-white/20">
+                <Bell className="w-3 h-3" />
+                <span>{count}</span>
             </span>
         )}
     </button>
@@ -1326,7 +1328,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
 
     return (
         <div className="space-y-6">
-            <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-3">
+            <div className="overflow-x-auto overflow-y-visible touch-pan-x pb-3 pt-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
                     <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length} />
                     <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />

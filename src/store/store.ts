@@ -383,60 +383,14 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         if (!force && now - lastLoad < 30000) return;
 
         try {
-            const [
-                { convertMonthlyReportsToActivities },
-                { convertTadarusSessionsToActivities },
-                { convertTeamAttendanceToActivities },
-                { convertScheduledActivitiesToActivities },
-                { getEmployeeAttendance },
-                { getMonthlyActivities }
-            ] = await Promise.all([
-                import('@/services/monthlyReportService'),
-                import('@/services/tadarusService'),
-                import('@/services/teamAttendanceService'),
-                import('@/services/scheduledActivityService'),
-                import('@/services/attendanceService'),
-                import('@/services/monthlyActivityService')
-            ]);
+            const { getMonthlyActivities } = await import('@/services/monthlyActivityService');
 
-            const [
-                monthlyReportsActivities,
-                tadarusActivities,
-                teamAttendanceActivities,
-                scheduledActivities,
-                attendanceRecords,
-                baseMonthlyActivities
-            ] = await Promise.all([
-                convertMonthlyReportsToActivities(employeeId),
-                convertTadarusSessionsToActivities(employeeId),
-                convertTeamAttendanceToActivities(employeeId),
-                convertScheduledActivitiesToActivities(employeeId),
-                getEmployeeAttendance(employeeId).catch(() => ({}) as any),
-                getMonthlyActivities(employeeId).catch(() => ({} as any))
-            ]);
-
-            const mergedActivities = { ...baseMonthlyActivities };
-
-            [monthlyReportsActivities, tadarusActivities, teamAttendanceActivities, scheduledActivities].forEach(source => {
-                Object.entries(source).forEach(([monthKey, monthData]) => {
-                    if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
-                    Object.entries(monthData as any).forEach(([dayKey, dayData]) => {
-                        if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
-                        Object.assign(mergedActivities[monthKey][dayKey], dayData as any);
-                    });
-                });
-            });
-
-            Object.values(attendanceRecords).forEach((record: any) => {
-                if (record.status !== 'hadir') return;
-                const attendanceDate = new Date(record.timestamp);
-                const monthKey = `${attendanceDate.getFullYear()}-${(attendanceDate.getMonth() + 1).toString().padStart(2, '0')}`;
-                const dayKey = attendanceDate.getDate().toString().padStart(2, '0');
-
-                if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
-                if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
-                mergedActivities[monthKey][dayKey]['shalat_berjamaah'] = true;
-            });
+            // 🚀 The API now handles merging for:
+            // 1. Shalat Berjamaah
+            // 2. Tadarus & Approved Requests
+            // 3. KIE & Doa Bersama
+            // 4. Manual Reports (Counters/Books)
+            const mergedActivities = await getMonthlyActivities(employeeId);
 
             set(state => {
                 const newData = { ...state.allUsersData };
@@ -459,7 +413,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             });
 
         } catch (error) {
-            console.error('❌ [loadDetailedEmployeeData] Error aggregating data:', error);
+            console.error('❌ [loadDetailedEmployeeData] ErrorAggregate:', error);
         }
     },
 }));

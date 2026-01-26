@@ -30,11 +30,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'employeeId is required' }, { status: 400 });
     }
 
-    // Users can only view their own data unless they are admins
-    if (session.role !== 'admin' && session.role !== 'super-admin' && session.userId !== employeeId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     // Use service role to bypass RLS
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -49,6 +44,31 @@ export async function GET(request: NextRequest) {
         persistSession: false
       }
     });
+
+    // Verify authorization: Admins and owners are always allowed
+    if (session.role !== 'admin' && session.role !== 'super-admin' && session.userId !== employeeId) {
+      // Check if the requester is the mentor/supervisor/manager/kaunit of the target employee
+      const { data: targetEmployee, error: empError } = await supabase
+        .from('employees')
+        .select('mentor_id, supervisor_id, manager_id, ka_unit_id, dirut_id')
+        .eq('id', employeeId)
+        .single();
+
+      if (empError || !targetEmployee) {
+        return NextResponse.json({ error: 'Target employee not found' }, { status: 404 });
+      }
+
+      const isAuthorizedRelation =
+        targetEmployee.mentor_id === session.userId ||
+        targetEmployee.supervisor_id === session.userId ||
+        targetEmployee.manager_id === session.userId ||
+        targetEmployee.ka_unit_id === session.userId ||
+        targetEmployee.dirut_id === session.userId;
+
+      if (!isAuthorizedRelation) {
+        return NextResponse.json({ error: 'Forbidden: You do not have permission to view this data' }, { status: 403 });
+      }
+    }
 
     // 🔥 FIX: Start with empty object - NO CACHE, directly merge from all sources
     const mergedActivities: Record<string, any> = {};

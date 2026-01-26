@@ -12,41 +12,38 @@ const Analytics = dynamic(() => import('@/components/Analytics'), {
 });
 
 export default function AnalyticsPage() {
-    const { allUsersData, loadAllEmployees, isLoadingEmployees } = useAppDataStore();
+    const { allUsersData, loadAllEmployees } = useAppDataStore();
     const { dailyActivitiesConfig } = useDailyActivitiesStore();
-    const [isLoading, setIsLoading] = useState(true);
+
+    // 🔥 OPTIMIZATION: Default to not loading if we already have data in store
+    const [isLoading, setIsLoading] = useState(Object.keys(allUsersData).length < 5);
     const [error, setError] = useState<string | null>(null);
 
-    // 🔥 REPAIR: Eager load ALL employee data for Analytics
+    // 🔥 REPAIR: Use caching to prevent redundant Supabase calls
     useEffect(() => {
         const loadAnalyticsData = async () => {
             try {
-                // If already loading, don't double trigger
-                if (isLoadingEmployees) return;
+                // If we already have data, don't show the initial full-screen loader
+                const hasExistingData = Object.keys(allUsersData).length > 5;
+                if (!hasExistingData) {
+                    setIsLoading(true);
+                }
 
-                // For Analytics, we ALWAYS want to try a fresh full load to ensure analysis is up to date
-                // and to fill any gaps from previous paginated loads.
-                setIsLoading(true);
-                setError(null);
-
-                console.log('📊 [AnalyticsPage] Triggering full employee load for analysis...');
+                // Call loadAllEmployees (which now has its own internal 5-min cache)
                 await loadAllEmployees();
 
                 setIsLoading(false);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Gagal memuat data karyawan');
+                console.error('📊 [AnalyticsPage] Data load failed:', err);
+                // Only show error if we have no data at all
+                if (Object.keys(allUsersData).length === 0) {
+                    setError('Gagal memuat data analisis. Silakan periksa koneksi Anda.');
+                }
                 setIsLoading(false);
             }
         };
 
-        // Trigger on mount or if store state indicates we are severely under-loaded
-        if (Object.keys(allUsersData).length < 5) {
-            loadAnalyticsData();
-        } else {
-            // If we have some data, still trigger a background refresh but don't show full page spinner
-            loadAllEmployees().catch(e => console.error('Silent refresh failed:', e));
-            setIsLoading(false);
-        }
+        loadAnalyticsData();
     }, [loadAllEmployees]); // Removed allUsersData to prevent loops
 
     // Show loading state

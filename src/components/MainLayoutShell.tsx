@@ -527,48 +527,54 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
     if (isLoggingOut) {
-        return <BrandedLoader message="Sedang keluar..." />;
+        return <BrandedLoader fullScreen={true} message="Sedang keluar..." />;
     }
 
     if (!isClient || !isHydrated || !loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800" suppressHydrationWarning>
+            <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950/30 flex flex-col lg:flex-row" suppressHydrationWarning>
                 {/* Skeleton Navigation Sidebar */}
-                <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 border-r border-slate-800">
-                    <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+                <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900/50 backdrop-blur-xl border-r border-white/5">
+                    <div className="p-6 border-b border-white/5 flex items-center gap-3">
                         {/* Logo Skeleton */}
-                        <div className="h-10 w-10 bg-slate-700 rounded-lg animate-pulse flex items-center justify-center">
-                            <Image src="/logorsijsp.png" alt="Logo" width={32} height={32} priority className="h-8 w-auto opacity-30" />
+                        <div className="h-10 w-10 bg-slate-800 rounded-lg animate-pulse flex items-center justify-center border border-white/5">
+                            <Image src="/logorsijsp.png" alt="Logo" width={32} height={32} priority className="h-8 w-auto opacity-20" />
                         </div>
-                        <div className="h-8 bg-slate-700 rounded animate-pulse flex-1"></div>
+                        <div className="h-4 bg-slate-800 rounded-full animate-pulse w-24"></div>
                     </div>
-                    <div className="flex-1 p-4 space-y-3">
+                    <div className="flex-1 p-4 space-y-4">
                         {[...Array(8)].map((_, i) => (
-                            <div key={i} className="h-10 bg-slate-800/50 rounded-lg animate-pulse"></div>
+                            <div key={i} className="h-10 bg-slate-800/40 rounded-lg animate-pulse" style={{ animationDelay: `${i * 100}ms` }}></div>
                         ))}
                     </div>
                 </div>
 
                 {/* Skeleton Main Content */}
-                <div className="flex flex-col">
+                <div className="flex-1 flex flex-col min-h-0 min-w-0">
                     {/* Skeleton Header */}
-                    <div className="h-16 bg-slate-900/50 border-b border-slate-800 flex items-center px-4 lg:px-6">
-                        <div className="h-8 w-8 lg:hidden bg-slate-700 rounded animate-pulse mr-4"></div>
+                    <div className="h-16 bg-slate-900/40 backdrop-blur-md border-b border-white/5 flex items-center px-4 lg:px-6">
+                        <div className="h-8 w-8 lg:hidden bg-slate-800 rounded animate-pulse mr-4"></div>
                         <div className="flex-1 flex justify-between items-center">
-                            <div className="h-6 bg-slate-700 rounded w-48 animate-pulse"></div>
+                            <div className="h-5 bg-slate-800 rounded-full w-40 animate-pulse"></div>
                             <div className="flex items-center gap-4">
-                                <div className="h-8 w-8 bg-slate-700 rounded-full animate-pulse"></div>
+                                <div className="h-9 w-9 bg-slate-800 rounded-full animate-pulse"></div>
+                                <div className="h-9 w-9 bg-slate-700/50 rounded-lg animate-pulse"></div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Skeleton Content */}
-                    <div className="p-4 lg:p-6">
-                        <div className="max-w-7xl mx-auto">
-                            <div className="h-32 bg-slate-800/30 rounded-xl animate-pulse mb-6"></div>
+                    {/* Skeleton Content Area */}
+                    <div className="flex-1 p-4 lg:p-6 overflow-hidden">
+                        <div className="max-w-7xl mx-auto space-y-8">
+                            {/* Banner Skeleton */}
+                            <div className="h-36 bg-slate-800/20 rounded-2xl animate-pulse relative overflow-hidden border border-white/5">
+                                <div className="absolute inset-0 bg-linear-to-r from-teal-500/5 to-transparent"></div>
+                            </div>
+
+                            {/* Cards Grid Skeleton */}
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {[...Array(6)].map((_, i) => (
-                                    <div key={i} className="h-40 bg-slate-800/30 rounded-xl animate-pulse"></div>
+                                    <div key={i} className="h-44 bg-slate-800/20 rounded-2xl animate-pulse border border-white/5" style={{ animationDelay: `${(i + 2) * 100}ms` }}></div>
                                 ))}
                             </div>
                         </div>

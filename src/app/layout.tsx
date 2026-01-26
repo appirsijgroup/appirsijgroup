@@ -86,7 +86,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <SupressHydrationWarning />
         <QueryProvider>
-          <Suspense fallback={<BrandedLoader message="Memuat aplikasi..." />}>
+          <Suspense fallback={<BrandedLoader fullScreen={true} message="Memuat aplikasi..." />}>
             {children}
           </Suspense>
         </QueryProvider>

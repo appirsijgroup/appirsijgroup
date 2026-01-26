@@ -24,6 +24,8 @@ export interface AppDataState {
     isLoadingEmployees: boolean;
     activityStatsRefreshCounter: number;
     lastDetailedLoad: Record<string, number>;
+    lastAllEmployeesLoad: number;
+    lastHeavyAdminLoad: number;
 
     setAllUsersData: (fn: (state: AppDataState['allUsersData']) => AppDataState['allUsersData']) => void;
     setLoggedInEmployee: (employee: Employee | null) => void;
@@ -58,6 +60,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     isLoadingEmployees: false,
     activityStatsRefreshCounter: 0,
     lastDetailedLoad: {},
+    lastAllEmployeesLoad: 0,
+    lastHeavyAdminLoad: 0,
     paginatedEmployees: [],
     paginationInfo: null,
 
@@ -190,7 +194,16 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     },
 
     loadAllEmployees: async (limit?: number) => {
+        // 🔥 CACHE CHECK: If loaded within last 5 minutes, skip to save Supabase resources
+        const now = Date.now();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+        // Skip if already loading or recently loaded (and no limit specified)
         if (get().isLoadingEmployees) return;
+        if (!limit && now - get().lastAllEmployeesLoad < CACHE_DURATION && Object.keys(get().allUsersData).length > 10) {
+            console.log('📦 [AppDataStore] All employees recently loaded, using cache.');
+            return;
+        }
 
         try {
             set({ isLoadingEmployees: true });
@@ -198,26 +211,22 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             const { getAllEmployees } = await import('@/services/employeeService');
 
             // --- PHASE 1: FAST LOAD (Basic Info) ---
-            // Only loads the employees list, not their entire history
             const allEmployees = await getAllEmployees(limit);
 
             const initialData: Record<string, UserData> = {};
             allEmployees.forEach(emp => {
                 initialData[emp.id] = {
                     employee: emp,
-                    attendance: {},
-                    history: {}
+                    attendance: get().allUsersData[emp.id]?.attendance || {},
+                    history: get().allUsersData[emp.id]?.history || {}
                 };
             });
 
             set(state => ({
                 allUsersData: { ...state.allUsersData, ...initialData },
-                isLoadingEmployees: false
+                isLoadingEmployees: false,
+                lastAllEmployeesLoad: now
             }));
-
-            // ⚡ NOTE: BACKGROUND LOAD (Heavy Data) is intentionally removed from here.
-            // It was causing 5+ minute loading times for large datasets.
-            // Call loadHeavyAdminData() manually when needed (e.g., in Admin Reports).
 
         } catch (error) {
             console.error('❌ [loadAllEmployees] Error:', error);

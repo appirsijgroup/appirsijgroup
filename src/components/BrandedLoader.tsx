@@ -12,42 +12,46 @@ interface BrandedLoaderProps {
  * BrandedLoader - Loading screen dengan logo app dan animasi yang smooth
  * Digunakan untuk memberikan experience yang lebih baik saat loading
  */
-export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat...", fullScreen = true }) => {
+export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat...", fullScreen = false }) => {
     return (
-        <div className={`${fullScreen ? 'min-h-screen bg-linear-to-br from-slate-900 to-indigo-800' : 'py-12 w-full bg-transparent'} flex flex-col items-center justify-center`}>
-            {/* Logo Container dengan Pulse Animation */}
-            <div className="relative mb-8">
-                {/* Pulse rings */}
-                <div className="absolute inset-0 rounded-full bg-teal-400/20 animate-ping"></div>
-                <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-pulse"></div>
+        <div className={`
+            ${fullScreen ? 'fixed inset-0 z-9999 bg-slate-950/80 backdrop-blur-xl' : 'py-16 w-full bg-transparent'} 
+            flex flex-col items-center justify-center animate-fade-in
+        `}>
+            {/* Logo Container with Modern Glass Look */}
+            <div className="relative mb-6">
+                {/* Subtle soft pulse rings */}
+                <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-soft-ping"></div>
 
-                {/* Logo */}
-                <div className="relative z-10 bg-slate-900/50 backdrop-blur-sm rounded-full p-6 border border-teal-400/30 shadow-2xl shadow-teal-400/20">
+                {/* Logo with slight hover-like effect */}
+                <div className={`relative z-10 bg-white/5 backdrop-blur-xs rounded-full border border-white/5 shadow-xl 
+                    ${fullScreen ? 'p-10' : 'p-5'}`}>
                     <Image
                         src="/logorsijsp.png"
                         alt="Logo RSI Jakarta Group"
-                        width={96}
-                        height={96}
+                        width={fullScreen ? 120 : 64}
+                        height={fullScreen ? 120 : 64}
                         priority
-                        className="h-24 w-auto"
+                        className={`${fullScreen ? 'h-24' : 'h-12'} w-auto opacity-90 brightness-110`}
                     />
                 </div>
             </div>
 
-            {/* Loading Spinner di bawah logo */}
-            <div className="relative mb-6">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-teal-400"></div>
-            </div>
-
-            {/* Message */}
-            <div className="text-center">
-                <p className="text-white text-lg font-semibold tracking-wide animate-pulse">
+            {/* Minimal Spinner */}
+            <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-teal-500/20 border-t-teal-400"></div>
+                <p className="text-teal-200/60 text-sm font-medium tracking-wide animate-pulse">
                     {message}
                 </p>
-                <p className="text-slate-400 text-sm mt-2">
-                    Mohon tunggu sebentar...
-                </p>
             </div>
+
+            {fullScreen && (
+                <div className="absolute bottom-12 text-center">
+                    <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
+                        Aplikasi Perilaku Pelayanan Islami
+                    </p>
+                </div>
+            )}
         </div>
     );
 };

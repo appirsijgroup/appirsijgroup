@@ -106,58 +106,46 @@ export async function getUserNotifications(userId: string): Promise<Notification
 }
 
 /**
- * Mark notification as read in Supabase - USING RPC FUNCTION
+ * Mark notification as read in Supabase
  */
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
-
-    // 🔥 FIX: Use RPC function with user_id parameter
-    // (karena auth.uid() tidak bekerja reliable)
-    const { data: rpcData, error: rpcError } = await supabase
-        .rpc('mark_notification_read_v2', {
-            p_notification_id: notificationId,
-            p_user_id: userId  // 🔥 Kirim user_id dari frontend
+    try {
+        // First try via API route (bypasses RLS)
+        const response = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'mark_read', notificationId, userId })
         });
 
+        if (response.ok) return;
 
-    if (rpcError) {
+        // Fallback to RPC if API fails
+        const { data: rpcData, error: rpcError } = await supabase
+            .rpc('mark_notification_read_v2', {
+                p_notification_id: notificationId,
+                p_user_id: userId
+            });
 
-        throw new Error(
-            `Failed to mark notification as read: ${rpcError.message}\n\n` +
-            `Solusi: Jalankan script diagnose-and-fix-user-id.sql di Supabase SQL Editor`
-        );
+        if (rpcError) throw rpcError;
+    } catch (err: any) {
+        console.error('❌ [markNotificationAsRead] Error:', err);
+        throw err;
     }
-
-    if (!rpcData) {
-        throw new Error('RPC function succeeded but returned no data');
-    }
-
-    // Parse JSON result
-    const result = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
-
-    if (!result.success) {
-
-        throw new Error(
-            `Failed to mark notification as read: ${result.message}\n` +
-            `Notification ID: ${result.notification_id}\n` +
-            `User ID: ${result.user_id}\n` +
-            `Rows Affected: ${result.rows_affected}`
-        );
-    }
-
 }
 
 /**
  * Mark all notifications for a user as read in Supabase
  */
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
-    const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', userId)
-        .eq('is_read', false);
+    const response = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark_all_read', userId })
+    });
 
-    if (error) {
-        throw error;
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to mark all notifications as read');
     }
 }
 
@@ -165,13 +153,13 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
  * Delete notifications in Supabase
  */
 export async function deleteNotificationsSupabase(notificationIds: string[]): Promise<void> {
-    const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .in('id', notificationIds);
+    const response = await fetch(`/api/notifications?ids=${encodeURIComponent(notificationIds.join(','))}`, {
+        method: 'DELETE',
+    });
 
-    if (error) {
-        throw error;
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to delete notifications');
     }
 }
 
@@ -179,13 +167,13 @@ export async function deleteNotificationsSupabase(notificationIds: string[]): Pr
  * Clear all notifications for a user in Supabase
  */
 export async function clearAllNotificationsSupabase(userId: string): Promise<void> {
-    const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('user_id', userId);
+    const response = await fetch(`/api/notifications?userId=${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+    });
 
-    if (error) {
-        throw error;
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to clear notifications');
     }
 }
 

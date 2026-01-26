@@ -39,7 +39,7 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
     const client = getAuthenticatedClient();
 
     const { data, error } = await client.storage
-      .from('TTD')
+      .from('Signatures')
       .upload(filePath, webpFile, {
         cacheControl: '3600',
         upsert: true // Overwrite if exists
@@ -52,7 +52,7 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
 
     // Get public URL
     const { data: publicUrlData } = client.storage
-      .from('TTD')
+      .from('Signatures')
       .getPublicUrl(filePath);
 
     return publicUrlData.publicUrl;
@@ -69,7 +69,7 @@ export const deleteSignature = async (employeeId: string): Promise<void> => {
 
     // List all files in employee's folder
     const { data, error } = await client.storage
-      .from('TTD')
+      .from('Signatures')
       .list(employeeId);
 
     if (error) {
@@ -80,7 +80,7 @@ export const deleteSignature = async (employeeId: string): Promise<void> => {
     if (data && data.length > 0) {
       for (const file of data) {
         const { error: deleteError } = await client.storage
-          .from('TTD')
+          .from('Signatures')
           .remove([`${employeeId}/${file.name}`]);
 
         if (deleteError) {
@@ -102,7 +102,7 @@ export const getSignatureUrl = async (employeeId: string): Promise<string | null
 
     // List files in employee's folder
     const { data, error } = await client.storage
-      .from('TTD')
+      .from('Signatures')
       .list(employeeId);
 
     if (error) {
@@ -120,7 +120,7 @@ export const getSignatureUrl = async (employeeId: string): Promise<string | null
     // Get the first file (should be the signature)
     const filePath = `${employeeId}/${data[0].name}`;
     const { data: publicUrlData } = client.storage
-      .from('TTD')
+      .from('Signatures')
       .getPublicUrl(filePath);
 
     return publicUrlData.publicUrl;

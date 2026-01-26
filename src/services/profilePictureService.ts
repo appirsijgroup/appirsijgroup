@@ -37,9 +37,9 @@ export const uploadProfilePicture = async (file: File, employeeId: string): Prom
 
         const client = getAuthenticatedClient();
 
-        // Use 'profile-pictures' bucket
+        // Use 'Avatars' bucket
         const { data, error } = await client.storage
-            .from('profile-pictures')
+            .from('Avatars')
             .upload(filePath, webpFile, {
                 cacheControl: '3600',
                 upsert: true
@@ -53,7 +53,7 @@ export const uploadProfilePicture = async (file: File, employeeId: string): Prom
 
         // Get public URL
         const { data: publicUrlData } = client.storage
-            .from('profile-pictures')
+            .from('Avatars')
             .getPublicUrl(filePath);
 
         return publicUrlData.publicUrl;
@@ -70,7 +70,7 @@ export const deleteProfilePicture = async (employeeId: string): Promise<void> =>
 
         // List all files in employee's folder
         const { data, error } = await client.storage
-            .from('profile-pictures')
+            .from('Avatars')
             .list(employeeId);
 
         if (error) {
@@ -81,7 +81,7 @@ export const deleteProfilePicture = async (employeeId: string): Promise<void> =>
         if (data && data.length > 0) {
             for (const file of data) {
                 const { error: deleteError } = await client.storage
-                    .from('profile-pictures')
+                    .from('Avatars')
                     .remove([`${employeeId}/${file.name}`]);
 
                 if (deleteError) {

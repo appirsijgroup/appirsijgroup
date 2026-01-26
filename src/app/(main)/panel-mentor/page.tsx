@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { MentorDashboard, type MentorDashboardView } from '@/components/MentorDashboard';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useGuidanceStore } from '@/store/guidanceStore';
+import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
 import { useAuditLogStore } from '@/store/auditLogStore';
 import { MenteeTarget, TadarusSession } from '@/types';
 
@@ -16,9 +17,9 @@ export default function MentorPanelPage() {
         tadarusRequests,
         missedPrayerRequests,
         menteeTargets,
-        addOrUpdateMonthlyReportSubmission,
         addTadarusSessions,
     } = useGuidanceStore();
+    const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const { logAudit } = useAuditLogStore();
 
     // State for MentorDashboard subview
@@ -314,6 +315,7 @@ export default function MentorPanelPage() {
                 setConfirmDeleteTarget={setConfirmDeleteTarget}
                 menteeTargets={menteeTargets.filter(t => t.mentorId === loggedInEmployee.id)}
                 loadDetailedEmployeeData={loadDetailedEmployeeDataWrapper}
+                dailyActivitiesConfig={dailyActivitiesConfig}
             />
 
             {confirmDeleteTarget && (

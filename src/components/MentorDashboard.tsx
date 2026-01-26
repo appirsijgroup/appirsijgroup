@@ -1,6 +1,6 @@
 import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { type Employee, TadarusSession, TadarusRequest, MissedPrayerRequest, AuditLogEntry, type MonthlyReportSubmission, MenteeTarget, Attendance } from '../types';
+import { type Employee, TadarusSession, TadarusRequest, MissedPrayerRequest, AuditLogEntry, type MonthlyReportSubmission, MenteeTarget, Attendance, type DailyActivity } from '../types';
 import {
     ArrowLeft,
     CheckSquare,
@@ -60,6 +60,7 @@ interface MentorDashboardProps {
     setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
     menteeTargets: MenteeTarget[];
     loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+    dailyActivitiesConfig: DailyActivity[];
 }
 
 const PREMIUM_COLORS = ['#14b8a6', '#0ea5e9', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#10b981'];
@@ -142,7 +143,8 @@ const MenteeDetailProgressView: React.FC<{
     onMonthChange?: (newDate: Date) => void;
     allUsersData?: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
     loadDetailedEmployeeData?: (employeeId: string) => Promise<void>;
-}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData, loadDetailedEmployeeData }) => {
+    dailyActivitiesConfig: DailyActivity[];
+}> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData, loadDetailedEmployeeData, dailyActivitiesConfig }) => {
     const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(mentee?.id || (mentees && mentees.length > 0 ? mentees[0].id : null));
 
     // 🔥 FIX: Load detailed data for selected mentee when selection changes
@@ -168,12 +170,12 @@ const MenteeDetailProgressView: React.FC<{
     const daysInMonth = useMemo(() => new Date(activeDate.getFullYear(), activeDate.getMonth() + 1, 0).getDate(), [activeDate]);
 
     const groupedActivities = useMemo(() => {
-        return DAILY_ACTIVITIES.reduce((acc, activity) => {
+        return dailyActivitiesConfig.reduce((acc, activity) => {
             if (!acc[activity.category]) acc[activity.category] = [];
             acc[activity.category].push(activity);
             return acc;
-        }, {} as Record<string, typeof DAILY_ACTIVITIES>);
-    }, []);
+        }, {} as Record<string, DailyActivity[]>);
+    }, [dailyActivitiesConfig]);
 
     const navigateMonth = (direction: 'prev' | 'next') => {
         if (!onMonthChange || !currentMonth) return;
@@ -191,19 +193,70 @@ const MenteeDetailProgressView: React.FC<{
         return nextMonth > new Date();
     };
 
-    const progress = useMemo(() => selectedMentee?.monthlyActivities?.[activeMonthKey] || {}, [selectedMentee, activeMonthKey]);
+    const enrichedProgress = useMemo(() => {
+        if (!selectedMentee) return {};
+        const baseProgress = selectedMentee.monthlyActivities?.[activeMonthKey] || {};
+        const enriched = { ...baseProgress };
+
+        // 1. Sync Manual Reports and cache
+        const monthlyReports = (selectedMentee as any)._monthlyReportsDataCache?.[activeMonthKey] || {};
+        Object.entries(monthlyReports).forEach(([dayKey, dayData]: [string, any]) => {
+            if (!enriched[dayKey]) enriched[dayKey] = {};
+            Object.assign(enriched[dayKey], dayData);
+        });
+
+        // 2. Sync Reading History (Books + Quran)
+        if (selectedMentee.readingHistory) {
+            selectedMentee.readingHistory.forEach(h => {
+                if (h.dateCompleted.startsWith(activeMonthKey)) {
+                    const day = h.dateCompleted.substring(8, 10);
+                    if (!enriched[day]) enriched[day] = {};
+                    enriched[day]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+        if (selectedMentee.quranReadingHistory) {
+            selectedMentee.quranReadingHistory.forEach((h: any) => {
+                const date = h.date || h.dateCompleted;
+                if (date?.startsWith(activeMonthKey)) {
+                    const day = date.substring(8, 10);
+                    if (!enriched[day]) enriched[day] = {};
+                    enriched[day]['baca_alquran_buku'] = true;
+                }
+            });
+        }
+
+        return enriched;
+    }, [selectedMentee, activeMonthKey]);
 
     const activityProgressCounts = useMemo(() => {
         if (!selectedMentee) return {};
-        return DAILY_ACTIVITIES.reduce((acc, activity) => {
-            acc[activity.id] = Object.values(progress).reduce((dayCount, dailyProgress) => dayCount + (dailyProgress[activity.id] ? 1 : 0), 0);
+
+        // Special count for reading
+        let totalReadingCount = 0;
+        if (selectedMentee.readingHistory) {
+            totalReadingCount += selectedMentee.readingHistory.filter(h => h.dateCompleted.startsWith(activeMonthKey)).length;
+        }
+        if (selectedMentee.quranReadingHistory) {
+            selectedMentee.quranReadingHistory.forEach((h: any) => {
+                const date = h.date || h.dateCompleted;
+                if (date?.startsWith(activeMonthKey)) totalReadingCount++;
+            });
+        }
+
+        return dailyActivitiesConfig.reduce((acc, activity) => {
+            if (activity.id === 'baca_alquran_buku') {
+                acc[activity.id] = totalReadingCount;
+            } else {
+                acc[activity.id] = Object.values(enrichedProgress).reduce((dayCount, dailyProgress) => dayCount + ((dailyProgress as any)[activity.id] ? 1 : 0), 0);
+            }
             return acc;
         }, {} as Record<string, number>);
-    }, [progress, selectedMentee]);
+    }, [enrichedProgress, selectedMentee, dailyActivitiesConfig, activeMonthKey]);
 
     const chartSummaryData = useMemo(() => {
         if (!selectedMentee) return [];
-        return DAILY_ACTIVITIES.map(activity => {
+        return dailyActivitiesConfig.map(activity => {
             const capaian = activityProgressCounts[activity.id] || 0;
             const percentage = activity.monthlyTarget > 0 ? Math.min(100, Math.round((capaian / activity.monthlyTarget) * 100)) : 0;
             return {
@@ -211,7 +264,7 @@ const MenteeDetailProgressView: React.FC<{
                 percentage: percentage,
             };
         });
-    }, [selectedMentee, activityProgressCounts]);
+    }, [selectedMentee, activityProgressCounts, dailyActivitiesConfig]);
 
     return (
         <div className="animate-view-change">
@@ -277,14 +330,14 @@ const MenteeDetailProgressView: React.FC<{
                                                 {category}
                                             </td>
                                         </tr>
-                                        {activities.map(activity => (
+                                        {(activities as DailyActivity[]).map(activity => (
                                             <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
                                                 <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10 whitespace-nowrap">{activity.title}</td>
                                                 <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10 whitespace-nowrap">
                                                     {activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}
                                                 </td>
                                                 {Array.from({ length: daysInMonth }, (_, i) => String(i + 1).padStart(2, '0')).map(day => {
-                                                    const isChecked = progress[day]?.[activity.id] || false;
+                                                    const isChecked = (enrichedProgress[day] as any)?.[activity.id] || false;
                                                     return (
                                                         <td key={day} className="text-center border-l border-gray-700">
                                                             <div className="w-full h-full flex items-center justify-center py-3">
@@ -1192,6 +1245,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     setConfirmDeleteTarget,
     menteeTargets,
     loadDetailedEmployeeData,
+    dailyActivitiesConfig,
 }) => {
 
     // Unified state for confirmations
@@ -1346,7 +1400,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const menteeData = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
     if (selectedSubmission) {
-        return menteeData ? (<MenteeDetailProgressView mentee={menteeData} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} allUsersData={allUsersData} loadDetailedEmployeeData={loadDetailedEmployeeData} />) : null;
+        return menteeData ? (<MenteeDetailProgressView mentee={menteeData} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} allUsersData={allUsersData} loadDetailedEmployeeData={loadDetailedEmployeeData} dailyActivitiesConfig={dailyActivitiesConfig} />) : null;
     }
 
     return (
@@ -1374,8 +1428,8 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         // @ts-ignore
                         onReviewReport={onReviewReport}
                         allUsersData={allUsersData}
-                        pendingTadarusRequests={tadarusRequests?.filter(r => r.status === 'pending') || []}
-                        pendingMissedPrayerRequests={missedPrayerRequests?.filter(r => r.status === 'pending') || []}
+                        pendingTadarusRequests={tadarusRequests || []}
+                        pendingMissedPrayerRequests={missedPrayerRequests || []}
                         onReviewTadarusRequest={onReviewTadarusRequest}
                         onReviewMissedPrayerRequest={onReviewMissedPrayerRequest}
                     />
@@ -1414,6 +1468,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         onMonthChange={setProgressViewMonth}
                         allUsersData={allUsersData}
                         loadDetailedEmployeeData={loadDetailedEmployeeData}
+                        dailyActivitiesConfig={dailyActivitiesConfig}
                     />
                 )}
                 {mentorSubView === 'laporan-bacaan' && (

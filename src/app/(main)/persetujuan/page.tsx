@@ -40,7 +40,7 @@ export default function PersetujuanPage() {
         return <div className="p-8 text-center text-gray-400">Anda tidak memiliki akses ke halaman ini.</div>;
     }
 
-    const handleReviewReport = async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'manager' | 'kaunit') => {
+    const handleReviewReport = async (submissionId: string, decision: 'approved' | 'rejected', notes: string | undefined, reviewerRole: 'supervisor' | 'manager' | 'kaunit' | 'mentor') => {
         try {
             const { reviewMonthlyReport } = await import('@/services/monthlySubmissionService');
 
@@ -50,7 +50,8 @@ export default function PersetujuanPage() {
                 newStatus = `rejected_${reviewerRole}`;
             } else {
                 // Approved
-                if (reviewerRole === 'supervisor') newStatus = 'pending_kaunit';
+                if (reviewerRole === 'mentor') newStatus = 'pending_supervisor';
+                else if (reviewerRole === 'supervisor') newStatus = 'pending_kaunit';
                 else if (reviewerRole === 'kaunit') newStatus = 'pending_manager';
                 else if (reviewerRole === 'manager') newStatus = 'approved';
             }
@@ -140,8 +141,8 @@ export default function PersetujuanPage() {
                 monthlyReportSubmissions={monthlyReportSubmissions}
                 onReviewReport={handleReviewReport}
                 allUsersData={allUsersData}
-                pendingTadarusRequests={tadarusRequests.filter(r => r.status === 'pending')}
-                pendingMissedPrayerRequests={missedPrayerRequests.filter(r => r.status === 'pending')}
+                pendingTadarusRequests={tadarusRequests}
+                pendingMissedPrayerRequests={missedPrayerRequests}
                 onReviewTadarusRequest={handleReviewTadarusRequest}
                 onReviewMissedPrayerRequest={handleReviewMissedPrayerRequest}
             />

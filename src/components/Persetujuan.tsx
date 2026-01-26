@@ -192,14 +192,10 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
 
 
-    // Show all submissions where user has an approval role (Real-time & Snapshot)
     const submissionsForRole = useMemo(() => {
         const id = loggedInEmployee.id;
         return monthlyReportSubmissions.filter(s => {
-            // 1. Snapshot check (data at submission time)
             if (s.mentorId === id || s.supervisorId === id || s.managerId === id || s.kaUnitId === id) return true;
-
-            // 2. Real-time check (current assignment)
             const mentee = allUsersData[s.menteeId]?.employee;
             if (mentee) {
                 if (loggedInEmployee.canBeMentor && mentee.mentorId === id) return true;
@@ -212,67 +208,24 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     }, [monthlyReportSubmissions, loggedInEmployee, allUsersData]);
 
     const availableYears = useMemo(() => {
-        const years = new Set(submissionsForRole.map(s => s.monthKey.substring(0, 4)));
+        const years = new Set([...submissionsForRole.map(s => s.monthKey.substring(0, 4)),
+        ...pendingTadarusRequests.map(r => r.date.substring(0, 4)),
+        ...pendingMissedPrayerRequests.map(r => r.date.substring(0, 4))]);
         return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-    }, [submissionsForRole]);
+    }, [submissionsForRole, pendingTadarusRequests, pendingMissedPrayerRequests]);
 
-    const filteredSubmissions = useMemo(() => {
-        return submissionsForRole.filter(s => {
-            let statusMatch = false;
-            const mentee = allUsersData[s.menteeId]?.employee;
-            const myId = loggedInEmployee.id;
-
-            // Helper to check if I am the assigned approver (Snapshot OR Real-time)
-            const isMySupervisor = s.supervisorId === myId || (mentee?.supervisorId === myId);
-            const isMyManager = s.managerId === myId || (mentee?.managerId === myId);
-            const isMyKaUnit = s.kaUnitId === myId || (mentee?.kaUnitId === myId);
-
-            if (statusFilter === 'all') {
-                statusMatch = true;
-            } else if (statusFilter === 'pending') {
-                // Menunggu persetujuan user ini
-                statusMatch =
-                    (s.status === 'pending_mentor' && (s.mentorId === myId || mentee?.mentorId === myId) && !!loggedInEmployee.canBeMentor) ||
-                    (s.status === 'pending_supervisor' && (s.supervisorId === myId || mentee?.supervisorId === myId) && !!loggedInEmployee.canBeSupervisor) ||
-                    (s.status === 'pending_manager' && (s.managerId === myId || mentee?.managerId === myId) && !!loggedInEmployee.canBeManager) ||
-                    (s.status === 'pending_kaunit' && (s.kaUnitId === myId || mentee?.kaUnitId === myId) && !!loggedInEmployee.canBeKaUnit);
-            } else if (statusFilter === 'approved') {
-                // Disetujui (final) atau sudah melewati user ini
-                statusMatch = s.status === 'approved' ||
-                    ((s.mentorId === myId || mentee?.mentorId === myId) && ['pending_supervisor', 'pending_manager', 'pending_kaunit'].includes(s.status)) ||
-                    ((s.supervisorId === myId || mentee?.supervisorId === myId) && ['pending_manager', 'pending_kaunit'].includes(s.status)) ||
-                    ((s.kaUnitId === myId || mentee?.kaUnitId === myId) && ['pending_manager'].includes(s.status));
-            } else if (statusFilter === 'rejected') {
-                statusMatch = s.status.startsWith('rejected');
-            }
-
-            if (!statusMatch) return false;
-
-            const [year, month] = s.monthKey.split('-');
-            const yearMatch = filterYear === 'all' || year === filterYear;
-            const monthMatch = filterMonth === 'all' || parseInt(month, 10) === parseInt(filterMonth, 10);
-
-            return yearMatch && monthMatch;
-        });
-    }, [submissionsForRole, statusFilter, filterYear, filterMonth, loggedInEmployee, allUsersData]);
-
-    // Helper function to determine reviewer role for a submission
     const getReviewerRole = (submission: MonthlyReportSubmission): 'supervisor' | 'manager' | 'kaunit' | 'mentor' => {
         const mentee = allUsersData[submission.menteeId]?.employee;
         const myId = loggedInEmployee.id;
-
-        // Priority check: Check if current user is assigned as specific role
         if (loggedInEmployee.canBeManager && (submission.managerId === myId || mentee?.managerId === myId)) return 'manager';
         if (loggedInEmployee.canBeKaUnit && (submission.kaUnitId === myId || mentee?.kaUnitId === myId)) return 'kaunit';
         if (loggedInEmployee.canBeSupervisor && (submission.supervisorId === myId || mentee?.supervisorId === myId)) return 'supervisor';
         if (loggedInEmployee.canBeMentor && (submission.mentorId === myId || mentee?.mentorId === myId)) return 'mentor';
-
-        return 'supervisor'; // fallback
+        return 'supervisor';
     };
 
     const handleConfirmApproval = () => {
         if (!approvalTarget) return;
-
         if (approvalTarget.type === 'report') {
             const submission = monthlyReportSubmissions.find(s => s.id === approvalTarget.id);
             if (submission) {
@@ -284,14 +237,12 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         } else if (approvalTarget.type === 'prayer') {
             onReviewMissedPrayerRequest?.(approvalTarget.id, 'approved', 'Disetujui via panel persetujuan');
         }
-
         setSelectedSubmission(null);
         setApprovalTarget(null);
     };
 
     const handleRejectSubmit = (notes: string) => {
         if (!rejectionTarget) return;
-
         if (rejectionTarget.type === 'report') {
             const reviewerRole = getReviewerRole(rejectionTarget.submission);
             onReviewReport(rejectionTarget.submission.id, 'rejected', notes, reviewerRole);
@@ -300,14 +251,111 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         } else if (rejectionTarget.type === 'prayer') {
             onReviewMissedPrayerRequest?.(rejectionTarget.id, 'rejected', notes);
         }
-
         setSelectedSubmission(null);
         setRejectionTarget(null);
     };
 
+    // Unified history items (Reports + Manual Requests)
+    const unifiedHistory = useMemo(() => {
+        const myId = loggedInEmployee.id;
+
+        // 1. Map Monthly Reports
+        const reports = submissionsForRole.map(s => {
+            const mentee = allUsersData[s.menteeId]?.employee;
+            return {
+                id: s.id,
+                type: 'report' as const,
+                menteeId: s.menteeId,
+                menteeName: s.menteeName,
+                periode: `${new Date(s.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+                submittedAt: s.submittedAt ? new Date(s.submittedAt).getTime() : 0,
+                monthKey: s.monthKey,
+                status: s.status,
+                canReview: (
+                    (s.status === 'pending_mentor' && (s.mentorId === myId || mentee?.mentorId === myId) && !!loggedInEmployee.canBeMentor) ||
+                    (s.status === 'pending_supervisor' && (s.supervisorId === myId || mentee?.supervisorId === myId) && !!loggedInEmployee.canBeSupervisor) ||
+                    (s.status === 'pending_manager' && (s.managerId === myId || mentee?.managerId === myId) && !!loggedInEmployee.canBeManager) ||
+                    (s.status === 'pending_kaunit' && (s.kaUnitId === myId || mentee?.kaUnitId === myId) && !!loggedInEmployee.canBeKaUnit)
+                ),
+                originalData: s
+            };
+        });
+
+        // 2. Map Tadarus Requests
+        const tadarus = pendingTadarusRequests.map(r => ({
+            id: r.id,
+            type: 'tadarus' as const,
+            menteeId: r.menteeId,
+            menteeName: r.menteeName,
+            periode: `Tadarus/BBQ - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+            submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+            monthKey: r.date.substring(0, 7),
+            status: r.status,
+            canReview: r.status === 'pending',
+            originalData: r
+        }));
+
+        // 3. Map Missed Prayer Requests
+        const missedPrayers = pendingMissedPrayerRequests.map(r => ({
+            id: r.id,
+            type: 'prayer' as const,
+            menteeId: r.menteeId,
+            menteeName: r.menteeName,
+            periode: `Presensi Terlewat: ${r.prayerName} - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+            submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+            monthKey: r.date.substring(0, 7),
+            status: r.status,
+            canReview: r.status === 'pending',
+            originalData: r
+        }));
+
+        return [...reports, ...tadarus, ...missedPrayers].sort((a, b) => b.submittedAt - a.submittedAt);
+    }, [submissionsForRole, pendingTadarusRequests, pendingMissedPrayerRequests, loggedInEmployee, allUsersData]);
+
+    const filteredHistoryItems = useMemo(() => {
+        return unifiedHistory.filter(item => {
+            let statusMatch = false;
+            const myId = loggedInEmployee.id;
+
+            if (statusFilter === 'all') {
+                statusMatch = true;
+            } else if (statusFilter === 'pending') {
+                statusMatch = item.canReview;
+            } else if (statusFilter === 'approved') {
+                // For reports, it's approved final or passed this user
+                if (item.type === 'report') {
+                    const s = item.originalData as MonthlyReportSubmission;
+                    const mentee = allUsersData[s.menteeId]?.employee;
+                    statusMatch = s.status === 'approved' ||
+                        ((s.mentorId === myId || mentee?.mentorId === myId) && ['pending_supervisor', 'pending_manager', 'pending_kaunit'].includes(s.status)) ||
+                        ((s.supervisorId === myId || mentee?.supervisorId === myId) && ['pending_manager', 'pending_kaunit'].includes(s.status)) ||
+                        ((s.kaUnitId === myId || mentee?.kaUnitId === myId) && ['pending_manager'].includes(s.status));
+                } else {
+                    statusMatch = item.status === 'approved';
+                }
+            } else if (statusFilter === 'rejected') {
+                statusMatch = item.status.startsWith('rejected');
+            }
+
+            if (!statusMatch) return false;
+
+            const [year, month] = item.monthKey.split('-');
+            const yearMatch = filterYear === 'all' || year === filterYear;
+            const monthMatch = filterMonth === 'all' || parseInt(month, 10) === parseInt(filterMonth, 10);
+
+            return yearMatch && monthMatch;
+        });
+    }, [unifiedHistory, statusFilter, filterYear, filterMonth, loggedInEmployee, allUsersData]);
+
+
     const menteeDataForDetail = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
-    const hasPending = filteredSubmissions.some(s => s.status.startsWith('pending_')) || (pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0);
+    // Separate pending manual requests for the top section (dashboard style)
+    const activePendingManual = useMemo(() => {
+        const tadarus = pendingTadarusRequests.filter(r => r.status === 'pending');
+        const prayer = pendingMissedPrayerRequests.filter(r => r.status === 'pending');
+        return { tadarus, prayer };
+    }, [pendingTadarusRequests, pendingMissedPrayerRequests]);
 
     return (
         <div className="w-full animate-fade-in">
@@ -333,15 +381,15 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {/* Pending Requests Section (Manual Requests) */}
-                    {(pendingTadarusRequests.length > 0 || pendingMissedPrayerRequests.length > 0) && (
+                    {/* Pending Requests Section (Manual Requests) - Only show if PENDING and in PENDING filter or ALL */}
+                    {(statusFilter === 'all' || statusFilter === 'pending') && (activePendingManual.tadarus.length > 0 || activePendingManual.prayer.length > 0) && (
                         <div className="space-y-4">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <span className="w-2 h-6 bg-amber-400 rounded-full"></span>
-                                Permohonan Manual
+                                Menunggu Persetujuan Manual
                             </h3>
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {pendingTadarusRequests.map(req => (
+                                {activePendingManual.tadarus.map(req => (
                                     <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
                                         <div className="w-full sm:w-auto">
                                             <p className="font-bold text-white">Pengajuan {req.category || 'Tadarus'}: {req.menteeName}</p>
@@ -354,7 +402,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                         </div>
                                     </div>
                                 ))}
-                                {pendingMissedPrayerRequests.map(req => (
+                                {activePendingManual.prayer.map(req => (
                                     <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
                                         <div className="w-full sm:w-auto">
                                             <p className="font-bold text-white">Presensi Terlewat: {req.menteeName}</p>
@@ -374,7 +422,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold text-white flex items-center gap-2">
                             <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
-                            Riwayat Laporan Bulanan
+                            Riwayat Persetujuan
                         </h3>
 
                         <div className="flex flex-col gap-4">
@@ -399,40 +447,81 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                             </div>
                         </div>
 
-                        {filteredSubmissions.length > 0 ? (
-                            <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20">
-                                <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
-                                    <thead className="bg-gray-800/80 text-xs uppercase text-teal-300">
-                                        <tr>
-                                            <th className="px-4 py-4 font-bold border-b border-white/10">Nama</th>
-                                            <th className="px-4 py-4 font-bold border-b border-white/10">Periode</th>
-                                            <th className="hidden md:table-cell px-4 py-4 font-bold border-b border-white/10">Diajukan</th>
-                                            <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {filteredSubmissions.map(sub => (
-                                            <tr key={sub.id} className="hover:bg-white/5 transition-colors group">
-                                                <td className="px-4 py-4 font-semibold whitespace-nowrap">{sub.menteeName}</td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-blue-200">{`${new Date(sub.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`}</td>
-                                                <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-gray-400 text-xs">{new Date(sub.submittedAt).toLocaleString('id-ID')}</td>
+                        <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20 min-h-[200px]">
+                            <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
+                                <thead className="bg-gray-800/80 text-xs uppercase text-teal-300">
+                                    <tr>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">Nama</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">Keterangan / Periode</th>
+                                        <th className="hidden md:table-cell px-4 py-4 font-bold border-b border-white/10">Tanggal</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Status / Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {filteredHistoryItems.length > 0 ? (
+                                        filteredHistoryItems.map(item => (
+                                            <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-4 py-4 font-semibold whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span>{item.menteeName}</span>
+                                                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded w-fit mt-1 
+                                                            ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
+                                                                item.type === 'tadarus' ? 'bg-indigo-500/20 text-indigo-300' :
+                                                                    'bg-purple-500/20 text-purple-300'}`}>
+                                                            {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-blue-200">{item.periode}</td>
+                                                <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-gray-400 text-xs">
+                                                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID') : '-'}
+                                                </td>
                                                 <td className="px-4 py-4 text-center">
-                                                    <button onClick={() => setSelectedSubmission(sub)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
-                                                        Tinjau
-                                                    </button>
+                                                    {item.type === 'report' ? (
+                                                        <button onClick={() => setSelectedSubmission(item.originalData as MonthlyReportSubmission)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
+                                                            Tinjau
+                                                        </button>
+                                                    ) : (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            {item.status === 'pending' ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setRejectionTarget({ type: item.type as any, id: item.id })}
+                                                                        className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-bold"
+                                                                    >
+                                                                        Tolak
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setApprovalTarget({ type: item.type as any, id: item.id })}
+                                                                        className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold"
+                                                                    >
+                                                                        Setujui
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${item.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                                                    {item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <div className="text-center py-20 bg-gray-800/20 rounded-2xl border border-dashed border-white/10">
-                                <CheckCircleIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                                <p className="text-lg text-gray-400 font-medium">Tidak ada pengajuan laporan ditemukan.</p>
-                                <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
-                            </div>
-                        )}
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="text-center py-20">
+                                                <div className="flex flex-col items-center opacity-40">
+                                                    <CheckCircleIcon className="w-12 h-12 text-gray-400 mb-3" />
+                                                    <p className="text-lg text-gray-400 font-medium">Tidak ada data ditemukan.</p>
+                                                    <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}

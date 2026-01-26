@@ -888,7 +888,8 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     useEffect(() => {
         const shouldLoadEmployees =
             (hasMentorRole || hasApprovalRole) || // Eagerly load for mentors/approvers
-            activeTab === 'analytics'; // Or if Analytics tab requires it
+            activeTab === 'analytics' || // Or if Analytics tab requires it
+            activeTab === 'rapot'; // Or if APPI (Rapot) tab requires it for mentor names
 
         if (shouldLoadEmployees && props.onLoadEmployees) {
             // Check if we need to load data (if allUsersData is empty or just has current user)

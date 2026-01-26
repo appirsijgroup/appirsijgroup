@@ -1266,7 +1266,23 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
-    const mentees = menteesOfMentor;
+    const mentees = useMemo(() => {
+        return menteesOfMentor.map(m => allUsersData[m.id]?.employee || m);
+    }, [menteesOfMentor, allUsersData]);
+
+    // 🔥 AUTO-LOAD: Pre-load detailed data for all mentees when progress or reading tabs are opened
+    // This ensures monthlyActivities and reading history are fresh and ready for display
+    useEffect(() => {
+        const needsDetailedData = mentorSubView === 'progress' || mentorSubView === 'laporan-bacaan';
+        if (needsDetailedData && loadDetailedEmployeeData && mentees.length > 0) {
+            console.log(`🔄 [MentorDashboard] Pre-loading detailed data for ${mentees.length} mentees (tab: ${mentorSubView})`);
+            mentees.forEach(mentee => {
+                loadDetailedEmployeeData(mentee.id).catch(err => {
+                    console.error(`⚠️ Failed to load reading data for ${mentee.name}:`, err);
+                });
+            });
+        }
+    }, [mentorSubView, mentees.length, loadDetailedEmployeeData]);
 
     const pendingTadarusRequests = useMemo(() => {
         return tadarusRequests.filter(r => r.mentorId === employee.id && r.status === 'pending');

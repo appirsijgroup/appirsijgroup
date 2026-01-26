@@ -25,6 +25,17 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const employeeId = searchParams.get('employeeId');
+    const month = searchParams.get('month');
+    const year = searchParams.get('year');
+
+    // 🔥 NEW: Filter logic for date ranges
+    let startDate: string | null = null;
+    let endDate: string | null = null;
+    if (month && year) {
+      startDate = `${year}-${month.padStart(2, '0')}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+      endDate = `${year}-${month.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
 
     if (!employeeId) {
       return NextResponse.json({ error: 'employeeId is required' }, { status: 400 });
@@ -75,11 +86,17 @@ export async function GET(request: NextRequest) {
 
     // 🔥 NEW: Merge data from attendance_records table (shalat berjamaah)
     try {
-      const { data: attendanceData, error: attendanceError } = await supabase
+      let query = supabase
         .from('attendance_records')
         .select('timestamp')
         .eq('employee_id', employeeId)
         .eq('status', 'hadir');
+
+      if (startDate && endDate) {
+        query = query.gte('timestamp', startDate).lte('timestamp', endDate + 'T23:59:59');
+      }
+
+      const { data: attendanceData, error: attendanceError } = await query;
 
       if (attendanceError) {
         console.error('❌ [API] Error fetching attendance records:', attendanceError);
@@ -201,10 +218,16 @@ export async function GET(request: NextRequest) {
 
     // 🔥 NEW: Merge data from tadarus_sessions table
     try {
-      const { data: tadarusSessions, error: tadarusError } = await supabase
+      let query = supabase
         .from('tadarus_sessions')
         .select('date')
         .contains('present_mentee_ids', [employeeId]);
+
+      if (startDate && endDate) {
+        query = query.gte('date', startDate).lte('date', endDate);
+      }
+
+      const { data: tadarusSessions, error: tadarusError } = await query;
 
       if (tadarusError) {
         console.error('❌ [API] Error fetching tadarus sessions:', tadarusError);
@@ -233,10 +256,16 @@ export async function GET(request: NextRequest) {
 
     // 🔥 NEW: Merge data from team_attendance_records table
     try {
-      const { data: attendanceRecords, error: teamAttendanceError } = await supabase
+      let query = supabase
         .from('team_attendance_records')
         .select('session_type, session_date')
         .eq('user_id', employeeId);
+
+      if (startDate && endDate) {
+        query = query.gte('session_date', startDate).lte('session_date', endDate);
+      }
+
+      const { data: attendanceRecords, error: teamAttendanceError } = await query;
 
       if (teamAttendanceError) {
         console.error('❌ [API] Error fetching team attendance records:', teamAttendanceError);
@@ -271,11 +300,17 @@ export async function GET(request: NextRequest) {
 
     // 🔥 NEW: Merge APPROVED tadarus_requests
     try {
-      const { data: approvedTadarus, error: tadarusReqError } = await supabase
+      let query = supabase
         .from('tadarus_requests')
         .select('date')
         .eq('mentee_id', employeeId)
         .eq('status', 'approved');
+
+      if (startDate && endDate) {
+        query = query.gte('date', startDate).lte('date', endDate);
+      }
+
+      const { data: approvedTadarus, error: tadarusReqError } = await query;
 
       if (tadarusReqError) {
         console.error('❌ [API] Error fetching approved tadarus requests:', tadarusReqError);
@@ -297,11 +332,17 @@ export async function GET(request: NextRequest) {
 
     // 🔥 NEW: Merge APPROVED missed_prayer_requests
     try {
-      const { data: approvedPrayers, error: prayerReqError } = await supabase
+      let query = supabase
         .from('missed_prayer_requests')
         .select('date, prayer_id')
         .eq('mentee_id', employeeId)
         .eq('status', 'approved');
+
+      if (startDate && endDate) {
+        query = query.gte('date', startDate).lte('date', endDate);
+      }
+
+      const { data: approvedPrayers, error: prayerReqError } = await query;
 
       if (prayerReqError) {
         console.error('❌ [API] Error fetching approved prayer requests:', prayerReqError);

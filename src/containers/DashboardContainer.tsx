@@ -138,11 +138,10 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                             return hasChanges ? newData : prev;
                         });
 
-                        // 2. Refresh detailed activity data for each mentee
-                        // This ensures "Progres Anggota" graphs are populated
-                        mentees.forEach(mentee => {
-                            refreshMonthlyReportsData(mentee.id);
-                        });
+                        // 2. ⚡ OPTIMIZATION: We NO LONGER load detailed report data for every mentee on mount.
+                        // This prevents N API calls (where N = number of mentees) which was slow.
+                        // Data will be loaded on-demand when user visits "Progres Anggota" or clicks a specific mentee.
+                        console.log(`✅ [DashboardContainer] Found ${mentees.length} mentees. Skipping detailed load for performance.`);
 
                         // 3. Load reports again (now that mentees are known for legacy support)
                         loadMonthlyReportSubmissionsFromSupabase();

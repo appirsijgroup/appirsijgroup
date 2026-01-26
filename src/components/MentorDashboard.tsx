@@ -59,7 +59,7 @@ interface MentorDashboardProps {
     handleCreateTarget: (e: React.FormEvent) => void;
     setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
     menteeTargets: MenteeTarget[];
-    loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+    loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     dailyActivitiesConfig: DailyActivity[];
 }
 
@@ -142,22 +142,27 @@ const MenteeDetailProgressView: React.FC<{
     currentMonth?: Date;
     onMonthChange?: (newDate: Date) => void;
     allUsersData?: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, any>; }>;
-    loadDetailedEmployeeData?: (employeeId: string) => Promise<void>;
+    loadDetailedEmployeeData?: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     dailyActivitiesConfig: DailyActivity[];
 }> = ({ mentees, currentMonth, onMonthChange, mentee, monthKey, onBack, allUsersData, loadDetailedEmployeeData, dailyActivitiesConfig }) => {
     const [selectedMenteeId, setSelectedMenteeId] = useState<string | null>(mentee?.id || (mentees && mentees.length > 0 ? mentees[0].id : null));
 
+    const activeDate = useMemo(() => currentMonth || new Date(monthKey + '-02'), [currentMonth, monthKey]);
+    const activeMonthKey = useMemo(() => `${activeDate.getFullYear()}-${String(activeDate.getMonth() + 1).padStart(2, '0')}`, [activeDate]);
+    const daysInMonth = useMemo(() => new Date(activeDate.getFullYear(), activeDate.getMonth() + 1, 0).getDate(), [activeDate]);
+
     // 🔥 FIX: Load detailed data for selected mentee when selection changes
+    // 🔥 FIX: Load detailed data for selected mentee and specific month
     useEffect(() => {
         if (selectedMenteeId && loadDetailedEmployeeData) {
-            console.log(`🔄 [MenteeDetailProgressView] Loading detailed data for mentee: ${selectedMenteeId}`);
-            loadDetailedEmployeeData(selectedMenteeId).catch(err => {
+            const m = activeDate.getMonth() + 1;
+            const y = activeDate.getFullYear();
+            console.log(`🔄 [MenteeDetailProgressView] Loading detailed data for mentee: ${selectedMenteeId} (Month: ${m}/${y})`);
+            loadDetailedEmployeeData(selectedMenteeId, m, y).catch(err => {
                 console.error(`⚠️ [MenteeDetailProgressView] Failed to load data for ${selectedMenteeId}:`, err);
             });
         }
-    }, [selectedMenteeId, loadDetailedEmployeeData]);
-
-    const activeDate = useMemo(() => currentMonth || new Date(monthKey + '-02'), [currentMonth, monthKey]);
+    }, [selectedMenteeId, activeMonthKey, loadDetailedEmployeeData]);
 
     const selectedMentee = useMemo(() => {
         if (!selectedMenteeId) return mentee;
@@ -165,9 +170,6 @@ const MenteeDetailProgressView: React.FC<{
         const enrichedMentee = allUsersData?.[selectedMenteeId]?.employee;
         return enrichedMentee ?? mentees?.find(m => m.id === selectedMenteeId) ?? mentee;
     }, [selectedMenteeId, mentees, mentee, allUsersData]);
-
-    const activeMonthKey = useMemo(() => `${activeDate.getFullYear()}-${String(activeDate.getMonth() + 1).padStart(2, '0')}`, [activeDate]);
-    const daysInMonth = useMemo(() => new Date(activeDate.getFullYear(), activeDate.getMonth() + 1, 0).getDate(), [activeDate]);
 
     const groupedActivities = useMemo(() => {
         return dailyActivitiesConfig.reduce((acc, activity) => {
@@ -1275,10 +1277,13 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     useEffect(() => {
         const needsDetailedData = mentorSubView === 'progress' || mentorSubView === 'laporan-bacaan';
         if (needsDetailedData && loadDetailedEmployeeData && mentees.length > 0) {
-            console.log(`🔄 [MentorDashboard] Pre-loading detailed data for ${mentees.length} mentees (tab: ${mentorSubView})`);
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+            console.log(`🔄 [MentorDashboard] Pre-loading current month data for ${mentees.length} mentees (tab: ${mentorSubView})`);
             mentees.forEach(mentee => {
-                loadDetailedEmployeeData(mentee.id).catch(err => {
-                    console.error(`⚠️ Failed to load reading data for ${mentee.name}:`, err);
+                loadDetailedEmployeeData(mentee.id, currentMonth, currentYear).catch(err => {
+                    console.error(`⚠️ Failed to load detailed data for ${mentee.name}:`, err);
                 });
             });
         }

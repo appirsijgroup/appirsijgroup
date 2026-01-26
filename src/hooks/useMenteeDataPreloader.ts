@@ -20,9 +20,9 @@ import {
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
+import { generateOfficialPdf, ReportSection, TableConfig } from '../components/ReportGenerator';
 import { useUIStore } from '@/store/store';
-import UniversalPersetujuan from './Persetujuan';
+import UniversalPersetujuan from '../components/Persetujuan';
 
 export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
@@ -59,7 +59,7 @@ interface MentorDashboardProps {
     handleCreateTarget: (e: React.FormEvent) => void;
     setConfirmDeleteTarget: React.Dispatch<React.SetStateAction<MenteeTarget | null>>;
     menteeTargets: MenteeTarget[];
-    loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+    loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     dailyActivitiesConfig: DailyActivity[];
 }
 
@@ -67,18 +67,22 @@ interface MentorDashboardProps {
 export const useMenteeDataPreloader = (
     mentorSubView: MentorDashboardView,
     mentees: Employee[],
-    loadDetailedEmployeeData: (employeeId: string) => Promise<void>
+    loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>
 ) => {
     useEffect(() => {
         const needsDetailedData = mentorSubView === 'progress' || mentorSubView === 'laporan-bacaan';
 
         if (needsDetailedData && loadDetailedEmployeeData && mentees.length > 0) {
-            console.log(`🔄 [MentorDashboard] Pre-loading detailed data for ${mentees.length} mentees (tab: ${mentorSubView})`);
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+
+            console.log(`🔄 [MentorDashboard] Pre-loading detailed data for ${mentees.length} mentees (tab: ${mentorSubView}, month: ${currentMonth}/${currentYear})`);
 
             // Load data for all mentees in parallel
             const loadPromises = mentees.map(mentee => {
                 console.log(`  ↳ Loading data for: ${mentee.name} (${mentee.id})`);
-                return loadDetailedEmployeeData(mentee.id).catch(err => {
+                return loadDetailedEmployeeData(mentee.id, currentMonth, currentYear).catch(err => {
                     console.error(`  ✗ Failed to load data for ${mentee.name}:`, err);
                 });
             });

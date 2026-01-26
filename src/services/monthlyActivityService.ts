@@ -32,11 +32,15 @@ const setPendingUpdate = (employeeId: string, data: Record<string, MonthlyActivi
 // Authorization is handled at the API level, not at the Supabase RLS level
 const getClient = () => supabase;
 
-// Get monthly activities for an employee
-export const getMonthlyActivities = async (employeeId: string): Promise<Record<string, MonthlyActivityProgress>> => {
+// Get monthly activities for an employee (with optional month/year filter)
+export const getMonthlyActivities = async (employeeId: string, month?: number, year?: number): Promise<Record<string, MonthlyActivityProgress>> => {
     try {
+        let url = `/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`;
+        if (month) url += `&month=${month}`;
+        if (year) url += `&year=${year}`;
+
         // 🔥 FIX: Use API endpoint to bypass RLS issues
-        const response = await fetch(`/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`);
+        const response = await fetch(url);
 
         if (!response.ok) {
             // Handle 405 Method Not Allowed and other errors gracefully

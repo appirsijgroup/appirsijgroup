@@ -45,7 +45,8 @@ export interface AppDataState {
     loadHospitals: () => Promise<void>;
     logoutEmployee: () => void;
     refreshActivityStats: () => void;
-    loadDetailedEmployeeData: (employeeId: string, force?: boolean) => Promise<void>;
+    loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
+    loadHeavyAdminData: () => Promise<void>;
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -110,8 +111,12 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
                     if (hasManagementRole) {
                         setTimeout(() => {
+                            // FAST: Only load first 15 employees for immediate display in management lists
                             get().loadPaginatedEmployees(1, 15).catch(err => console.error('Failed to load paginated employees:', err));
-                            get().loadAllEmployees().catch(err => console.error('Failed to load all employees:', err));
+
+                            // MODERATE: Load basic info of all employees (Phase 1 only)
+                            // We NO LONGER call Phase 2 (heavy data) automatically here ⚡
+                            get().loadAllEmployees().catch(err => console.error('Failed to load basic employee info:', err));
                         }, 500);
                     }
 
@@ -191,9 +196,9 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             set({ isLoadingEmployees: true });
 
             const { getAllEmployees } = await import('@/services/employeeService');
-            const { getAllAttendanceRecords, supabase } = await import('@/services/attendanceService');
 
             // --- PHASE 1: FAST LOAD (Basic Info) ---
+            // Only loads the employees list, not their entire history
             const allEmployees = await getAllEmployees(limit);
 
             const initialData: Record<string, UserData> = {};
@@ -210,105 +215,129 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 isLoadingEmployees: false
             }));
 
-            // --- PHASE 2: BACKGROUND LOAD (Heavy Data) ---
-            const fetchHeavyData = async () => {
-                try {
-                    const [allAttendanceRecords, teamRecordsRes, activityRecordsRes, bulkActivitiesRes] = await Promise.all([
-                        getAllAttendanceRecords(),
-                        supabase.from('team_attendance_records').select('*'),
-                        supabase.from('activity_attendance').select('*'),
-                        fetch('/api/admin/bulk-monthly-activities', { credentials: 'include' }).then(r => r.ok ? r.json() : { allActivities: {} })
-                    ]);
-
-                    const allMonthlyActivities = bulkActivitiesRes.allActivities || {};
-                    const extraTeamRecords = (teamRecordsRes.data as any[]) || [];
-                    const extraActivityRecords = (activityRecordsRes.data as any[]) || [];
-                    const todayStr = new Date().toLocaleDateString('en-CA');
-
-                    const updatedUsers: Record<string, Partial<UserData>> = {};
-
-                    const mergeToUpdate = (userId: string, entityId: string, data: any) => {
-                        if (!userId) return;
-                        if (!updatedUsers[userId]) updatedUsers[userId] = { attendance: {}, history: {} };
-                        const timestamp = data.timestamp;
-                        if (!timestamp) return;
-                        const dateStr = new Date(timestamp).toLocaleDateString('en-CA');
-
-                        if (dateStr === todayStr) {
-                            if (!updatedUsers[userId].attendance) updatedUsers[userId].attendance = {};
-                            updatedUsers[userId].attendance![entityId] = data;
-                        } else {
-                            if (!updatedUsers[userId].history) updatedUsers[userId].history = {};
-                            if (!updatedUsers[userId].history![dateStr]) updatedUsers[userId].history![dateStr] = {};
-                            updatedUsers[userId].history![dateStr][entityId] = data;
-                        }
-                    };
-
-                    allEmployees.forEach(emp => {
-                        if (allMonthlyActivities[emp.id]) {
-                            updatedUsers[emp.id] = {
-                                ...updatedUsers[emp.id],
-                                employee: { ...emp, monthlyActivities: allMonthlyActivities[emp.id] }
-                            };
-                        }
-                    });
-
-                    Object.entries(allAttendanceRecords).forEach(([userId, userRecords]) => {
-                        Object.entries(userRecords).forEach(([entityId, record]: [string, any]) => {
-                            if (record && record.status) {
-                                mergeToUpdate(userId, entityId, {
-                                    status: record.status,
-                                    reason: record.reason || null,
-                                    timestamp: new Date(record.timestamp).getTime(),
-                                    submitted: true,
-                                    isLateEntry: record.is_late_entry || false
-                                });
-                            }
-                        });
-                    });
-
-                    extraTeamRecords.forEach(r => {
-                        const uid = r.user_id || r.userId;
-                        if (!uid) return;
-                        mergeToUpdate(uid, r.session_type || r.session_id || 'Kegiatan Tim', {
-                            status: 'hadir',
-                            timestamp: new Date(r.attended_at || r.attendedAt).getTime(),
-                            submitted: true
-                        });
-                    });
-
-                    extraActivityRecords.forEach(r => {
-                        if (!r.employee_id) return;
-                        mergeToUpdate(r.employee_id, r.activity_id, {
-                            status: r.status,
-                            timestamp: new Date(r.submitted_at || r.timestamp).getTime(),
-                            submitted: true
-                        });
-                    });
-
-                    set(state => {
-                        const nextAllUsersData = { ...state.allUsersData };
-                        Object.entries(updatedUsers).forEach(([userId, updates]) => {
-                            if (nextAllUsersData[userId]) {
-                                nextAllUsersData[userId] = {
-                                    ...nextAllUsersData[userId],
-                                    employee: updates.employee || nextAllUsersData[userId].employee,
-                                    attendance: { ...nextAllUsersData[userId].attendance, ...updates.attendance },
-                                    history: { ...nextAllUsersData[userId].history, ...updates.history }
-                                };
-                            }
-                        });
-                        return { allUsersData: nextAllUsersData };
-                    });
-                } catch (e) {
-                    console.error('⚠️ [loadAllEmployees] Background sync failed:', e);
-                }
-            };
-
-            fetchHeavyData();
+            // ⚡ NOTE: BACKGROUND LOAD (Heavy Data) is intentionally removed from here.
+            // It was causing 5+ minute loading times for large datasets.
+            // Call loadHeavyAdminData() manually when needed (e.g., in Admin Reports).
 
         } catch (error) {
             console.error('❌ [loadAllEmployees] Error:', error);
+            set({ isLoadingEmployees: false });
+        }
+    },
+
+    /**
+     * 🔥 NEW: Decoupled Heavy Data Loader
+     * Only call this when detailed global analytics or large reports are needed.
+     */
+    loadHeavyAdminData: async () => {
+        if (get().isLoadingEmployees) return;
+        try {
+            set({ isLoadingEmployees: true });
+            const { getAllAttendanceRecords, supabase } = await import('@/services/attendanceService');
+            const allEmployees = Object.values(get().allUsersData).map(u => u.employee);
+
+            if (allEmployees.length === 0) {
+                set({ isLoadingEmployees: false });
+                return;
+            }
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+
+            const [allAttendanceRecords, teamRecordsRes, activityRecordsRes, bulkActivitiesRes] = await Promise.all([
+                getAllAttendanceRecords(startOfMonth), // Only get current month by default
+                supabase.from('team_attendance_records').select('*').gte('session_date', startOfMonth).limit(1000),
+                supabase.from('activity_attendance').select('*').gte('timestamp', startOfMonth).limit(1000),
+                fetch(`/api/admin/bulk-monthly-activities?month=${currentMonth}&year=${currentYear}`, { credentials: 'include' }).then(r => r.ok ? r.json() : { allActivities: {} })
+            ]);
+
+            const allMonthlyActivities = bulkActivitiesRes.allActivities || {};
+            const extraTeamRecords = (teamRecordsRes.data as any[]) || [];
+            const extraActivityRecords = (activityRecordsRes.data as any[]) || [];
+            const todayStr = new Date().toLocaleDateString('en-CA');
+
+            const updatedUsers: Record<string, Partial<UserData>> = {};
+
+            const mergeToUpdate = (userId: string, entityId: string, data: any) => {
+                if (!userId) return;
+                if (!updatedUsers[userId]) updatedUsers[userId] = { attendance: {}, history: {} };
+                const timestamp = data.timestamp;
+                if (!timestamp) return;
+                const dateStr = new Date(timestamp).toLocaleDateString('en-CA');
+
+                if (dateStr === todayStr) {
+                    if (!updatedUsers[userId].attendance) updatedUsers[userId].attendance = {};
+                    updatedUsers[userId].attendance![entityId] = data;
+                } else {
+                    if (!updatedUsers[userId].history) updatedUsers[userId].history = {};
+                    if (!updatedUsers[userId].history![dateStr]) updatedUsers[userId].history![dateStr] = {};
+                    updatedUsers[userId].history![dateStr][entityId] = data;
+                }
+            };
+
+            allEmployees.forEach(emp => {
+                if (allMonthlyActivities[emp.id]) {
+                    updatedUsers[emp.id] = {
+                        ...updatedUsers[emp.id],
+                        employee: { ...emp, monthlyActivities: allMonthlyActivities[emp.id] }
+                    };
+                }
+            });
+
+            Object.entries(allAttendanceRecords).forEach(([userId, userRecords]) => {
+                Object.entries(userRecords).forEach(([entityId, record]: [string, any]) => {
+                    if (record && record.status) {
+                        mergeToUpdate(userId, entityId, {
+                            status: record.status,
+                            reason: record.reason || null,
+                            timestamp: new Date(record.timestamp).getTime(),
+                            submitted: true,
+                            isLateEntry: record.is_late_entry || false
+                        });
+                    }
+                });
+            });
+
+            extraTeamRecords.forEach(r => {
+                const uid = r.user_id || r.userId;
+                if (!uid) return;
+                mergeToUpdate(uid, r.session_type || r.session_id || 'Kegiatan Tim', {
+                    status: 'hadir',
+                    timestamp: new Date(r.attended_at || r.attendedAt).getTime(),
+                    submitted: true
+                });
+            });
+
+            extraActivityRecords.forEach(r => {
+                if (!r.employee_id) return;
+                mergeToUpdate(r.employee_id, r.activity_id, {
+                    status: r.status,
+                    timestamp: new Date(r.submitted_at || r.timestamp).getTime(),
+                    submitted: true
+                });
+            });
+
+            set(state => {
+                const nextAllUsersData = { ...state.allUsersData };
+                Object.entries(updatedUsers).forEach(([userId, updates]) => {
+                    if (nextAllUsersData[userId]) {
+                        nextAllUsersData[userId] = {
+                            ...nextAllUsersData[userId],
+                            employee: updates.employee || nextAllUsersData[userId].employee,
+                            attendance: { ...nextAllUsersData[userId].attendance, ...updates.attendance },
+                            history: { ...nextAllUsersData[userId].history, ...updates.history }
+                        };
+                    }
+                });
+                return { allUsersData: nextAllUsersData, isLoadingEmployees: false };
+            });
+
+            const { useUIStore } = await import('@/store/store');
+            useUIStore.getState().addToast('⚡ Sinkronisasi riwayat berhasil!', 'success');
+        } catch (e) {
+            console.error('⚠️ [loadHeavyAdminData] Failed:', e);
             set({ isLoadingEmployees: false });
         }
     },
@@ -375,40 +404,67 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
     },
 
-    loadDetailedEmployeeData: async (employeeId: string, force = false) => {
+    loadDetailedEmployeeData: async (employeeId: string, monthOrForce?: number | boolean, yearParam?: number, forceParam = false) => {
         if (!employeeId) return;
 
+        let month: number | undefined = undefined;
+        let year: number | undefined = yearParam;
+        let force: boolean = forceParam;
+
+        if (typeof monthOrForce === 'boolean') {
+            force = monthOrForce;
+        } else {
+            month = monthOrForce;
+        }
+
         const now = Date.now();
-        const lastLoad = get().lastDetailedLoad[employeeId] || 0;
+        const cacheKey = `${employeeId}-${month || 'all'}-${year || 'all'}`;
+        const lastLoad = get().lastDetailedLoad[cacheKey] || 0;
         if (!force && now - lastLoad < 30000) return;
 
         try {
             const { getMonthlyActivities } = await import('@/services/monthlyActivityService');
 
-            // 🚀 The API now handles merging for:
-            // 1. Shalat Berjamaah
-            // 2. Tadarus & Approved Requests
-            // 3. KIE & Doa Bersama
-            // 4. Manual Reports (Counters/Books)
-            const mergedActivities = await getMonthlyActivities(employeeId);
+            const mergedActivities = await getMonthlyActivities(employeeId, month, year);
 
             set(state => {
                 const newData = { ...state.allUsersData };
                 if (newData[employeeId]) {
+                    // Merging logic for specific month vs full load
+                    let updatedActivities = mergedActivities;
+                    if (month && year) {
+                        updatedActivities = {
+                            ...(newData[employeeId].employee.monthlyActivities || {}),
+                            ...mergedActivities
+                        };
+                    }
+
                     newData[employeeId] = {
                         ...newData[employeeId],
-                        employee: { ...newData[employeeId].employee, monthlyActivities: mergedActivities }
+                        employee: { ...newData[employeeId].employee, monthlyActivities: updatedActivities }
                     };
                 }
 
-                const updatedLoggedInEmployee = (state.loggedInEmployee && state.loggedInEmployee.id === employeeId)
-                    ? { ...state.loggedInEmployee, monthlyActivities: mergedActivities }
-                    : state.loggedInEmployee;
+                if (state.loggedInEmployee && state.loggedInEmployee.id === employeeId) {
+                    let updatedActivities = mergedActivities;
+                    if (month && year) {
+                        updatedActivities = {
+                            ...(state.loggedInEmployee.monthlyActivities || {}),
+                            ...mergedActivities
+                        };
+                    }
+
+                    const updatedLoggedInEmployee = { ...state.loggedInEmployee, monthlyActivities: updatedActivities };
+                    return {
+                        allUsersData: newData,
+                        loggedInEmployee: updatedLoggedInEmployee,
+                        lastDetailedLoad: { ...state.lastDetailedLoad, [cacheKey]: now }
+                    };
+                }
 
                 return {
                     allUsersData: newData,
-                    loggedInEmployee: updatedLoggedInEmployee,
-                    lastDetailedLoad: { ...state.lastDetailedLoad, [employeeId]: now }
+                    lastDetailedLoad: { ...state.lastDetailedLoad, [cacheKey]: now }
                 };
             });
 

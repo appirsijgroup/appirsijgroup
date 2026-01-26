@@ -38,6 +38,7 @@ export default function AdminPage() {
         loggedInEmployee,
         setAllUsersData,
         loadAllEmployees,
+        loadHeavyAdminData,
         isLoadingEmployees,
         loadPaginatedEmployees,
         paginatedEmployees,
@@ -873,28 +874,7 @@ export default function AdminPage() {
         <>
             <AdminDashboard
                 allUsersData={allUsersData}
-                // Pagination & Data Props
-                paginatedEmployees={paginatedEmployees}
-                paginationInfo={paginationInfo}
-                onLoadEmployees={loadEmployeesOnDemand}
-                isLoadingEmployees={isLoadingEmployees}
-                pagination={{
-                    currentPage: page,
-                    totalPages: totalPages,
-                    totalCount: totalCount,
-                    hasNext: page < totalPages,
-                    hasPrev: page > 1,
-                    onNext: handleNextPage,
-                    onPrev: handlePrevPage,
-                    onSearch: handleSearch,
-                    onRoleFilter: handleRoleFilter,
-                    onIsActiveFilter: handleIsActiveFilter,
-                    onRefresh: handleRefresh,
-                    searchTerm: searchTerm,
-                    roleFilter: roleFilter,
-                    isActiveFilter: isActiveFilter,
-                }}
-                loggedInEmployee={loggedInEmployee}
+                loggedInEmployee={loggedInEmployee!}
                 onToggleStatus={handleToggleStatus}
                 onSetRole={handleSetRole}
                 onAddUser={handleAddUser}
@@ -922,8 +902,29 @@ export default function AdminPage() {
                 onUpdateHospital={handleUpdateHospital}
                 onDeleteHospital={handleDeleteHospital}
                 onToggleHospitalStatus={handleToggleHospitalStatus}
-                mutabaahLockingMode={mutabaahLockingMode}
+                mutabaahLockingMode={mutabaahLockingMode!}
                 onUpdateMutabaahLockingMode={handleUpdateMutabaahLockingMode}
+                onLoadEmployees={() => loadAllEmployees()}
+                onLoadHeavyData={loadHeavyAdminData}
+                isLoadingEmployees={isLoadingEmployees}
+                paginatedEmployees={paginatedEmployees}
+                paginationInfo={paginationInfo}
+                pagination={{
+                    currentPage: page,
+                    totalPages: totalPages,
+                    totalCount: totalCount,
+                    hasNext: page < totalPages,
+                    hasPrev: page > 1,
+                    onNext: handleNextPage,
+                    onPrev: handlePrevPage,
+                    onSearch: handleSearch,
+                    onRoleFilter: handleRoleFilter,
+                    onIsActiveFilter: handleIsActiveFilter,
+                    onRefresh: handleRefresh,
+                    searchTerm: searchTerm,
+                    roleFilter: roleFilter,
+                    isActiveFilter: isActiveFilter
+                }}
             />
             <ConfirmationModal
                 isOpen={mutabaahConfirmModal.isOpen}

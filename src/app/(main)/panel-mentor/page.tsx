@@ -9,7 +9,7 @@ import { useAuditLogStore } from '@/store/auditLogStore';
 import { MenteeTarget, TadarusSession } from '@/types';
 
 export default function MentorPanelPage() {
-    const { loggedInEmployee, allUsersData, loadLoggedInEmployee } = useAppDataStore();
+    const { loggedInEmployee, allUsersData, loadLoggedInEmployee, loadDetailedEmployeeData } = useAppDataStore();
     const { addToast } = useUIStore();
     const {
         monthlyReportSubmissions,
@@ -85,9 +85,8 @@ export default function MentorPanelPage() {
     };
 
     // Wrapper for loadDetailedEmployeeData expected by MentorDashboard
-    const loadDetailedEmployeeDataWrapper = async (employeeId: string) => {
-        // Just reload current user context for now
-        await loadLoggedInEmployee();
+    const loadDetailedEmployeeDataWrapper = async (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => {
+        await loadDetailedEmployeeData(employeeId, monthOrForce, year, force);
     };
 
     // Handlers

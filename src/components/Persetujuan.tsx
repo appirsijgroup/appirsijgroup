@@ -165,7 +165,7 @@ interface PersetujuanProps {
     pendingMissedPrayerRequests?: any[];
     onReviewTadarusRequest?: (requestId: string, status: 'approved' | 'rejected') => void;
     onReviewMissedPrayerRequest?: (requestId: string, status: 'approved' | 'rejected', mentorNotes?: string) => void;
-    loadDetailedEmployeeData?: (employeeId: string) => Promise<void>;
+    loadDetailedEmployeeData?: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     dailyActivitiesConfig: any[];
 }
 
@@ -189,10 +189,12 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
-    // 🔥 FIX: Load detailed data when a report is selected
+    // 🔥 FIX: Load detailed data when a report is selected (target only the relevant month)
     useEffect(() => {
         if (selectedSubmission && loadDetailedEmployeeData) {
-            loadDetailedEmployeeData(selectedSubmission.menteeId);
+            const [y, m] = selectedSubmission.monthKey.split('-').map(Number);
+            console.log(`🔄 [Persetujuan] Loading detailed data for mentee: ${selectedSubmission.menteeId} (Month: ${m}/${y})`);
+            loadDetailedEmployeeData(selectedSubmission.menteeId, m, y);
         }
     }, [selectedSubmission, loadDetailedEmployeeData]);
 

@@ -447,7 +447,7 @@ export interface MyDashboardViewProps {
   onReviewMissedPrayerRequest: (requestId: string, status: 'approved' | 'rejected', mentorNotes?: string) => void;
   onMentorAttendOwnSession: (sessionId: string) => void;
   tadarusSessions: TadarusSession[];
-  loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+  loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
   // Aktivitas Pribadi
   onLogBookReading: (bookTitle: string, pagesRead: string, dateCompleted: string) => void;
   onDeleteReadingHistory: (type: 'book' | 'quran', id: string, date: string) => void;

@@ -30,12 +30,23 @@ export const getEmployeeAttendance = async (employeeId: string): Promise<Record<
   return attendanceMap;
 };
 
-// 🔥 REVERTED: Get all attendance records (removed 90-day limit per user request)
-export const getAllAttendanceRecords = async (): Promise<Record<string, Record<string, AttendanceRecord>>> => {
-  const { data, error } = await supabase
+// Get all attendance records (with optional date range filter)
+export const getAllAttendanceRecords = async (startDate?: string, endDate?: string): Promise<Record<string, Record<string, AttendanceRecord>>> => {
+  let query = supabase
     .from('attendance_records')
     .select('*')
     .order('timestamp', { ascending: true });
+
+  if (startDate && endDate) {
+    query = query.gte('timestamp', startDate).lte('timestamp', endDate + 'T23:59:59');
+  } else {
+    // ⚡ SAFETY: If no range provided, only get last 30 days or limit to prevent massive payload
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    query = query.gte('timestamp', thirtyDaysAgo.toISOString()).limit(2000);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw error;

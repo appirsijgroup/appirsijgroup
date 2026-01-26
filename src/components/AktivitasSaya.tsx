@@ -31,7 +31,7 @@ interface AktivitasSayaProps {
     menteeTargets: any[];
     hospitals: any[];
     addToast?: (message: string, type: 'success' | 'error') => void;
-    loadDetailedEmployeeData: (employeeId: string) => Promise<void>;
+    loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     initialTab?: 'aktivitas-pribadi' | 'riwayat-bacaan' | 'panel-mentor' | 'persetujuan';
 }
 

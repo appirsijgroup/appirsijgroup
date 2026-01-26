@@ -71,8 +71,9 @@ interface AdminDashboardProps {
     onToggleHospitalStatus: (id: string) => void;
     mutabaahLockingMode: MutabaahLockingMode;
     onUpdateMutabaahLockingMode: (mode: MutabaahLockingMode) => void;
-    onLoadEmployees?: () => Promise<void>; // 🔥 NEW: On-demand employee loading
-    isLoadingEmployees?: boolean; // 🔥 NEW: Loading state for global employee loading
+    onLoadEmployees?: () => Promise<void>;
+    onLoadHeavyData?: () => Promise<void>; // 🔥 NEW: On-demand heavy data loading
+    isLoadingEmployees?: boolean;
     paginatedEmployees?: Employee[];
     paginationInfo?: {
         page: number;
@@ -3037,7 +3038,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 interface HospitalModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (data: Omit<Hospital, 'id' | 'isActive'>, id?: string) => Promise<{ success: boolean, error?: string }>;
+    onSave: (data: Omit<Hospital, 'id' | 'isActive'> & { logoFile?: File }, id?: string) => Promise<{ success: boolean, error?: string }>;
     existingHospital: Hospital | null;
 }
 
@@ -3386,7 +3387,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
         onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
-        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, isLoadingEmployees,
+        mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, onLoadHeavyData, isLoadingEmployees,
         pagination, paginatedEmployees
     } = props;
     /* eslint-enable */
@@ -3656,20 +3657,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
 
                     {/* 🔥 Global Refresh Button */}
-                    {(activeView === 'reports' || activeView === 'manajemen-pengguna') && onLoadEmployees && (
+                    {(activeView === 'reports' || activeView === 'manajemen-pengguna') && (onLoadEmployees || onLoadHeavyData) && (
                         <button
-                            onClick={() => onLoadEmployees()}
+                            onClick={() => activeView === 'reports' && onLoadHeavyData ? onLoadHeavyData() : onLoadEmployees?.()}
                             disabled={isLoadingEmployees}
-                            title={isLoadingEmployees ? 'Memuat...' : 'Refresh Data'}
-                            className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 text-blue-200 hover:text-white rounded-lg transition-all border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 mb-2"
+                            title={isLoadingEmployees ? 'Memuat...' : 'Refresh & Sinkronisasi Data'}
+                            className="flex items-center justify-center gap-2 px-4 h-10 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-teal-200 rounded-lg transition-all border border-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 mb-2"
                         >
                             <RefreshCw className={`w-5 h-5 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
+                            <span className="text-xs font-bold uppercase hidden sm:inline">{activeView === 'reports' ? 'Sinkronisasi Riwayat' : 'Refresh'}</span>
                         </button>
                     )}
                 </div>
             </div>
 
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
+                {activeView === 'reports' && (
+                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-3">
+                        <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                            <Sparkles className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <div className="grow">
+                            <p className="text-sm font-semibold text-yellow-200">Mode Cepat Aktif</p>
+                            <p className="text-xs text-yellow-100/70">Klik tombol &ldquo;Sinkronisasi Riwayat&rdquo; di atas untuk memuat data lengkap kehadiran lama.</p>
+                        </div>
+                    </div>
+                )}
                 {activeView === 'manajemen-pengguna' && isSuperAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">

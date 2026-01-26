@@ -493,131 +493,133 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                     Unduh PDF
                 </button>
             </div>
-            <div className="bg-slate-50 p-6 sm:p-10 rounded shadow-2xl text-gray-800" id="transcript-content">
-                {/* Standard Letterhead (Kop Surat) Layout */}
-                <div className="flex items-start gap-4 pb-4 border-b-4 border-teal-600 mb-6">
-                    {hospital?.logo && (
-                        <div className="shrink-0 pt-2">
-                            <NextImage src={hospital.logo} alt="Hospital Logo" width={100} height={100} className="h-24 w-auto" />
-                        </div>
-                    )}
-                    <div className="flex-1 text-center">
-                        <h3 className="text-xl sm:text-3xl font-extrabold text-teal-800 leading-tight">RUMAH SAKIT ISLAM JAKARTA GROUP</h3>
-                        {hospital?.name && hospital.name.toUpperCase() !== 'RUMAH SAKIT ISLAM JAKARTA GROUP' && (
-                            <h4 className="text-lg sm:text-2xl font-bold text-teal-600 mt-1">{hospital.name.toUpperCase()}</h4>
+            <div className="overflow-x-auto pb-8">
+                <div className="bg-slate-50 p-6 sm:p-10 rounded shadow-2xl text-gray-800 min-w-[700px] mx-auto" id="transcript-content">
+                    {/* Standard Letterhead (Kop Surat) Layout */}
+                    <div className="flex items-start gap-4 pb-4 border-b-4 border-teal-600 mb-6">
+                        {hospital?.logo && (
+                            <div className="shrink-0 pt-2">
+                                <NextImage src={hospital.logo} alt="Hospital Logo" width={80} height={80} className="h-20 w-auto" />
+                            </div>
                         )}
-                        <p className="text-sm sm:text-base text-gray-500 font-medium mt-1 italic">{hospital?.address || 'Alamat RS belum diatur di Manajemen RS'}</p>
+                        <div className="flex-1 text-center">
+                            <h3 className="text-xl sm:text-2xl font-extrabold text-teal-800 leading-tight">RUMAH SAKIT ISLAM JAKARTA GROUP</h3>
+                            {hospital?.name && hospital.name.toUpperCase() !== 'RUMAH SAKIT ISLAM JAKARTA GROUP' && (
+                                <h4 className="text-lg sm:text-xl font-bold text-teal-600 mt-1">{hospital.name.toUpperCase()}</h4>
+                            )}
+                            <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1 italic">{hospital?.address || 'Alamat RS belum diatur di Manajemen RS'}</p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm sm:text-base">
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Nama</strong>: {employee.name}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Unit Kerja</strong>: {employee.unit}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Nopeg</strong>: {employee.id}</div>
-                    <div><strong className="font-medium text-gray-500 w-24 inline-block">Mentor</strong>: {bossInfo.mentor}</div>
-                </div>
+                    <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                        <div><strong className="font-medium text-gray-500 w-24 inline-block">Nama</strong>: {employee.name}</div>
+                        <div><strong className="font-medium text-gray-500 w-24 inline-block">Unit Kerja</strong>: {employee.unit}</div>
+                        <div><strong className="font-medium text-gray-500 w-24 inline-block">Nopeg</strong>: {employee.id}</div>
+                        <div><strong className="font-medium text-gray-500 w-24 inline-block">Mentor</strong>: {bossInfo.mentor}</div>
+                    </div>
 
-                <div className="mt-8 p-4 bg-slate-100 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-4 text-center border border-slate-200">
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PERIODE</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-teal-600">{selectedMonthLabel.toUpperCase()}</p>
+                    <div className="mt-8 p-4 bg-slate-100 rounded-lg grid grid-cols-3 gap-4 text-center border border-slate-200">
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PERIODE</p>
+                            <p className="text-xl font-bold text-teal-600">{selectedMonthLabel.toUpperCase()}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">INDEKS PRESTASI TAHUNAN (IPA)</p>
+                            <p className="text-xl font-bold text-teal-600">{ipForMonth.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PREDIKAT</p>
+                            <p className="text-lg font-bold text-teal-600">{getPredicate(ipForMonth)}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">INDEKS PRESTASI TAHUNAN (IPA)</p>
-                        <p className="text-2xl sm:text-3xl font-bold text-teal-600">{ipForMonth.toFixed(2)}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 tracking-wider uppercase">PREDIKAT</p>
-                        <p className="text-xl sm:text-2xl font-bold text-teal-600">{getPredicate(ipForMonth)}</p>
-                    </div>
-                </div>
 
-                {performanceData && performanceData.categories.length > 0 ? (
-                    <div className="mt-8">
-                        <h4 className="text-lg sm:text-xl font-bold text-center tracking-widest text-gray-700 mb-4">TRANSKRIP NILAI APPI</h4>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm border-collapse border border-slate-300">
-                                <thead className="bg-slate-100 text-slate-600 text-left">
-                                    <tr>
-                                        <th className="border border-slate-300 p-2 w-[50%] whitespace-nowrap">Kategori & Indikator Penilaian</th>
-                                        <th className="border border-slate-300 p-2 w-[35%] text-center whitespace-nowrap">Detail Capaian</th>
-                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Nilai</th>
-                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Huruf</th>
-                                        <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Bobot</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {performanceData.categories.map((cat: {
-                                        name: string;
-                                        score: number;
-                                        grade: string;
-                                        bobot: number;
-                                        details: {
-                                            title: string;
-                                            target: number;
-                                            achieved: number;
-                                            percentage: number;
-                                        }[];
-                                    }) => (
-                                        <Fragment key={cat.name}>
-                                            <tr className="bg-slate-100 font-bold">
-                                                <td className="border border-slate-300 p-2 text-slate-700 whitespace-nowrap">{cat.name.toUpperCase()}</td>
-                                                <td className="border border-slate-300 p-2 text-center"></td>
-                                                <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.score}</td>
-                                                <td className="border border-slate-300 p-2 text-center text-teal-600 font-extrabold text-base whitespace-nowrap">{cat.grade}</td>
-                                                <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.bobot.toFixed(1)}</td>
-                                            </tr>
-                                            {cat.details.map((detail: {
+                    {performanceData && performanceData.categories.length > 0 ? (
+                        <div className="mt-8">
+                            <h4 className="text-lg font-bold text-center tracking-widest text-gray-700 mb-4">TRANSKRIP NILAI APPI</h4>
+                            <div className="">
+                                <table className="min-w-full text-xs border-collapse border border-slate-300">
+                                    <thead className="bg-slate-100 text-slate-600 text-left">
+                                        <tr>
+                                            <th className="border border-slate-300 p-2 w-[50%] whitespace-nowrap">Kategori & Indikator Penilaian</th>
+                                            <th className="border border-slate-300 p-2 w-[35%] text-center whitespace-nowrap">Detail Capaian</th>
+                                            <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Nilai</th>
+                                            <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Huruf</th>
+                                            <th className="border border-slate-300 p-2 text-center whitespace-nowrap">Bobot</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {performanceData.categories.map((cat: {
+                                            name: string;
+                                            score: number;
+                                            grade: string;
+                                            bobot: number;
+                                            details: {
                                                 title: string;
                                                 target: number;
                                                 achieved: number;
                                                 percentage: number;
-                                            }) => (
-                                                <tr key={detail.title}>
-                                                    <td className="border-x border-b border-slate-300 p-2 pl-6 text-sm text-gray-600 whitespace-nowrap">- {detail.title}</td>
-                                                    <td className="border-x border-b border-slate-300 p-2 text-sm text-gray-600">
-                                                        <div className="flex items-center gap-2"><div className="w-full bg-slate-200 rounded-full h-2"><div className="bg-teal-500 h-2 rounded-full" style={{ width: `${detail.percentage}%` }}></div></div><span className="font-semibold w-16 text-right">{detail.achieved}/{detail.target}</span></div>
-                                                    </td>
-                                                    <td className="border-x border-b border-slate-300"></td>
-                                                    <td className="border-x border-b border-slate-300"></td>
-                                                    <td className="border-x border-b border-slate-300"></td>
+                                            }[];
+                                        }) => (
+                                            <Fragment key={cat.name}>
+                                                <tr className="bg-slate-100 font-bold">
+                                                    <td className="border border-slate-300 p-2 text-slate-700 whitespace-nowrap">{cat.name.toUpperCase()}</td>
+                                                    <td className="border border-slate-300 p-2 text-center"></td>
+                                                    <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.score}</td>
+                                                    <td className="border border-slate-300 p-2 text-center text-teal-600 font-extrabold text-base whitespace-nowrap">{cat.grade}</td>
+                                                    <td className="border border-slate-300 p-2 text-center text-slate-700 whitespace-nowrap">{cat.bobot.toFixed(1)}</td>
                                                 </tr>
-                                            ))}
-                                        </Fragment>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center py-10 mt-8 bg-slate-100 rounded-lg">
-                        <p className="text-gray-600">Tidak ada data untuk periode yang dipilih.</p>
-                        <p className="text-sm text-gray-500">Pastikan lembar mutaba{'\''}ah untuk bulan ini sudah diaktifkan dan diisi.</p>
-                    </div>
-                )}
-
-                <div className="mt-12 text-gray-800 text-sm">
-                    <div className="flex justify-end mb-4">
-                        <div className="w-1/3 text-center">
-                            <p>Jakarta, {todayForView}</p>
-                        </div>
-                    </div>
-                    <div className="flex justify-between">
-                        <div className="w-1/3 text-center">
-                            <p>{signatoryTitle},</p>
-                            <div className="h-20"></div>
-                            <p className="font-bold underline">{signatoryName}</p>
-                            <p>NIP. {signatoryNip}</p>
-                        </div>
-                        <div className="w-1/3 text-center">
-                            <p>Pegawai,</p>
-                            <div className="h-20 flex items-center justify-center">
-                                {employee.signature && (
-                                    <NextImage src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16" />
-                                )}
+                                                {cat.details.map((detail: {
+                                                    title: string;
+                                                    target: number;
+                                                    achieved: number;
+                                                    percentage: number;
+                                                }) => (
+                                                    <tr key={detail.title}>
+                                                        <td className="border-x border-b border-slate-300 p-2 pl-6 text-sm text-gray-600 whitespace-nowrap">- {detail.title}</td>
+                                                        <td className="border-x border-b border-slate-300 p-2 text-sm text-gray-600">
+                                                            <div className="flex items-center gap-2"><div className="w-full bg-slate-200 rounded-full h-2"><div className="bg-teal-500 h-2 rounded-full" style={{ width: `${detail.percentage}%` }}></div></div><span className="font-semibold w-16 text-right">{detail.achieved}/{detail.target}</span></div>
+                                                        </td>
+                                                        <td className="border-x border-b border-slate-300"></td>
+                                                        <td className="border-x border-b border-slate-300"></td>
+                                                        <td className="border-x border-b border-slate-300"></td>
+                                                    </tr>
+                                                ))}
+                                            </Fragment>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                            <p className="font-bold underline">{employee.name}</p>
-                            <p>NIP. {employee.id}</p>
+                        </div>
+                    ) : (
+                        <div className="text-center py-10 mt-8 bg-slate-100 rounded-lg">
+                            <p className="text-gray-600">Tidak ada data untuk periode yang dipilih.</p>
+                            <p className="text-sm text-gray-500">Pastikan lembar mutaba{'\''}ah untuk bulan ini sudah diaktifkan dan diisi.</p>
+                        </div>
+                    )}
+
+                    <div className="mt-12 text-gray-800 text-sm">
+                        <div className="flex justify-end mb-4">
+                            <div className="w-1/3 text-center">
+                                <p>Jakarta, {todayForView}</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-between gap-12">
+                            <div className="flex-1 text-center">
+                                <p>{signatoryTitle},</p>
+                                <div className="h-16"></div>
+                                <p className="font-bold underline">{signatoryName}</p>
+                                <p>NIP. {signatoryNip}</p>
+                            </div>
+                            <div className="flex-1 text-center">
+                                <p>Pegawai,</p>
+                                <div className="h-16 flex items-center justify-center">
+                                    {employee.signature && (
+                                        <NextImage src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16 w-auto" />
+                                    )}
+                                </div>
+                                <p className="font-bold underline">{employee.name}</p>
+                                <p>NIP. {employee.id}</p>
+                            </div>
                         </div>
                     </div>
                 </div>

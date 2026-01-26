@@ -440,10 +440,17 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
 
     const today = new Date().getDate();
 
-    const userMap = useMemo(() => new Map(Object.entries(allUsersData).map(([id, data]) => [id, data.employee])), [allUsersData]);
-    const kaUnit = useMemo(() => userMap.get(employee.kaUnitId || ''), [userMap, employee.kaUnitId]);
-    const supervisor = useMemo(() => userMap.get(employee.supervisorId || ''), [userMap, employee.supervisorId]);
-    const mentor = useMemo(() => userMap.get(employee.mentorId || ''), [userMap, employee.mentorId]);
+    const userMap = useMemo(() => {
+        const map = new Map<string, Employee>();
+        Object.values(allUsersData).forEach(d => {
+            if (d.employee?.id) map.set(String(d.employee.id).trim(), d.employee);
+        });
+        return map;
+    }, [allUsersData]);
+
+    const kaUnit = useMemo(() => userMap.get(String(employee.kaUnitId || '').trim()), [userMap, employee.kaUnitId]);
+    const supervisor = useMemo(() => userMap.get(String(employee.supervisorId || '').trim()), [userMap, employee.supervisorId]);
+    const mentor = useMemo(() => userMap.get(String(employee.mentorId || '').trim()), [userMap, employee.mentorId]);
 
     const kaUnitName = kaUnit?.name;
     const supervisorName = supervisor?.name;
@@ -503,103 +510,104 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
 
-                        <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400 border-b border-white/10 pb-4">
-                            <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
-                            <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
-                            {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
+                <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400 border-b border-white/10 pb-4">
+                    <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
+                    <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
+                    {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
+                </div>
+
+                {/* Pihak Yang Menyetujui - Aligned with Table Width */}
+                <div className="mt-8 pt-8 text-center px-4 pb-4">
+                    <h4 className="text-base font-semibold text-white mb-6 tracking-wide">Pihak yang Menyetujui</h4>
+                    <div className="flex flex-col sm:flex-row justify-between items-stretch gap-4 sm:gap-6">
+                        {/* Ka. Unit */}
+                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
+                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
+                            <div className="flex-1 flex items-center justify-center my-2">
+                                {kaUnit?.signature ? (
+                                    <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
+                                ) : (
+                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="w-full">
+                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
+                                    {kaUnitName || 'Belum Diatur'}
+                                </p>
+                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
+                            </div>
                         </div>
-
-                        {/* Pihak Yang Menyetujui - Aligned with Table Width */}
-                        <div className="mt-8 pt-8 text-center px-4 pb-4">
-                            <h4 className="text-base font-semibold text-white mb-6 tracking-wide">Pihak yang Menyetujui</h4>
-                            <div className="flex flex-nowrap justify-between items-stretch gap-4 sm:gap-6">
-                                {/* Ka. Unit */}
-                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
-                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
-                                    <div className="flex-1 flex items-center justify-center my-2">
-                                        {kaUnit?.signature ? (
-                                            <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
-                                        ) : (
-                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
-                                            </div>
-                                        )}
+                        {/* Supervisor */}
+                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
+                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
+                            <div className="flex-1 flex items-center justify-center my-2">
+                                {supervisor?.signature ? (
+                                    <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
+                                ) : (
+                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
                                     </div>
-                                    <div className="w-full">
-                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
-                                            {kaUnitName || 'Belum Diatur'}
-                                        </p>
-                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
+                                )}
+                            </div>
+                            <div className="w-full">
+                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
+                                    {supervisorName || 'Belum Diatur'}
+                                </p>
+                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
+                            </div>
+                        </div>
+                        {/* Mentor */}
+                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
+                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
+                            <div className="flex-1 flex items-center justify-center my-2">
+                                {mentor?.signature ? (
+                                    <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
+                                ) : (
+                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
                                     </div>
-                                </div>
-                                {/* Supervisor */}
-                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
-                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
-                                    <div className="flex-1 flex items-center justify-center my-2">
-                                        {supervisor?.signature ? (
-                                            <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
-                                        ) : (
-                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
-                                            </div>
-                                        )}
+                                )}
+                            </div>
+                            <div className="w-full">
+                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
+                                    {mentorName || 'Belum Diatur'}
+                                </p>
+                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
+                            </div>
+                        </div>
+                        {/* Karyawan */}
+                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
+                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
+                            <div className="flex-1 flex items-center justify-center my-2">
+                                {employee.signature ? (
+                                    <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-14 w-auto object-contain brightness-110" />
+                                ) : (
+                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                        <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
                                     </div>
-                                    <div className="w-full">
-                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
-                                            {supervisorName || 'Belum Diatur'}
-                                        </p>
-                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
-                                    </div>
-                                </div>
-                                {/* Mentor */}
-                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
-                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
-                                    <div className="flex-1 flex items-center justify-center my-2">
-                                        {mentor?.signature ? (
-                                            <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
-                                        ) : (
-                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="w-full">
-                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
-                                            {mentorName || 'Belum Diatur'}
-                                        </p>
-                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
-                                    </div>
-                                </div>
-                                {/* Karyawan */}
-                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
-                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
-                                    <div className="flex-1 flex items-center justify-center my-2">
-                                        {employee.signature ? (
-                                            <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-14 w-auto object-contain brightness-110" />
-                                        ) : (
-                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="w-full">
-                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
-                                            {employee.name}
-                                        </p>
-                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.id}</p>
-                                    </div>
-                                </div>
+                                )}
+                            </div>
+                            <div className="w-full">
+                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
+                                    {employee.name}
+                                </p>
+                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.id}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
     );
 };
 
@@ -632,14 +640,22 @@ interface TranskripNilaiViewProps {
 const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, signatorySignature, hospital }) => {
 
     const bossInfo = useMemo(() => {
-        const getBossName = (id?: string) => (id && allUsersData[id]) ? allUsersData[id].employee.name : 'Belum Diatur';
+        const getBossName = (id?: string) => {
+            if (!id) return 'Belum Diatur';
+            const strId = String(id).trim();
+            // Try direct access first (if keyed by ID)
+            if (allUsersData[strId]) return allUsersData[strId].employee.name;
+            // Fallback: search in values
+            const foundData = Object.values(allUsersData).find(d => String(d.employee.id).trim() === strId);
+            return foundData ? foundData.employee.name : 'Belum Diatur';
+        };
         return {
             mentor: getBossName(employee.mentorId),
             kaUnit: getBossName(employee.kaUnitId),
             supervisor: getBossName(employee.supervisorId),
             manager: getBossName(employee.managerId)
         };
-    }, [allUsersData, employee.mentorId, employee.kaUnitId, employee.supervisorId, employee.managerId]);
+    }, [allUsersData, employee]);
 
     const selectedMonthLabel = useMemo(() => {
         return `JANUARI - DESEMBER ${selectedMonth.getFullYear()}`;

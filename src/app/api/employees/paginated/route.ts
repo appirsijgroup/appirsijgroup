@@ -46,10 +46,9 @@ export async function GET(request: NextRequest) {
 
     // 🔥 BANDWIDTH SAFETY
     const sanitizedEmployees = (employees || []).map(emp => {
-      const { signature, profile_picture, password, ...rest } = emp;
+      const { profile_picture, password, ...rest } = emp;
       return {
         ...rest,
-        signature: null,
         profilePicture: rest.avatar_url || null
       };
     });

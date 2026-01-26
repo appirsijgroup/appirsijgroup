@@ -53,11 +53,10 @@ export async function GET(request: NextRequest) {
     // Instead of choosing columns (which might fail if schema changes),
     // we programmatically remove heavy keys from the result objects.
     const sanitizedEmployees = (employees || []).map(emp => {
-      // Exclude signature and old profile_picture blobs
-      const { signature, profile_picture, password, ...rest } = emp;
+      // Exclude password and old profile_picture blobs, but KEEP signature
+      const { profile_picture, password, ...rest } = emp;
       return {
         ...rest,
-        signature: null,
         profilePicture: rest.avatar_url || null, // Keep UI compatibility 
         monthly_activities: {} // Force empty, loaded separately
       };

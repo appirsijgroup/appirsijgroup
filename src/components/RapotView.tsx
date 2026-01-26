@@ -51,7 +51,8 @@ const generateTranscriptPdf = async (
     signatoryNip: string,
     signatoryTitle: string,
     mentorName: string,
-    hospital: Hospital | null
+    hospital: Hospital | null,
+    signatorySignature: string | null
 ) => {
     const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
     const pageMargin = 14;
@@ -212,15 +213,38 @@ const generateTranscriptPdf = async (
         [`NIP. ${signatoryNip}`, `NIP. ${employee.id}`],
     ];
 
-    // Pre-load signature Base64 if it's a URL
-    let signatureBase64 = null;
+    // Helper for auto-scaling font size to fit width
+    const drawTextFitWidth = (text: string, x: number, y: number, maxWidth: number, options: any) => {
+        let fontSize = options.fontSize || 9;
+        doc.setFontSize(fontSize);
+        while (doc.getTextWidth(text) > maxWidth && fontSize > 5) {
+            fontSize -= 0.5;
+            doc.setFontSize(fontSize);
+        }
+        doc.text(text, x, y, options);
+    };
+
+    // Pre-load employee signature Base64
+    let employeeSignatureBase64 = null;
     if (employee.signature) {
         try {
-            signatureBase64 = employee.signature.startsWith('http')
+            employeeSignatureBase64 = employee.signature.startsWith('http')
                 ? await imageUrlToBase64(employee.signature)
                 : employee.signature;
         } catch (e) {
-            console.error('Failed to load signature for PDF', e);
+            console.error('Failed to load employee signature for PDF', e);
+        }
+    }
+
+    // Pre-load signatory signature Base64
+    let bossSignatureBase64 = null;
+    if (signatorySignature) {
+        try {
+            bossSignatureBase64 = signatorySignature.startsWith('http')
+                ? await imageUrlToBase64(signatorySignature)
+                : signatorySignature;
+        } catch (e) {
+            console.error('Failed to load signatory signature for PDF', e);
         }
     }
 
@@ -237,15 +261,34 @@ const generateTranscriptPdf = async (
             if (data.row.index === 3) {
                 doc.setFont('helvetica', 'bold');
                 doc.setDrawColor('#000');
-                const textWidth = doc.getTextWidth(data.cell.text[0]);
+                const cellText = data.cell.text[0] || '';
+
+                // Adjust font size if name is too long
+                let fontSize = 9;
+                doc.setFontSize(fontSize);
+                const maxWidth = data.cell.width - 4;
+                while (doc.getTextWidth(cellText) > maxWidth && fontSize > 5) {
+                    fontSize -= 0.5;
+                    doc.setFontSize(fontSize);
+                }
+                data.cell.styles.fontSize = fontSize;
+
+                const textWidth = doc.getTextWidth(cellText);
                 const x = data.cell.x + (data.cell.width - textWidth) / 2;
                 doc.line(x, data.cell.y + data.cell.height - 1, x + textWidth, data.cell.y + data.cell.height - 1);
             }
         },
         didDrawCell: (data) => {
-            if (data.row.index === 1 && data.column.index === 1 && signatureBase64) {
+            // Signatory Signature (Row 1, Column 0)
+            if (data.row.index === 1 && data.column.index === 0 && bossSignatureBase64) {
                 try {
-                    doc.addImage(signatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                    doc.addImage(bossSignatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                } catch (e) { }
+            }
+            // Employee Signature (Row 1, Column 1)
+            if (data.row.index === 1 && data.column.index === 1 && employeeSignatureBase64) {
+                try {
+                    doc.addImage(employeeSignatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
                 } catch (e) { }
             }
         }
@@ -332,11 +375,40 @@ const generateChecklistPdf = async (
     doc.setFontSize(9);
     doc.text('Mengetahui,', pageMargin + 20, finalY);
     doc.text('Mentor,', pageMargin + 20, finalY + 5);
-    doc.text('Karyawan,', pageWidth - pageMargin - 40, finalY + 5);
+    doc.text('Karyawan,', pageWidth - pageMargin - 60, finalY + 5);
 
-    const mentorName = employee.mentorId ? allUsersData[employee.mentorId]?.employee.name : '.........................';
-    doc.text(mentorName, pageMargin + 20, finalY + 25);
-    doc.text(employee.name, pageWidth - pageMargin - 40, finalY + 25);
+    const mentorId = employee.mentorId;
+    const mentor = mentorId ? allUsersData[mentorId]?.employee : null;
+    const mentorName = mentor ? mentor.name : '.........................';
+
+    // Signatures for Checklist
+    if (mentor?.signature) {
+        try {
+            const mentorSigBase64 = mentor.signature.startsWith('http') ? await imageUrlToBase64(mentor.signature) : mentor.signature;
+            doc.addImage(mentorSigBase64, 'PNG', pageMargin + 15, finalY + 7, 20, 12);
+        } catch (e) { }
+    }
+    if (employee.signature) {
+        try {
+            const empSigBase64 = employee.signature.startsWith('http') ? await imageUrlToBase64(employee.signature) : employee.signature;
+            doc.addImage(empSigBase64, 'PNG', pageWidth - pageMargin - 55, finalY + 7, 20, 12);
+        } catch (e) { }
+    }
+
+    // Auto-scale font for names in checklist
+    const drawNameFit = (name: string, x: number, y: number, maxWidth: number) => {
+        let fSize = 9;
+        doc.setFontSize(fSize);
+        while (doc.getTextWidth(name) > maxWidth && fSize > 5) {
+            fSize -= 0.5;
+            doc.setFontSize(fSize);
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.text(name, x, y);
+    };
+
+    drawNameFit(mentorName, pageMargin + 20, finalY + 25, 50);
+    drawNameFit(employee.name, pageWidth - pageMargin - 60, finalY + 25, 50);
 
     doc.save(`mutabaah_${employee.name.replace(/\s/g, '_')}_${monthKey}.pdf`);
 };
@@ -449,10 +521,11 @@ interface TranskripNilaiViewProps {
     signatoryName: string;
     signatoryNip: string;
     signatoryTitle: string;
+    signatorySignature: string | null;
     hospital: Hospital | null;
 }
 
-const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, hospital }) => {
+const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, signatorySignature, hospital }) => {
 
     const bossInfo = useMemo(() => {
         const getBossName = (id?: string) => (id && allUsersData[id]) ? allUsersData[id].employee.name : 'Belum Diatur';
@@ -485,7 +558,8 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                         signatoryNip,
                         signatoryTitle,
                         bossInfo.mentor,
-                        hospital
+                        hospital,
+                        signatorySignature
                     )}
                     className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
                 >
@@ -606,8 +680,12 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                         <div className="flex justify-between gap-12">
                             <div className="flex-1 text-center">
                                 <p>{signatoryTitle},</p>
-                                <div className="h-16"></div>
-                                <p className="font-bold underline">{signatoryName}</p>
+                                <div className="h-16 flex items-center justify-center">
+                                    {signatorySignature && (
+                                        <NextImage src={signatorySignature} alt="Tanda Tangan Signatory" width={64} height={64} className="h-16 w-auto" />
+                                    )}
+                                </div>
+                                <p className="font-bold underline text-center" style={{ fontSize: signatoryName.length > 25 ? '11px' : '14px' }}>{signatoryName}</p>
                                 <p>NIP. {signatoryNip}</p>
                             </div>
                             <div className="flex-1 text-center">
@@ -617,7 +695,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                                         <NextImage src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16 w-auto" />
                                     )}
                                 </div>
-                                <p className="font-bold underline">{employee.name}</p>
+                                <p className="font-bold underline text-center" style={{ fontSize: employee.name.length > 25 ? '11px' : '14px' }}>{employee.name}</p>
                                 <p>NIP. {employee.id}</p>
                             </div>
                         </div>
@@ -895,12 +973,12 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
         const dirut = allUsersList.find(u => u.canBeDirut);
         if (foundManager) {
-            return { signatory: { name: foundManager.name, nip: foundManager.id, title: 'Manajer' } };
+            return { signatory: { name: foundManager.name, nip: foundManager.id, title: 'Manajer', signature: foundManager.signature } };
         }
         if (dirut) {
-            return { signatory: { name: dirut.name, nip: dirut.id, title: 'Direktur Utama' } };
+            return { signatory: { name: dirut.name, nip: dirut.id, title: 'Direktur Utama', signature: dirut.signature } };
         }
-        return { signatory: { name: '.........................', nip: '.........................', title: 'Direktur Utama' } };
+        return { signatory: { name: '.........................', nip: '.........................', title: 'Direktur Utama', signature: null } };
     }, [allUsersData, employee]);
 
     const availableMonths = useMemo(() => {
@@ -1009,6 +1087,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                             signatoryName={signatory.name}
                             signatoryNip={signatory.nip}
                             signatoryTitle={signatory.title}
+                            signatorySignature={signatory.signature || null}
                             hospital={hospital}
                         />
                     </div>

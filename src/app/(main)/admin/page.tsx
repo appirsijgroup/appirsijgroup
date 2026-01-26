@@ -22,7 +22,7 @@ import BrandedLoader from '@/components/BrandedLoader';
 // 🔥 OPTIMIZATION: Dynamic import untuk AdminDashboard - 200KB+ akan di-load LAZY!
 // Ini mengurangi initial bundle size dan mempercepat first load
 const AdminDashboard = dynamicImport(() => import('@/components/AdminDashboard'), {
-    loading: () => <BrandedLoader />,
+    loading: () => <BrandedLoader fullScreen={false} message="Menyiapkan dashboard..." />,
     ssr: false // Admin Dashboard tidak butuh SEO
 });
 import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
@@ -169,13 +169,12 @@ export default function AdminPage() {
     // ✅ NEW: Load paginated employees when page or filters change
     useEffect(() => {
         if (loggedInEmployee && isHydrated) {
-            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter)
+            // Signal appending if page > 1 -> Changed to false for strict pagination (replace data)
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false)
                 .catch(err => console.error('Failed to load paginated employees:', err));
 
-            // 🔥 COMPREHENSION REPAIR: Also trigger a background FULL load if we seem to be starting fresh
-            // This ensures relations and analytics have everyone available
+            // Trigger background full load if needed
             if (Object.keys(allUsersData).length < 5 && !isLoadingEmployees) {
-                console.log('🛡️ [AdminPage] Triggering background full sync for management tools...');
                 loadAllEmployees().catch(err => console.error('Background sync failed:', err));
             }
         }
@@ -822,19 +821,13 @@ export default function AdminPage() {
 
 
     if (isLoading) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
-                </div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={false} message="Menyiapkan data admin..." />;
     }
 
     if (error) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="text-center bg-red-500/20 p-8 rounded-lg border border-red-500">
+            <div className="flex items-center justify-center py-20">
+                <div className="text-center bg-red-500/20 p-8 rounded-lg border border-red-500 max-w-md mx-auto">
                     <p className="text-white mb-4">{error}</p>
                     <button
                         onClick={() => window.location.reload()}

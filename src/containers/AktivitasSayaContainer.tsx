@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AktivitasSaya from '@/components/AktivitasSaya';
+import BrandedLoader from '@/components/BrandedLoader';
 import AssignmentLetter from '@/components/AssignmentLetter';
 import {
     useAppDataStore,
@@ -766,12 +767,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             loadDetailedEmployeeData={loadDetailedEmployeeData}
         />
     ) : (
-        <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
-                <p className="mt-4 text-white">Memuat data...</p>
-            </div>
-        </div>
+        <BrandedLoader fullScreen={false} message="Memuat data..." />
     );
 
     return (

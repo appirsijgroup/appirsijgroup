@@ -310,7 +310,7 @@ export interface BookReadingEntry {
 
 export type MonthlyReports = Record<string, Record<string, MonthlyReportActivity>>;
 
-export type AdminView = 'manajemen-pengguna' | 'manajemen-konten' | 'reports' | 'pengumuman' | 'audit-log' | 'manajemen-admin' | 'manajemen-rs';
+export type AdminView = 'manajemen-pengguna' | 'manajemen-konten' | 'reports' | 'pengumuman' | 'manajemen-admin' | 'manajemen-rs';
 
 export type MonthlyReportStatus =
   | 'pending_mentor'

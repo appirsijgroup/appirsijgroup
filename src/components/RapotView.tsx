@@ -455,20 +455,22 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
     const today = new Date().getDate();
 
     const userMap = useMemo(() => {
-        const map = new Map<string, Employee>();
+        const map = new Map<string, string>();
         Object.values(allUsersData).forEach(d => {
-            if (d.employee?.id) map.set(String(d.employee.id).trim(), d.employee);
+            if (d.employee?.id) map.set(String(d.employee.id).trim(), d.employee.name);
         });
         return map;
     }, [allUsersData]);
 
-    const kaUnit = useMemo(() => userMap.get(String(employee.kaUnitId || '').trim()), [userMap, employee.kaUnitId]);
-    const supervisor = useMemo(() => userMap.get(String(employee.supervisorId || '').trim()), [userMap, employee.supervisorId]);
-    const mentor = useMemo(() => userMap.get(String(employee.mentorId || '').trim()), [userMap, employee.mentorId]);
+    const getName = (id?: string) => {
+        if (!id) return null;
+        const normalizedId = String(id).trim();
+        return userMap.get(normalizedId) || null;
+    };
 
-    const kaUnitName = kaUnit?.name;
-    const supervisorName = supervisor?.name;
-    const mentorName = mentor?.name;
+    const kaUnitName = useMemo(() => getName(employee.kaUnitId), [userMap, employee.kaUnitId]);
+    const supervisorName = useMemo(() => getName(employee.supervisorId), [userMap, employee.supervisorId]);
+    const mentorName = useMemo(() => getName(employee.mentorId), [userMap, employee.mentorId]);
 
     return (
         <div className="space-y-6">
@@ -541,8 +543,9 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                         <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
                             <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
                             <div className="flex-1 flex items-center justify-center my-2">
-                                {kaUnit?.signature ? (
-                                    <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
+                                {/* Using employee ID for lookup in allUsersData to find signature if available */}
+                                {employee.kaUnitId && allUsersData[employee.kaUnitId]?.employee?.signature ? (
+                                    <img src={allUsersData[employee.kaUnitId].employee.signature!} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
                                 ) : (
                                     <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
                                         <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
@@ -551,7 +554,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                             </div>
                             <div className="w-full">
                                 <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
-                                    {kaUnitName || 'Belum Diatur'}
+                                    {kaUnitName || (employee.kaUnitId ? `NIP: ${employee.kaUnitId}` : 'Belum Diatur')}
                                 </p>
                                 <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
                                 <p className="font-mono text-[9px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
@@ -561,8 +564,8 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                         <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
                             <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
                             <div className="flex-1 flex items-center justify-center my-2">
-                                {supervisor?.signature ? (
-                                    <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
+                                {employee.supervisorId && allUsersData[employee.supervisorId]?.employee?.signature ? (
+                                    <img src={allUsersData[employee.supervisorId].employee.signature!} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
                                 ) : (
                                     <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
                                         <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
@@ -571,7 +574,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                             </div>
                             <div className="w-full">
                                 <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
-                                    {supervisorName || 'Belum Diatur'}
+                                    {supervisorName || (employee.supervisorId ? `NIP: ${employee.supervisorId}` : 'Belum Diatur')}
                                 </p>
                                 <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
                                 <p className="font-mono text-[9px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
@@ -581,8 +584,8 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                         <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
                             <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
                             <div className="flex-1 flex items-center justify-center my-2">
-                                {mentor?.signature ? (
-                                    <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
+                                {employee.mentorId && allUsersData[employee.mentorId]?.employee?.signature ? (
+                                    <img src={allUsersData[employee.mentorId].employee.signature!} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
                                 ) : (
                                     <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
                                         <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
@@ -591,7 +594,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                             </div>
                             <div className="w-full">
                                 <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
-                                    {mentorName || 'Belum Diatur'}
+                                    {mentorName || (employee.mentorId ? `NIP: ${employee.mentorId}` : 'Belum Diatur')}
                                 </p>
                                 <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
                                 <p className="font-mono text-[9px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
@@ -663,8 +666,8 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
             // Try direct access first (if keyed by ID)
             if (allUsersData[strId]) return allUsersData[strId].employee.name;
             // Fallback: search in values
-            const foundData = Object.values(allUsersData).find(d => String(d.employee.id).trim() === strId);
-            return foundData ? foundData.employee.name : 'Belum Diatur';
+            const foundData = Object.values(allUsersData).find(d => String(d.employee?.id).trim() === strId);
+            return foundData ? foundData.employee.name : `NIP: ${id}`;
         };
         return {
             mentor: getBossName(employee.mentorId),

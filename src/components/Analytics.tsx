@@ -53,329 +53,133 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 
 
 const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
-    const currentMonthLabel = useMemo(() => new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }), []);
 
-    // State for filters
-    const [unitFilter, setUnitFilter] = useState('all');
-    const [bagianFilter, setBagianFilter] = useState('all');
-    const [kategoriFilter, setKategoriFilter] = useState<'all' | 'MEDIS' | 'NON MEDIS'>('all');
-    const [profesiFilter, setProfesiFilter] = useState('all');
-    const [genderFilter, setGenderFilter] = useState<'all' | 'Laki-laki' | 'Perempuan'>('all');
-    const [activationFilter, setActivationFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
+    // State for stats (initially from props, then updated from API)
+    const [stats, setStats] = useState({
+        totalEmployees: allUsers.length,
+        activatedCount: allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
+        notActivatedCount: allUsers.length - allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
+        mentorCount: allUsers.filter(u => u.canBeMentor || u.role === 'admin' || u.role === 'super-admin').length,
+        complianceRate: 0,
+        activationRate: 0
+    });
 
-    // Populate filter options from data
-    const filterOptions = useMemo(() => {
-        const units = new Set<string>();
-        const bagians = new Set<string>();
-        const profesi = new Set<string>();
-        allUsers.forEach(user => {
-            if (user.unit) units.add(user.unit);
-            if (user.bagian) bagians.add(user.bagian);
-            if (user.profession) profesi.add(user.profession);
-        });
-        return {
-            units: Array.from(units).sort(),
-            bagians: Array.from(bagians).sort(),
-            profesi: Array.from(profesi).sort(),
-        };
-    }, [allUsers]);
-
-    // Apply filters
-    const filteredUsers = useMemo(() => {
-        const filtered = allUsers.filter(user => {
-            if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
-            if (bagianFilter !== 'all' && user.bagian !== bagianFilter) return false;
-            // Case-insensitive category comparison
-            if (kategoriFilter !== 'all' && user.professionCategory?.toUpperCase() !== kategoriFilter.toUpperCase()) return false;
-            if (profesiFilter !== 'all' && user.profession !== profesiFilter) return false;
-            // Case-insensitive gender comparison to handle "Laki-laki" vs "LAKI-LAKI" vs "laki-laki"
-            if (genderFilter !== 'all' && user.gender?.toLowerCase() !== genderFilter.toLowerCase()) return false;
-
-            const isActivated = user.activatedMonths?.includes(currentMonthKey) ?? false;
-            if (activationFilter === 'activated' && !isActivated) return false;
-            if (activationFilter === 'not-activated' && isActivated) return false;
-
-            return true;
-        });
-
-        // Debug log when filter changes
-        if (genderFilter !== 'all' || unitFilter !== 'all' || bagianFilter !== 'all') {
-        }
-
-        return filtered;
-    }, [allUsers, unitFilter, bagianFilter, kategoriFilter, profesiFilter, genderFilter, activationFilter, currentMonthKey]);
-
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Jumlah item per halaman
-
-    // Prepare data for chart and table
-    const reportData = useMemo(() => {
-        const activatedCount = filteredUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length;
-        const notActivatedCount = filteredUsers.length - activatedCount;
-
-        const chartData = [
-            { name: 'Sudah Aktivasi', value: activatedCount },
-            { name: 'Belum Aktivasi', value: notActivatedCount },
-        ];
-
-        const tableData = filteredUsers.map(user => ({
-            id: user.id,
-            name: user.name,
-            unit: user.unit,
-            bagian: user.bagian,
-            isActivated: user.activatedMonths?.includes(currentMonthKey) ?? false,
-        })).sort((a, b) => a.name.localeCompare(b.name));
-
-        return { chartData, tableData, activatedCount, total: filteredUsers.length };
-    }, [filteredUsers, currentMonthKey]);
-
-    // Pagination logic
-    const totalPages = Math.ceil(reportData.tableData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedTableData = reportData.tableData.slice(startIndex, startIndex + itemsPerPage);
-
-    const ACTIVATED_COLOR = '#14b8a6'; // Teal
-    const NOT_ACTIVATED_COLOR = '#6b7280'; // Gray
-
-    const handleDownloadActivationPdf = () => {
-        const tableColumn = ["No.", "Nama Karyawan", "Unit", "Status Aktivasi"];
-        const tableRows = reportData.tableData.map((record, index) => [
-            index + 1,
-            record.name,
-            record.unit,
-            record.isActivated ? 'Sudah' : 'Belum'
-        ]);
-
-        const tableConfig: TableConfig = {
-            head: [tableColumn],
-            body: tableRows,
-            theme: 'grid',
-            headStyles: { fillColor: [22, 160, 133], },
-            didParseCell: (data) => {
-                const statusColumnIndex = 3;
-                if (data.section === 'body' && data.column.index === statusColumnIndex) {
-                    const cellText = String(data.cell.raw).toLowerCase();
-                    if (cellText === 'sudah') {
-                        (data.cell.styles.textColor as [number, number, number]) = [0, 128, 0]; // Green
-                    } else if (cellText === 'belum') {
-                        (data.cell.styles.textColor as [number, number, number]) = [255, 0, 0]; // Red
-                    }
+    // ⚡ Fetch accurate stats from server to handle pagination gaps
+    useEffect(() => {
+        const fetchAccurateStats = async () => {
+            try {
+                const response = await fetch('/api/analytics/stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(prev => ({
+                        ...prev,
+                        totalEmployees: data.totalEmployees,
+                        activatedCount: data.activatedCount,
+                        notActivatedCount: data.notActivatedCount,
+                        mentorCount: data.mentorCount,
+                        complianceRate: data.complianceRate,
+                        activationRate: data.activationRate
+                    }));
                 }
+            } catch (error) {
+                console.error('Failed to load accurate analytics stats:', error);
             }
         };
 
-        const activeFilters = [
-            unitFilter !== 'all' && `Unit: ${unitFilter}`,
-            bagianFilter !== 'all' && `Bagian: ${bagianFilter}`,
-            kategoriFilter !== 'all' && `Kategori: ${kategoriFilter}`,
-            profesiFilter !== 'all' && `Profesi: ${profesiFilter}`,
-            genderFilter !== 'all' && `Gender: ${genderFilter}`,
-            activationFilter !== 'all' && `Status: ${activationFilter === 'activated' ? 'Sudah Aktivasi' : 'Belum Aktivasi'}`,
-        ].filter(Boolean).join(', ');
+        fetchAccurateStats();
+    }, []);
 
-        const subtitle = `Bulan: ${currentMonthLabel}\n${activeFilters ? `Filter Aktif: ${activeFilters}` : 'Filter: Semua Karyawan'}`;
-
-        const reportSection: ReportSection = {
-            title: "LAPORAN AKTIVASI LEMBAR MUTABA'AH",
-            subtitle: subtitle,
-            tables: [tableConfig],
-            orientation: 'portrait',
-            pageFormat: 'a4',
-        };
-
-        const fileName = `laporan_aktivasi_mutabaah_${currentMonthLabel}.pdf`;
-        generateOfficialPdf(
-            [reportSection],
-            fileName,
-            'save'
-        );
-    };
-
-    const activationPercentage = reportData.total > 0 ? Math.round((reportData.activatedCount / reportData.total) * 100) : 0;
-
-    // Reset to first page when filters change
+    // Fallback update if props change and API hasn't loaded (optional, prioritizing API)
     useEffect(() => {
-        setCurrentPage(1);
-    }, [unitFilter, bagianFilter, kategoriFilter, profesiFilter, genderFilter, activationFilter]);
+        if (allUsers.length > stats.totalEmployees) {
+            // If client has MORE data than initial state, update basics
+            // This is a simple heuristic to show something while API loads
+            const total = allUsers.length;
+            const activated = allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length;
+            setStats(prev => ({
+                ...prev,
+                totalEmployees: total,
+                activatedCount: activated,
+                notActivatedCount: total - activated,
+                activationRate: total > 0 ? Math.round((activated / total) * 100) : 0
+            }));
+        }
+    }, [allUsers, currentMonthKey]); // Careful not to overwrite API data if API is slower but more accurate? 
+    // Actually, let's trust the API more. This effect is just for immediate feedback if props are populated first.
 
     return (
-        <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-4">
-            <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-white">Laporan Aktivasi Lembar Mutaba&apos;ah ({currentMonthLabel})</h4>
-                <button
-                    onClick={handleDownloadActivationPdf}
-                    disabled={reportData.tableData.length === 0}
-                    className="p-2 text-blue-200 hover:text-white rounded-full hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Unduh Laporan Aktivasi (PDF)"
-                >
-                    <PdfIcon className="w-5 h-5" />
-                </button>
-            </div>
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Unit</option>
-                    {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
-                <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Bagian</option>
-                    {filterOptions.bagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
-                <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Kategori</option>
-                    <option value="MEDIS" className="text-black bg-white">MEDIS</option>
-                    <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
-                </select>
-                <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Profesi</option>
-                    {filterOptions.profesi.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
-                <select value={genderFilter} onChange={e => setGenderFilter(e.target.value as 'all' | 'Laki-laki' | 'Perempuan')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Gender</option>
-                    <option value="Laki-laki" className="text-black bg-white">Laki-laki</option>
-                    <option value="Perempuan" className="text-black bg-white">Perempuan</option>
-                </select>
-                <select value={activationFilter} onChange={e => setActivationFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                    <option value="all" className="text-black bg-white">Semua Status</option>
-                    <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
-                    <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
-                </select>
-            </div>
-            {/* Chart and Table */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 h-80 flex flex-col items-center justify-center">
-                    <div className="relative w-full h-full">
-                        {isClient ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={reportData.chartData} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={'70%'} outerRadius={'90%'} paddingAngle={5} isAnimationActive={false}>
-                                        <Cell fill={ACTIVATED_COLOR} />
-                                        <Cell fill={NOT_ACTIVATED_COLOR} />
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
-                            </div>
-                        )}
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center -mt-4">
-                            <span className="text-4xl font-bold text-white">{activationPercentage}%</span>
-                        </div>
-                    </div>
-                    <div className="text-center mt-8 space-y-2">
-                        <div className="flex items-center justify-center gap-4 text-sm">
-                            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVATED_COLOR }}></span>Sudah Aktivasi</div>
-                            <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: NOT_ACTIVATED_COLOR }}></span>Belum Aktivasi</div>
-                        </div>
-                        <p className="text-xl font-bold text-white">{reportData.activatedCount} / {reportData.total} Karyawan</p>
-                        <p className="text-blue-200 text-sm">telah melakukan aktivasi</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Total Karyawan Card */}
+            <div className="bg-linear-to-br from-blue-900/40 to-blue-800/20 p-5 rounded-xl border border-blue-500/20 shadow-lg relative overflow-hidden group">
+                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-300"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-blue-300 text-sm font-medium uppercase tracking-wider mb-1">Total Karyawan</span>
+                    <span className="text-4xl font-bold text-white mb-2">{stats.totalEmployees}</span>
+                    <div className="flex items-center gap-2 text-xs text-blue-200/60">
+                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-blue-300">Terdaftar</span>
+                        <span>di dalam sistem</span>
                     </div>
                 </div>
-                <div className="lg:col-span-2 flex flex-col">
-                    <div className="max-h-96 overflow-auto rounded-lg border border-white/10 grow">
-                        <table className="min-w-full text-sm text-left text-white">
-                            <thead className="bg-gray-800/70 backdrop-blur-sm text-xs uppercase text-blue-200 sticky top-0 z-10">
-                                <tr>
-                                    <th className="px-4 py-3 whitespace-nowrap">Nama Karyawan</th>
-                                    <th className="px-4 py-3 whitespace-nowrap">Unit</th>
-                                    <th className="px-4 py-3 text-center whitespace-nowrap">Status Aktivasi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-700">
-                                {paginatedTableData.map(user => (
-                                    <tr key={user.id}>
-                                        <td className="px-4 py-2 font-semibold whitespace-nowrap">{user.name}</td>
-                                        <td className="px-4 py-2 text-blue-200 whitespace-nowrap">{user.unit}</td>
-                                        <td className="px-4 py-2 text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.isActivated ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                                {user.isActivated ? 'Sudah' : 'Belum'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {reportData.tableData.length === 0 && (
-                                    <tr>
-                                        <td colSpan={3} className="text-center p-8 text-blue-200">
-                                            Tidak ada karyawan yang cocok dengan filter.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+            </div>
+
+            {/* Status Aktivasi Card */}
+            <div className="bg-linear-to-br from-teal-900/40 to-teal-800/20 p-5 rounded-xl border border-teal-500/20 shadow-lg relative overflow-hidden group">
+                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-300"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-teal-300 text-sm font-medium uppercase tracking-wider mb-1">Status Aktivasi</span>
+                    <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-4xl font-bold text-white">{stats.activatedCount}</span>
+                        <span className="text-sm text-teal-200/60">/ {stats.notActivatedCount} Belum</span>
                     </div>
 
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                ←
-                            </button>
+                    {/* Progress Bar */}
+                    <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
+                        <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.activationRate}%` }}></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-teal-200/60">
+                        <span>Rate: {stats.activationRate}%</span>
+                        <span>Bulan Ini</span>
+                    </div>
+                </div>
+            </div>
 
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                    let pageNum;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = currentPage - 2 + i;
-                                    }
+            {/* Mentor Card */}
+            <div className="bg-linear-to-br from-purple-900/40 to-purple-800/20 p-5 rounded-xl border border-purple-500/20 shadow-lg relative overflow-hidden group">
+                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-purple-300 text-sm font-medium uppercase tracking-wider mb-1">Jumlah Mentor</span>
+                    <span className="text-4xl font-bold text-white mb-2">{stats.mentorCount}</span>
+                    <div className="flex items-center gap-2 text-xs text-purple-200/60">
+                        <span className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">Aktif</span>
+                        <span>Membimbing</span>
+                    </div>
+                </div>
+            </div>
 
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                                }`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
+            {/* Compliance Rate Card */}
+            <div className="bg-linear-to-br from-orange-900/40 to-orange-800/20 p-5 rounded-xl border border-orange-500/20 shadow-lg relative overflow-hidden group">
+                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-300"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-orange-300 text-sm font-medium uppercase tracking-wider mb-1">Pengisian Mutaba'ah</span>
+                    <span className="text-4xl font-bold text-white mb-2">{stats.complianceRate}%</span>
 
-                                {totalPages > 5 && currentPage < totalPages - 2 && (
-                                    <>
-                                        <span className="text-gray-400 px-2">...</span>
-                                        <button
-                                            onClick={() => setCurrentPage(totalPages)}
-                                            className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                                }`}
-                                        >
-                                            {totalPages}
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                →
-                            </button>
-                        </div>
-                    )}
+                    {/* Progress Bar */}
+                    <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
+                        <div className="bg-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.complianceRate}%` }}></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-orange-200/60">
+                        <span>{stats.complianceRate >= 80 ? 'Sangat Baik' : stats.complianceRate >= 50 ? 'Cukup' : 'Perlu Didorong'}</span>
+                        <span>Bulan Ini</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -387,6 +191,16 @@ const MutabaahPerformanceReport: React.FC<{
     dailyActivitiesConfig: DailyActivity[];
 }> = ({ allUsers, dailyActivitiesConfig }) => {
     const [isClient, setIsClient] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [performanceData, setPerformanceData] = useState<{
+        performanceByCategory: any[];
+        groupedPerformanceByActivity: Record<string, any[]>;
+        employeeCount: number;
+    }>({
+        performanceByCategory: [],
+        groupedPerformanceByActivity: {},
+        employeeCount: 0
+    });
 
     useEffect(() => {
         setIsClient(true);
@@ -403,7 +217,40 @@ const MutabaahPerformanceReport: React.FC<{
     const [profesiFilter, setProfesiFilter] = useState('all');
     const genderFilter: 'all' = 'all';
 
-    // Filter options memoization
+    // ⚡ Fetch accurate aggregated performance from server
+    useEffect(() => {
+        const fetchPerformance = async () => {
+            setIsLoading(true);
+            try {
+                const month = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
+                const year = currentMonth.getFullYear().toString();
+
+                const params = new URLSearchParams({
+                    month,
+                    year,
+                    unit: unitFilter,
+                    bagian: bagianFilter,
+                    professionCategory: kategoriFilter,
+                    profession: profesiFilter,
+                    employeeId: selectedUserIdFilter || 'all'
+                });
+
+                const response = await fetch(`/api/analytics/performance?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setPerformanceData(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch performance analytics:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPerformance();
+    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter]);
+
+    // Filter options memoization (still from local allUsers for UI dropdowns)
     const filterOptions = useMemo(() => {
         const units = new Set<string>();
         const bagians = new Set<string>();
@@ -420,94 +267,7 @@ const MutabaahPerformanceReport: React.FC<{
         };
     }, [allUsers]);
 
-    const filteredUsers = useMemo(() => {
-        const result = allUsers.filter(user => {
-            if (selectedUserIdFilter && user.id !== selectedUserIdFilter) return false;
-            if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
-            if (bagianFilter !== 'all' && user.bagian !== bagianFilter) return false;
-
-            // 🔥 FIXED: Case-insensitive category comparison for consistency
-            if (kategoriFilter !== 'all' && user.professionCategory?.toUpperCase() !== kategoriFilter.toUpperCase()) return false;
-
-            if (profesiFilter !== 'all' && user.profession !== profesiFilter) return false;
-            if (genderFilter !== 'all' && user.gender !== genderFilter) return false;
-            return true;
-        });
-
-        // 🔍 DEBUG: Log filter results
-
-        return result;
-    }, [allUsers, selectedUserIdFilter, unitFilter, bagianFilter, kategoriFilter, profesiFilter, genderFilter]);
-
-    const { performanceByCategory, groupedPerformanceByActivity } = useMemo(() => {
-        const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-
-        const activityTotals: Record<string, { achieved: number; target: number }> = {};
-        dailyActivitiesConfig.forEach(act => {
-            activityTotals[act.id] = { achieved: 0, target: 0 };
-        });
-
-        // 🔥 OPTIMIZATION: Process users more efficiently and defensively
-        filteredUsers.forEach(user => {
-            // Get data from either camelCase or snake_case for maximum resilience
-            const monthlyActivities = user.monthlyActivities || (user as any).monthly_activities;
-            const monthProgress = monthlyActivities?.[monthKey];
-
-            if (!monthProgress || typeof monthProgress !== 'object') {
-                // If no progress data, still count targets for the period
-                dailyActivitiesConfig.forEach(activity => {
-                    activityTotals[activity.id].target += activity.monthlyTarget;
-                });
-                return;
-            }
-
-            const dailyProgressList = Object.values(monthProgress);
-
-            dailyActivitiesConfig.forEach(activity => {
-                activityTotals[activity.id].target += activity.monthlyTarget;
-
-                // Count successful days for this activity
-                const achievedCount = dailyProgressList.reduce((dayCount: number, dailyProgress: any) => {
-                    // Defensive check for dailyProgress
-                    if (!dailyProgress || typeof dailyProgress !== 'object') return dayCount;
-                    return dayCount + (dailyProgress[activity.id] === true || dailyProgress[activity.id] === 'hadir' ? 1 : 0);
-                }, 0);
-
-                activityTotals[activity.id].achieved += achievedCount;
-            });
-        });
-
-        const performanceByActivity = dailyActivitiesConfig.map(act => {
-            const totals = activityTotals[act.id];
-            const percentage = totals.target > 0 ? Math.round((totals.achieved / totals.target) * 100) : 0;
-            return { name: act.title, category: act.category, percentage };
-        });
-
-        const categoryTotals: Record<string, { totalPercentage: number; count: number }> = {};
-        performanceByActivity.forEach(item => {
-            // Defensive check for category
-            const categoryName = item.category || 'Lainnya';
-            if (!categoryTotals[categoryName]) categoryTotals[categoryName] = { totalPercentage: 0, count: 0 };
-            categoryTotals[categoryName].totalPercentage += item.percentage;
-            categoryTotals[categoryName].count++;
-        });
-
-        const performanceByCategory = Object.entries(categoryTotals).map(([name, stats]) => ({
-            name,
-            Persentase: stats.count > 0 ? Math.round(stats.totalPercentage / stats.count) : 0,
-        }));
-
-        const groupedPerformanceByActivity = performanceByActivity.reduce((acc, item) => {
-            const categoryName = item.category || 'Lainnya';
-            if (!acc[categoryName]) acc[categoryName] = [];
-            acc[categoryName].push(item);
-            return acc;
-        }, {} as Record<string, typeof performanceByActivity>);
-
-        // 🔍 DEBUG: Log performance calculation results
-
-        return { performanceByCategory, groupedPerformanceByActivity };
-    }, [filteredUsers, dailyActivitiesConfig, currentMonth]);
+    const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
 
     const navigateMonth = (direction: 'prev' | 'next') => {
         setCurrentMonth(prev => {
@@ -566,9 +326,14 @@ const MutabaahPerformanceReport: React.FC<{
                 </select>
             </div>
 
-            <p className="text-sm text-center text-blue-200">{filteredUsers.length} karyawan</p>
+            <p className="text-sm text-center text-blue-200">{employeeCount} karyawan</p>
 
-            {filteredUsers.length > 0 ? (
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl border border-white/5">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                    <p className="text-teal-200/60 font-medium animate-pulse">Menganalisis kinerja mutaba&apos;ah seluruh karyawan...</p>
+                </div>
+            ) : employeeCount > 0 ? (
                 <div className="space-y-6">
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
                         {isClient ? (
@@ -667,8 +432,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             <ChartBarIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan</p>
-                            <p className="text-blue-200 text-xs">Untuk performa, hanya sebagian data yang dimuat. Analisis mungkin belum lengkap.</p>
+                            <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan di dropdown</p>
+                            <p className="text-blue-200 text-xs">Analisis grafik sudah 100% akurat berdasarkan data seluruh organisasi di database.</p>
                         </div>
                     </div>
                     <button

@@ -7,6 +7,8 @@ import { PdfIcon, ExcelIcon, SearchIcon } from './Icons';
 interface MutabaahReportProps {
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
     hospitals: Hospital[];
+    onLoadHeavyData?: () => Promise<void>;
+    isLoading?: boolean;
 }
 
 interface MutabaahReportRecord {
@@ -64,7 +66,7 @@ const SelectFilter: React.FC<{
     </select>
 );
 
-const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals }) => {
+const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals, onLoadHeavyData, isLoading }) => {
     const [yearFilter, setYearFilter] = useState<string>('');
     const [hospitalFilter, setHospitalFilter] = useState<string>('all');
     const [unitFilter, setUnitFilter] = useState<string>('all');
@@ -108,285 +110,116 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         }
     }, [allYearsWithData, yearFilter]);
 
-    // Memoize stable data to prevent infinite re-renders
-    const stableUsersData = useMemo(() => {
-        // Create a stable snapshot of user data
-        const snapshot: Record<string, { employee: Employee }> = {};
-        Object.entries(allUsersData).forEach(([key, value]) => {
-            snapshot[key] = {
-                employee: value.employee
-            };
-        });
-        return snapshot;
-    }, [allUsersData]); // Only re-compute when allUsersData reference changes
-
-    // Aggregate mutaba'ah data per YEAR (akumulasi semua bulan dalam tahun)
-    const mutabaahData: MutabaahReportRecord[] = useMemo(() => {
-        const records: MutabaahReportRecord[] = [];
-        const userMap = new Map(Object.values(stableUsersData).map((d) => [d.employee.id, d.employee]));
-
-        // Get activity categories
-        const sidiqActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'SIDIQ (Integritas)');
-        const tablighActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'TABLIGH (Teamwork)');
-        const amanahActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'AMANAH (Disiplin)');
-        const fatonahActivities = DAILY_ACTIVITIES.filter((a) => a.category === 'FATONAH (Belajar)');
-
-        // Calculate MONTHLY target dari DAILY_ACTIVITIES
-        const monthlySidiqTarget = sidiqActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 6
-        const monthlyTablighTarget = tablighActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 41
-        const monthlyAmanahTarget = amanahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 41
-        const monthlyFatonahTarget = fatonahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0); // = 25
-
-        // Accumulator untuk mengumpulkan data per employee per year
-        type YearlyAccumulator = {
-            hospitalId?: string;
-            hospitalName?: string;
-            employeeId: string;
-            employeeName: string;
-            unit: string;
-            profession: string;
-            professionCategory: 'MEDIS' | 'NON MEDIS';
-            mentorId?: string;
-            mentorName?: string;
-            supervisorId?: string;
-            supervisorName?: string;
-            kaUnitId?: string;
-            kaUnitName?: string;
-            year: string;
-            sidiqCount: number;
-            tablighCount: number;
-            amanahCount: number;
-            fatonahCount: number;
-            monthsCount: number;
-        };
-
-        // Accumulator untuk mengumpulkan data per employee per year
-        const yearlyAccumulator = new Map<string, YearlyAccumulator>();
-
-        // Loop 1: Initialize SEMUA employees (tanpa filter RS di sini)
-        Object.values(stableUsersData).forEach(({ employee }) => {
-            const key = `${employee.id}-${yearFilter}`;
-
-            if (!yearlyAccumulator.has(key)) {
-                const mentor = employee.mentorId ? userMap.get(employee.mentorId) : undefined;
-                // Match hospital by both id and brand (employee.hospitalId might be brand code like "RSIJSP")
-                const hospital = employee.hospitalId
-                    ? hospitals.find(h => h.id === employee.hospitalId || h.brand === employee.hospitalId)
-                    : undefined;
-                const supervisor = employee.supervisorId ? userMap.get(employee.supervisorId) : undefined;
-                const kaUnit = employee.kaUnitId ? userMap.get(employee.kaUnitId) : undefined;
-
-                // DEBUG: Log untuk setiap 10 employee
-                if (yearlyAccumulator.size % 100 === 0) {
-                }
-
-                yearlyAccumulator.set(key, {
-                    hospitalId: employee.hospitalId,
-                    hospitalName: hospital?.name,
-                    employeeId: employee.id,
-                    employeeName: employee.name,
-                    unit: employee.unit,
-                    profession: employee.profession,
-                    professionCategory: employee.professionCategory,
-                    mentorId: employee.mentorId,
-                    mentorName: mentor?.name,
-                    supervisorId: employee.supervisorId,
-                    supervisorName: supervisor?.name,
-                    kaUnitId: employee.kaUnitId,
-                    kaUnitName: kaUnit?.name,
-                    year: yearFilter,
-                    sidiqCount: 0,
-                    tablighCount: 0,
-                    amanahCount: 0,
-                    fatonahCount: 0,
-                    monthsCount: 0,
-                });
-            }
-        });
-
-        // Loop 2: Accumulate capaian dari monthlyActivities (untuk employees yang punya data)
-        Object.values(stableUsersData).forEach(({ employee }) => {
-            // Skip jika tidak ada monthlyActivities (belum aktivasi/isi)
-            if (!employee.monthlyActivities) return;
-
-            Object.entries(employee.monthlyActivities).forEach(([monthKey, monthProgress]) => {
-                const year = monthKey.split('-')[0];
-
-                // Skip jika bukan tahun yang dipilih
-                if (yearFilter && year !== yearFilter) return;
-
-                const key = `${employee.id}-${year}`;
-                const accumulator = yearlyAccumulator.get(key);
-
-                if (!accumulator) return; // Skip jika record tidak ditemukan
-
-                const allDaysProgress = Object.values(monthProgress);
-
-                const countProgress = (activityIds: string[]) => {
-                    return allDaysProgress.reduce((total, dayProgress) => {
-                        return total + activityIds.filter((id) => (dayProgress as any)[id] === true || (dayProgress as any)[id] === 'hadir').length;
-                    }, 0);
-                };
-
-                // Accumulate capaian dari bulan ini
-                accumulator.sidiqCount += countProgress(sidiqActivities.map((a) => a.id));
-                accumulator.tablighCount += countProgress(tablighActivities.map((a) => a.id));
-                accumulator.amanahCount += countProgress(amanahActivities.map((a) => a.id));
-                accumulator.fatonahCount += countProgress(fatonahActivities.map((a) => a.id));
-                accumulator.monthsCount += 1;
-            });
-        });
-
-        // Loop 2: Convert accumulator ke final records dengan target tahunan
-        yearlyAccumulator.forEach((data) => {
-            // Target TAHUNAN = target bulanan × jumlah bulan dengan data
-            const sidiqTarget = monthlySidiqTarget * data.monthsCount;
-            const tablighTarget = monthlyTablighTarget * data.monthsCount;
-            const amanahTarget = monthlyAmanahTarget * data.monthsCount;
-            const fatonahTarget = monthlyFatonahTarget * data.monthsCount;
-            const totalTarget = sidiqTarget + tablighTarget + amanahTarget + fatonahTarget;
-
-            const totalCount = data.sidiqCount + data.tablighCount + data.amanahCount + data.fatonahCount;
-
-            records.push({
-                hospitalId: data.hospitalId,
-                hospitalName: data.hospitalName,
-                employeeId: data.employeeId,
-                employeeName: data.employeeName,
-                unit: data.unit,
-                profession: data.profession,
-                professionCategory: data.professionCategory,
-                mentorId: data.mentorId,
-                mentorName: data.mentorName,
-                supervisorId: data.supervisorId,
-                supervisorName: data.supervisorName,
-                kaUnitId: data.kaUnitId,
-                kaUnitName: data.kaUnitName,
-                monthKey: data.year, // Gunakan tahun sebagai identifier
-                sidiqCount: data.sidiqCount,
-                sidiqTarget,
-                sidiqPercentage: Math.min(100, Math.round((data.sidiqCount / sidiqTarget) * 100) || 0),
-                tablighCount: data.tablighCount,
-                tablighTarget,
-                tablighPercentage: Math.min(100, Math.round((data.tablighCount / tablighTarget) * 100) || 0),
-                amanahCount: data.amanahCount,
-                amanahTarget,
-                amanahPercentage: Math.min(100, Math.round((data.amanahCount / amanahTarget) * 100) || 0),
-                fatonahCount: data.fatonahCount,
-                fatonahTarget,
-                fatonahPercentage: Math.min(100, Math.round((data.fatonahCount / fatonahTarget) * 100) || 0),
-                totalCount,
-                totalTarget,
-                totalPercentage: Math.min(100, Math.round((totalCount / totalTarget) * 100) || 0),
-            });
-        });
-
-        return records.sort((a, b) => a.employeeName.localeCompare(b.employeeName));
-    }, [stableUsersData, yearFilter]);
-
-    // Apply filters
-    const filteredData = useMemo(() => {
-        return mutabaahData.filter((record) => {
-            // Filter RS: Show all if 'all', otherwise filter by hospitalId
-            // Employees without hospitalId only shown when hospitalFilter is 'all'
-            if (hospitalFilter !== 'all') {
-                // User selected specific RS
-                if (!record.hospitalId) return false; // Employee without RS - skip
-
-                // hospitalFilter is the id from the selected hospital in dropdown
-                // record.hospitalId might be brand code (like "RSIJSP") or UUID
-                // So we need to check if the selected hospital matches by id or brand
-                const selectedHospital = hospitals.find(h => h.id === hospitalFilter);
-                if (!selectedHospital) return false; // Invalid hospital selection
-
-                // Check if employee's hospitalId matches either the hospital's id or brand
-                if (record.hospitalId !== selectedHospital.id && record.hospitalId !== selectedHospital.brand) {
-                    return false; // Employee from different RS - skip
-                }
-            }
-
-            if (unitFilter !== 'all' && record.unit !== unitFilter) return false;
-            if (professionFilter !== 'all' && record.profession !== professionFilter) return false;
-            if (nameOrNipFilter) {
-                const searchTerm = nameOrNipFilter.toLowerCase();
-                const nameMatch = record.employeeName.toLowerCase().includes(searchTerm);
-                const idMatch = record.employeeId.toLowerCase().includes(searchTerm);
-                if (!nameMatch && !idMatch) return false;
-            }
-            return true;
-        });
-    }, [mutabaahData, hospitalFilter, unitFilter, professionFilter, nameOrNipFilter, hospitals]);
-
-    // Pagination
+    const [serverData, setServerData] = useState<{ records: MutabaahReportRecord[], total: number, totalPages: number }>({ records: [], total: 0, totalPages: 0 });
+    const [isFetching, setIsFetching] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
+    // 🚀 Fetch accurate data from API
+    useEffect(() => {
+        const fetchReportData = async () => {
+            if (!yearFilter) return;
+            setIsFetching(true);
+            try {
+                const params = new URLSearchParams({
+                    year: yearFilter,
+                    hospitalId: hospitalFilter,
+                    unit: unitFilter,
+                    profession: professionFilter,
+                    search: nameOrNipFilter,
+                    page: currentPage.toString(),
+                    limit: itemsPerPage.toString()
+                });
+
+                const response = await fetch(`/api/admin/reports/mutabaah?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setServerData(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch mutabaah report:', error);
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        fetchReportData();
+    }, [yearFilter, hospitalFilter, unitFilter, professionFilter, nameOrNipFilter, currentPage]);
+
+    // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [yearFilter, hospitalFilter, unitFilter, professionFilter, nameOrNipFilter]);
 
-    // Excel export
-    const handleDownloadXlsx = () => {
-        // Multi-row header untuk Excel (mirip dengan tabel HTML)
-        const headerRow1 = [
-            'No', 'Tahun', 'RS ID', 'NIP', 'Nama', 'Unit', 'Profesi', 'Mentor',
-            'SIDIQ', '', '', 'TABLIGH', '', '', 'AMANAH', '', '', 'FATONAH', '', '', 'TOTAL', '', ''
-        ];
-        const headerRow2 = [
-            '', '', '', '', '', '', '', '',
-            'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%'
-        ];
+    const filteredData = serverData.records;
+    const { total: totalRecords, totalPages } = serverData;
+    const paginatedData = filteredData; // Server already paginated it
 
-        const data = filteredData.map((record, index) => [
-            index + 1,
-            record.monthKey,
-            record.hospitalId || '-',
-            record.employeeId,
-            record.employeeName,
-            record.unit,
-            record.profession,
-            record.mentorName || '-',
-            // SIDIQ
-            record.sidiqCount,
-            record.sidiqTarget,
-            `${record.sidiqPercentage}%`,
-            // TABLIGH
-            record.tablighCount,
-            record.tablighTarget,
-            `${record.tablighPercentage}%`,
-            // AMANAH
-            record.amanahCount,
-            record.amanahTarget,
-            `${record.amanahPercentage}%`,
-            // FATONAH
-            record.fatonahCount,
-            record.fatonahTarget,
-            `${record.fatonahPercentage}%`,
-            // TOTAL
-            record.totalCount,
-            record.totalTarget,
-            `${record.totalPercentage}%`,
-        ]);
+    // Excel export (high limit to get all filtered data)
+    const handleDownloadXlsx = async () => {
+        setIsFetching(true);
+        try {
+            const params = new URLSearchParams({
+                year: yearFilter,
+                hospitalId: hospitalFilter,
+                unit: unitFilter,
+                profession: professionFilter,
+                search: nameOrNipFilter,
+                page: '1',
+                limit: '5000' // High limit for export
+            });
 
-        // Merge cells untuk header utama
-        const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
+            const response = await fetch(`/api/admin/reports/mutabaah?${params.toString()}`);
+            if (!response.ok) throw new Error('Export failed');
 
-        // Merge cells untuk header categories
-        if (!ws['!merges']) ws['!merges'] = [];
-        ws['!merges'].push({ s: { r: 0, c: 8 }, e: { r: 0, c: 10 } }); // SIDIQ
-        ws['!merges'].push({ s: { r: 0, c: 11 }, e: { r: 0, c: 13 } }); // TABLIGH
-        ws['!merges'].push({ s: { r: 0, c: 14 }, e: { r: 0, c: 16 } }); // AMANAH
-        ws['!merges'].push({ s: { r: 0, c: 17 }, e: { r: 0, c: 19 } }); // FATONAH
-        ws['!merges'].push({ s: { r: 0, c: 20 }, e: { r: 0, c: 22 } }); // TOTAL
+            const { records: allExportData } = await response.json();
 
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Laporan Mutabaah');
+            // Multi-row header untuk Excel
+            const headerRow1 = [
+                'No', 'Tahun', 'RS ID', 'NIP', 'Nama', 'Unit', 'Profesi',
+                'SIDIQ', '', '', 'TABLIGH', '', '', 'AMANAH', '', '', 'FATONAH', '', '', 'TOTAL', '', ''
+            ];
+            const headerRow2 = [
+                '', '', '', '', '', '', '',
+                'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%'
+            ];
 
-        const fileName = `Laporan_Mutabaah_Tahun_${yearFilter}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+            const data = allExportData.map((record: any, index: number) => [
+                index + 1,
+                record.monthKey,
+                record.hospitalId || '-',
+                record.employeeId,
+                record.employeeName,
+                record.unit,
+                record.profession,
+                // SIDIQ
+                record.sidiqCount, record.sidiqTarget, `${record.sidiqPercentage}%`,
+                // TABLIGH
+                record.tablighCount, record.tablighTarget, `${record.tablighPercentage}%`,
+                // AMANAH
+                record.amanahCount, record.amanahTarget, `${record.amanahPercentage}%`,
+                // FATONAH
+                record.fatonahCount, record.fatonahTarget, `${record.fatonahPercentage}%`,
+                // TOTAL
+                record.totalCount, record.totalTarget, `${record.totalPercentage}%`,
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
+            if (!ws['!merges']) ws['!merges'] = [];
+            ws['!merges'].push({ s: { r: 0, c: 7 }, e: { r: 0, c: 9 } }); // SIDIQ
+            ws['!merges'].push({ s: { r: 0, c: 10 }, e: { r: 0, c: 12 } }); // TABLIGH
+            ws['!merges'].push({ s: { r: 0, c: 13 }, e: { r: 0, c: 15 } }); // AMANAH
+            ws['!merges'].push({ s: { r: 0, c: 16 }, e: { r: 0, c: 18 } }); // FATONAH
+            ws['!merges'].push({ s: { r: 0, c: 19 }, e: { r: 0, c: 21 } }); // TOTAL
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Laporan Mutabaah');
+            XLSX.writeFile(wb, `Laporan_Mutabaah_Tahun_${yearFilter}.xlsx`);
+        } catch (error) {
+            console.error('Export failed:', error);
+        } finally {
+            setIsFetching(false);
+        }
     };
 
     return (
@@ -484,7 +317,15 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                 <span>← Geser untuk melihat kolom →</span>
             </div>
 
-            <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-white/20 -mx-2 sm:mx-0 touch-pan-x">
+            <div className="relative overflow-x-auto overflow-y-hidden rounded-lg border border-white/20 -mx-2 sm:mx-0 touch-pan-x min-h-[400px]">
+                {/* 🚀 Loading Overlay */}
+                {isFetching && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-20 flex flex-col items-center justify-center animate-in fade-in duration-300">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                        <p className="text-teal-200 font-bold uppercase tracking-widest animate-pulse">Menganalisis Data...</p>
+                    </div>
+                )}
+
                 <table className="min-w-[1500px] w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         {/* Main Header Row - Level 1 */}
@@ -529,7 +370,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 className="border-b border-gray-700 hover:bg-white/5"
                             >
                                 {/* Info Karyawan */}
-                                <td className="px-4 py-3 whitespace-nowrap">{index + 1}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{((currentPage - 1) * itemsPerPage) + index + 1}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.monthKey}</td>
                                 <td className="px-4 py-3 whitespace-nowrap truncate" title={record.hospitalId || '-'}>{record.hospitalId || '-'}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{record.employeeId}</td>
@@ -619,10 +460,10 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                                 </td>
                             </tr>
                         ))}
-                        {filteredData.length === 0 && (
+                        {!isFetching && paginatedData.length === 0 && (
                             <tr>
-                                <td colSpan={22} className="text-center p-8 text-blue-200">
-                                    Tidak ada data yang cocok dengan filter yang dipilih.
+                                <td colSpan={22} className="text-center p-20">
+                                    <p className="text-blue-200 opacity-60">Tidak ada data yang cocok dengan filter yang dipilih.</p>
                                 </td>
                             </tr>
                         )}
@@ -630,69 +471,38 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                 </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
                     <button
                         onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
+                        disabled={currentPage === 1 || isFetching}
                         className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         ←
                     </button>
 
                     <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
+                        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
                     </div>
 
                     <button
                         onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
+                        disabled={currentPage === totalPages || isFetching}
                         className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         →
                     </button>
                 </div>
             )}
+
+            <div className="mt-4 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                    Total {serverData.total} data capaian mutaba&apos;ah tahunan
+                </p>
+            </div>
         </div>
     );
 };

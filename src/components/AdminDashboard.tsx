@@ -104,7 +104,7 @@ interface AdminDashboardProps {
 type DestructiveAction = 'delete-user' | 'delete-activity' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
 type DateFilterType = 'range' | 'monthly' | 'yearly' | 'all';
 
-type UserManagementSubView = 'database' | 'akun' | 'relasi' | 'jabatan';
+type UserManagementSubView = 'database' | 'relasi' | 'jabatan';
 type ContentManagementSubView = 'kegiatan' | 'ibadah-sunnah' | 'mutabaah-automation';
 
 const DestructiveConfirmationModal: React.FC<{
@@ -1280,6 +1280,9 @@ const UserImportModal: React.FC<{
 interface DatabaseKaryawanProps {
     allUsers: Employee[];
     onInitiateDeleteUser: (user: Employee) => void;
+    onInitiateToggleStatus: (user: Employee) => void; // 🔥 NEW: Toggle account status
+    onInitiateSetRole: (user: Employee, newRole: Role) => void; // 🔥 NEW: Change user role
+    onManageAccess: (user: Employee) => void; // 🔥 NEW: Manage hospital access
     onAddUser: AdminDashboardProps['onAddUser'];
     onUpdateUser: AdminDashboardProps['onUpdateUser'];
     onBulkUpdateUsers: AdminDashboardProps['onBulkUpdateUsers'];
@@ -1288,17 +1291,22 @@ interface DatabaseKaryawanProps {
     pagination?: AdminDashboardProps['pagination'];
     paginatedEmployees?: Employee[];
     isLoading?: boolean;
+    loggedInEmployee: Employee; // 🔥 NEW: For role permission checks
 }
 
 const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     allUsers,
     onInitiateDeleteUser,
+    onInitiateToggleStatus, // 🔥 NEW
+    onInitiateSetRole, // 🔥 NEW
+    onManageAccess, // 🔥 NEW
     onOpenUserModal,
     onBulkUpdateUsers,
     hospitals,
     pagination,
     paginatedEmployees,
-    isLoading
+    isLoading,
+    loggedInEmployee // 🔥 NEW
 }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -1314,6 +1322,16 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     const currentPage = pagination?.currentPage || 1;
 
     const hospitalMap = useMemo(() => new Map(hospitals.map(h => [h.id, h.brand])), [hospitals]);
+
+    // 🔥 Helper function for role display
+    const getRoleLabel = (role: Role) => {
+        const roleDisplay = getRoleDisplay(role);
+        return (
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleDisplay.bgColor} ${roleDisplay.color}`}>
+                {roleDisplay.label}
+            </span>
+        );
+    };
 
     return (
         <div>
@@ -1339,54 +1357,133 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                     </button>
                 </div>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-white/20">
+            <div className="overflow-x-auto rounded-lg border border-white/20 relative min-h-[400px]">
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NIP / NOPEG</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NAMA</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Bagian</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Kategori Profesi</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit / Bagian</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Jenis Kelamin</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Status Akun</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Peran Sistem</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Hak Akses & Otorisasi</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {isLoading ? (
-                            <tr>
-                                <td colSpan={9} className="text-center p-12">
-                                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-teal-400 mb-2" />
-                                    <p className="text-blue-200">Memuat data...</p>
-                                </td>
-                            </tr>
-                        ) : displayUsers.map((user) => (
-                            <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                                    {/* 🔥 hospital_id langsung berisi RS ID/BRAND (misal: "RSIJSP", "RSAB") */}
-                                    {user.hospitalId || '-'}
-                                </td>
-                                <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
-                                <td className="px-4 py-3">{user.unit}</td>
-                                <td className="px-4 py-3">{user.bagian}</td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${user.professionCategory === 'MEDIS' ? 'bg-blue-500/20 text-blue-300' : 'bg-green-500/20 text-green-300'}`}>
-                                        {user.professionCategory}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-3">{user.profession}</td>
-                                <td className="px-4 py-3">{user.gender}</td>
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center justify-center gap-1 sm:gap-2">
-                                        <button onClick={() => onOpenUserModal(user)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">Edit</button>
-                                        <button onClick={() => onInitiateDeleteUser(user)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors">Hapus</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                    <tbody className={isLoading ? "opacity-40 transition-opacity duration-300" : "opacity-100 transition-opacity duration-300"}>
+                        {displayUsers.map((user) => {
+                            const isSelf = user.id === loggedInEmployee.id;
+                            const loggedInUserIsScopedSuperAdmin = isSuperAdmin(loggedInEmployee) && Array.isArray(loggedInEmployee.managedHospitalIds) && loggedInEmployee.managedHospitalIds.length > 0;
+                            const hideManageButtonForSelf = isSelf && loggedInUserIsScopedSuperAdmin;
+
+                            return (
+                                <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5 animate-in slide-in-from-right-8 fade-in duration-300">
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                                        {/* 🔥 hospital_id langsung berisi RS ID/BRAND (misal: "RSIJSP", "RSAB") */}
+                                        {user.hospitalId || '-'}
+                                    </td>
+                                    <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
+                                        {user.name}
+                                        <span className="block text-[10px] text-gray-400 font-normal uppercase">{user.gender}</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="text-xs">{user.unit}</div>
+                                        <div className="text-[10px] text-blue-300/70">{user.bagian}</div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="text-xs font-medium">{user.profession}</div>
+                                        <div className="text-[10px] text-gray-400">{user.professionCategory}</div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center justify-center">
+                                            <button
+                                                onClick={() => onInitiateToggleStatus(user)}
+                                                className={`px-3 py-1.5 rounded-md font-semibold text-xs transition-all ${user.isActive
+                                                    ? 'bg-green-600/20 text-green-300 border border-green-500/30 hover:bg-green-600/30'
+                                                    : 'bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30'
+                                                    }`}
+                                                title={user.isActive ? 'Klik untuk Nonaktifkan' : 'Klik untuk Aktifkan'}
+                                            >
+                                                {user.isActive ? '✓ Aktif' : '✗ Nonaktif'}
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-center">
+                                        {getRoleLabel(user.role)}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex flex-col gap-2 min-w-[150px]">
+                                            {/* Hospital Access Section */}
+                                            {isAnyAdmin({ ...user, role: user.role } as any) && (
+                                                <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded border border-white/5">
+                                                    <div className="grow overflow-hidden text-center sm:text-left">
+                                                        {(user.role === 'super-admin') && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
+                                                            <span className="text-[10px] font-bold text-purple-300">Global (Semua RS)</span>
+                                                        ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {user.managedHospitalIds.map(id => (
+                                                                    <span key={id} className="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded text-[9px] border border-white/10">{hospitalMap.get(id) || id}</span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-yellow-500 italic">Belum ada akses</span>
+                                                        )}
+                                                    </div>
+                                                    {!hideManageButtonForSelf && (
+                                                        <button onClick={() => onManageAccess(user)} className="p-1 rounded bg-gray-600 hover:bg-teal-600 text-white transition-colors" title="Kelola Akses Rumah Sakit">
+                                                            <Building2 className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Role Change Buttons */}
+                                            {!isSelf && (
+                                                <div className="flex flex-wrap gap-1 justify-center">
+                                                    {getAssignableRoles(loggedInEmployee).map((role) => {
+                                                        if (user.role === role) return null;
+                                                        const validationError = validateRoleChange(loggedInEmployee, user, role);
+                                                        if (validationError) return null;
+
+                                                        const buttonStyles = {
+                                                            'owner': 'bg-yellow-600/80 hover:bg-yellow-500',
+                                                            'super-admin': 'bg-purple-600/80 hover:bg-purple-500',
+                                                            'admin': 'bg-blue-600/80 hover:bg-blue-500',
+                                                            'user': 'bg-gray-600/80 hover:bg-gray-500'
+                                                        };
+
+                                                        return (
+                                                            <button
+                                                                key={role}
+                                                                onClick={() => onInitiateSetRole(user, role)}
+                                                                className={`px-2 py-0.5 rounded text-[9px] font-bold text-white transition-colors ${buttonStyles[role]}`}
+                                                                title={`Jadikan ${role}`}
+                                                            >
+                                                                {role === 'user' ? 'Reset User' : `Set ${role.replace('-', ' ')}`}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            {isSelf && <div className="text-[10px] text-gray-500 italic text-center">Akun Anda Sendiri</div>}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center justify-center gap-1 sm:gap-2">
+                                            <button onClick={() => onOpenUserModal(user)} className="p-2 rounded-md bg-blue-600/80 hover:bg-blue-500 text-white transition-colors" title="Edit Data Karyawan">
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button onClick={() => onInitiateDeleteUser(user)} className="p-2 rounded-md bg-red-600/80 hover:bg-red-500 text-white transition-colors" title="Hapus Karyawan">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -1402,9 +1499,10 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                         ←
                     </button>
 
-                    <div className="text-blue-200 text-sm font-medium px-4">
-                        Halaman {currentPage} dari {totalPages}
-                        <span className="ml-2 text-xs text-gray-400">({pagination?.totalCount || 0} Total)</span>
+                    <div className="flex items-center gap-1">
+                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
                     </div>
 
                     <button
@@ -1416,6 +1514,12 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                     </button>
                 </div>
             )}
+
+            <div className="mt-2 text-center">
+                <p className="text-xs text-gray-500">
+                    Total {pagination?.totalCount || 0} karyawan
+                </p>
+            </div>
 
             <UserImportModal
                 isOpen={isImportModalOpen}
@@ -1434,8 +1538,8 @@ interface AkunManagementProps {
 const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateToggleStatus }) => {
     const [activationFilter, setActivationFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Jumlah item per halaman
+    const ITEMS_PER_BATCH = 15;
+    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
     const filteredUsers = useMemo(() => {
@@ -1457,18 +1561,15 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [allUsers, activationFilter, searchTerm, currentMonthKey]);
 
-    // Pagination logic
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+    const displayUsers = filteredUsers.slice(0, visibleCount);
 
     const filterButtonClass = (filterType: 'all' | 'active' | 'inactive') =>
         `px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${activationFilter === filterType ? 'bg-teal-500 text-white' : 'bg-white/10 hover:bg-white/20 text-blue-200'
         }`;
 
-    // Reset to first page when filters change
+    // Reset visible count when filters change
     useEffect(() => {
-        setCurrentPage(1);
+        setVisibleCount(ITEMS_PER_BATCH);
     }, [activationFilter, searchTerm]);
 
     return (
@@ -1498,6 +1599,7 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                     </div>
                 </div>
             </div>
+
             <div className="overflow-x-auto rounded-lg border border-white/20">
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
@@ -1509,7 +1611,7 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedUsers.map((user) => (
+                        {displayUsers.map((user) => (
                             <tr key={user.id} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
@@ -1546,69 +1648,24 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+            {/* Load More Pattern */}
+            <div className="mt-8 flex flex-col items-center gap-4">
+                {visibleCount < filteredUsers.length ? (
                     <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setVisibleCount(prev => prev + ITEMS_PER_BATCH)}
+                        className="px-10 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
                     >
-                        ←
+                        <Users className="w-5 h-5 text-teal-400" />
+                        Tampilkan Akun Selanjutnya
                     </button>
+                ) : filteredUsers.length > 0 && (
+                    <p className="text-gray-500 text-sm italic">Semua akun telah ditampilkan</p>
+                )}
 
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+                <p className="text-xs text-gray-500">
+                    Menampilkan {displayUsers.length} dari {filteredUsers.length} akun
+                </p>
+            </div>
         </div>
     );
 };
@@ -1622,6 +1679,9 @@ interface AttendanceReportProps {
     loggedInEmployee: Employee;
     onEditAttendance: (record: AdminReportRecord) => void;
     onDeleteAttendance: (record: AdminReportRecord) => void;
+    pagination?: AdminDashboardProps['pagination'];
+    onRefresh?: () => void;
+    isLoading?: boolean;
 }
 
 const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: (string | number)[], defaultLabel: string }> = ({ value, onChange, options, defaultLabel }) => (
@@ -1631,7 +1691,7 @@ const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HT
     </select>
 );
 
-const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance }) => {
+const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance, pagination, onRefresh, isLoading }) => {
     const [dateFilterType, setDateFilterType] = useState<DateFilterType>('monthly');
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
     const [yearFilter, setYearFilter] = useState<string>('');
@@ -1997,13 +2057,12 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     };
 
     // Pagination state
+    const ITEMS_PER_BATCH = 15;
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Jumlah item per halaman
+    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_BATCH);
 
     // Pagination logic
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_BATCH, currentPage * ITEMS_PER_BATCH);
 
     // Reset to first page when filters change
     useEffect(() => {
@@ -2100,7 +2159,20 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                             </tr>
                         ))}
                         {filteredData.length === 0 && (
-                            <tr><td colSpan={7} className="text-center p-8 text-blue-200">Tidak ada data yang cocok dengan filter yang dipilih.</td></tr>
+                            <tr>
+                                <td colSpan={7} className="text-center p-12">
+                                    <div className="flex flex-col items-center gap-3">
+                                        <p className="text-blue-200 opacity-60">Tidak ada data presensi yang ditemukan untuk filter ini.</p>
+                                        <button
+                                            onClick={() => pagination?.onRefresh?.() || onRefresh?.()}
+                                            className="px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg border border-teal-500/30 transition-all flex items-center gap-2 text-sm font-semibold"
+                                        >
+                                            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                            Sinkronisasi Data Sekarang
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                         )}
                     </tbody>
                 </table>
@@ -2118,46 +2190,9 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </button>
 
                     <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
+                        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
                     </div>
 
                     <button
@@ -2169,6 +2204,12 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </button>
                 </div>
             )}
+
+            <div className="mt-4 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                    Total {filteredData.length} data laporan {reportType === 'prayer' ? 'sholat' : 'kegiatan'}
+                </p>
+            </div>
         </div>
     );
 };
@@ -2558,8 +2599,8 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     } | null>(null);
 
     // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Jumlah item per halaman
+    const ITEMS_PER_BATCH = 15;
+    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
 
     const FUNCTIONAL_ROLE_LABELS: Record<FunctionalRole, string> = {
         'BPH': 'BPH',
@@ -2583,13 +2624,11 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     }, [filteredUsers]);
 
     // Pagination logic
-    const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedUsers = sortedUsers.slice(startIndex, startIndex + itemsPerPage);
+    const paginatedUsers = sortedUsers.slice(0, visibleCount);
 
-    // Reset to first page when search term changes
+    // Reset to initial batch when search term changes
     useEffect(() => {
-        setCurrentPage(1);
+        setVisibleCount(ITEMS_PER_BATCH);
     }, [searchTerm]);
 
     const handleRoleToggle = (user: Employee, role: FunctionalRole) => {
@@ -2687,69 +2726,24 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+            {/* Load More Pattern */}
+            <div className="mt-8 flex flex-col items-center gap-4">
+                {visibleCount < sortedUsers.length ? (
                     <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setVisibleCount(prev => prev + ITEMS_PER_BATCH)}
+                        className="px-10 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 shadow-lg transition-all transform hover:scale-105 flex items-center gap-3"
                     >
-                        ←
+                        <RefreshCw className="w-5 h-5 text-teal-400" />
+                        Tampilkan Data Selanjutnya
                     </button>
+                ) : sortedUsers.length > 0 && (
+                    <p className="text-gray-500 text-sm italic">Semua data telah ditampilkan</p>
+                )}
 
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+                <p className="text-xs text-gray-500">
+                    Menampilkan {paginatedUsers.length} dari {sortedUsers.length} data
+                </p>
+            </div>
 
             {confirmation && (
                 <ConfirmationModal
@@ -3420,6 +3414,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     }, [activeView, allUsersData, onLoadEmployees]);
 
+    // 🔥 NEW: Auto-sync attendance history when entering Reports tab if not already loaded
+    useEffect(() => {
+        if (activeView === 'reports' && onLoadHeavyData) {
+            // Check if we have any attendance history. If not, trigger the heavy sync.
+            const hasAnyHistory = Object.values(allUsersData).some(d =>
+                (d.history && Object.keys(d.history).length > 0) ||
+                (d.attendance && Object.keys(d.attendance).length > 0)
+            );
+
+            if (!hasAnyHistory && !isLoadingEmployees) {
+                onLoadHeavyData();
+            }
+        }
+    }, [activeView, onLoadHeavyData, allUsersData, isLoadingEmployees]);
+
     useEffect(() => {
         if (!isSuperAdmin(loggedInEmployee)) {
             if (['manajemen-pengguna', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(activeView)) {
@@ -3447,7 +3456,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [pdfFileName, setPdfFileName] = useState('');
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
     const [userManagementSubView, setUserManagementSubView] = useState<UserManagementSubView>('database');
-    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('kegiatan');
+    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('ibadah-sunnah');
     const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -3645,50 +3654,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div>
             <div className="mb-6">
                 <div className="flex items-center justify-between border-b border-white/20 px-2">
-                    <div className="flex items-center gap-2 -mb-px overflow-x-auto min-w-0 pr-4">
+                    <div className="flex items-center gap-2 -mb-px overflow-x-auto min-w-0 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        <style jsx>{`
+                            div::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
                         <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={BarChart3} />
                         {isSuperAdmin(loggedInEmployee) && (
                             <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={Users} />
                         )}
                         <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={FileText} />
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'audit-log'} onClick={() => setActiveView('audit-log')} label="Log Audit" icon={ShieldCheck} />}
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-admin'} onClick={() => setActiveView('manajemen-admin')} label="Manajemen Admin" icon={ShieldCheck} />}
                     </div>
 
-                    {/* 🔥 Global Refresh Button */}
-                    {(activeView === 'reports' || activeView === 'manajemen-pengguna') && (onLoadEmployees || onLoadHeavyData) && (
+                    {/* 🔥 Global Refresh Button - Keep only for manually refreshing if needed, but remove 'Sinkronisasi Riwayat' text/emphasis if requested, or just hide for reports if that's the specific request. User said 'Delete Sync History button'. */}
+                    {/* User specifically asked to remove the 'Sinkronisasi Riwayat' button and the 'Mode Cepat Aktif' card */}
+
+                    {activeView === 'manajemen-pengguna' && onLoadEmployees && (
                         <button
-                            onClick={() => activeView === 'reports' && onLoadHeavyData ? onLoadHeavyData() : onLoadEmployees?.()}
+                            onClick={() => onLoadEmployees?.()}
                             disabled={isLoadingEmployees}
-                            title={isLoadingEmployees ? 'Memuat...' : 'Refresh & Sinkronisasi Data'}
-                            className="flex items-center justify-center gap-2 px-4 h-10 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-teal-200 rounded-lg transition-all border border-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 mb-2"
+                            title="Refresh Data"
+                            className="flex items-center justify-center gap-2 px-4 h-10 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-teal-200 rounded-lg transition-all border border-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                         >
                             <RefreshCw className={`w-5 h-5 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
-                            <span className="text-xs font-bold uppercase hidden sm:inline">{activeView === 'reports' ? 'Sinkronisasi Riwayat' : 'Refresh'}</span>
+                            <span className="text-xs font-bold uppercase hidden sm:inline">Refresh</span>
                         </button>
                     )}
                 </div>
             </div>
 
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-                {activeView === 'reports' && (
-                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-center gap-3">
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-yellow-400" />
-                        </div>
-                        <div className="grow">
-                            <p className="text-sm font-semibold text-yellow-200">Mode Cepat Aktif</p>
-                            <p className="text-xs text-yellow-100/70">Klik tombol &ldquo;Sinkronisasi Riwayat&rdquo; di atas untuk memuat data lengkap kehadiran lama.</p>
-                        </div>
-                    </div>
-                )}
                 {activeView === 'manajemen-pengguna' && isSuperAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
                                 <SubTabButton active={userManagementSubView === 'database'} onClick={() => setUserManagementSubView('database')}>Database</SubTabButton>
-                                <SubTabButton active={userManagementSubView === 'akun'} onClick={() => setUserManagementSubView('akun')}>Akun</SubTabButton>
                                 <SubTabButton active={userManagementSubView === 'relasi'} onClick={() => setUserManagementSubView('relasi')}>Relasi</SubTabButton>
                                 <SubTabButton active={userManagementSubView === 'jabatan'} onClick={() => setUserManagementSubView('jabatan')}>Jabatan</SubTabButton>
                             </div>
@@ -3697,6 +3699,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             <DatabaseKaryawan
                                 allUsers={allUsers}
                                 onInitiateDeleteUser={handleInitiateDeleteUser}
+                                onInitiateToggleStatus={handleInitiateToggleStatus}
+                                onInitiateSetRole={handleInitiateSetRole}
+                                onManageAccess={setManagingAccessFor}
                                 onAddUser={onAddUser}
                                 onUpdateUser={onUpdateUser}
                                 onBulkUpdateUsers={onBulkUpdateUsers}
@@ -3705,10 +3710,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                 pagination={pagination}
                                 paginatedEmployees={paginatedEmployees}
                                 isLoading={isLoadingEmployees}
+                                loggedInEmployee={loggedInEmployee}
                             />
-                        )}
-                        {userManagementSubView === 'akun' && (
-                            <AkunManagement allUsers={allUsers} onInitiateToggleStatus={handleInitiateToggleStatus} />
                         )}
                         {userManagementSubView === 'relasi' && (
                             <Suspense fallback={
@@ -3765,13 +3768,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             ) : (
                                 <>
                                     {reportSubView === 'sholat' && (
-                                        <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="prayer" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                                        <AttendanceReport
+                                            allUsersData={allUsersData}
+                                            activities={activities}
+                                            reportType="prayer"
+                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                            loggedInEmployee={loggedInEmployee}
+                                            onEditAttendance={setEditingAttendanceRecord}
+                                            onDeleteAttendance={handleInitiateDeleteAttendance}
+                                            pagination={pagination}
+                                            onRefresh={onLoadHeavyData}
+                                            isLoading={isLoadingEmployees}
+                                        />
                                     )}
                                     {reportSubView === 'kegiatan' && (
-                                        <AttendanceReport allUsersData={allUsersData} activities={activities} reportType="activity" onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }} loggedInEmployee={loggedInEmployee} onEditAttendance={setEditingAttendanceRecord} onDeleteAttendance={handleInitiateDeleteAttendance} />
+                                        <AttendanceReport
+                                            allUsersData={allUsersData}
+                                            activities={activities}
+                                            reportType="activity"
+                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                            loggedInEmployee={loggedInEmployee}
+                                            onEditAttendance={setEditingAttendanceRecord}
+                                            onDeleteAttendance={handleInitiateDeleteAttendance}
+                                            pagination={pagination}
+                                            onRefresh={onLoadHeavyData}
+                                            isLoading={isLoadingEmployees}
+                                        />
                                     )}
                                     {reportSubView === 'mutabaah' && (
-                                        <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} />
+                                        <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} onLoadHeavyData={onLoadHeavyData} isLoading={isLoadingEmployees} />
                                     )}
                                 </>
                             )}
@@ -3779,8 +3804,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
                 )}
 
-                {activeView === 'audit-log' && isSuperAdmin(loggedInEmployee) && <AuditLogView log={auditLog} />}
-                {activeView === 'manajemen-admin' && isSuperAdmin(loggedInEmployee) && <AdminManagement allUsers={allUsers} loggedInEmployee={loggedInEmployee} onInitiateSetRole={handleInitiateSetRole} onManageAccess={setManagingAccessFor} hospitals={hospitals} />}
                 {activeView === 'manajemen-rs' && isSuperAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
             </div>
 

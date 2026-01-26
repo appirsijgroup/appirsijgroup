@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Announcements from '@/components/Announcements';
 import { useAppDataStore, useAnnouncementStore, useUIStore } from '@/store/store';
 import type { Announcement } from '@/types';
+import BrandedLoader from '@/components/BrandedLoader';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export default function PengumumanPage() {
@@ -110,12 +111,9 @@ export default function PengumumanPage() {
         }
     };
 
+    // ... inside the component
     if (!initLoaded || isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-slate-900 to-indigo-800">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={false} message="Memuat pengumuman..." />;
     }
 
     return (

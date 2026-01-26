@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import Bookmarks from '@/components/Bookmarks';
 import { useAppDataStore, useUIStore } from '@/store/store';
+import BrandedLoader from '@/components/BrandedLoader';
 import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/bookmarkStore';
 
 /**
@@ -78,21 +79,18 @@ export default function BookmarksPage() {
         router.push(`/alquran?surah=${surahNumber}&ayah=${ayahNumber}`);
     };
 
+    // ... inside the component, replace the returns
     // Loading state otomatis dari React Query
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-slate-900 to-indigo-800">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={false} message="Memuat bookmark..." />;
     }
 
     // Error state otomatis dari React Query
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-slate-900 to-indigo-800">
-                <div className="text-center text-white">
-                    <div className="text-red-400 mb-4">
+            <div className="flex items-center justify-center py-20">
+                <div className="text-center text-white bg-red-500/20 p-8 rounded-xl border border-red-500 max-w-md mx-auto">
+                    <div className="text-red-300 mb-4">
                         Gagal memuat bookmark. Silakan coba lagi.
                     </div>
                 </div>

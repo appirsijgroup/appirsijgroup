@@ -32,7 +32,7 @@ export interface AppDataState {
     markAnnouncementAsRead: () => Promise<void>;
     loadLoggedInEmployee: () => Promise<void>;
     loadAllEmployees: (limit?: number) => Promise<void>;
-    loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean) => Promise<void>;
+    loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean, isAppend?: boolean) => Promise<void>;
     paginatedEmployees: Employee[];
     paginationInfo: {
         page: number;
@@ -342,7 +342,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
     },
 
-    loadPaginatedEmployees: async (page = 1, limit = 15, search = '', role = '', isActive) => {
+    loadPaginatedEmployees: async (page = 1, limit = 15, search = '', role = '', isActive, isAppend = false) => {
         if (get().isLoadingEmployees) return;
 
         try {
@@ -369,7 +369,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
             set(state => ({
                 allUsersData: { ...state.allUsersData, ...newUsersToMerge },
-                paginatedEmployees: employees,
+                paginatedEmployees: isAppend ? [...state.paginatedEmployees, ...employees] : employees,
                 paginationInfo: pagination,
                 isLoadingEmployees: false
             }));

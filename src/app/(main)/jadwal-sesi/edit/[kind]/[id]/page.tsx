@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import BrandedLoader from '@/components/BrandedLoader';
 import { useActivityStore } from '@/store/activityStore';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { PencilIcon, CalendarIcon, ClockIcon } from '@/components/Icons';
@@ -144,14 +145,7 @@ export default function EditActivitySessionPage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
-                <div className="text-white text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mx-auto mb-4"></div>
-                    <p>Memuat data...</p>
-                </div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={false} message="Memuat data..." />;
     }
 
     if (!initialData) {

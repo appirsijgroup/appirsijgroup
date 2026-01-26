@@ -78,7 +78,7 @@ export default function JadwalSesiPage() {
     const handleDeleteCancel = () => {
         setDeleteModal({ isOpen: false, item: null });
     };
-    
+
     const combinedItems = useMemo((): CombinedScheduleItem[] => {
         const activityItems: CombinedScheduleItem[] = activities.map(a => ({
             id: a.id,
@@ -119,8 +119,8 @@ export default function JadwalSesiPage() {
 
     if (!loggedInEmployee) {
         return (
-            <div className="min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center">
-                <p className="text-white text-xl">Silakan login terlebih dahulu</p>
+            <div className="flex items-center justify-center py-20 text-center">
+                <p className="text-white/60 text-xl font-medium">Silakan login terlebih dahulu</p>
             </div>
         );
     }

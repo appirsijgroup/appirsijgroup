@@ -14,7 +14,7 @@ interface BrandedLoaderProps {
  */
 export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat...", fullScreen = true }) => {
     return (
-        <div className={`${fullScreen ? 'min-h-screen' : 'py-20 w-full'} flex flex-col items-center justify-center bg-linear-to-br from-slate-900 to-indigo-800`}>
+        <div className={`${fullScreen ? 'min-h-screen bg-linear-to-br from-slate-900 to-indigo-800' : 'py-12 w-full bg-transparent'} flex flex-col items-center justify-center`}>
             {/* Logo Container dengan Pulse Animation */}
             <div className="relative mb-8">
                 {/* Pulse rings */}

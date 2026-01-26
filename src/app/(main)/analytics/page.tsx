@@ -3,14 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppDataStore, useDailyActivitiesStore } from '@/store/store';
+import BrandedLoader from '@/components/BrandedLoader';
 
 // ⚡ OPTIMIZATION: Dynamic import untuk Analytics component - hanya load ketika dibutuhkan
 const Analytics = dynamic(() => import('@/components/Analytics'), {
-    loading: () => (
-        <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
-        </div>
-    ),
+    loading: () => <BrandedLoader fullScreen={false} message="Memuat grafik..." />,
     ssr: false
 });
 
@@ -54,11 +51,7 @@ export default function AnalyticsPage() {
 
     // Show loading state
     if (isLoading) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400"></div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={false} message="Menganalisis data..." />;
     }
 
     // Show error state

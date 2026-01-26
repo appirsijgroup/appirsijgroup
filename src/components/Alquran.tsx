@@ -218,9 +218,19 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
     const [surahs, setSurahs] = useState<Surah[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<SurahDetail | null>(null);
     const [isLoadingList, setIsLoadingList] = useState(true);
+    const AYAT_PER_PAGE = 25;
+    const SURAH_PER_BATCH = 24;
+    const [visibleAyahCount, setVisibleAyahCount] = useState(AYAT_PER_PAGE);
+    const [visibleSurahCount, setVisibleSurahCount] = useState(SURAH_PER_BATCH);
     const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    useEffect(() => {
+        // Reset visible surahs when searching
+        setVisibleSurahCount(SURAH_PER_BATCH);
+    }, [searchQuery]);
+
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [targetEndAyah, setTargetEndAyah] = useState<number | null>(null);
     const [jumpToSurah, setJumpToSurah] = useState('');
@@ -252,24 +262,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         loadSurahs();
     }, []);
 
-    useEffect(() => {
-        const handleGoToAyah = async () => {
-            if (goToAyah) {
-                await handleSelectSurah(goToAyah.surah);
-                // We need a slight delay for the DOM to update before we can scroll
-                setTimeout(() => {
-                    ayahRefs.current[goToAyah.ayah]?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
-                    clearGoToAyah();
-                }, 100);
-            }
-        };
-        handleGoToAyah();
-    }, [goToAyah, clearGoToAyah]);
-
-    const handleSelectSurah = async (surahNumber: number) => {
+    const handleSelectSurah = async (surahNumber: number, targetAyah?: number) => {
         setIsLoadingDetail(true);
         setError(null);
         setSelectedSurah(null);
@@ -277,6 +270,12 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
             const detail = await fetchSurahDetail(surahNumber);
             if (detail) {
                 setSelectedSurah(detail);
+                // Reset or setup visible count
+                if (targetAyah && targetAyah > AYAT_PER_PAGE) {
+                    setVisibleAyahCount(Math.min(targetAyah + 10, detail.jumlahAyat));
+                } else {
+                    setVisibleAyahCount(AYAT_PER_PAGE);
+                }
                 ayahRefs.current = new Array(detail.jumlahAyat + 1);
             } else {
                 setError('Gagal memuat detail surah. Silakan periksa koneksi internet Anda dan coba lagi. Jika masalah berlanjut, mungkin API sedang sibuk.');
@@ -287,6 +286,25 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
             setIsLoadingDetail(false);
         }
     };
+
+    useEffect(() => {
+        const handleGoToAyah = async () => {
+            if (goToAyah) {
+                // Determine if we need to load more ayahs for the target
+                await handleSelectSurah(goToAyah.surah, goToAyah.ayah);
+
+                // We need a slight delay for the DOM to update before we can scroll
+                setTimeout(() => {
+                    ayahRefs.current[goToAyah.ayah]?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                    clearGoToAyah();
+                }, 300);
+            }
+        };
+        handleGoToAyah();
+    }, [goToAyah, clearGoToAyah]);
 
     const handleBackToList = () => {
         setSelectedSurah(null);
@@ -389,7 +407,7 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                             </div>
 
                             <div className="space-y-4">
-                                {selectedSurah.ayat.map((ayah) => (
+                                {selectedSurah.ayat.slice(0, visibleAyahCount).map((ayah) => (
                                     <div key={ayah.nomorAyat} ref={(el) => { ayahRefs.current[ayah.nomorAyat] = el; }} className="bg-black/20 p-4 rounded-lg border border-white/10">
                                         <div className="flex justify-between items-center mb-6">
                                             <span className="px-3 py-1 bg-teal-500/20 text-teal-200 font-bold rounded-full">{selectedSurah.nomor}:{ayah.nomorAyat}</span>
@@ -432,7 +450,25 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                                         <p className="text-white text-sm">&quot;{ayah.teksIndonesia}&quot;</p>
                                     </div>
                                 ))}
+
+                                {selectedSurah && visibleAyahCount < selectedSurah.jumlahAyat && (
+                                    <div className="py-8 flex flex-col items-center gap-4">
+                                        <button
+                                            onClick={() => setVisibleAyahCount(prev => Math.min(prev + AYAT_PER_PAGE, selectedSurah.jumlahAyat))}
+                                            className="px-8 py-3 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-full shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
+                                        >
+                                            Tampilkan {Math.min(AYAT_PER_PAGE, selectedSurah.jumlahAyat - visibleAyahCount)} Ayat Selanjutnya
+                                        </button>
+                                        <button
+                                            onClick={() => setVisibleAyahCount(selectedSurah.jumlahAyat)}
+                                            className="text-teal-400 hover:text-teal-300 text-sm font-medium underline underline-offset-4 transition-colors"
+                                        >
+                                            Tampilkan Semua ({selectedSurah.jumlahAyat} Ayat)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
+
                         </div>
                         <ReportReadingModal
                             isOpen={isReportModalOpen}
@@ -537,27 +573,43 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                 {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                 {filteredSurahs.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {filteredSurahs.map((surah) => (
-                            <button
-                                key={surah.nomor}
-                                onClick={() => handleSelectSurah(surah.nomor)}
-                                className="group p-4 rounded-xl border border-white/10 bg-linear-to-br from-gray-800/50 to-gray-900/50 hover:border-teal-400/50 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-300 text-left flex items-center space-x-4"
-                            >
-                                <div className="shrink-0 w-12 h-12 flex items-center justify-center bg-gray-700/50 group-hover:bg-teal-500/20 rounded-lg text-teal-300 font-bold text-lg transition-colors">
-                                    {surah.nomor}
-                                </div>
-                                <div className="grow overflow-hidden">
-                                    <div className="flex justify-between items-start">
-                                        <h3 className="font-semibold text-lg text-white truncate">{surah.namaLatin}</h3>
-                                        <p className="font-serif text-xl text-teal-200/80 -mt-1 shrink-0">{surah.nama}</p>
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredSurahs.slice(0, visibleSurahCount).map((surah) => (
+                                <button
+                                    key={surah.nomor}
+                                    onClick={() => handleSelectSurah(surah.nomor)}
+                                    className="group p-4 rounded-xl border border-white/10 bg-linear-to-br from-gray-800/50 to-gray-900/50 hover:border-teal-400/50 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-300 text-left flex items-center space-x-4"
+                                >
+                                    <div className="shrink-0 w-12 h-12 flex items-center justify-center bg-gray-700/50 group-hover:bg-teal-500/20 rounded-lg text-teal-300 font-bold text-lg transition-colors">
+                                        {surah.nomor}
                                     </div>
-                                    <p className="text-blue-200 text-sm truncate">{surah.arti}</p>
-                                    <p className="text-xs text-gray-400 mt-1">{surah.jumlahAyat} ayat • {surah.tempatTurun}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                                    <div className="grow overflow-hidden">
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-semibold text-lg text-white truncate">{surah.namaLatin}</h3>
+                                            <p className="font-serif text-xl text-teal-200/80 -mt-1 shrink-0">{surah.nama}</p>
+                                        </div>
+                                        <p className="text-blue-200 text-sm truncate">{surah.arti}</p>
+                                        <p className="text-xs text-gray-400 mt-1">{surah.jumlahAyat} ayat • {surah.tempatTurun}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {visibleSurahCount < filteredSurahs.length && (
+                            <div className="mt-12 flex flex-col items-center gap-4">
+                                <button
+                                    onClick={() => setVisibleSurahCount(prev => prev + SURAH_PER_BATCH)}
+                                    className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 shadow-lg transition-all transform hover:scale-105"
+                                >
+                                    Tampilkan Surah Selanjutnya
+                                </button>
+                                <p className="text-xs text-gray-500">
+                                    Memperlihatkan {visibleSurahCount} dari {filteredSurahs.length} surah
+                                </p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

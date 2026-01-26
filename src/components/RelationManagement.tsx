@@ -61,7 +61,15 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
     // Defensive check: ensure allUsers is an array
     const safeAllUsers = Array.isArray(allUsers) ? allUsers : [];
 
-    const userMap = useMemo(() => new Map(safeAllUsers.map(u => [u.id, u.name])), [safeAllUsers]);
+    // Optimized map for ultra-fast name lookup by NIP
+    const userMap = useMemo(() => {
+        const map = new Map<string, string>();
+        safeAllUsers.forEach(u => {
+            if (u.id) map.set(String(u.id).trim(), u.name);
+        });
+        return map;
+    }, [safeAllUsers]);
+
     const potentialMentors = useMemo(() => safeAllUsers.filter(u => u.canBeMentor === true), [safeAllUsers]);
     const potentialSupervisors = useMemo(() => safeAllUsers.filter(u => u.canBeSupervisor === true), [safeAllUsers]);
     const potentialManagers = useMemo(() => safeAllUsers.filter(u => u.canBeManager === true), [safeAllUsers]);
@@ -485,28 +493,28 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                     </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.dirutId ? userMap.get(user.dirutId) : 'Otomatis'}>
-                                        {user.dirutId ? userMap.get(user.dirutId) : <span className="text-gray-400 italic">Otomatis</span>}
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.dirutId ? (userMap.get(String(user.dirutId).trim()) || `NIP: ${user.dirutId}`) : 'Otomatis'}>
+                                        {user.dirutId ? (userMap.get(String(user.dirutId).trim()) || <span className="text-gray-400 text-xs italic">{user.dirutId}</span>) : <span className="text-gray-400 italic">Otomatis</span>}
                                     </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.mentorId ? userMap.get(user.mentorId) : 'Belum ditugaskan'}>
-                                        {user.mentorId ? userMap.get(user.mentorId) : <span className="text-gray-400 italic">-</span>}
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.mentorId ? (userMap.get(String(user.mentorId).trim()) || `NIP: ${user.mentorId}`) : 'Belum ditugaskan'}>
+                                        {user.mentorId ? (userMap.get(String(user.mentorId).trim()) || <span className="text-gray-400 text-xs italic">{user.mentorId}</span>) : <span className="text-gray-400 italic">-</span>}
                                     </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.supervisorId ? userMap.get(user.supervisorId) : 'Belum ditugaskan'}>
-                                        {user.supervisorId ? userMap.get(user.supervisorId) : <span className="text-gray-400 italic">-</span>}
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.supervisorId ? (userMap.get(String(user.supervisorId).trim()) || `NIP: ${user.supervisorId}`) : 'Belum ditugaskan'}>
+                                        {user.supervisorId ? (userMap.get(String(user.supervisorId).trim()) || <span className="text-gray-400 text-xs italic">{user.supervisorId}</span>) : <span className="text-gray-400 italic">-</span>}
                                     </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.kaUnitId ? userMap.get(user.kaUnitId) : 'Belum ditugaskan'}>
-                                        {user.kaUnitId ? userMap.get(user.kaUnitId) : <span className="text-gray-400 italic">-</span>}
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.kaUnitId ? (userMap.get(String(user.kaUnitId).trim()) || `NIP: ${user.kaUnitId}`) : 'Belum ditugaskan'}>
+                                        {user.kaUnitId ? (userMap.get(String(user.kaUnitId).trim()) || <span className="text-gray-400 text-xs italic">{user.kaUnitId}</span>) : <span className="text-gray-400 italic">-</span>}
                                     </div>
                                 </td>
                                 <td className="px-2 py-3 min-w-[160px]">
-                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.managerId ? userMap.get(user.managerId) : 'Belum ditugaskan'}>
-                                        {user.managerId ? userMap.get(user.managerId) : <span className="text-gray-400 italic">-</span>}
+                                    <div className="w-full bg-white/5 border border-white/20 rounded-lg py-2 px-3 text-white text-sm truncate" title={user.managerId ? (userMap.get(String(user.managerId).trim()) || `NIP: ${user.managerId}`) : 'Belum ditugaskan'}>
+                                        {user.managerId ? (userMap.get(String(user.managerId).trim()) || <span className="text-gray-400 text-xs italic">{user.managerId}</span>) : <span className="text-gray-400 italic">-</span>}
                                     </div>
                                 </td>
                                 <td className="px-3 py-3 text-center min-w-[100px]">

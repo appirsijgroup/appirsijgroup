@@ -4,10 +4,12 @@ import React from 'react';
 import Persetujuan from '@/components/Persetujuan';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useGuidanceStore } from '@/store/guidanceStore';
+import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
 import { useNotificationStore } from '@/store/notificationStore';
 
 export default function PersetujuanPage() {
-    const { loggedInEmployee, allUsersData } = useAppDataStore();
+    const { loggedInEmployee, allUsersData, loadDetailedEmployeeData } = useAppDataStore();
+    const { dailyActivitiesConfig } = useDailyActivitiesStore();
     const {
         monthlyReportSubmissions,
         tadarusRequests,
@@ -145,6 +147,8 @@ export default function PersetujuanPage() {
                 pendingMissedPrayerRequests={missedPrayerRequests}
                 onReviewTadarusRequest={handleReviewTadarusRequest}
                 onReviewMissedPrayerRequest={handleReviewMissedPrayerRequest}
+                loadDetailedEmployeeData={loadDetailedEmployeeData}
+                dailyActivitiesConfig={dailyActivitiesConfig}
             />
         </div>
     );

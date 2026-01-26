@@ -388,13 +388,15 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 { convertTadarusSessionsToActivities },
                 { convertTeamAttendanceToActivities },
                 { convertScheduledActivitiesToActivities },
-                { getEmployeeAttendance }
+                { getEmployeeAttendance },
+                { getMonthlyActivities }
             ] = await Promise.all([
                 import('@/services/monthlyReportService'),
                 import('@/services/tadarusService'),
                 import('@/services/teamAttendanceService'),
                 import('@/services/scheduledActivityService'),
-                import('@/services/attendanceService')
+                import('@/services/attendanceService'),
+                import('@/services/monthlyActivityService')
             ]);
 
             const [
@@ -402,18 +404,20 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 tadarusActivities,
                 teamAttendanceActivities,
                 scheduledActivities,
-                attendanceRecords
+                attendanceRecords,
+                baseMonthlyActivities
             ] = await Promise.all([
                 convertMonthlyReportsToActivities(employeeId),
                 convertTadarusSessionsToActivities(employeeId),
                 convertTeamAttendanceToActivities(employeeId),
                 convertScheduledActivitiesToActivities(employeeId),
-                getEmployeeAttendance(employeeId).catch(() => ({}) as any)
+                getEmployeeAttendance(employeeId).catch(() => ({}) as any),
+                getMonthlyActivities(employeeId).catch(() => ({} as any))
             ]);
 
-            const mergedActivities = { ...monthlyReportsActivities };
+            const mergedActivities = { ...baseMonthlyActivities };
 
-            [tadarusActivities, teamAttendanceActivities, scheduledActivities].forEach(source => {
+            [monthlyReportsActivities, tadarusActivities, teamAttendanceActivities, scheduledActivities].forEach(source => {
                 Object.entries(source).forEach(([monthKey, monthData]) => {
                     if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
                     Object.entries(monthData as any).forEach(([dayKey, dayData]) => {

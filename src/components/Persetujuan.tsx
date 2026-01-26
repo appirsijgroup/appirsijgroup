@@ -52,26 +52,27 @@ const MenteeReportDetailView: React.FC<{
     mentee: Employee;
     monthKey: string;
     onBack: () => void;
-}> = ({ mentee, monthKey, onBack }) => {
+    dailyActivitiesConfig: any[];
+}> = ({ mentee, monthKey, onBack, dailyActivitiesConfig }) => {
 
     const currentMonth = useMemo(() => new Date(monthKey + '-02'), [monthKey]);
     const progress = useMemo(() => mentee.monthlyActivities?.[monthKey] || {}, [mentee, monthKey]);
     const daysInMonth = useMemo(() => new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate(), [currentMonth]);
 
     const groupedActivities = useMemo(() => {
-        return DAILY_ACTIVITIES.reduce((acc, activity) => {
+        return dailyActivitiesConfig.reduce((acc, activity) => {
             if (!acc[activity.category]) acc[activity.category] = [];
             acc[activity.category].push(activity);
             return acc;
-        }, {} as Record<string, typeof DAILY_ACTIVITIES>);
-    }, []);
+        }, {} as Record<string, DailyActivity[]>);
+    }, [dailyActivitiesConfig]);
 
     const activityProgressCounts = useMemo(() => {
-        return DAILY_ACTIVITIES.reduce((acc, activity) => {
-            acc[activity.id] = Object.values(progress).reduce((dayCount, dailyProgress) => dayCount + (dailyProgress[activity.id] ? 1 : 0), 0);
+        return dailyActivitiesConfig.reduce((acc, activity) => {
+            acc[activity.id] = Object.values(progress).reduce((dayCount: number, dailyProgress: any) => dayCount + (dailyProgress[activity.id] ? 1 : 0), 0);
             return acc;
         }, {} as Record<string, number>);
-    }, [progress]);
+    }, [progress, dailyActivitiesConfig]);
 
     return (
         <div className="animate-view-change">
@@ -107,7 +108,7 @@ const MenteeReportDetailView: React.FC<{
                                         {category}
                                     </td>
                                 </tr>
-                                {activities.map(activity => (
+                                {(activities as DailyActivity[]).map(activity => (
                                     <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
                                         <td className="px-3 py-3 font-medium text-left sticky left-0 bg-gray-800 z-10 whitespace-nowrap">{activity.title}</td>
                                         <td className="px-3 py-3 font-semibold text-center sticky left-[250px] bg-gray-800 z-10 whitespace-nowrap">
@@ -164,6 +165,8 @@ interface PersetujuanProps {
     pendingMissedPrayerRequests?: any[];
     onReviewTadarusRequest?: (requestId: string, status: 'approved' | 'rejected') => void;
     onReviewMissedPrayerRequest?: (requestId: string, status: 'approved' | 'rejected', mentorNotes?: string) => void;
+    loadDetailedEmployeeData?: (employeeId: string) => Promise<void>;
+    dailyActivitiesConfig: any[];
 }
 
 const Persetujuan: React.FC<PersetujuanProps> = ({
@@ -174,7 +177,9 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     pendingTadarusRequests = [],
     pendingMissedPrayerRequests = [],
     onReviewTadarusRequest,
-    onReviewMissedPrayerRequest
+    onReviewMissedPrayerRequest,
+    loadDetailedEmployeeData,
+    dailyActivitiesConfig
 }) => {
 
     const [selectedSubmission, setSelectedSubmission] = useState<MonthlyReportSubmission | null>(null);
@@ -183,6 +188,13 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
+
+    // 🔥 FIX: Load detailed data when a report is selected
+    useEffect(() => {
+        if (selectedSubmission && loadDetailedEmployeeData) {
+            loadDetailedEmployeeData(selectedSubmission.menteeId);
+        }
+    }, [selectedSubmission, loadDetailedEmployeeData]);
 
     const { isSupervisor, isManager, isKaUnit } = useMemo(() => ({
         isSupervisor: loggedInEmployee.canBeSupervisor,
@@ -361,7 +373,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         <div className="w-full animate-fade-in">
             {selectedSubmission && menteeDataForDetail ? (
                 <div className="bg-gray-900 shadow-2xl rounded-2xl border border-white/10 p-4 sm:p-8">
-                    <MenteeReportDetailView mentee={menteeDataForDetail} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} />
+                    <MenteeReportDetailView mentee={menteeDataForDetail} monthKey={selectedSubmission.monthKey} onBack={() => setSelectedSubmission(null)} dailyActivitiesConfig={dailyActivitiesConfig} />
                     <div className="mt-8 flex flex-col sm:flex-row justify-end gap-3 p-4 bg-black/40 rounded-xl border border-white/5">
                         <button
                             onClick={() => setRejectionTarget({ type: 'report', submission: selectedSubmission })}

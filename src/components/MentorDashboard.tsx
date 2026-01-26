@@ -1432,6 +1432,8 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         pendingMissedPrayerRequests={missedPrayerRequests || []}
                         onReviewTadarusRequest={onReviewTadarusRequest}
                         onReviewMissedPrayerRequest={onReviewMissedPrayerRequest}
+                        loadDetailedEmployeeData={loadDetailedEmployeeData}
+                        dailyActivitiesConfig={dailyActivitiesConfig}
                     />
                 )}
                 {/* Sesi Bimbingan view removed */}

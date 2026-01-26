@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Employee, type DailyActivity, type Hospital } from '../types';
 import { PdfIcon, ChartBarIcon, DocumentTextIcon, ArrowLeftIcon } from './Icons';
-import { imageUrlToBase64 } from '@/utils/imageUtils';
+import { imageUrlToBase64, flattenImageWithWhiteBackground } from '@/utils/imageUtils';
 
 interface RapotViewProps {
     employee: Employee;
@@ -76,12 +76,13 @@ const generateTranscriptPdf = async (
     // 1. Header with LOGO logic (Standard Kop Surat - Logo on Left)
     if (hospital?.logo) {
         try {
-            const logoBase64 = hospital.logo.startsWith('http')
+            const rawLogo = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
 
-            const format = logoBase64.includes('image/png') ? 'PNG' : (logoBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-            doc.addImage(logoBase64, format as any, logoX, logoY, logoSize, logoSize);
+            // 🔥 FIX: Flatten logo to white background JPEG
+            const logoBase64 = await flattenImageWithWhiteBackground(rawLogo);
+            doc.addImage(logoBase64, 'JPEG', logoX, logoY, logoSize, logoSize, undefined, 'FAST');
             logoBottomY = logoY + logoSize;
         } catch (e) {
             console.error('Failed to add logo to PDF', e);
@@ -224,25 +225,26 @@ const generateTranscriptPdf = async (
         doc.text(text, x, y, options);
     };
 
-    // Pre-load employee signature Base64
+    // Pre-load signatures with white background flattening
     let employeeSignatureBase64 = null;
     if (employee.signature) {
         try {
-            employeeSignatureBase64 = employee.signature.startsWith('http')
+            const rawSig = employee.signature.startsWith('http')
                 ? await imageUrlToBase64(employee.signature)
                 : employee.signature;
+            employeeSignatureBase64 = await flattenImageWithWhiteBackground(rawSig);
         } catch (e) {
             console.error('Failed to load employee signature for PDF', e);
         }
     }
 
-    // Pre-load signatory signature Base64
     let bossSignatureBase64 = null;
     if (signatorySignature) {
         try {
-            bossSignatureBase64 = signatorySignature.startsWith('http')
+            const rawSig = signatorySignature.startsWith('http')
                 ? await imageUrlToBase64(signatorySignature)
                 : signatorySignature;
+            bossSignatureBase64 = await flattenImageWithWhiteBackground(rawSig);
         } catch (e) {
             console.error('Failed to load signatory signature for PDF', e);
         }
@@ -256,6 +258,12 @@ const generateTranscriptPdf = async (
         columnStyles: {
             0: { cellWidth: pageWidth / 2 - pageMargin },
             1: { cellWidth: pageWidth / 2 - pageMargin },
+        },
+        didParseCell: (data) => {
+            // Set height for signature row
+            if (data.row.index === 1) {
+                data.cell.styles.minCellHeight = 25;
+            }
         },
         willDrawCell: (data) => {
             if (data.row.index === 3) {
@@ -282,15 +290,21 @@ const generateTranscriptPdf = async (
             // Signatory Signature (Row 1, Column 0)
             if (data.row.index === 1 && data.column.index === 0 && bossSignatureBase64) {
                 try {
-                    const format = bossSignatureBase64.includes('image/png') ? 'PNG' : (bossSignatureBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-                    doc.addImage(bossSignatureBase64, format as any, data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                    const imgW = 25;
+                    const imgH = 18;
+                    const x = data.cell.x + (data.cell.width - imgW) / 2;
+                    const y = data.cell.y + (data.cell.height - imgH) / 2;
+                    doc.addImage(bossSignatureBase64, 'JPEG', x, y, imgW, imgH, undefined, 'FAST');
                 } catch (e) { }
             }
             // Employee Signature (Row 1, Column 1)
             if (data.row.index === 1 && data.column.index === 1 && employeeSignatureBase64) {
                 try {
-                    const format = employeeSignatureBase64.includes('image/png') ? 'PNG' : (employeeSignatureBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-                    doc.addImage(employeeSignatureBase64, format as any, data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                    const imgW = 25;
+                    const imgH = 18;
+                    const x = data.cell.x + (data.cell.width - imgW) / 2;
+                    const y = data.cell.y + (data.cell.height - imgH) / 2;
+                    doc.addImage(employeeSignatureBase64, 'JPEG', x, y, imgW, imgH, undefined, 'FAST');
                 } catch (e) { }
             }
         }
@@ -317,11 +331,11 @@ const generateChecklistPdf = async (
     // Header
     if (hospital?.logo) {
         try {
-            const logoBase64 = hospital.logo.startsWith('http')
+            const rawLogo = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
-            const format = logoBase64.includes('image/png') ? 'PNG' : (logoBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-            doc.addImage(logoBase64, format as any, pageMargin, 10, 15, 15);
+            const logoBase64 = await flattenImageWithWhiteBackground(rawLogo);
+            doc.addImage(logoBase64, 'JPEG', pageMargin, 10, 15, 15, undefined, 'FAST');
         } catch (e) { }
     }
     doc.setFontSize(14);
@@ -384,19 +398,19 @@ const generateChecklistPdf = async (
     const mentor = mentorId ? allUsersData[mentorId]?.employee : null;
     const mentorName = mentor ? mentor.name : '.........................';
 
-    // Signatures for Checklist
+    // Signatures for Checklist with white background flattening
     if (mentor?.signature) {
         try {
-            const mentorSigBase64 = mentor.signature.startsWith('http') ? await imageUrlToBase64(mentor.signature) : mentor.signature;
-            const format = mentorSigBase64.includes('image/png') ? 'PNG' : (mentorSigBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-            doc.addImage(mentorSigBase64, format as any, pageMargin + 15, finalY + 7, 20, 12);
+            const rawSig = mentor.signature.startsWith('http') ? await imageUrlToBase64(mentor.signature) : mentor.signature;
+            const mentorSigBase64 = await flattenImageWithWhiteBackground(rawSig);
+            doc.addImage(mentorSigBase64, 'JPEG', pageMargin + 15, finalY + 7, 20, 12, undefined, 'FAST');
         } catch (e) { }
     }
     if (employee.signature) {
         try {
-            const empSigBase64 = employee.signature.startsWith('http') ? await imageUrlToBase64(employee.signature) : employee.signature;
-            const format = empSigBase64.includes('image/png') ? 'PNG' : (empSigBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
-            doc.addImage(empSigBase64, format as any, pageWidth - pageMargin - 55, finalY + 7, 20, 12);
+            const rawSig = employee.signature.startsWith('http') ? await imageUrlToBase64(employee.signature) : employee.signature;
+            const empSigBase64 = await flattenImageWithWhiteBackground(rawSig);
+            doc.addImage(empSigBase64, 'JPEG', pageWidth - pageMargin - 55, finalY + 7, 20, 12, undefined, 'FAST');
         } catch (e) { }
     }
 
@@ -613,7 +627,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
 
 interface TranskripNilaiViewProps {
     employee: Employee;
-    allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>;
+    allUsersData: Record<string, { employee: Employee; attendance: Record<string, any>; history: Record<string, any>; }>;
     selectedMonth: Date;
     performanceData: {
         categories: {
@@ -635,9 +649,12 @@ interface TranskripNilaiViewProps {
     signatoryTitle: string;
     signatorySignature: string | null;
     hospital: Hospital | null;
+    isDownloading: string | null;
+    setIsDownloading: (val: string | null) => void;
 }
 
-const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, signatorySignature, hospital }) => {
+
+const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUsersData, selectedMonth, performanceData, ipForMonth, signatoryName, signatoryNip, signatoryTitle, signatorySignature, hospital, isDownloading, setIsDownloading }) => {
 
     const bossInfo = useMemo(() => {
         const getBossName = (id?: string) => {
@@ -669,22 +686,40 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
         <div className="bg-gray-900/50 p-2 sm:p-6 rounded-lg">
             <div className="flex justify-end items-center mb-6">
                 <button
-                    onClick={async () => await generateTranscriptPdf(
-                        employee,
-                        performanceData,
-                        ipForMonth,
-                        selectedMonthLabel,
-                        signatoryName,
-                        signatoryNip,
-                        signatoryTitle,
-                        bossInfo.mentor,
-                        hospital,
-                        signatorySignature
-                    )}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg text-sm transition-colors shadow"
+                    disabled={isDownloading !== null}
+                    onClick={async () => {
+                        try {
+                            setIsDownloading('transcript');
+                            await generateTranscriptPdf(
+                                employee,
+                                performanceData,
+                                ipForMonth,
+                                selectedMonthLabel,
+                                signatoryName,
+                                signatoryNip,
+                                signatoryTitle,
+                                bossInfo.mentor,
+                                hospital,
+                                signatorySignature
+                            );
+                        } finally {
+                            setIsDownloading(null);
+                        }
+                    }}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+                      ${isDownloading === 'transcript' ? 'bg-gray-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
                 >
-                    <PdfIcon className="w-5 h-5" />
-                    Unduh PDF
+                    {isDownloading === 'transcript' ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Memproses...</span>
+                        </>
+                    ) : (
+                        <>
+                            <PdfIcon className="w-6 h-6" />
+                            <span>Unduh Transkrip (PDF)</span>
+                        </>
+                    )}
                 </button>
             </div>
             <div className="overflow-x-auto pb-8">
@@ -849,6 +884,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     const [activeTab, setActiveTab] = useState<'mutabaah' | 'transkrip'>('mutabaah');
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [viewingChecklistFor, setViewingChecklistFor] = useState<Date | null>(null);
+    const [isDownloading, setIsDownloading] = useState<string | null>(null); // 'transcript' | 'checklist' | null
 
     const hospital = useMemo(() => {
         // Gabungkan pemeriksaan hospitalId (frontend) dan hospital_id (backend/Supabase)
@@ -1173,8 +1209,25 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                         <button onClick={() => setViewingChecklistFor(monthDate)} className="p-2 text-blue-300 hover:text-white rounded-full hover:bg-white/10" title="Lihat Checklist">
                                                             <DocumentTextIcon className="w-5 h-5" />
                                                         </button>
-                                                        <button onClick={async () => await generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital)} className="p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10" title="Unduh PDF">
-                                                            <PdfIcon className="w-5 h-5" />
+                                                        <button
+                                                            disabled={isDownloading !== null}
+                                                            onClick={async () => {
+                                                                try {
+                                                                    setIsDownloading(`checklist-${monthKey}`);
+                                                                    await generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital);
+                                                                } finally {
+                                                                    setIsDownloading(null);
+                                                                }
+                                                            }}
+                                                            className={`p-2 rounded-full transition-all disabled:opacity-50
+                                                              ${isDownloading === `checklist-${monthKey}` ? 'text-gray-400' : 'text-red-400 hover:text-red-300 hover:bg-white/10'}`}
+                                                            title="Unduh PDF"
+                                                        >
+                                                            {isDownloading === `checklist-${monthKey}` ? (
+                                                                <div className="w-5 h-5 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <PdfIcon className="w-5 h-5" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -1209,6 +1262,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                             signatoryTitle={signatory.title}
                             signatorySignature={signatory.signature || null}
                             hospital={hospital}
+                            isDownloading={isDownloading}
+                            setIsDownloading={setIsDownloading}
                         />
                     </div>
                 )}

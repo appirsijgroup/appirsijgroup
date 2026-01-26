@@ -94,3 +94,39 @@ export const imageUrlToBase64 = async (url: string): Promise<string> => {
         throw error;
     }
 };
+/**
+ * Flatten an image onto a white background and convert to JPEG
+ * This solves transparency issues in PDF generation where transparent areas 
+ * might be rendered as black boxes.
+ */
+export const flattenImageWithWhiteBackground = async (imageSource: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Failed to get canvas context'));
+                return;
+            }
+
+            // 1. Fill with solid white
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw the image on top
+            ctx.drawImage(img, 0, 0);
+
+            // 3. Export as high quality JPEG (JPEG doesn't support transparency)
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
+        };
+        img.onerror = (err) => {
+            console.error('Flattening error:', err);
+            reject(err);
+        };
+        img.src = imageSource;
+    });
+};

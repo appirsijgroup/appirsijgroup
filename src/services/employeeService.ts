@@ -47,6 +47,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         emailVerified: emp.email_verified,
         avatarUrl: emp.avatar_url,
         authUserId: emp.auth_user_id,
+        lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
     };
 };
 
@@ -357,6 +358,7 @@ export const updateEmployee = async (
     if (updates.emailVerified !== undefined) dbUpdates.email_verified = updates.emailVerified;
     if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
     if (updates.authUserId !== undefined) dbUpdates.auth_user_id = updates.authUserId;
+    if (updates.lastAnnouncementReadTimestamp !== undefined) dbUpdates.last_announcement_read_timestamp = new Date(updates.lastAnnouncementReadTimestamp).toISOString();
 
 
     // 🔥 FIX: Validate and sanitize JSONB columns before sending
@@ -396,6 +398,14 @@ export const updateEmployee = async (
         if (!Array.isArray(sanitizedUpdates.quran_reading_history)) {
             throw new Error('quran_reading_history must be an array');
         }
+    }
+
+    // 🔥 FIX: Don't call API if no actual updates to perform
+    if (Object.keys(sanitizedUpdates).length === 0) {
+        console.warn('⚠️ [updateEmployee] No fields to update, skipping API call');
+        const current = await getEmployeeById(id);
+        if (!current) throw new Error('Employee not found');
+        return current;
     }
 
     // Use the API route instead of direct Supabase to bypass RLS

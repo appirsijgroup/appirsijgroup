@@ -42,16 +42,25 @@ export async function POST(request: NextRequest) {
         }
 
         // 4. Update the record
+        if (Object.keys(allowedUpdates).length === 0) {
+            return NextResponse.json({ success: true, message: 'No fields to update' });
+        }
+
         const { data, error } = await (supabase
             .from('employees') as any)
             .update(allowedUpdates)
             .eq('id', targetUserId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('Error updating employee:', error);
             return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        if (!data) {
+            console.error('Update failed: Target employee record not found or no rows updated', { targetUserId });
+            return NextResponse.json({ error: 'Employee record not found or update failed' }, { status: 404 });
         }
 
         return NextResponse.json({ success: true, data });

@@ -76,12 +76,12 @@ const generateTranscriptPdf = async (
     // 1. Header with LOGO logic (Standard Kop Surat - Logo on Left)
     if (hospital?.logo) {
         try {
-            // 🔥 FIX: Convert URL to Base64 for jsPDF reliability
             const logoBase64 = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
 
-            doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+            const format = logoBase64.includes('image/png') ? 'PNG' : (logoBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+            doc.addImage(logoBase64, format as any, logoX, logoY, logoSize, logoSize);
             logoBottomY = logoY + logoSize;
         } catch (e) {
             console.error('Failed to add logo to PDF', e);
@@ -282,13 +282,15 @@ const generateTranscriptPdf = async (
             // Signatory Signature (Row 1, Column 0)
             if (data.row.index === 1 && data.column.index === 0 && bossSignatureBase64) {
                 try {
-                    doc.addImage(bossSignatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                    const format = bossSignatureBase64.includes('image/png') ? 'PNG' : (bossSignatureBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+                    doc.addImage(bossSignatureBase64, format as any, data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
                 } catch (e) { }
             }
             // Employee Signature (Row 1, Column 1)
             if (data.row.index === 1 && data.column.index === 1 && employeeSignatureBase64) {
                 try {
-                    doc.addImage(employeeSignatureBase64, 'PNG', data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
+                    const format = employeeSignatureBase64.includes('image/png') ? 'PNG' : (employeeSignatureBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+                    doc.addImage(employeeSignatureBase64, format as any, data.cell.x + data.cell.width / 2 - 10, data.cell.y, 20, 15);
                 } catch (e) { }
             }
         }
@@ -318,7 +320,8 @@ const generateChecklistPdf = async (
             const logoBase64 = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
-            doc.addImage(logoBase64, 'PNG', pageMargin, 10, 15, 15);
+            const format = logoBase64.includes('image/png') ? 'PNG' : (logoBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+            doc.addImage(logoBase64, format as any, pageMargin, 10, 15, 15);
         } catch (e) { }
     }
     doc.setFontSize(14);
@@ -385,13 +388,15 @@ const generateChecklistPdf = async (
     if (mentor?.signature) {
         try {
             const mentorSigBase64 = mentor.signature.startsWith('http') ? await imageUrlToBase64(mentor.signature) : mentor.signature;
-            doc.addImage(mentorSigBase64, 'PNG', pageMargin + 15, finalY + 7, 20, 12);
+            const format = mentorSigBase64.includes('image/png') ? 'PNG' : (mentorSigBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+            doc.addImage(mentorSigBase64, format as any, pageMargin + 15, finalY + 7, 20, 12);
         } catch (e) { }
     }
     if (employee.signature) {
         try {
             const empSigBase64 = employee.signature.startsWith('http') ? await imageUrlToBase64(employee.signature) : employee.signature;
-            doc.addImage(empSigBase64, 'PNG', pageWidth - pageMargin - 55, finalY + 7, 20, 12);
+            const format = empSigBase64.includes('image/png') ? 'PNG' : (empSigBase64.includes('image/webp') ? 'WEBP' : 'JPEG');
+            doc.addImage(empSigBase64, format as any, pageWidth - pageMargin - 55, finalY + 7, 20, 12);
         } catch (e) { }
     }
 
@@ -435,6 +440,15 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
 
     const today = new Date().getDate();
 
+    const userMap = useMemo(() => new Map(Object.entries(allUsersData).map(([id, data]) => [id, data.employee])), [allUsersData]);
+    const kaUnit = useMemo(() => userMap.get(employee.kaUnitId || ''), [userMap, employee.kaUnitId]);
+    const supervisor = useMemo(() => userMap.get(employee.supervisorId || ''), [userMap, employee.supervisorId]);
+    const mentor = useMemo(() => userMap.get(employee.mentorId || ''), [userMap, employee.mentorId]);
+
+    const kaUnitName = kaUnit?.name;
+    const supervisorName = supervisor?.name;
+    const mentorName = mentor?.name;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -448,51 +462,141 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
 
             <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 overflow-hidden">
                 <div className="overflow-x-auto max-h-[70vh]">
-                    <table className="min-w-full text-[10px] sm:text-xs text-left text-white border-collapse">
-                        <thead className="sticky top-0 z-20 bg-[#1e293b]">
-                            <tr>
-                                <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-0 z-30">No</th>
-                                <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-[30px] z-30 min-w-[150px]">Indikator Penilaian</th>
-                                {Array.from({ length: daysInMonth }, (_, i) => (
-                                    <th key={i} className={`p-1 border border-white/20 text-center min-w-[25px] ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/30' : ''}`}>
-                                        {i + 1}
-                                    </th>
-                                ))}
-                                <th className="p-2 border border-white/20 text-center font-bold bg-[#1e293b] sticky right-0 z-30">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {dailyActivitiesConfig.map((activity, index) => {
-                                let rowTotal = 0;
-                                return (
-                                    <tr key={activity.id} className="hover:bg-white/5 group">
-                                        <td className="p-2 border border-white/20 text-center sticky left-0 bg-[#28364d] group-hover:bg-[#32435e]">{index + 1}</td>
-                                        <td className="p-2 border border-white/20 sticky left-[30px] bg-[#28364d] group-hover:bg-[#32435e]">{activity.title}</td>
-                                        {Array.from({ length: daysInMonth }, (_, i) => {
-                                            const dayKey = (i + 1).toString().padStart(2, '0');
-                                            const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
-                                            const val = (progress as any)?.[activity.id];
-                                            const isDone = val === true || val === 'hadir';
-                                            if (isDone) rowTotal++;
-                                            return (
-                                                <td key={i} className={`p-1 border border-white/20 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/10' : ''}`}>
-                                                    {isDone ? <span className="text-teal-400 font-bold">✓</span> : <span className="text-white/10">-</span>}
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="p-2 border border-white/20 text-center font-bold sticky right-0 bg-[#28364d] group-hover:bg-[#32435e] text-teal-300">
-                                            {rowTotal}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400">
-                    <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
-                    <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
-                    {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
+                    <div className="inline-block min-w-full align-middle">
+                        <table className="min-w-full text-[10px] sm:text-xs text-left text-white border-collapse">
+                            <thead className="sticky top-0 z-20 bg-[#1e293b]">
+                                <tr>
+                                    <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-0 z-30">No</th>
+                                    <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-[30px] z-30 min-w-[150px]">Indikator Penilaian</th>
+                                    {Array.from({ length: daysInMonth }, (_, i) => (
+                                        <th key={i} className={`p-1 border border-white/20 text-center min-w-[25px] ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/30' : ''}`}>
+                                            {i + 1}
+                                        </th>
+                                    ))}
+                                    <th className="p-2 border border-white/20 text-center font-bold bg-[#1e293b] sticky right-0 z-30">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dailyActivitiesConfig.map((activity, index) => {
+                                    let rowTotal = 0;
+                                    return (
+                                        <tr key={activity.id} className="hover:bg-white/5 group">
+                                            <td className="p-2 border border-white/20 text-center sticky left-0 bg-[#28364d] group-hover:bg-[#32435e]">{index + 1}</td>
+                                            <td className="p-2 border border-white/20 sticky left-[30px] bg-[#28364d] group-hover:bg-[#32435e]">{activity.title}</td>
+                                            {Array.from({ length: daysInMonth }, (_, i) => {
+                                                const dayKey = (i + 1).toString().padStart(2, '0');
+                                                const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
+                                                const val = (progress as any)?.[activity.id];
+                                                const isDone = val === true || val === 'hadir';
+                                                if (isDone) rowTotal++;
+                                                return (
+                                                    <td key={i} className={`p-1 border border-white/20 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/10' : ''}`}>
+                                                        {isDone ? <span className="text-teal-400 font-bold">✓</span> : <span className="text-white/10">-</span>}
+                                                    </td>
+                                                );
+                                            })}
+                                            <td className="p-2 border border-white/20 text-center font-bold sticky right-0 bg-[#28364d] group-hover:bg-[#32435e] text-teal-300">
+                                                {rowTotal}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+
+                        <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400 border-b border-white/10 pb-4">
+                            <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
+                            <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
+                            {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
+                        </div>
+
+                        {/* Pihak Yang Menyetujui - Aligned with Table Width */}
+                        <div className="mt-8 pt-8 text-center px-4 pb-4">
+                            <h4 className="text-base font-semibold text-white mb-6 tracking-wide">Pihak yang Menyetujui</h4>
+                            <div className="flex flex-nowrap justify-between items-stretch gap-4 sm:gap-6">
+                                {/* Ka. Unit */}
+                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
+                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
+                                    <div className="flex-1 flex items-center justify-center my-2">
+                                        {kaUnit?.signature ? (
+                                            <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
+                                        ) : (
+                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-full">
+                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
+                                            {kaUnitName || 'Belum Diatur'}
+                                        </p>
+                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
+                                    </div>
+                                </div>
+                                {/* Supervisor */}
+                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
+                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
+                                    <div className="flex-1 flex items-center justify-center my-2">
+                                        {supervisor?.signature ? (
+                                            <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
+                                        ) : (
+                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-full">
+                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
+                                            {supervisorName || 'Belum Diatur'}
+                                        </p>
+                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
+                                    </div>
+                                </div>
+                                {/* Mentor */}
+                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
+                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
+                                    <div className="flex-1 flex items-center justify-center my-2">
+                                        {mentor?.signature ? (
+                                            <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
+                                        ) : (
+                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-full">
+                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
+                                            {mentorName || 'Belum Diatur'}
+                                        </p>
+                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
+                                    </div>
+                                </div>
+                                {/* Karyawan */}
+                                <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 min-w-[180px] border border-white/5">
+                                    <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
+                                    <div className="flex-1 flex items-center justify-center my-2">
+                                        {employee.signature ? (
+                                            <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-14 w-auto object-contain brightness-110" />
+                                        ) : (
+                                            <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-full">
+                                        <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
+                                            {employee.name}
+                                        </p>
+                                        <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
+                                        <p className="font-mono text-[9px] text-gray-400">NIP. {employee.id}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -682,7 +786,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                                 <p>{signatoryTitle},</p>
                                 <div className="h-16 flex items-center justify-center">
                                     {signatorySignature && (
-                                        <NextImage src={signatorySignature} alt="Tanda Tangan Signatory" width={64} height={64} className="h-16 w-auto" />
+                                        <img src={signatorySignature} alt="Tanda Tangan Signatory" className="h-16 w-auto object-contain brightness-110" />
                                     )}
                                 </div>
                                 <p className="font-bold underline text-center" style={{ fontSize: signatoryName.length > 25 ? '11px' : '14px' }}>{signatoryName}</p>
@@ -692,7 +796,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
                                 <p>Pegawai,</p>
                                 <div className="h-16 flex items-center justify-center">
                                     {employee.signature && (
-                                        <NextImage src={employee.signature} alt="Tanda Tangan" width={64} height={64} className="h-16 w-auto" />
+                                        <img src={employee.signature} alt="Tanda Tangan" className="h-16 w-auto object-contain brightness-110" />
                                     )}
                                 </div>
                                 <p className="font-bold underline text-center" style={{ fontSize: employee.name.length > 25 ? '11px' : '14px' }}>{employee.name}</p>

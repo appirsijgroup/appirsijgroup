@@ -690,117 +690,121 @@ const MonthlyActivities: React.FC<MonthlyActivitiesProps> = ({ employee, allUser
                     {activeTab === 'monthly' && (
                         <div className="animate-view-change">
                             <div className="overflow-x-auto rounded-lg border border-white/20">
-                                <table className="min-w-full text-sm text-left text-white border-collapse">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sm:sticky sm:left-0 sm:z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
-                                            <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sm:sticky sm:left-[250px] sm:z-20 bg-gray-900 whitespace-nowrap">Progres</th>
-                                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
-                                                <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] whitespace-nowrap ${isCurrentMonthView && day === todayDay ? 'bg-teal-700' : 'bg-gray-800'}`}>{day}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {Object.entries(groupedActivities).map(([category, activities]) => (
-                                            <Fragment key={category}>
-                                                <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sm:sticky sm:left-0 sm:z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={daysInMonth + 2}>{category}</td></tr>
-                                                {activities.map(activity => (
-                                                    <tr key={activity.id} className="group border-b border-gray-700">
-                                                        <td className="px-3 py-3 font-medium text-left sm:sticky sm:left-0 bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activity.title}</td>
-                                                        <td className="px-3 py-3 font-semibold text-center sm:sticky sm:left-[250px] bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}</td>
-                                                        {Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0')).map(dayKey => (
-                                                            <td key={dayKey} className={`text-center border-l border-gray-700 group-hover:bg-white/5 ${isCurrentMonthView && parseInt(dayKey) === todayDay ? 'bg-teal-900/40' : ''}`}>
-                                                                <div className="w-full h-full flex items-center justify-center py-3">{progress[dayKey]?.[activity.id] ? <CheckSquare className="w-6 h-6 text-teal-400" /> : <Square className="w-6 h-6 text-gray-600" />}</div>
-                                                            </td>
-                                                        ))}
-                                                    </tr>
+                                <div className="inline-block min-w-full align-middle">
+                                    <table className="min-w-full text-sm text-left text-white border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" className="px-3 py-3 font-semibold w-64 min-w-[250px] text-left sm:sticky sm:left-0 sm:z-20 bg-gray-900 whitespace-nowrap">Aktivitas</th>
+                                                <th scope="col" className="px-3 py-3 font-semibold w-28 min-w-[100px] text-center sm:sticky sm:left-[250px] sm:z-20 bg-gray-900 whitespace-nowrap">Progres</th>
+                                                {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => (
+                                                    <th key={day} scope="col" className={`px-2 py-3 font-bold text-center w-12 min-w-[48px] whitespace-nowrap ${isCurrentMonthView && day === todayDay ? 'bg-teal-700' : 'bg-gray-800'}`}>{day}</th>
                                                 ))}
-                                            </Fragment>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="mt-12 pt-8 border-t border-white/10 text-center">
-                                <h4 className="text-lg font-semibold text-white mb-6">Pihak yang Menyetujui</h4>
-                                <div className="flex flex-wrap justify-between items-stretch gap-4 sm:gap-6">
-                                    {/* Ka. Unit */}
-                                    <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[160px] border border-white/5">
-                                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
-                                        <div className="flex-1 flex items-center justify-center my-2">
-                                            {kaUnit?.signature ? (
-                                                <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-16 w-auto object-contain brightness-110" />
-                                            ) : (
-                                                <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                    <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(groupedActivities).map(([category, activities]) => (
+                                                <Fragment key={category}>
+                                                    <tr className="group"><td className="px-3 py-2 font-bold text-teal-200 sm:sticky sm:left-0 sm:z-10 bg-gray-700 group-hover:bg-gray-600 whitespace-nowrap" colSpan={daysInMonth + 2}>{category}</td></tr>
+                                                    {activities.map(activity => (
+                                                        <tr key={activity.id} className="group border-b border-gray-700">
+                                                            <td className="px-3 py-3 font-medium text-left sm:sticky sm:left-0 bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activity.title}</td>
+                                                            <td className="px-3 py-3 font-semibold text-center sm:sticky sm:left-[250px] bg-gray-800 group-hover:bg-gray-700 sm:z-10 whitespace-nowrap">{activityProgressCounts[activity.id] || 0} / {activity.monthlyTarget}</td>
+                                                            {Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0')).map(dayKey => (
+                                                                <td key={dayKey} className={`text-center border-l border-gray-700 group-hover:bg-white/5 ${isCurrentMonthView && parseInt(dayKey) === todayDay ? 'bg-teal-900/40' : ''}`}>
+                                                                    <div className="w-full h-full flex items-center justify-center py-3">{progress[dayKey]?.[activity.id] ? <CheckSquare className="w-6 h-6 text-teal-400" /> : <Square className="w-6 h-6 text-gray-600" />}</div>
+                                                                </td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </Fragment>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Pihak Yang Menyetujui - Aligned with Table Width */}
+                                    <div className="mt-12 pt-8 border-t border-white/10 text-center px-4 pb-8">
+                                        <h4 className="text-lg font-semibold text-white mb-6 tracking-wide">Pihak yang Menyetujui</h4>
+                                        <div className="flex flex-nowrap justify-between items-stretch gap-4 sm:gap-6">
+                                            {/* Ka. Unit */}
+                                            <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[180px] border border-white/5">
+                                                <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
+                                                <div className="flex-1 flex items-center justify-center my-2">
+                                                    {kaUnit?.signature ? (
+                                                        <img src={kaUnit.signature} alt="Tanda Tangan Ka. Unit" className="h-16 w-auto object-contain brightness-110" />
+                                                    ) : (
+                                                        <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                            <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="w-full">
-                                            <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={kaUnitName || 'Belum Diatur'}>
-                                                {kaUnitName || 'Belum Diatur'}
-                                            </p>
-                                            <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
-                                            <p className="font-mono text-[10px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
-                                        </div>
-                                    </div>
-                                    {/* Supervisor */}
-                                    <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[160px] border border-white/5">
-                                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
-                                        <div className="flex-1 flex items-center justify-center my-2">
-                                            {supervisor?.signature ? (
-                                                <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-16 w-auto object-contain brightness-110" />
-                                            ) : (
-                                                <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                    <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                <div className="w-full">
+                                                    <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={kaUnitName || 'Belum Diatur'}>
+                                                        {kaUnitName || 'Belum Diatur'}
+                                                    </p>
+                                                    <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
+                                                    <p className="font-mono text-[10px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="w-full">
-                                            <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={supervisorName || 'Belum Diatur'}>
-                                                {supervisorName || 'Belum Diatur'}
-                                            </p>
-                                            <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
-                                            <p className="font-mono text-[10px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
-                                        </div>
-                                    </div>
-                                    {/* Mentor */}
-                                    <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[160px] border border-white/5">
-                                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
-                                        <div className="flex-1 flex items-center justify-center my-2">
-                                            {mentor?.signature ? (
-                                                <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-16 w-auto object-contain brightness-110" />
-                                            ) : (
-                                                <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                    <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                            </div>
+                                            {/* Supervisor */}
+                                            <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[180px] border border-white/5">
+                                                <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
+                                                <div className="flex-1 flex items-center justify-center my-2">
+                                                    {supervisor?.signature ? (
+                                                        <img src={supervisor.signature} alt="Tanda Tangan SPV" className="h-16 w-auto object-contain brightness-110" />
+                                                    ) : (
+                                                        <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                            <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="w-full">
-                                            <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={mentorName || 'Belum Diatur'}>
-                                                {mentorName || 'Belum Diatur'}
-                                            </p>
-                                            <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
-                                            <p className="font-mono text-[10px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
-                                        </div>
-                                    </div>
-                                    {/* Karyawan */}
-                                    <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[160px] border border-white/5">
-                                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
-                                        <div className="flex-1 flex items-center justify-center my-2">
-                                            {employee.signature ? (
-                                                <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-16 w-auto object-contain brightness-110" />
-                                            ) : (
-                                                <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                                    <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                <div className="w-full">
+                                                    <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={supervisorName || 'Belum Diatur'}>
+                                                        {supervisorName || 'Belum Diatur'}
+                                                    </p>
+                                                    <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
+                                                    <p className="font-mono text-[10px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="w-full">
-                                            <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={employee.name}>
-                                                {employee.name}
-                                            </p>
-                                            <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
-                                            <p className="font-mono text-[10px] text-gray-400">NIP. {employee.id}</p>
+                                            </div>
+                                            {/* Mentor */}
+                                            <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[180px] border border-white/5">
+                                                <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
+                                                <div className="flex-1 flex items-center justify-center my-2">
+                                                    {mentor?.signature ? (
+                                                        <img src={mentor.signature} alt="Tanda Tangan Mentor" className="h-16 w-auto object-contain brightness-110" />
+                                                    ) : (
+                                                        <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                            <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="w-full">
+                                                    <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={mentorName || 'Belum Diatur'}>
+                                                        {mentorName || 'Belum Diatur'}
+                                                    </p>
+                                                    <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
+                                                    <p className="font-mono text-[10px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
+                                                </div>
+                                            </div>
+                                            {/* Karyawan */}
+                                            <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-48 justify-between flex-1 min-w-[180px] border border-white/5">
+                                                <p className="text-xs text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
+                                                <div className="flex-1 flex items-center justify-center my-2">
+                                                    {employee.signature ? (
+                                                        <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-16 w-auto object-contain brightness-110" />
+                                                    ) : (
+                                                        <div className="h-16 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
+                                                            <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="w-full">
+                                                    <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[11px]' : 'text-sm'}`} title={employee.name}>
+                                                        {employee.name}
+                                                    </p>
+                                                    <div className="w-full h-px bg-gray-600/50 my-1.5 mx-auto"></div>
+                                                    <p className="font-mono text-[10px] text-gray-400">NIP. {employee.id}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

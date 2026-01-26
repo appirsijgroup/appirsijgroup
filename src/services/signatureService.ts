@@ -31,14 +31,14 @@ import { convertImageToWebP } from '@/utils/imageUtils';
 // Upload user signature to Supabase Storage
 export const uploadSignature = async (file: File, employeeId: string): Promise<string> => {
   try {
-    // Convert to WebP
-    const webpFile = await convertImageToWebP(file);
-    const fileName = `${employeeId}-signature.webp`;
+    // 🔥 FIX: Use original file for signatures to preserve transparency (especially PNG)
+    const extension = file.name.split('.').pop() || 'png';
+    const fileName = `${employeeId}-signature.${extension}`;
     const filePath = `${employeeId}/${fileName}`;
 
     // Use API endpoint to bypass client-side RLS
     const formData = new FormData();
-    formData.append('file', webpFile);
+    formData.append('file', file);
     formData.append('bucket', 'Signatures');
     formData.append('filePath', filePath);
 
@@ -54,7 +54,6 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
 
     const { publicUrl } = await response.json();
     return publicUrl;
-
   } catch (error) {
     console.error('Upload signature exception:', error);
     throw error;

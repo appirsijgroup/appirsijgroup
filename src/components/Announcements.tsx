@@ -188,7 +188,7 @@ const AnnouncementModal: React.FC<{
                                     <div className="relative group bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 animate-in zoom-in-95 duration-200">
                                         <div className="shrink-0 w-16 h-16 rounded-xl bg-gray-800 overflow-hidden border border-white/10 flex items-center justify-center">
                                             {filePreview ? (
-                                                <img src={filePreview} className="w-full h-full object-cover" alt="Preview" />
+                                                <img src={filePreview} className="w-full h-full object-contain bg-black/20" alt="Preview" />
                                             ) : (
                                                 <svg className="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                             )}
@@ -527,7 +527,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                                 <img
                                                     src={ann.imageUrl}
                                                     alt={ann.title}
-                                                    className="w-full max-h-[500px] object-cover rounded-3xl border border-white/10 shadow-lg"
+                                                    className="w-full h-auto max-h-[800px] object-contain rounded-3xl border border-white/10 shadow-lg bg-black/20"
                                                 />
                                                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity rounded-3xl" />
                                             </div>

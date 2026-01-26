@@ -36,26 +36,25 @@ export const uploadSignature = async (file: File, employeeId: string): Promise<s
     const fileName = `${employeeId}-signature.webp`;
     const filePath = `${employeeId}/${fileName}`;
 
-    const client = getAuthenticatedClient();
+    // Use API endpoint to bypass client-side RLS
+    const formData = new FormData();
+    formData.append('file', webpFile);
+    formData.append('bucket', 'Signatures');
+    formData.append('filePath', filePath);
 
-    const { data, error } = await client.storage
-      .from('Signatures')
-      .upload(filePath, webpFile, {
-        cacheControl: '3600',
-        upsert: true // Overwrite if exists
-      });
+    const response = await fetch('/api/storage/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
-    if (error) {
-      console.error('Error uploading signature:', error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to upload signature via API');
     }
 
-    // Get public URL
-    const { data: publicUrlData } = client.storage
-      .from('Signatures')
-      .getPublicUrl(filePath);
+    const { publicUrl } = await response.json();
+    return publicUrl;
 
-    return publicUrlData.publicUrl;
   } catch (error) {
     console.error('Upload signature exception:', error);
     throw error;

@@ -16,24 +16,24 @@ export const uploadHospitalLogo = async (file: File, hospitalId: string): Promis
         const fileName = `${hospitalId}-logo.webp`;
         const filePath = `${hospitalId}/${fileName}`;
 
+        // Use API endpoint to bypass client-side RLS
+        const formData = new FormData();
+        formData.append('file', webpFile);
+        formData.append('bucket', 'Logo');
+        formData.append('filePath', filePath);
 
-        const { data, error } = await supabase.storage
-            .from('Logo')
-            .upload(filePath, webpFile, {
-                cacheControl: '3600',
-                upsert: true
-            });
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-        if (error) {
-            throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to upload hospital logo via API');
         }
 
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-            .from('Logo')
-            .getPublicUrl(filePath);
-
-        return publicUrlData.publicUrl;
+        const { publicUrl } = await response.json();
+        return publicUrl;
     } catch (error) {
         throw error;
     }

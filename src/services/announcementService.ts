@@ -31,10 +31,6 @@ export const getAnnouncementById = async (id: string): Promise<Announcement | nu
         if (error.code === 'PGRST116') return null;
         throw error;
     }
-    if (error) {
-        if (error.code === 'PGRST116') return null;
-        throw error;
-    }
     return toCamelCase(data) as Announcement | null;
 };
 
@@ -166,20 +162,24 @@ export const uploadAnnouncementImage = async (file: File, announcementId: string
         const fileName = `${announcementId}-cover.webp`;
         const filePath = `${fileName}`;
 
-        const { data, error } = await supabase.storage
-            .from('announcement')
-            .upload(filePath, webpFile, {
-                cacheControl: '3600',
-                upsert: true
-            });
+        // Use API endpoint to bypass client-side RLS
+        const formData = new FormData();
+        formData.append('file', webpFile);
+        formData.append('bucket', 'announcement');
+        formData.append('filePath', filePath);
 
-        if (error) throw error;
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-        const { data: publicUrlData } = supabase.storage
-            .from('announcement')
-            .getPublicUrl(filePath);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to upload announcement image via API');
+        }
 
-        return publicUrlData.publicUrl;
+        const { publicUrl } = await response.json();
+        return publicUrl;
     } catch (error) {
         throw error;
     }
@@ -192,20 +192,24 @@ export const uploadAnnouncementDocument = async (file: File, announcementId: str
         const fileName = `${announcementId}-doc.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { data, error } = await supabase.storage
-            .from('announcement')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: true
-            });
+        // Use API endpoint to bypass client-side RLS
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('bucket', 'announcement');
+        formData.append('filePath', filePath);
 
-        if (error) throw error;
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-        const { data: publicUrlData } = supabase.storage
-            .from('announcement')
-            .getPublicUrl(filePath);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to upload announcement document via API');
+        }
 
-        return publicUrlData.publicUrl;
+        const { publicUrl } = await response.json();
+        return publicUrl;
     } catch (error) {
         throw error;
     }

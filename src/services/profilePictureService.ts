@@ -35,28 +35,24 @@ export const uploadProfilePicture = async (file: File, employeeId: string): Prom
         const fileName = `${employeeId}-profile.webp`;
         const filePath = `${employeeId}/${fileName}`;
 
-        const client = getAuthenticatedClient();
+        // Use API endpoint to bypass client-side RLS
+        const formData = new FormData();
+        formData.append('file', webpFile);
+        formData.append('bucket', 'Avatars');
+        formData.append('filePath', filePath);
 
-        // Use 'Avatars' bucket
-        const { data, error } = await client.storage
-            .from('Avatars')
-            .upload(filePath, webpFile, {
-                cacheControl: '3600',
-                upsert: true
-            });
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
 
-        if (error) {
-            // If bucket doesn't exist, this might fail. We assume it's created.
-            console.error('Error uploading profile picture:', error);
-            throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to upload profile picture via API');
         }
 
-        // Get public URL
-        const { data: publicUrlData } = client.storage
-            .from('Avatars')
-            .getPublicUrl(filePath);
-
-        return publicUrlData.publicUrl;
+        const { publicUrl } = await response.json();
+        return publicUrl;
     } catch (error) {
         console.error('Upload profile picture exception:', error);
         throw error;

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useActivityStore } from '@/store/activityStore';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
 import { PencilIcon, CalendarIcon, ClockIcon } from '@/components/Icons';
 import type { Activity, TeamAttendanceSession } from '@/types';
 
@@ -54,11 +54,13 @@ export default function EditActivitySessionPage() {
 
                     // Populate form
                     if (kind === 'activity') {
-                        setName(data.name);
-                        setDescription(data.description || '');
+                        const activity = data as Activity;
+                        setName(activity.name);
+                        setDescription(activity.description || '');
                     } else {
                         // Session
-                        setSessionType(data.type);
+                        const session = data as TeamAttendanceSession;
+                        setSessionType(session.type);
                     }
 
                     setDate(data.date);
@@ -66,7 +68,7 @@ export default function EditActivitySessionPage() {
                     setEndTime(data.endTime);
                     setZoomUrl(data.zoomUrl || '');
                     setYoutubeUrl(data.youtubeUrl || '');
-                    setType('activityType' in data ? data.activityType : data.type);
+                    setType('activityType' in data ? (data as Activity).activityType : (data as TeamAttendanceSession).type);
                     setAudienceType(data.audienceType as 'public' | 'rules' | 'manual');
                 } else {
                     addToast('Data tidak ditemukan', 'error');
@@ -210,7 +212,7 @@ export default function EditActivitySessionPage() {
 
                         {/* Date */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-1">
                                 <CalendarIcon className="w-4 h-4" />
                                 Tanggal
                             </label>

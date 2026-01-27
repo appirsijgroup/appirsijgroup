@@ -3994,13 +3994,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
                                 <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
-                                <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                                {isSuperAdmin(loggedInEmployee) && (
+                                    <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
+                                )}
                             </div>
                         </div>
                         {contentManagementSubView === 'ibadah-sunnah' && (
                             <SunnahIbadahManagement sunnahIbadahList={sunnahIbadahList} onAdd={onAddSunnahIbadah} onUpdate={onUpdateSunnahIbadah} onDelete={handleInitiateDeleteSunnahIbadah} />
                         )}
-                        {contentManagementSubView === 'mutabaah-automation' && (
+                        {contentManagementSubView === 'mutabaah-automation' && isSuperAdmin(loggedInEmployee) && (
                             <MutabaahAutomation
                                 dailyActivitiesConfig={dailyActivitiesConfig}
                                 onUpdate={onUpdateDailyActivitiesConfig}

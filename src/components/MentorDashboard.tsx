@@ -715,9 +715,9 @@ const MenteeManagement: React.FC<{
                         {mentees.map(mentee => (
                             <tr key={mentee.id} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{mentee.name}</td>
-                                <td className="px-4 py-3">{mentee.unit}</td>
-                                <td className="px-4 py-3">{mentee.profession}</td>
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-4 py-3 whitespace-nowrap">{mentee.unit}</td>
+                                <td className="px-4 py-3 whitespace-nowrap">{mentee.profession}</td>
+                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <button onClick={() => initiateRemoveMentee(mentee)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors">
                                         Hapus
                                     </button>
@@ -941,23 +941,23 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/5 text-xs uppercase text-blue-200 border-b border-white/10">
                         <tr>
-                            <th className="px-6 py-4 whitespace-nowrap font-bold">Tanggal</th>
-                            <th className="px-6 py-4 whitespace-nowrap font-bold">Nama Anggota</th>
-                            <th className="px-6 py-4 whitespace-nowrap font-bold text-center">Jenis</th>
-                            <th className="px-6 py-4 whitespace-nowrap font-bold">Detail Bacaan</th>
+                            <th className="px-4 py-3 whitespace-nowrap font-bold">Tanggal</th>
+                            <th className="px-4 py-3 whitespace-nowrap font-bold">Nama Anggota</th>
+                            <th className="px-4 py-3 whitespace-nowrap font-bold text-center">Jenis</th>
+                            <th className="px-4 py-3 whitespace-nowrap font-bold">Detail Bacaan</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {paginatedReadings.map((reading, index) => (
                             <tr key={index} className="hover:bg-white/5 transition-colors group">
-                                <td className="px-6 py-4 whitespace-nowrap text-blue-100/70">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                <td className="px-6 py-4 font-semibold whitespace-nowrap text-teal-300 group-hover:text-teal-200 transition-colors">{reading.menteeName}</td>
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-4 py-3 whitespace-nowrap text-blue-100/70">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap text-teal-300 group-hover:text-teal-200 transition-colors">{reading.menteeName}</td>
+                                <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${reading.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'}`}>
                                         {reading.type}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-white/80 group-hover:text-white transition-colors">{reading.detail}</td>
+                                <td className="px-4 py-3 whitespace-nowrap text-white/80 group-hover:text-white transition-colors">{reading.detail}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -1213,11 +1213,11 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">{item.periode}</td>
-                                    <td className="px-4 py-3 text-xs text-gray-400">
+                                    <td className="px-4 py-3 whitespace-nowrap">{item.periode}</td>
+                                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
                                         {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID') : '-'}
                                     </td>
-                                    <td className="px-4 py-3 text-center">
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
                                         {item.type === 'report' ? (
                                             <button onClick={() => onViewReport(item.originalData)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
                                                 Lihat Detail

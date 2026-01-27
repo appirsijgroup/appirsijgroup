@@ -10,6 +10,8 @@ import { submitQuranReading, getQuranSubmissions, type QuranReadingSubmission } 
 import { getUserMonthlyReports } from '@/services/monthlySubmissionService';
 import type { MonthlyReportSubmission } from '@/types';
 import { useMutabaah } from '@/contexts/MutabaahContext';
+import BrandedLoader from '@/components/BrandedLoader';
+
 
 /**
  * AlquranPage - Semi-optimized dengan React Query
@@ -168,12 +170,9 @@ export default function AlquranPage() {
 
     // Loading state gabungan
     if (loading || bookmarksLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-teal-400 mx-auto"></div>
-            </div>
-        );
+        return <BrandedLoader fullScreen />;
     }
+
 
     return (
         <Alquran

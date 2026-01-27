@@ -6,8 +6,11 @@ import { fetchSurahs, fetchSurahDetail } from '../services/quranService';
 import { Search, ArrowLeft, Bookmark as BookmarkIcon, CheckSquare, Lock, Share2 } from 'lucide-react';
 import { useUIStore } from '../store/store';
 import { timeValidationService } from '../services/timeValidationService';
+import { BrandedLoader, CompactBrandedLoader } from './BrandedLoader';
 
 interface AlquranProps {
+
+
     bookmarks: Bookmark[];
     toggleBookmark: (bookmark: Omit<Bookmark, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { notes?: string | null }) => void;
     goToAyah: { surah: number; ayah: number } | null;
@@ -389,11 +392,8 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                     </button>
                 </div>
 
-                {isLoadingDetail && (
-                    <div className="flex items-center justify-center p-10">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
-                    </div>
-                )}
+                {isLoadingDetail && <CompactBrandedLoader message="Memuat Detail Surah..." />}
+
                 {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                 {selectedSurah && (
@@ -565,11 +565,8 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
                     </form>
                 </div>
 
-                {isLoadingList && (
-                    <div className="flex items-center justify-center p-10">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
-                    </div>
-                )}
+                {isLoadingList && <CompactBrandedLoader message="Memuat Daftar Surah..." />}
+
                 {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                 {filteredSurahs.length > 0 && (

@@ -1459,12 +1459,13 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                                             <button
                                                                 key={role}
                                                                 onClick={() => onInitiateSetRole(user, role)}
-                                                                className={`px-2 py-0.5 rounded text-[9px] font-bold text-white transition-colors ${buttonStyles[role]}`}
+                                                                className={`px-3 py-1.5 rounded-md text-xs font-semibold text-white transition-all shadow-sm hover:scale-105 active:scale-95 ${buttonStyles[role]}`}
                                                                 title={`Jadikan ${role}`}
                                                             >
                                                                 {role === 'user' ? 'Reset User' : `Set ${role.replace('-', ' ')}`}
                                                             </button>
                                                         );
+
                                                     })}
                                                 </div>
                                             )}

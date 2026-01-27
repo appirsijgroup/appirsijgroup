@@ -784,31 +784,65 @@ const MenteeManagement: React.FC<{
 };
 
 const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> = ({ mentees, mentorName }) => {
+    const [filterMonth, setFilterMonth] = useState<string>('all');
+    const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
+    const [searchTerm, setSearchTerm] = useState<string>('');
+
+    const MONTHS = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const years = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return ['all', currentYear - 1, currentYear, currentYear + 1].map(String);
+    }, []);
+
     const allReadings = useMemo(() => {
         const readings: { menteeName: string; date: string; type: 'Buku' | 'Al-Qur\'an'; detail: string; }[] = [];
         mentees.forEach(mentee => {
+            // Filter by name first for efficiency
+            if (searchTerm && !mentee.name.toLowerCase().includes(searchTerm.toLowerCase())) return;
+
             (mentee.readingHistory || []).forEach(r => {
-                readings.push({
-                    menteeName: mentee.name,
-                    date: r.dateCompleted,
-                    type: 'Buku',
-                    detail: r.bookTitle,
-                });
+                const readingDate = new Date(r.dateCompleted);
+                const month = (readingDate.getMonth() + 1).toString();
+                const year = readingDate.getFullYear().toString();
+
+                if ((filterMonth === 'all' || month === filterMonth) &&
+                    (filterYear === 'all' || year === filterYear)) {
+                    readings.push({
+                        menteeName: mentee.name,
+                        date: r.dateCompleted,
+                        type: 'Buku',
+                        detail: r.bookTitle,
+                    });
+                }
             });
             (mentee.quranReadingHistory || []).forEach(r => {
-                readings.push({
-                    menteeName: mentee.name,
-                    date: r.date,
-                    type: 'Al-Qur\'an',
-                    detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
-                });
+                const readingDate = new Date(r.date);
+                const month = (readingDate.getMonth() + 1).toString();
+                const year = readingDate.getFullYear().toString();
+
+                if ((filterMonth === 'all' || month === filterMonth) &&
+                    (filterYear === 'all' || year === filterYear)) {
+                    readings.push({
+                        menteeName: mentee.name,
+                        date: r.date,
+                        type: 'Al-Qur\'an',
+                        detail: `QS. ${r.surahName} [${r.surahNumber}:${r.startAyah}-${r.endAyah}]`,
+                    });
+                }
             });
         });
         return readings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [mentees]);
+    }, [mentees, filterMonth, filterYear, searchTerm]);
 
     const handleExport = (format: 'pdf' | 'xlsx') => {
-        const fileName = `laporan_bacaan_bimbingan_${mentorName.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+        const monthLabel = filterMonth === 'all' ? 'Semua_Bulan' : MONTHS[parseInt(filterMonth) - 1];
+        const yearLabel = filterYear === 'all' ? 'Semua_Tahun' : filterYear;
+        const nameLabel = searchTerm ? `_Nama_${searchTerm.replace(/\s/g, '_')}` : '';
+        const fileName = `laporan_bacaan_bimbingan_${mentorName.replace(/\s/g, '_')}${nameLabel}_${monthLabel}_${yearLabel}_${new Date().toISOString().split('T')[0]}`;
         const tableHeader = ["Tanggal", "Nama Anggota", "Jenis Bacaan", "Detail"];
         const tableBody = allReadings.map(r => [
             new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID'),
@@ -831,7 +865,7 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
             };
             const reportSection: ReportSection = {
                 title: "LAPORAN BACAAN ANGGOTA BIMBINGAN",
-                subtitle: `Mentor: ${mentorName}`,
+                subtitle: `Mentor: ${mentorName} | Periode: ${monthLabel} ${yearLabel}${searchTerm ? ` | Nama: ${searchTerm}` : ''}`,
                 tables: [tableConfig],
             };
             generateOfficialPdf([reportSection], `${fileName}.pdf`, 'save', mentorName);
@@ -840,45 +874,90 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h3 className="text-xl font-bold text-white">Laporan Bacaan Anggota Bimbingan</h3>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => handleExport('pdf')} className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                        <FileDown className="w-5 h-5" /> Export PDF
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div className="relative grow md:grow-0">
+                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-200/40" />
+                        <input
+                            type="text"
+                            placeholder="Cari nama anggota..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full md:w-64 bg-white/5 border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder:text-blue-200/30 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 transition-all"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-1">
+                        <select
+                            value={filterMonth}
+                            onChange={(e) => setFilterMonth(e.target.value)}
+                            className="bg-transparent text-white text-xs sm:text-sm p-1.5 focus:outline-none"
+                        >
+                            <option value="all" className="bg-slate-800 text-white">Semua Bulan</option>
+                            {MONTHS.map((m, i) => (
+                                <option key={i} value={(i + 1).toString()} className="bg-slate-800 text-white">{m}</option>
+                            ))}
+                        </select>
+                        <div className="w-px h-4 bg-white/10"></div>
+                        <select
+                            value={filterYear}
+                            onChange={(e) => setFilterYear(e.target.value)}
+                            className="bg-transparent text-white text-xs sm:text-sm p-1.5 focus:outline-none"
+                        >
+                            {years.map(y => (
+                                <option key={y} value={y} className="bg-slate-800 text-white">{y === 'all' ? 'Semua Tahun' : y}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
+                    <button onClick={() => handleExport('pdf')} className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs transition-colors shadow-lg shadow-red-900/20">
+                        <FileDown className="w-4 h-4" /> PDF
                     </button>
-                    <button onClick={() => handleExport('xlsx')} className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs sm:text-sm">
-                        <FileSpreadsheet className="w-5 h-5" /> Export Excel
+                    <button onClick={() => handleExport('xlsx')} className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs transition-colors shadow-lg shadow-green-900/20">
+                        <FileSpreadsheet className="w-4 h-4" /> Excel
                     </button>
                 </div>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-white/20">
+
+            <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm">
                 <table className="min-w-full text-sm text-left text-white">
-                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                    <thead className="bg-white/5 text-xs uppercase text-blue-200 border-b border-white/10">
                         <tr>
-                            <th className="px-4 py-3 whitespace-nowrap">Tanggal</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Nama Anggota</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Jenis Bacaan</th>
-                            <th className="px-4 py-3 whitespace-nowrap">Detail</th>
+                            <th className="px-6 py-4 whitespace-nowrap font-bold">Tanggal</th>
+                            <th className="px-6 py-4 whitespace-nowrap font-bold">Nama Anggota</th>
+                            <th className="px-6 py-4 whitespace-nowrap font-bold text-center">Jenis</th>
+                            <th className="px-6 py-4 whitespace-nowrap font-bold">Detail Bacaan</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-white/5">
                         {allReadings.map((reading, index) => (
-                            <tr key={index} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 whitespace-nowrap">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</td>
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{reading.menteeName}</td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${reading.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300' : 'bg-indigo-500/20 text-indigo-300'}`}>
+                            <tr key={index} className="hover:bg-white/5 transition-colors group">
+                                <td className="px-6 py-4 whitespace-nowrap text-blue-100/70">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                <td className="px-6 py-4 font-semibold whitespace-nowrap text-teal-300 group-hover:text-teal-200 transition-colors">{reading.menteeName}</td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${reading.type === 'Al-Qur\'an' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'}`}>
                                         {reading.type}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3">{reading.detail}</td>
+                                <td className="px-6 py-4 text-white/80 group-hover:text-white transition-colors">{reading.detail}</td>
                             </tr>
                         ))}
-                        {allReadings.length === 0 && (
-                            <tr><td colSpan={4} className="text-center p-8 text-blue-200">Belum ada laporan bacaan dari anggota bimbingan.</td></tr>
-                        )}
                     </tbody>
                 </table>
+                {allReadings.length === 0 && (
+                    <div className="text-center py-20 px-4">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 mb-6">
+                            <BookOpen className="w-10 h-10 text-white/10" />
+                        </div>
+                        <h4 className="text-white font-bold mb-2">Tidak Ada Data</h4>
+                        <p className="text-blue-200/40 text-sm max-w-xs mx-auto italic">
+                            {searchTerm
+                                ? `Tidak ditemukan laporan bacaan untuk "${searchTerm}" pada periode ini.`
+                                : "Belum ada laporan bacaan dari anggota bimbingan untuk periode terpilih."}
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

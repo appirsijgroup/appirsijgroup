@@ -433,24 +433,43 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
         try {
             const { getMonthlyActivities } = await import('@/services/monthlyActivityService');
+            const { getReadingHistory, getQuranReadingHistory } = await import('@/services/readingHistoryService');
+            const { getEmployeeById } = await import('@/services/employeeService');
 
-            const mergedActivities = await getMonthlyActivities(employeeId, month, year);
+            // Check if we need basic employee info (if not already in allUsersData)
+            const needsBasicInfo = !get().allUsersData[employeeId];
+
+            const [mergedActivities, readingHistory, quranReadingHistory, basicInfo] = await Promise.all([
+                getMonthlyActivities(employeeId, month, year),
+                getReadingHistory(employeeId),
+                getQuranReadingHistory(employeeId),
+                needsBasicInfo ? getEmployeeById(employeeId) : Promise.resolve(null)
+            ]);
 
             set(state => {
                 const newData = { ...state.allUsersData };
-                if (newData[employeeId]) {
+
+                // Get the base employee object
+                const baseEmployee = newData[employeeId]?.employee || basicInfo;
+
+                if (baseEmployee) {
                     // Merging logic for specific month vs full load
                     let updatedActivities = mergedActivities;
                     if (month && year) {
                         updatedActivities = {
-                            ...(newData[employeeId].employee.monthlyActivities || {}),
+                            ...(baseEmployee.monthlyActivities || {}),
                             ...mergedActivities
                         };
                     }
 
                     newData[employeeId] = {
                         ...newData[employeeId],
-                        employee: { ...newData[employeeId].employee, monthlyActivities: updatedActivities }
+                        employee: {
+                            ...baseEmployee,
+                            monthlyActivities: updatedActivities,
+                            readingHistory: readingHistory as any,
+                            quranReadingHistory: quranReadingHistory as any
+                        }
                     };
                 }
 
@@ -463,7 +482,12 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                         };
                     }
 
-                    const updatedLoggedInEmployee = { ...state.loggedInEmployee, monthlyActivities: updatedActivities };
+                    const updatedLoggedInEmployee = {
+                        ...state.loggedInEmployee,
+                        monthlyActivities: updatedActivities,
+                        readingHistory: readingHistory as any,
+                        quranReadingHistory: quranReadingHistory as any
+                    };
                     return {
                         allUsersData: newData,
                         loggedInEmployee: updatedLoggedInEmployee,

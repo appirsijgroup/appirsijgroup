@@ -9,7 +9,7 @@ import { useAuditLogStore } from '@/store/auditLogStore';
 import { MenteeTarget, TadarusSession } from '@/types';
 
 export default function MentorPanelPage() {
-    const { loggedInEmployee, allUsersData, loadLoggedInEmployee, loadDetailedEmployeeData } = useAppDataStore();
+    const { loggedInEmployee, allUsersData, loadLoggedInEmployee, loadDetailedEmployeeData, loadAllEmployees } = useAppDataStore();
     const { addToast } = useUIStore();
     const {
         monthlyReportSubmissions,
@@ -61,15 +61,18 @@ export default function MentorPanelPage() {
         }
     }, [loggedInEmployee.canBeMentor, loggedInEmployee.canBeSupervisor, loggedInEmployee.canBeManager, loggedInEmployee.canBeKaUnit]);
 
-    // 🔥 FIX: Load monthly reports and manual requests on mount
+    // 🔥 FIX: Load employees, monthly reports and manual requests on mount
     useEffect(() => {
         if (loggedInEmployee?.id) {
+            // Load all employees to ensure mentees are found in allUsersData
+            loadAllEmployees().catch(err => console.error('Failed to load employees:', err));
+
             const { loadTadarusRequestsFromSupabase, loadMissedPrayerRequestsFromSupabase, loadMonthlyReportSubmissionsFromSupabase } = useGuidanceStore.getState();
             loadTadarusRequestsFromSupabase().catch(err => console.error('Failed to load tadarus requests:', err));
             loadMissedPrayerRequestsFromSupabase().catch(err => console.error('Failed to load missed prayer requests:', err));
             loadMonthlyReportSubmissionsFromSupabase().catch(err => console.error('Failed to load monthly reports:', err));
         }
-    }, [loggedInEmployee?.id]);
+    }, [loggedInEmployee?.id, loadAllEmployees]);
 
     // Local handler for profile update
     const handleLocalUpdateProfile = async (userId: string, updates: Partial<any>) => {

@@ -566,10 +566,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
                             {/* Page content */}
                             {activationStatus.isLoading ? (
-                                <div className="flex items-center justify-center min-h-[60vh] w-full">
-                                    <BrandedLoader fullScreen={false} message="Mengecek status aktifasi..." />
-                                </div>
+                                <BrandedLoader fullScreen={true} message="Mengecek status aktifasi..." />
                             ) : activationStatus.shouldShowActivationRequired ? (
+
                                 <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
                                     <ActivationRequired
                                         monthName={activationStatus.currentMonthName}

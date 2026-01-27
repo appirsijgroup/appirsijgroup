@@ -26,17 +26,18 @@ export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat.
                 <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-soft-ping"></div>
 
                 {/* Logo with slight hover-like effect */}
-                <div className={`relative z-10 bg-white/5 backdrop-blur-xs rounded-full border border-white/5 shadow-xl 
-                    ${fullScreen ? 'p-10' : 'p-5'}`}>
+                <div className="relative z-10 bg-white/5 backdrop-blur-xs rounded-full border border-white/5 shadow-xl p-10">
+
                     <Image
                         src="/logorsijsp.png"
                         alt="Logo RSI Jakarta Group"
-                        width={fullScreen ? 120 : 64}
-                        height={fullScreen ? 120 : 64}
+                        width={100}
+                        height={100}
                         priority
-                        className={`${fullScreen ? 'h-24' : 'h-12'} w-auto opacity-90 brightness-110`}
+                        className="h-20 w-auto opacity-90 brightness-110"
                     />
                 </div>
+
             </div>
 
             {/* Minimal Spinner */}

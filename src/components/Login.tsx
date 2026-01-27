@@ -77,10 +77,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
         <div className="w-full min-h-screen bg-transparent flex items-center justify-center p-4 antialiased">
 
             {isLoading ? (
-                <div className="animate-fade-in">
-                    <BrandedLoader fullScreen={false} message="Sedang memproses login..." />
-                </div>
+                <BrandedLoader fullScreen={true} message="Sedang memproses login..." />
             ) : (
+
+
                 <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
 
 

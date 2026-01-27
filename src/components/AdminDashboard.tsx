@@ -2408,22 +2408,22 @@ const ActivationReport: React.FC<{
                 <table className="min-w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
-                            <th className="px-4 py-3 text-center w-12">No</th>
-                            <th className="px-4 py-3">NIP</th>
-                            <th className="px-4 py-3">Nama</th>
-                            <th className="px-4 py-3">Unit</th>
-                            <th className="px-4 py-3 text-center">Status Aktivasi</th>
+                            <th className="px-4 py-3 text-center w-16 whitespace-nowrap">No</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[100px]">NIP</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[180px]">Nama</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[150px]">Unit</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap min-w-[160px]">Status Aktivasi</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
                         {paginatedData.map((user, idx) => (
                             <tr key={user.id} className="hover:bg-white/5">
-                                <td className="px-4 py-3 text-center">{(currentPage - 1) * ITEMS_PER_BATCH + idx + 1}</td>
-                                <td className="px-4 py-3 font-mono text-gray-300">{user.id}</td>
-                                <td className="px-4 py-3 font-semibold">{user.name}</td>
-                                <td className="px-4 py-3 text-gray-300">{user.unit}</td>
+                                <td className="px-4 py-3 text-center whitespace-nowrap">{(currentPage - 1) * ITEMS_PER_BATCH + idx + 1}</td>
+                                <td className="px-4 py-3 font-mono text-gray-300 whitespace-nowrap">{user.id}</td>
+                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
+                                <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{user.unit}</td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${user.isActivated
+                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${user.isActivated
                                         ? 'bg-green-500/20 text-green-400 border border-green-500/30'
                                         : 'bg-red-500/20 text-red-400 border border-red-500/30'
                                         }`}>

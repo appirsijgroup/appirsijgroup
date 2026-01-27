@@ -62,16 +62,11 @@ const LoginContainer = () => {
                 }
             }));
 
-            // 🔥 ENHANCEMENT: Show branded success message
-            setLoadingMessage(`Selamat datang, ${employee.name}!`);
-
-            // Tunggu sebentar untuk branding (dikurangi dari 800ms ke 400ms untuk kecepatan)
-            await new Promise(resolve => setTimeout(resolve, 400));
-
             // Redirect ke dashboard
             router.push('/dashboard');
 
             return { employee };
+
 
         } catch (err) {
             setIsLoading(false);
@@ -79,15 +74,10 @@ const LoginContainer = () => {
         }
     };
 
-    // 🔥 FIX: Show BrandedLoader overlay when loading, not replacing the entire page
-    if (isLoading) {
-        return <BrandedLoader message={loadingMessage} />;
-    }
-
     return (
         <Login
             onLogin={handleLogin}
-            isAuthenticating={false}
+            isAuthenticating={isLoading}
         />
     );
 };

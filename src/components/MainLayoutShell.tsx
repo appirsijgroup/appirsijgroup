@@ -537,7 +537,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col lg:flex-row relative">
+        <div className="min-h-screen bg-transparent text-white flex flex-col lg:flex-row relative">
             <Navigation
                 navItems={filteredNavItems}
                 isOpen={isMenuOpen}
@@ -546,7 +546,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 onLogout={handleLogout}
             />
 
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-linear-to-br from-slate-900 to-indigo-800">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 bg-transparent">
                 <Header
                     isMenuOpen={isMenuOpen}
                     toggleMenu={handleToggleMenu}

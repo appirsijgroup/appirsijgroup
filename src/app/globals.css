@@ -29,8 +29,10 @@
 }
 
 body {
-  /* 🔥 FIX: Modern deep gradient background matches the app theme and prevents 'black hole' flashes */
-  background: radial-gradient(circle at top left, #134e4a 0%, #0f172a 100%);
+  /* 🔥 INDUSTRY STANDARD: Set global background here to prevent 'flicker' or color changes during transitions */
+  background: linear-gradient(135deg, #0f172a 0%, #3730a3 100%);
+  background-attachment: fixed; /* Keeps background stable on scroll */
+
   color: var(--foreground);
   font-family: var(--font-sans);
   scroll-behavior: smooth;

@@ -650,7 +650,6 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                                 </p>
                                 <p className="text-sm text-slate-200">{toast.message}</p>
                             </div>
-                            <button onClick={() => removeToast(toast.id)} className="text-white hover:text-gray-300">X</button>
                         </div>
                     </div>
                 ))}

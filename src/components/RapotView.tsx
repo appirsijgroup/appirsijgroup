@@ -1,10 +1,11 @@
-import React, { useMemo, useState, Fragment } from 'react';
+import React, { useMemo, useState, useEffect, Fragment } from 'react';
 import NextImage from 'next/image';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { type Employee, type DailyActivity, type Hospital } from '../types';
-import { PdfIcon, ChartBarIcon, DocumentTextIcon, ArrowLeftIcon } from './Icons';
+import { type Employee, type DailyActivity, type Hospital, type MonthlyReportSubmission } from '../types';
+import { PdfIcon, ChartBarIcon, DocumentTextIcon, ArrowLeftIcon, CheckIcon, XIcon, ClockIcon } from './Icons';
 import { imageUrlToBase64, flattenImageWithWhiteBackground } from '@/utils/imageUtils';
+import { getUserMonthlyReports } from '@/services/monthlySubmissionService';
 
 interface RapotViewProps {
     employee: Employee;
@@ -888,6 +889,44 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [viewingChecklistFor, setViewingChecklistFor] = useState<Date | null>(null);
     const [isDownloading, setIsDownloading] = useState<string | null>(null); // 'transcript' | 'checklist' | null
+    const [submissions, setSubmissions] = useState<MonthlyReportSubmission[]>([]);
+
+    useEffect(() => {
+        const fetchSubmissions = async () => {
+            if (employee?.id) {
+                const data = await getUserMonthlyReports(employee.id);
+                setSubmissions(data || []);
+            }
+        };
+        fetchSubmissions();
+    }, [employee?.id]);
+
+    // Helper to get formatted status
+    const getStatusDisplay = (monthKey: string) => {
+        const submission = submissions.find(s => s.monthKey === monthKey);
+        const currentMonthKey = `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+        const isCurrent = monthKey === currentMonthKey;
+
+        if (!submission) {
+            return isCurrent ? { label: 'Aktif', color: 'bg-teal-500/20 text-teal-400 border-teal-500/30' }
+                : { label: 'Belum Lapor', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
+        }
+
+        switch (submission.status) {
+            case 'approved':
+                return { label: 'Disetujui', color: 'bg-green-500/20 text-green-400 border-green-500/30' };
+            case 'pending_mentor':
+            case 'pending_supervisor':
+            case 'pending_manager':
+            case 'pending_kaunit':
+                return { label: 'Menunggu Persetujuan', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+            default:
+                if (submission.status.startsWith('rejected')) {
+                    return { label: 'Ditolak', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
+                }
+                return { label: 'Terkirim', color: 'bg-blue-500/20 text-blue-300 border-blue-500/20' };
+        }
+    };
 
     const hospital = useMemo(() => {
         // Gabungkan pemeriksaan hospitalId (frontend) dan hospital_id (backend/Supabase)
@@ -1005,19 +1044,30 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                 categoriesRaw[act.category].details[act.id].yearlyTarget += act.monthlyTarget;
 
                 // Hitung capaian di bulan ini (gabungan base progress + cached reports)
-                const combinedMonthProgress = { ...mProgress };
-                if (monthlyReports) {
-                    Object.entries(monthlyReports).forEach(([day, data]: [string, any]) => {
-                        combinedMonthProgress[day] = { ...(combinedMonthProgress[day] || {}), ...data };
-                    });
+                // 🔥 STRICT CHECK: Hanya hitung capaian jika status laporan bulan tersebut 'approved'
+                const submission = submissions.find(s => s.monthKey === mKey);
+                // Jika bulan ini aktif (belum selesai), anggap valid untuk sementara (atau mau 0 juga?)
+                // User Request: "user bisa melihat dampaknya di Transkrip Nilai ketika tidak submite tugas"
+                // Maka: Jika tidak approved, score = 0.
+                const isApproved = submission?.status === 'approved';
+
+                if (isApproved) {
+                    const combinedMonthProgress = { ...mProgress };
+                    if (monthlyReports) {
+                        Object.entries(monthlyReports).forEach(([day, data]: [string, any]) => {
+                            combinedMonthProgress[day] = { ...(combinedMonthProgress[day] || {}), ...data };
+                        });
+                    }
+
+                    const achievedInMonth = Object.values(combinedMonthProgress).reduce((count: number, daily: any) => {
+                        const val = daily[act.id];
+                        return count + (val === true || val === 'hadir' ? 1 : 0);
+                    }, 0);
+
+                    categoriesRaw[act.category].details[act.id].yearlyAchieved += achievedInMonth;
+                } else {
+                    // Jika belum approved, achieved tetap 0, tapi target bertambah -> Nilai turun.
                 }
-
-                const achievedInMonth = Object.values(combinedMonthProgress).reduce((count: number, daily: any) => {
-                    const val = daily[act.id];
-                    return count + (val === true || val === 'hadir' ? 1 : 0);
-                }, 0);
-
-                categoriesRaw[act.category].details[act.id].yearlyAchieved += achievedInMonth;
             });
         });
 
@@ -1048,7 +1098,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
         const ipResult = finalCategories.length > 0 ? totalBobot / finalCategories.length : 0;
 
         return { categories: finalCategories, ipResult };
-    }, [employee, dailyActivitiesConfig, selectedMonth]);
+    }, [employee, dailyActivitiesConfig, selectedMonth, submissions]);
 
     const performanceData = useMemo(() => {
         const monthProgress = enrichedProgress;
@@ -1184,7 +1234,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Deskripsi</th>
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Bulan</th>
                                         <th scope="col" className="px-4 py-3 whitespace-nowrap">Tahun</th>
-                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Status Laporan</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Status Aktivitas</th>
                                         <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                                     </tr>
                                 </thead>
@@ -1198,6 +1249,19 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">Lembar Mutabaah Karyawan</td>
                                                 <td className="px-4 py-3 whitespace-nowrap">{monthDate.toLocaleDateString('id-ID', { month: 'long' })}</td>
                                                 <td className="px-4 py-3 whitespace-nowrap">{monthDate.getFullYear()}</td>
+                                                {/* Status Laporan - Approval Status */}
+                                                <td className="px-4 py-3">
+                                                    {(() => {
+                                                        const status = getStatusDisplay(monthKey);
+                                                        return (
+                                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold rounded-full border shadow-sm ${status.color}`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${status.label === 'Disetujui' ? 'bg-green-400' : status.label === 'Menunggu Persetujuan' ? 'bg-yellow-400 animate-pulse' : status.label === 'Ditolak' ? 'bg-red-400' : 'bg-current opacity-50'}`}></div>
+                                                                {status.label}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </td>
+                                                {/* Status Aktivitas - Current/Completed */}
                                                 <td className="px-4 py-3">
                                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-bold rounded-full border shadow-sm ${isCurrent
                                                         ? 'bg-teal-500/20 text-teal-400 border-teal-500/30'
@@ -1238,7 +1302,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                         )
                                     })}
                                     {availableMonths.length === 0 && (
-                                        <tr><td colSpan={6} className="text-center p-8 text-blue-200">Tidak ada data mutabaah yang tersedia.</td></tr>
+                                        <tr><td colSpan={7} className="text-center p-8 text-blue-200">Tidak ada data mutabaah yang tersedia.</td></tr>
                                     )}
                                 </tbody>
                             </table>

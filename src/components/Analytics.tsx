@@ -118,6 +118,9 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                 <div className="flex flex-col">
                     <span className="text-blue-300 text-sm font-medium uppercase tracking-wider mb-1">Total Karyawan</span>
                     <span className="text-4xl font-bold text-white mb-2">{stats.totalEmployees}</span>
+                    <div className="flex items-center gap-2 text-xs text-blue-200/60">
+                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 font-medium">Terdaftar</span>
+                    </div>
                 </div>
             </div>
 
@@ -152,6 +155,9 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                 <div className="flex flex-col">
                     <span className="text-purple-300 text-sm font-medium uppercase tracking-wider mb-1">Jumlah Mentor</span>
                     <span className="text-4xl font-bold text-white mb-2">{stats.mentorCount}</span>
+                    <div className="flex items-center gap-2 text-xs text-purple-200/60">
+                        <span className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300 font-medium">Aktif</span>
+                    </div>
                 </div>
             </div>
 

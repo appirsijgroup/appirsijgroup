@@ -312,11 +312,11 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     const weekDays = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     return (
-        <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full border border-white/20 flex flex-col">
+        <div className="bg-gray-800/40 sm:bg-gray-800 rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-6 w-full border border-white/10 sm:border-white/20 flex flex-col">
             <div className="flex-1 flex flex-col min-h-0">
-                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grow overflow-y-auto px-1 sm:pr-2 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-4">
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-3 sm:p-5 bg-black/20 rounded-xl border border-white/5 sm:border-white/10">
                             <div className="mb-4">
                                 <label className="text-sm font-medium text-blue-100 block mb-1">Jenis</label>
                                 <select
@@ -411,8 +411,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 </div>
                             </div>
                         </div>
-
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-3 sm:p-5 bg-black/20 rounded-xl border border-white/5 sm:border-white/10">
                             <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
                             <div className="flex items-center gap-4">
                                 <SegmentedControlButton
@@ -432,7 +431,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                     </div>
 
                     <div className="space-y-4">
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10">
+                        <div className="p-3 sm:p-5 bg-black/20 rounded-xl border border-white/5 sm:border-white/10">
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
@@ -499,7 +498,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </div>
                         </div>
 
-                        <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
+                        <div className="p-3 sm:p-5 bg-black/20 rounded-xl border border-white/5 sm:border-white/10 grow flex flex-col">
                             <div className="flex items-center gap-4 mb-4">
                                 <SegmentedControlButton
                                     label="Aliansi"

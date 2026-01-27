@@ -17,10 +17,9 @@ export const convertToCamelCase = (emp: any): Employee => {
         isActive: emp.is_active,
         notificationEnabled: emp.notification_enabled,
         profilePicture: emp.profile_picture,
-        monthlyActivities: emp.monthly_activities || {}, // Default to empty object if not exists
-        monthlyActivities: emp.monthly_activities || {}, // Default to empty object if not exists
-        // activatedMonths: emp.activated_months, // ❌ REMOVED: Column dropped
-        kaUnitId: emp.ka_unit_id,
+        // monthlyActivities: emp.monthly_activities || {}, 
+        monthlyActivities: {}, // Force empty, loaded separately
+        activatedMonths: emp.activated_months,
         kaUnitId: emp.ka_unit_id,
         supervisorId: emp.supervisor_id,
         mentorId: emp.mentor_id,
@@ -36,9 +35,9 @@ export const convertToCamelCase = (emp: any): Employee => {
         managerScope: emp.manager_scope,
         locationId: emp.location_id,
         locationName: emp.location_name,
-        readingHistory: emp.reading_history || [], // Default to empty array if not exists
-        quranReadingHistory: emp.quran_reading_history || [], // Default to empty array if not exists
-        todoList: emp.todo_list || [], // Default to empty array if not exists
+        readingHistory: emp.reading_history || [],
+        quranReadingHistory: emp.quran_reading_history || [],
+        todoList: emp.todo_list || [],
         signature: emp.signature,
 
         managedHospitalIds: emp.managed_hospital_ids || [],
@@ -47,7 +46,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         professionCategory: emp.profession_category,
         isProfileComplete: emp.is_profile_complete,
         emailVerified: emp.email_verified,
-        avatarUrl: emp.avatar_url,
+        avatarUrl: emp.profile_picture, // Map profile_picture to avatarUrl too for consistency
         authUserId: emp.auth_user_id,
         lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
     };

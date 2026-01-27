@@ -31,7 +31,7 @@ const convertToCamelCase = (emp: any): any => {
         professionCategory: emp.profession_category,
         isProfileComplete: emp.is_profile_complete,
         emailVerified: emp.email_verified,
-        avatarUrl: emp.avatar_url,
+        avatarUrl: emp.profile_picture, // Map profile_picture to avatarUrl too
         authUserId: emp.auth_user_id,
     };
 };

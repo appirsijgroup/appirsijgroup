@@ -12,8 +12,8 @@ const convertToCamelCase = (emp: any): any => {
     isActive: emp.is_active,
     notificationEnabled: emp.notification_enabled,
     profilePicture: emp.profile_picture,
-    monthlyActivities: emp.monthly_activities, // 🔥 Convert to camelCase
-    activatedMonths: emp.activated_months, // 🔥 Convert to camelCase
+    monthlyActivities: emp.monthly_activities,
+    // activatedMonths: emp.activated_months, // ❌ REMOVED
     kaUnitId: emp.ka_unit_id,
     supervisorId: emp.supervisor_id,
     mentorId: emp.mentor_id,
@@ -42,7 +42,7 @@ const convertToCamelCase = (emp: any): any => {
     professionCategory: emp.profession_category,
     isProfileComplete: emp.is_profile_complete,
     emailVerified: emp.email_verified,
-    avatarUrl: emp.avatar_url,
+    avatarUrl: emp.profile_picture, // Map profile_picture to avatarUrl too
     authUserId: emp.auth_user_id,
   };
 };

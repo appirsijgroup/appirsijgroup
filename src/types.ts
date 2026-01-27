@@ -393,7 +393,7 @@ export interface TeamAttendanceSession {
   id: string;
   creatorId: string;
   creatorName: string;
-  type: 'KIE' | 'DOA BERSAMA' | 'BBQ' | 'UMUM' | 'KAJIAN SELASA' | 'PENGAJIAN PERSYARIKATAN' | 'Doa Bersama' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+  type: 'KIE' | 'DOA BERSAMA' | 'BBQ' | 'UMUM' | 'KAJIAN SELASA' | 'PENGAJIAN PERSYARIKATAN' | 'Doa Bersama' | 'Kajian Selasa' | 'Pengajian Persyarikatan' | 'Pengajian Bulanan';
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM

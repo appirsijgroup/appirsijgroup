@@ -113,7 +113,11 @@ export default function PengumumanPage() {
 
     // ... inside the component
     if (!initLoaded || isLoading) {
-        return <BrandedLoader fullScreen={false} message="Memuat pengumuman..." />;
+        return (
+            <div className="flex items-center justify-center min-h-[60vh] w-full">
+                <BrandedLoader fullScreen={false} message="Memuat pengumuman..." />
+            </div>
+        );
     }
 
     return (

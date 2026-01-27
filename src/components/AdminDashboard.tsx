@@ -2215,6 +2215,266 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     );
 };
 
+// --- Activation Report Component (New) ---
+const ActivationReport: React.FC<{
+    allUsersData: AdminDashboardProps['allUsersData'];
+    onShowPreview: (dataUri: string, fileName: string) => void;
+    loggedInEmployee: Employee;
+}> = ({ allUsersData, onShowPreview, loggedInEmployee }) => {
+    const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
+    const [statusFilter, setStatusFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [unitFilter, setUnitFilter] = useState<string>('all');
+
+    // Data Preparation
+    const processedData = useMemo(() => {
+        const users = Object.values(allUsersData).map(d => d.employee);
+
+        // Filter out admin accounts (IDs containing letters, e.g., RSIJSP, RSIJPK)
+        // Only include employees with numeric IDs (e.g., 6000, 6446)
+        const realEmployees = users.filter(user => /^\d+$/.test(user.id));
+
+        return realEmployees.map(user => ({
+            id: user.id,
+            name: user.name,
+            unit: user.unit,
+            profession: user.profession,
+            isActivated: user.activatedMonths?.includes(monthFilter) ?? false
+        }));
+    }, [allUsersData, monthFilter]);
+
+    // Derived Filters options
+    const allUnits = useMemo(() => Array.from(new Set(processedData.map(u => u.unit))).sort(), [processedData]);
+
+    // Filtering
+    const filteredData = useMemo(() => {
+        return processedData.filter(user => {
+            // Status Filter
+            if (statusFilter === 'activated' && !user.isActivated) return false;
+            if (statusFilter === 'not-activated' && user.isActivated) return false;
+
+            // Unit Filter
+            if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
+
+            // Search Term
+            if (searchTerm) {
+                const lower = searchTerm.toLowerCase();
+                return user.name.toLowerCase().includes(lower) || user.id.toLowerCase().includes(lower);
+            }
+
+            return true;
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [processedData, statusFilter, unitFilter, searchTerm]);
+
+    // Statistics
+    const stats = useMemo(() => {
+        const total = processedData.length;
+        const activated = processedData.filter(u => u.isActivated).length;
+        return {
+            total,
+            activated,
+            notActivated: total - activated,
+            percentage: total > 0 ? Math.round((activated / total) * 100) : 0
+        };
+    }, [processedData]);
+
+    // Pagination State
+    const ITEMS_PER_BATCH = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_BATCH);
+
+    const paginatedData = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_BATCH;
+        return filteredData.slice(start, start + ITEMS_PER_BATCH);
+    }, [filteredData, currentPage]);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [monthFilter, statusFilter, unitFilter, searchTerm]);
+
+    // Export Handlers
+    const handleDownloadXlsx = () => {
+        const header = ["No", "NIP", "Nama", "Unit", "Profesi", "Status Aktivasi", "Bulan"];
+        const data = filteredData.map((d, i) => [
+            i + 1, d.id, d.name, d.unit, d.profession,
+            d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi",
+            monthFilter
+        ]);
+
+        const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Laporan Aktivasi");
+        XLSX.writeFile(wb, `laporan_aktivasi_${monthFilter}.xlsx`);
+    };
+
+    const handlePreviewPdf = () => {
+        const title = `LAPORAN STATUS AKTIVASI KARYAWAN`;
+        const subtitle = `Periode: ${new Date(monthFilter + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+
+        const tableColumn = ["No", "NIP", "Nama", "Unit", "Status Aktivasi"];
+        const tableRows = filteredData.map((d, i) => [
+            i + 1, d.id, d.name, d.unit, d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi"
+        ]);
+
+        const tableConfig: TableConfig = {
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: { fillColor: [22, 160, 133] },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 4) {
+                    const isActivated = data.cell.raw === "Sudah Aktivasi";
+                    (data.cell.styles.textColor as any) = isActivated ? [0, 128, 0] : [255, 0, 0];
+                }
+            }
+        };
+
+        const sections: ReportSection[] = [{
+            title,
+            subtitle,
+            tables: [tableConfig],
+            orientation: 'portrait',
+            pageFormat: 'a4'
+        }];
+
+        const fileName = `laporan_aktivasi_${monthFilter}.pdf`;
+        const dataUri = generateOfficialPdf(sections, fileName, 'datauristring', loggedInEmployee.name) as string;
+        if (dataUri) onShowPreview(dataUri, fileName);
+    };
+
+    return (
+        <div className="space-y-6">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-black/20 rounded-lg p-4 border border-white/10">
+                    <div className="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">Total Karyawan</div>
+                    <div className="text-2xl font-bold text-white">{stats.total}</div>
+                </div>
+                <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/20">
+                    <div className="text-green-400 text-xs uppercase font-bold tracking-wider mb-1">Sudah Aktivasi</div>
+                    <div className="text-2xl font-bold text-green-300">{stats.activated}</div>
+                </div>
+                <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
+                    <div className="text-red-400 text-xs uppercase font-bold tracking-wider mb-1">Belum Aktivasi</div>
+                    <div className="text-2xl font-bold text-red-300">{stats.notActivated}</div>
+                </div>
+                <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20">
+                    <div className="text-blue-400 text-xs uppercase font-bold tracking-wider mb-1">Persentase</div>
+                    <div className="text-2xl font-bold text-blue-300">{stats.percentage}%</div>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-black/20 p-4 rounded-lg border border-white/10 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-1">Periode Bulan</label>
+                    <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-1">Status Aktivasi</label>
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                        <option value="all" className="text-black bg-white">Semua Status</option>
+                        <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
+                        <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-1">Unit Kerja</label>
+                    <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                        <option value="all" className="text-black bg-white">Semua Unit</option>
+                        {allUnits.map(unit => (
+                            <option key={unit} value={unit} className="text-black bg-white">{unit}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-blue-200 block mb-1">Cari Nama/NIP</label>
+                    <div className="relative">
+                        <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Cari..." className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-8 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
+                <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><FileDown className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
+                <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><FileSpreadsheet className="w-5 h-5" /></button>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto rounded-lg border border-white/20">
+                <table className="min-w-full text-sm text-left text-white">
+                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                        <tr>
+                            <th className="px-4 py-3 text-center w-12">No</th>
+                            <th className="px-4 py-3">NIP</th>
+                            <th className="px-4 py-3">Nama</th>
+                            <th className="px-4 py-3">Unit</th>
+                            <th className="px-4 py-3 text-center">Status Aktivasi</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                        {paginatedData.map((user, idx) => (
+                            <tr key={user.id} className="hover:bg-white/5">
+                                <td className="px-4 py-3 text-center">{(currentPage - 1) * ITEMS_PER_BATCH + idx + 1}</td>
+                                <td className="px-4 py-3 font-mono text-gray-300">{user.id}</td>
+                                <td className="px-4 py-3 font-semibold">{user.name}</td>
+                                <td className="px-4 py-3 text-gray-300">{user.unit}</td>
+                                <td className="px-4 py-3 text-center">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${user.isActivated
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                        }`}>
+                                        {user.isActivated ? 'Sudah Aktivasi' : 'Belum Aktivasi'}
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                        {filteredData.length === 0 && (
+                            <tr>
+                                <td colSpan={5} className="px-4 py-8 text-center text-gray-400 italic">
+                                    Tidak ada data yang ditemukan.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                        Hal {currentPage} dari {totalPages}
+                    </span>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
+                </div>
+            )}
+
+            <div className="text-center text-xs text-gray-500 mt-2">
+                Menampilkan {paginatedData.length} dari {filteredData.length} data karyawan
+            </div>
+        </div>
+    );
+};
+
 // ... (rest of the components like EditAttendanceModal, SunnahIbadahModal, etc. remain unchanged)
 
 interface EditAttendanceModalProps {
@@ -3458,7 +3718,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
     const [userManagementSubView, setUserManagementSubView] = useState<UserManagementSubView>('database');
     const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('ibadah-sunnah');
-    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah'>('sholat');
+    const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah' | 'aktivasi'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [managingScopeForUser, setManagingScopeForUser] = useState<Employee | null>(null);
@@ -3758,8 +4018,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                 <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
                                 <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
                                 <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
+                                <SubTabButton active={reportSubView === 'aktivasi'} onClick={() => setReportSubView('aktivasi')}>Laporan Aktivasi</SubTabButton>
                             </div>
                         </div>
+
                         <div className="mt-8">
                             {isLoadingEmployees ? (
                                 <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl">
@@ -3799,8 +4061,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                     {reportSubView === 'mutabaah' && (
                                         <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} onLoadHeavyData={onLoadHeavyData} isLoading={isLoadingEmployees} />
                                     )}
+                                    {reportSubView === 'aktivasi' && (
+                                        <ActivationReport
+                                            allUsersData={allUsersData}
+                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                            loggedInEmployee={loggedInEmployee}
+                                        />
+                                    )}
                                 </>
                             )}
+
                         </div>
                     </div>
                 )}

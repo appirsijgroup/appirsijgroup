@@ -474,14 +474,15 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
 
             {filteredAnnouncements.length > 0 ? (
                 <div className="grid gap-4">
-                    {paginatedAnnouncements.map(ann => {
+                    {paginatedAnnouncements.map((ann, idx) => {
                         const isOpen = openAnnouncementId === ann.id;
                         const isUnread = ann.timestamp > lastRead;
 
                         return (
                             <div
                                 key={ann.id}
-                                className={`group relative bg-gray-900/40 hover:bg-gray-800/60 border rounded-2xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-teal-500/40 ring-1 ring-teal-500/20 shadow-2xl shadow-teal-500/5' : 'border-white/5 hover:border-white/10'}`}
+                                style={{ animationDelay: `${idx * 100}ms` }}
+                                className={`group relative bg-gray-900/40 hover:bg-gray-800/60 border rounded-2xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards ${isOpen ? 'border-teal-500/40 ring-1 ring-teal-500/20 shadow-2xl shadow-teal-500/5' : 'border-white/5 hover:border-white/10'}`}
                             >
                                 {isUnread && (
                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-linear-to-b from-teal-400 to-blue-500 shadow-[2px_0_10px_rgba(20,184,166,0.3)] z-10" />
@@ -584,12 +585,12 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                     })}
                 </div>
             ) : (
-                <div className="text-center py-24 bg-white/5 border border-white/5 rounded-[40px] flex flex-col items-center gap-4">
+                <div className="text-center py-24 bg-white/5 border border-white/5 rounded-[40px] flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500">
                     <div className="p-6 bg-white/5 rounded-full mb-4">
-                        <Megaphone className="w-16 h-16 text-white/5" />
+                        <Megaphone className="w-16 h-16 text-white/10" />
                     </div>
-                    <p className="text-xl font-bold text-white/20">Belum ada pengumuman</p>
-                    <p className="text-sm text-white/10 max-w-xs">Informasi terbaru dari manajemen akan muncul di sini.</p>
+                    <p className="text-xl font-bold text-white/40">Belum ada pengumuman</p>
+                    <p className="text-sm text-white/30 max-w-xs">Informasi terbaru dari manajemen akan muncul di sini.</p>
                 </div>
             )}
 

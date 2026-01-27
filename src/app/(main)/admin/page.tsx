@@ -174,7 +174,9 @@ export default function AdminPage() {
                 .catch(err => console.error('Failed to load paginated employees:', err));
 
             // Trigger background full load if needed
-            if (Object.keys(allUsersData).length < 5 && !isLoadingEmployees) {
+            // 🔥 FIX: Remove the length check (< 5) because pagination loads 15, which blocked this full load!
+            // We need full data for Reports (Activation Report, etc.) to be accurate.
+            if (!isLoadingEmployees) {
                 loadAllEmployees().catch(err => console.error('Background sync failed:', err));
             }
         }
@@ -491,7 +493,7 @@ export default function AdminPage() {
                     userId: payload.userId,
                     userName: user.name,
                     attendedAt: Date.now(),
-                    sessionType: session.type,
+                    sessionType: session.type as any,
                     sessionDate: session.date,
                     sessionStartTime: session.startTime,
                     sessionEndTime: session.endTime

@@ -10,7 +10,7 @@ const convertToCamelCase = (emp: any): any => {
         notificationEnabled: emp.notification_enabled,
         profilePicture: emp.profile_picture,
         monthlyActivities: emp.monthly_activities,
-        activatedMonths: emp.activated_months,
+        // activatedMonths: emp.activated_months, // ❌ REMOVED: Column dropped
         kaUnitId: emp.ka_unit_id,
         supervisorId: emp.supervisor_id,
         mentorId: emp.mentor_id,
@@ -67,7 +67,8 @@ export async function getFullEmployeeData(userId: string) {
         { data: readingHistoryData },
         { data: quranHistoryData },
         { data: todosData },
-        aggregatedActivities
+        aggregatedActivities,
+        { data: activationData }
     ] = await Promise.all([
         supabase
             .from('employee_reading_history')
@@ -84,7 +85,11 @@ export async function getFullEmployeeData(userId: string) {
             .select('*')
             .eq('employee_id', userId)
             .order('created_at', { ascending: false }),
-        getAggregatedMonthlyActivities(userId)
+        getAggregatedMonthlyActivities(userId),
+        supabase
+            .from('mutabaah_activations')
+            .select('month_key')
+            .eq('employee_id', userId)
     ]);
 
     // 3. Convert formats
@@ -117,11 +122,16 @@ export async function getFullEmployeeData(userId: string) {
         createdAt: item.created_at
     }))
 
+    // Extract activated months from new table
+    const realActivatedMonths = (activationData || []).map((row: any) => row.month_key);
+
     const basicEmployeeInCamelCase = convertToCamelCase(employee);
 
     // 4. Combine and return
     return {
         ...basicEmployeeInCamelCase,
+        activatedMonths: realActivatedMonths, // Override with data from new table
+        activated_months: realActivatedMonths, // Override explicit snake_case too for compatibility
         monthlyActivities: aggregatedActivities, // Now populated from the server!
         readingHistory: convertedReadingHistory,
         quranReadingHistory: convertedQuranHistory,

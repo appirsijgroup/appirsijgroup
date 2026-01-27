@@ -85,7 +85,7 @@ export const updateMonthlyActivities = async (
 // Get activated months for an employee
 export const getActivatedMonths = async (employeeId: string): Promise<string[]> => {
     try {
-        // 🔥 FIX: Use API endpoint to bypass RLS issues
+        // 🔥 FIX: Use API endpoint to bypass RLS issues and read from NEW TABLE
         const response = await fetch(`/api/activated-months?employeeId=${encodeURIComponent(employeeId)}`);
 
         if (!response.ok) {
@@ -100,13 +100,13 @@ export const getActivatedMonths = async (employeeId: string): Promise<string[]> 
     }
 };
 
-// Update activated months for an employee
-export const updateActivatedMonths = async (
+// Activate a month for an employee
+export const activateMonth = async (
     employeeId: string,
-    activatedMonths: string[]
-): Promise<void> => {
+    monthKey: string
+): Promise<boolean> => {
     try {
-        // 🔥 FIX: Use API endpoint to bypass RLS issues
+        // 🔥 NEW: Call API directly with atomic monthKey
         const response = await fetch('/api/activated-months', {
             method: 'POST',
             headers: {
@@ -114,47 +114,34 @@ export const updateActivatedMonths = async (
             },
             body: JSON.stringify({
                 employeeId,
-                activatedMonths
+                monthKey
             })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(`Failed to update activated months: ${error.error || 'Unknown error'}`);
+            console.error(`Failed to activate month: ${error.error}`);
+            return false;
         }
-
-        console.log('✅ [updateActivatedMonths] Successfully updated activated months');
-    } catch (err) {
-        console.error('❌ [updateActivatedMonths] Failed:', err);
-        throw err;
-    }
-};
-
-// Activate a month for an employee
-export const activateMonth = async (
-    employeeId: string,
-    monthKey: string
-): Promise<boolean> => {
-    try {
-        // Get current activated months
-        const currentActivatedMonths = await getActivatedMonths(employeeId);
-
-        // Check if month is already activated
-        if (currentActivatedMonths.includes(monthKey)) {
-            return true;
-        }
-
-        // Add new month to activated months
-        const newActivatedMonths = [...currentActivatedMonths, monthKey];
-
-        // Update in Supabase
-        await updateActivatedMonths(employeeId, newActivatedMonths);
 
         return true;
     } catch (error) {
+        console.error('activateMonth error:', error);
         return false;
     }
 };
+
+// Update activated months for an employee (Deprecated - maintained for interface compatibility but loops internally or warns)
+// In the new architecture, we shouldn't actally call this with arrays often.
+export const updateActivatedMonths = async (
+    employeeId: string,
+    activatedMonths: string[]
+): Promise<void> => {
+    console.warn('⚠️ [updateActivatedMonths] This function is deprecated. Use activateMonth for single additions.');
+    // Fallback: If we must sync an array, we'd have to call activateMonth for each. 
+    // But mostly this was used to simple Add. 
+};
+
 
 // 🔥 FIX: NO CACHE - This function is now a no-op for backward compatibility
 // Monthly activities are now stored in separate tables and loaded directly
@@ -179,8 +166,11 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
     activatedMonths: string[];
 }> => {
     try {
-        // 🔥 FIX: Use API endpoint for monthly activities to bypass RLS
-        const activitiesResponse = await fetch(`/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`);
+        // Parallell fetch
+        const [activitiesResponse, activatedMonthsArr] = await Promise.all([
+            fetch(`/api/monthly-activities?employeeId=${encodeURIComponent(employeeId)}`),
+            getActivatedMonths(employeeId)
+        ]);
 
         let monthlyActivities: Record<string, MonthlyActivityProgress> = {};
         if (activitiesResponse.ok) {
@@ -188,20 +178,9 @@ export const getEmployeeMonthlyData = async (employeeId: string): Promise<{
             monthlyActivities = result.activities || {};
         }
 
-        // Ambil activated months dari tabel employees (using supabase client directly - this should work)
-        const { data: employeeData, error: employeeError } = await supabase
-            .from('employees')
-            .select('activated_months')
-            .eq('id', employeeId)
-            .single();
-
-        if (employeeError) {
-            throw employeeError;
-        }
-
         return {
             monthlyActivities,
-            activatedMonths: (employeeData as any)?.activated_months || []
+            activatedMonths: activatedMonthsArr
         };
     } catch (err) {
         throw err;

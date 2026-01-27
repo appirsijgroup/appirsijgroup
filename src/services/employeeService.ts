@@ -18,7 +18,9 @@ export const convertToCamelCase = (emp: any): Employee => {
         notificationEnabled: emp.notification_enabled,
         profilePicture: emp.profile_picture,
         monthlyActivities: emp.monthly_activities || {}, // Default to empty object if not exists
-        activatedMonths: emp.activated_months,
+        monthlyActivities: emp.monthly_activities || {}, // Default to empty object if not exists
+        // activatedMonths: emp.activated_months, // ❌ REMOVED: Column dropped
+        kaUnitId: emp.ka_unit_id,
         kaUnitId: emp.ka_unit_id,
         supervisorId: emp.supervisor_id,
         mentorId: emp.mentor_id,
@@ -119,7 +121,6 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             is_active,
             notification_enabled,
             profile_picture,
-            activated_months,
             ka_unit_id,
             supervisor_id,
             mentor_id,
@@ -129,7 +130,6 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             can_be_ka_unit,
             can_be_dirut,
             functional_roles,
-            manager_scope,
             manager_scope,
             manager_id,
             can_be_manager,
@@ -143,7 +143,11 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             bagian,
             profession_category,
             profession,
-            gender
+            gender,
+            
+            mutabaah_activations (
+                month_key
+            )
         `)
         .eq('id', id)
         .single();
@@ -159,8 +163,15 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
         return null;
     }
 
-    const employeeData = data as any; // Explicitly cast to any or a more specific type if known
+    const employeeData = data as any;
 
+    // Map nested mutabaah_activations to activated_months array for compatibility
+    if (employeeData.mutabaah_activations && Array.isArray(employeeData.mutabaah_activations)) {
+        employeeData.activated_months = employeeData.mutabaah_activations.map((a: any) => a.month_key);
+    } else {
+        // Fallback if relation not found (or empty)
+        employeeData.activated_months = [];
+    }
 
     // Convert snake_case to camelCase
     return convertToCamelCase(employeeData);
@@ -180,7 +191,6 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             is_active,
             notification_enabled,
             profile_picture,
-            activated_months,
             ka_unit_id,
             supervisor_id,
             mentor_id,
@@ -189,8 +199,6 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             can_be_supervisor,
             can_be_ka_unit,
             can_be_dirut,
-            functional_roles,
-            manager_scope,
             functional_roles,
             manager_scope,
             manager_id,
@@ -205,7 +213,11 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             bagian,
             profession_category,
             profession,
-            gender
+            gender,
+            
+            mutabaah_activations (
+                month_key
+            )
         `)
         .eq('email', email)
         .single();
@@ -217,8 +229,17 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
 
     if (!data) return null;
 
+    const employeeData = data as any;
+
+    // Map nested mutabaah_activations to activated_months array for compatibility
+    if (employeeData.mutabaah_activations && Array.isArray(employeeData.mutabaah_activations)) {
+        employeeData.activated_months = employeeData.mutabaah_activations.map((a: any) => a.month_key);
+    } else {
+        employeeData.activated_months = [];
+    }
+
     // Convert snake_case to camelCase
-    return convertToCamelCase(data);
+    return convertToCamelCase(employeeData);
 };
 
 // Create new employee
@@ -242,7 +263,7 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         // JANGAN tulis ke employees.todo_list, gunakan todoService
         // ❌ REMOVED: monthly_activities, reading_history, quran_reading_history, todo_list
 
-        activated_months: employee.activatedMonths,
+        //activated_months: employee.activatedMonths, // ❌ REMOVED: Managed in mutabaah_activations table
         ka_unit_id: employee.kaUnitId,
         supervisor_id: employee.supervisorId,
         mentor_id: employee.mentorId,
@@ -320,7 +341,7 @@ export const updateEmployee = async (
     // JANGAN tulis ke employees.quran_reading_history, gunakan readingHistoryService
     // JANGAN tulis ke employees.todo_list, gunakan todoService
 
-    if (updates.activatedMonths !== undefined) dbUpdates.activated_months = updates.activatedMonths;
+    // if (updates.activatedMonths !== undefined) dbUpdates.activated_months = updates.activatedMonths; // ❌ REMOVED: Managed in mutabaah_activations table
     if (updates.kaUnitId !== undefined) dbUpdates.ka_unit_id = updates.kaUnitId;
     if (updates.supervisorId !== undefined) dbUpdates.supervisor_id = updates.supervisorId;
     if (updates.mentorId !== undefined) dbUpdates.mentor_id = updates.mentorId;

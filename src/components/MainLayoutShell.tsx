@@ -363,11 +363,10 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         // Don't block on the aktivitas-bulanan page itself (user can still see the activation UI there)
         const isOnAktivitasBulananPage = pathname?.startsWith('/aktivitas-bulanan');
 
-        // 🔥 FIX: Don't show activation prompt while MutabaahContext is still loading
-        // This prevents false positives during initial load
         if (isMutabaahLoading) {
             return {
-                isActivated: true, // Assume activated while loading to prevent blocking
+                isLoading: true,
+                isActivated: true, // Placeholder
                 shouldShowActivationRequired: false,
                 currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
                 currentMonthKey: currentMonthKey || ''
@@ -375,11 +374,13 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         }
 
         const status = {
+            isLoading: false,
             isActivated: isCurrentMonthActivated,
             shouldShowActivationRequired: !isCurrentMonthActivated && !isOnAktivitasBulananPage,
             currentMonthName: now.toLocaleDateString('id-ID', { month: 'long' }) || '',
             currentMonthKey: currentMonthKey || ''
         };
+
 
         // 🔥 DEBUG: Log activation status changes
         console.log('🔍 [MainLayoutShell] Activation status:', {
@@ -531,58 +532,9 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }
 
     if (!isClient || !isHydrated || !loggedInEmployee) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950/30 flex flex-col lg:flex-row" suppressHydrationWarning>
-                {/* Skeleton Navigation Sidebar */}
-                <div className="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900/50 backdrop-blur-xl border-r border-white/5">
-                    <div className="p-6 border-b border-white/5 flex items-center gap-3">
-                        {/* Logo Skeleton */}
-                        <div className="h-10 w-10 bg-slate-800 rounded-lg animate-pulse flex items-center justify-center border border-white/5">
-                            <Image src="/logorsijsp.png" alt="Logo" width={32} height={32} priority className="h-8 w-auto opacity-20" />
-                        </div>
-                        <div className="h-4 bg-slate-800 rounded-full animate-pulse w-24"></div>
-                    </div>
-                    <div className="flex-1 p-4 space-y-4">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="h-10 bg-slate-800/40 rounded-lg animate-pulse" style={{ animationDelay: `${i * 100}ms` }}></div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Skeleton Main Content */}
-                <div className="flex-1 flex flex-col min-h-0 min-w-0">
-                    {/* Skeleton Header */}
-                    <div className="h-16 bg-slate-900/40 backdrop-blur-md border-b border-white/5 flex items-center px-4 lg:px-6">
-                        <div className="h-8 w-8 lg:hidden bg-slate-800 rounded animate-pulse mr-4"></div>
-                        <div className="flex-1 flex justify-between items-center">
-                            <div className="h-5 bg-slate-800 rounded-full w-40 animate-pulse"></div>
-                            <div className="flex items-center gap-4">
-                                <div className="h-9 w-9 bg-slate-800 rounded-full animate-pulse"></div>
-                                <div className="h-9 w-9 bg-slate-700/50 rounded-lg animate-pulse"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Skeleton Content Area */}
-                    <div className="flex-1 p-4 lg:p-6 overflow-hidden">
-                        <div className="max-w-7xl mx-auto space-y-8">
-                            {/* Banner Skeleton */}
-                            <div className="h-36 bg-slate-800/20 rounded-2xl animate-pulse relative overflow-hidden border border-white/5">
-                                <div className="absolute inset-0 bg-linear-to-r from-teal-500/5 to-transparent"></div>
-                            </div>
-
-                            {/* Cards Grid Skeleton */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {[...Array(6)].map((_, i) => (
-                                    <div key={i} className="h-44 bg-slate-800/20 rounded-2xl animate-pulse border border-white/5" style={{ animationDelay: `${(i + 2) * 100}ms` }}></div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+        return <BrandedLoader fullScreen={true} message="Menyiapkan Sesi..." />;
     }
+
 
     return (
         <div className="min-h-screen bg-gray-900 text-white flex flex-col lg:flex-row relative">
@@ -613,7 +565,11 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                         }>
 
                             {/* Page content */}
-                            {activationStatus.shouldShowActivationRequired ? (
+                            {activationStatus.isLoading ? (
+                                <div className="flex items-center justify-center min-h-[60vh] w-full">
+                                    <BrandedLoader fullScreen={false} message="Mengecek status aktifasi..." />
+                                </div>
+                            ) : activationStatus.shouldShowActivationRequired ? (
                                 <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
                                     <ActivationRequired
                                         monthName={activationStatus.currentMonthName}
@@ -625,6 +581,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                             ) : (
                                 children
                             )}
+
                         </Suspense>
                     </ErrorBoundary>
                 </main>

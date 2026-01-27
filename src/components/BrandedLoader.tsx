@@ -15,9 +15,10 @@ interface BrandedLoaderProps {
 export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat...", fullScreen = false }) => {
     return (
         <div className={`
-            ${fullScreen ? 'fixed inset-0 z-9999 bg-slate-950/80 backdrop-blur-xl' : 'py-16 w-full bg-transparent'} 
+            ${fullScreen ? 'fixed inset-0 z-9999 bg-slate-950/40 backdrop-blur-md' : 'py-16 w-full bg-transparent'} 
             flex flex-col items-center justify-center animate-fade-in
         `}>
+
             {/* Logo Container with Modern Glass Look */}
             <div className="relative mb-6">
                 {/* Subtle soft pulse rings */}

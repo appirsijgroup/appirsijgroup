@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { User, Lock } from 'lucide-react';
 import PasswordInput from './PasswordInput';
 import type { Employee } from '@/types';
+import BrandedLoader from './BrandedLoader';
+
 
 interface LoginProps {
     onLogin?: (identifier: string, password: string) => Promise<{ employee: Employee | null; error?: string }>;
@@ -11,11 +13,14 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenticating }) => {
+
     const [employeeId, setEmployeeId] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
     const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+    const isLoading = isAuthenticating || propIsAuthenticating;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,7 +75,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
 
     return (
         <div className="w-full min-h-screen bg-linear-to-br from-slate-900 to-indigo-800 flex items-center justify-center p-4 antialiased">
-            <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10">
+            {isLoading && <BrandedLoader fullScreen={true} message="Sedang memproses login..." />}
+            <div className={`w-full max-w-sm sm:max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-8 sm:p-10 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+
 
                 <div className="text-center mb-10">
                     <div className="flex justify-center mb-6">

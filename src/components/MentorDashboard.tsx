@@ -15,7 +15,9 @@ import {
     Tag,
     Trash2,
     Calendar,
-    Bell
+    Bell,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
@@ -838,6 +840,21 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
         return readings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [mentees, filterMonth, filterYear, searchTerm]);
 
+    // Pagination logic
+    const ITEMS_PER_PAGE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+    const totalPages = Math.ceil(allReadings.length / ITEMS_PER_PAGE);
+
+    const paginatedReadings = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return allReadings.slice(start, start + ITEMS_PER_PAGE);
+    }, [allReadings, currentPage]);
+
+    // Reset to first page when filtering or searching
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterMonth, filterYear, searchTerm]);
+
     const handleExport = (format: 'pdf' | 'xlsx') => {
         const monthLabel = filterMonth === 'all' ? 'Semua_Bulan' : MONTHS[parseInt(filterMonth) - 1];
         const yearLabel = filterYear === 'all' ? 'Semua_Tahun' : filterYear;
@@ -931,7 +948,7 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {allReadings.map((reading, index) => (
+                        {paginatedReadings.map((reading, index) => (
                             <tr key={index} className="hover:bg-white/5 transition-colors group">
                                 <td className="px-6 py-4 whitespace-nowrap text-blue-100/70">{new Date(reading.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                                 <td className="px-6 py-4 font-semibold whitespace-nowrap text-teal-300 group-hover:text-teal-200 transition-colors">{reading.menteeName}</td>
@@ -958,6 +975,41 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                         </p>
                     </div>
                 )}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 mt-6">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                        title="Halaman Sebelumnya"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                        <span className="px-4 py-2 rounded-lg bg-teal-500/20 border border-teal-500/30 text-teal-300 text-sm font-bold">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
+                        title="Halaman Berikutnya"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+
+            <div className="text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-50">
+                    TOTAL {allReadings.length} DATA LAPORAN BACAAN
+                </p>
             </div>
         </div>
     );

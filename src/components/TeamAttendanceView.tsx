@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { type Activity, type Employee, type TeamAttendanceSession, type Attendance, AudienceRules, type TeamAttendanceRecord } from '../types';
-import { Users, CalendarDays, PlusCircle, Pencil, Search, Check, Trash2, Globe, UserCircle, Clock, BadgeCheck, Video as ZoomIcon, Youtube as YouTubeIcon } from 'lucide-react';
+import { Users, CalendarDays, PlusCircle, Pencil, Search, Check, Trash2, Globe, UserCircle, Clock, BadgeCheck, Video as ZoomIcon, Youtube as YouTubeIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ConfirmationModal from './ConfirmationModal';
 import { getTodayLocalDateString } from '../utils/dateUtils';
@@ -46,6 +46,13 @@ const sessionTypeToActivityId: Record<TeamAttendanceSession['type'], string> = {
     'KIE': 'tepat_waktu_kie',
     'BBQ': 'tadarus',
     'UMUM': 'tadarus',
+    'KAJIAN SELASA': 'kajian_selasa',
+    'PENGAJIAN PERSYARIKATAN': 'persyarikatan',
+    'Kajian Selasa': 'kajian_selasa',
+    'Pengajian Persyarikatan': 'persyarikatan',
+    'Pengajian Bulanan': 'persyarikatan',
+    // Map uppercase/legacy variants if they exist in DB
+    'DOA BERSAMA': 'doa_bersama',
 };
 
 const CreateSessionModal: React.FC<{
@@ -612,6 +619,15 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
     const [confirmDelete, setConfirmDelete] = useState<TeamAttendanceSession | null>(null);
     const [activeTab, setActiveTab] = useState<TeamAttendanceSession['type']>('Doa Bersama');
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
+    // Reset page when tab changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab]);
+
     const allUsers = useMemo(() => Object.values(allUsersData).map(d => d.employee), [allUsersData]);
 
     const todayStr = useMemo(() => getTodayLocalDateString(), []);
@@ -798,8 +814,24 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
         </button>
     );
 
+    // Pagination Logic
+    const totalPages = Math.ceil(sessionsForTab.length / ITEMS_PER_PAGE);
+    const paginatedSessions = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return sessionsForTab.slice(start, start + ITEMS_PER_PAGE);
+    }, [sessionsForTab, currentPage]);
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(p => p + 1);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) setCurrentPage(p => p - 1);
+    };
+
     return (
         <div className="space-y-8 -mx-2 sm:mx-0 px-2 sm:px-0">
+            {/* ... header ... */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
                     <h3 className="text-xl font-bold text-white flex items-center gap-3">
@@ -833,9 +865,32 @@ export const TeamAttendanceView: React.FC<TeamAttendanceViewProps> = ({
                         <SubTabButton label="Tadarus Umum" active={activeTab === 'UMUM'} onClick={() => setActiveTab('UMUM')} />
                     </div>
                 </div>
-                {sessionsForTab.length > 0 ? (
+                {paginatedSessions.length > 0 ? (
                     <div className="space-y-3">
-                        {sessionsForTab.map(session => <SessionCard key={session.id} session={session} />)}
+                        {paginatedSessions.map(session => <SessionCard key={session.id} session={session} />)}
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-4 pt-4">
+                                <button
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <span className="text-white text-sm font-medium">
+                                    Halaman {currentPage} dari {totalPages}
+                                </span>
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                                >
+                                    <ChevronRight className="w-5 h-5" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="text-center py-10 bg-black/20 rounded-lg">

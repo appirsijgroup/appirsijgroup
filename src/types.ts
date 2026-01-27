@@ -417,7 +417,7 @@ export interface TeamAttendanceRecord {
   attendedAt: number; // Unix timestamp - kapan user klik HADIR
   createdAt: number;
   // Metadata dari session (denormalized untuk query performance)
-  sessionType: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+  sessionType: TeamAttendanceSession['type'];
   sessionDate: string; // YYYY-MM-DD
   sessionStartTime: string; // HH:MM
   sessionEndTime: string; // HH:MM

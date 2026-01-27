@@ -170,8 +170,9 @@ export default function AlquranPage() {
 
     // Loading state gabungan
     if (loading || bookmarksLoading) {
-        return <BrandedLoader fullScreen />;
+        return <BrandedLoader fullScreen={false} />;
     }
+
 
 
     return (

@@ -40,9 +40,19 @@ interface MutabaahProviderProps {
 }
 
 export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, employee, onUpdateEmployee }) => {
-  const [isCurrentMonthActivated, setIsCurrentMonthActivated] = useState(false);
-  const [activatedMonths, setActivatedMonths] = useState<string[]>([]);
-  const [monthlyProgressData, setMonthlyProgressData] = useState<Record<string, MonthlyActivityProgress>>({});
+  // 🔥 Derive initial state from prop immediately for zero-loading responsiveness
+  const getInitialActivationStatus = () => {
+    if (!employee) return { months: [], isActivated: false };
+    const months = employee.activatedMonths || employee.activated_months || [];
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    return { months, isActivated: months.includes(currentMonth) };
+  };
+
+  const initialStatus = getInitialActivationStatus();
+  const [isCurrentMonthActivated, setIsCurrentMonthActivated] = useState(initialStatus.isActivated);
+  const [activatedMonths, setActivatedMonths] = useState<string[]>(initialStatus.months);
+  const [monthlyProgressData, setMonthlyProgressData] = useState<Record<string, MonthlyActivityProgress>>(employee?.monthlyActivities || employee?.monthly_activities || {});
   const [monthlyReportSubmissions, setMonthlyReportSubmissions] = useState<MonthlyReportSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -582,12 +592,24 @@ export const MutabaahProvider: React.FC<MutabaahProviderProps> = ({ children, em
   // Initialize when employee changes
   useEffect(() => {
     if (employee && employee.id) {
-      // 🔥 FIX: Remove timeout to prevent race condition
-      // Initialize immediately to ensure activation status is available
-      setIsLoading(true);
+      // Determine if we need a blocking load
+      const currentMonth = getCurrentMonthKey();
+      const months = employee.activatedMonths || employee.activated_months || [];
+      const isAlreadyActivated = months.includes(currentMonth);
+
+      // 🔥 OPTIMIZATION: Only show loading if we REALLY don't know the status yet
+      // If we have employee data, and it says user is activated, we do NOT block.
+      // If user is NOT activated, we still might not want to block with a spinner
+      // because we'll show the ActivationRequired UI instead.
+      const hasDetailedActivities = Object.keys(employee.monthlyActivities || employee.monthly_activities || {}).length > 0;
+
+      if (!isAlreadyActivated && !hasDetailedActivities) {
+        setIsLoading(true);
+      }
+
       initializeFromEmployee(employee).then(() => {
-        // 🔥 FIX: Automatically refresh data from all sources in background
-        // to ensure all latest data from separate tables is synced
+        // 🔥 SILENT REFRESH: If user is already activated, refresh in background
+        // This prevents the "Mengecek status aktifasi..." blocking overlay on menu changes
         refreshData().finally(() => {
           setIsLoading(false);
         });

@@ -537,31 +537,47 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             return;
         }
 
-        if (!isClient || !isHydrated || !loggedInEmployee) {
+        // --- PHASE 1: Initial Hydration & Session Recovery ---
+        if (!isClient || !isHydrated) {
             setGlobalLoading(true, "Menyiapkan Sesi...");
             return;
         }
 
-        if (activationStatus.isLoading) {
+        // --- PHASE 2: Check Logged In Status ---
+        if (!loggedInEmployee) {
+            // No employee? This means we are likely on /login or still loading.
+            // But we don't want to block EVERYTHING if we're not logged in, 
+            // the layout logic will handle it.
+            return;
+        }
+
+        // --- PHASE 3: Activation Check (Optimized) ---
+        // We only show a BLOCKING loading message if:
+        // 1. We don't know the activation status yet (isLoading is true)
+        // 2. AND we haven't confirmed it's activated (isCurrentMonthActivated is false)
+        if (isMutabaahLoading && !isCurrentMonthActivated) {
             setGlobalLoading(true, "Mengecek status aktifasi...");
             return;
         }
 
-        // If we reach here, we are ready!
-        // But we only want to hide it if it's currently showing one of OUR messages
-        // or if it was started by the login process.
+        // If we reach here, we are either:
+        // - Ready to show the app
+        // - Or performing a background update (which should NOT show a blocking overlay)
+
         const ourMessages = ["Menyiapkan Sesi...", "Mengecek status aktifasi...", "Memproses login..."];
         if (globalLoading.show && ourMessages.includes(globalLoading.message)) {
-            // Give a tiny buffer for the final render to settle
+            // Tiny buffer for visual stability
             const timer = setTimeout(() => {
                 setGlobalLoading(false);
-            }, 500);
+            }, 300);
             return () => clearTimeout(timer);
         }
-    }, [isLoggingOut, isClient, isHydrated, loggedInEmployee, activationStatus.isLoading, setGlobalLoading, globalLoading.show, globalLoading.message]);
+    }, [isLoggingOut, isClient, isHydrated, loggedInEmployee, isMutabaahLoading, isCurrentMonthActivated, setGlobalLoading, globalLoading.show, globalLoading.message]);
 
     // Render logic: while loading, we hide everything to let GlobalLoadingOverlay do its work
-    const isActuallyLoading = isLoggingOut || !isClient || !isHydrated || !loggedInEmployee || activationStatus.isLoading;
+    // 🔥 OPTIMIZATION: If we already have a loggedInEmployee and we are activated, we do NOT block the UI
+    // even if Mutabaah is doing a background refresh.
+    const isActuallyLoading = isLoggingOut || !isClient || !isHydrated || (!loggedInEmployee && isHydrated && pathname !== '/login') || (isMutabaahLoading && !isCurrentMonthActivated);
 
     if (isActuallyLoading) {
         return null; // The RootLayout's GlobalLoadingOverlay is already showing

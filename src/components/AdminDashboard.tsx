@@ -3343,20 +3343,31 @@ const HospitalModal: React.FC<HospitalModalProps> = ({ isOpen, onClose, onSave, 
             setError('Semua field wajib diisi.');
             return;
         }
-        const result = await onSave(
-            {
-                brand,
-                name,
-                address,
-                logo: logo || null,
-                logoFile: logoFile || undefined // 🔥 PASS ACTUAL FILE!
-            },
-            existingHospital?.id
-        );
-        if (result.success) {
-            onClose();
-        } else {
-            setError(result.error || 'Terjadi kesalahan.');
+
+        setIsUploading(true);
+        setError('');
+
+        try {
+            const result = await onSave(
+                {
+                    brand,
+                    name,
+                    address,
+                    logo: logo || null,
+                    logoFile: logoFile || undefined // 🔥 PASS ACTUAL FILE!
+                },
+                existingHospital?.id
+            );
+
+            if (result.success) {
+                onClose();
+            } else {
+                setError(result.error || 'Terjadi kesalahan.');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Terjadi kesalahan tidak terduga.');
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -3404,8 +3415,27 @@ const HospitalModal: React.FC<HospitalModalProps> = ({ isOpen, onClose, onSave, 
                     {error && <p className="text-red-400 text-sm mt-2 p-2 bg-red-500/20 border border-red-500 rounded-md">{error}</p>}
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                    <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan</button>
+                    <button
+                        onClick={onClose}
+                        disabled={isUploading}
+                        className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isUploading}
+                        className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold flex items-center justify-center gap-2 min-w-[100px] disabled:opacity-50"
+                    >
+                        {isUploading ? (
+                            <>
+                                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                <span>Menyimpan...</span>
+                            </>
+                        ) : (
+                            'Simpan'
+                        )}
+                    </button>
                 </div>
             </div>
         </div>,

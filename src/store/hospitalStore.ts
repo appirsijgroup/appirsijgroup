@@ -2,9 +2,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Hospital } from '@/types';
+import { getAllHospitals } from '@/services/hospitalService';
 
 interface HospitalState {
     hospitals: Hospital[];
+    isLoading: boolean;
+    error: string | null;
+    loadHospitals: () => Promise<void>;
     addHospital: (data: Omit<Hospital, 'id' | 'isActive'>) => { success: boolean; error?: string };
     updateHospital: (id: string, data: Partial<Omit<Hospital, 'id'>>) => { success: boolean; error?: string };
     deleteHospital: (id: string) => { success: boolean; error?: string };
@@ -24,6 +28,18 @@ export const useHospitalStore = create<HospitalState>()(
     persist(
         (set, get) => ({
             hospitals: initialHospitals,
+            isLoading: false,
+            error: null,
+            loadHospitals: async () => {
+                set({ isLoading: true });
+                try {
+                    const hospitals = await getAllHospitals();
+                    set({ hospitals, isLoading: false, error: null });
+                } catch (err) {
+                    console.error('Failed to load hospitals:', err);
+                    set({ isLoading: false, error: (err as Error).message });
+                }
+            },
             addHospital: (data) => {
                 const { hospitals } = get();
                 const id = data.brand.toUpperCase().replace(/\s/g, '');
@@ -53,10 +69,7 @@ export const useHospitalStore = create<HospitalState>()(
             },
         }),
         {
-            name: 'hospitals-storage', // name of the item in the storage (must be unique)
-            // The initial state is used if storage is empty. If a user deletes all hospitals,
-            // the state will correctly be an empty array on the next load.
-            // This behavior is slightly different but better than the original.
+            name: 'hospitals-storage',
         }
     )
 );

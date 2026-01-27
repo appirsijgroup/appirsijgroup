@@ -8,12 +8,14 @@ export const dynamic = 'force-dynamic'
 import { UnifiedActivitySessionForm } from '@/components/UnifiedActivitySessionForm';
 import { useAppDataStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
+import { useHospitalStore } from '@/store/hospitalStore'; // 🔥 Added
 import { useRouter } from 'next/navigation';
 import type { Activity, TeamAttendanceSession } from '@/types';
 
 const CreateActivityPage = () => {
   const { addActivity, addTeamAttendanceSessions } = useActivityStore();
   const { loggedInEmployee, allUsersData, loadAllEmployees } = useAppDataStore();
+  const { hospitals, loadHospitals } = useHospitalStore(); // 🔥 Added
 
   // Transform allUsersData to array
   const allUsers = React.useMemo(() => Object.values(allUsersData || {}).map(d => d.employee), [allUsersData]);
@@ -22,10 +24,10 @@ const CreateActivityPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load all employees on mount to ensure selection lists are populated
   React.useEffect(() => {
     loadAllEmployees();
-  }, [loadAllEmployees]);
+    loadHospitals(); // 🔥 Added
+  }, [loadAllEmployees, loadHospitals]);
 
   const handleCreateActivity = async (data: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => {
     setIsSubmitting(true);
@@ -116,6 +118,7 @@ const CreateActivityPage = () => {
 
       <UnifiedActivitySessionForm
         allUsers={allUsers || []}
+        hospitals={hospitals || []} // 🔥 Added
         onCreateActivity={handleCreateActivity}
         onCreateSessions={handleCreateSessions}
         disabled={isSubmitting} // ⚡ Disable form saat submitting

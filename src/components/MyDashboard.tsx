@@ -3,8 +3,6 @@ import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistor
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { BarChart3, FileText, TrendingUp, CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, PlusCircle, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
-import RapotView from './RapotView';
-import { createPortal } from 'react-dom';
 import { TeamAttendanceView } from './TeamAttendanceView';
 import Analytics from './Analytics';
 import { getTodayLocalDateString, createLocalDate, normalizeDate, formatDateTimeIndonesia, formatDateIndonesia } from '../utils/dateUtils';
@@ -831,7 +829,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     } = props;
     /* eslint-enable */
 
-    type DashboardTab = 'kinerja' | 'analytics' | 'rapot';
+    type DashboardTab = 'kinerja' | 'analytics';
 
     const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab as DashboardTab || 'kinerja');
     const isInitializedRef = useRef(false);
@@ -888,14 +886,13 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
     useEffect(() => {
         const shouldLoadEmployees =
             (hasMentorRole || hasApprovalRole) || // Eagerly load for mentors/approvers
-            activeTab === 'analytics' || // Or if Analytics tab requires it
-            activeTab === 'rapot'; // Or if APPI (Rapot) tab requires it for mentor names
+            activeTab === 'analytics'; // Or if Analytics tab requires it
 
         if (shouldLoadEmployees && props.onLoadEmployees) {
             // 🔥 FIX: For rapot tab, ALWAYS trigger load to ensure mentor data is fresh
             // For other tabs, only load if data is minimal
             const userCount = Object.keys(allUsersData).length;
-            if (activeTab === 'rapot' || userCount <= 1) {
+            if (userCount <= 1) {
                 props.onLoadEmployees();
             }
         }
@@ -977,8 +974,6 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     return <div className="text-center text-white p-8">Anda tidak memiliki akses ke Analytics</div>;
                 }
                 return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
-            case 'rapot':
-                return <RapotView employee={employee} dailyActivitiesConfig={props.dailyActivitiesConfig} allUsersData={props.allUsersData} hospitals={props.hospitals} />;
             default:
                 return null;
         }
@@ -991,7 +986,6 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                     <div className="flex items-center gap-2 -mb-px min-w-max">
                         <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />
                         {canAccessAnalytics && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
-                        <TabButton label="APPI" icon={FileText} active={activeTab === 'rapot'} onClick={() => setActiveTab('rapot')} />
                     </div>
                 </div>
             </nav>

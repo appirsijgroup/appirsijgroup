@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-    CalendarDaysIcon,
-    ClockIcon,
-    XMarkIcon,
-    CheckIcon,
-    UserCircleIcon,
-    CheckBadgeIcon,
-    GlobeAltIcon,
+    PlusCircleIcon,
+    BuildingOffice2Icon,
     UserGroupIcon,
     ZoomIcon,
-    YouTubeIcon
+    YouTubeIcon,
+    CalendarDaysIcon,
+    ClockIcon,
+    CheckIcon,
+    UserCircleIcon,
+    CheckBadgeIcon
 } from './Icons';
-import type { Employee, Activity, TeamAttendanceSession, AudienceRules } from '@/types';
+import type { Employee, Activity, TeamAttendanceSession, AudienceRules, Hospital } from '@/types';
 import { useRouter } from 'next/navigation';
 
 type ActivitySessionType =
@@ -26,11 +26,12 @@ type ActivitySessionType =
 
 interface UnifiedActivitySessionFormProps {
     allUsers: Employee[];
+    hospitals?: Hospital[];
     onCreateActivity: (data: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onCreateSessions: (sessions: any[]) => void; // ⚡ Allow any type to bypass strict TeamAttendanceSession check
+    onCreateSessions: (sessions: any[]) => void;
     initialData?: Activity | TeamAttendanceSession | null;
     isEditing?: boolean;
-    disabled?: boolean; // ⚡ Added disabled prop
+    disabled?: boolean;
 }
 
 const ACTIVITY_TYPES: ActivitySessionType[] = ['UMUM', 'KAJIAN SELASA', 'PENGAJIAN PERSYARIKATAN'];
@@ -38,6 +39,7 @@ const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'DOA BERSAMA', 'BBQ', 'UMUM
 
 export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProps> = ({
     allUsers,
+    hospitals = [],
     onCreateActivity,
     onCreateSessions,
     initialData,
@@ -63,6 +65,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
 
     // Audience fields
     const [audienceType, setAudienceType] = useState<'rules' | 'manual'>('rules');
+    const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]); // Empty means All/Aliansi
     const [unit, setUnit] = useState('all');
     const [bagian, setBagian] = useState('all');
     const [manualParticipants, setManualParticipants] = useState<Set<string>>(new Set());
@@ -80,9 +83,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             const isActivity = 'activityType' in initialData;
             const isSession = !isActivity;
 
-            const currentType = isActivity ? initialData.activityType || 'UMUM' : (initialData as TeamAttendanceSession).type;
+            const currentType = isActivity ? (initialData as Activity).activityType || 'UMUM' : (initialData as TeamAttendanceSession).type;
             setType(currentType.toUpperCase() as any);
-            setName(isActivity ? initialData.name.toUpperCase() : (initialData as TeamAttendanceSession).type.toUpperCase());
+            setName(isActivity ? (initialData as Activity).name.toUpperCase() : (initialData as TeamAttendanceSession).type.toUpperCase());
             setDate(initialData.date);
             setStartTime(initialData.startTime);
             setEndTime(initialData.endTime);
@@ -90,11 +93,12 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             setZoomUrl(initialData.zoomUrl || '');
             setYoutubeUrl(initialData.youtubeUrl || '');
             setAttendanceMode(isSession ? (initialData as TeamAttendanceSession).attendanceMode || 'self' : 'self');
-            setIsRecurring(false); // Editing recurring sessions is complex, disable for now.
+            setIsRecurring(false);
             setSelectedDays(new Set());
             setAudienceType((initialData.audienceType as any) === 'public' ? 'rules' : (initialData.audienceType as 'rules' | 'manual') || 'rules');
 
             if (initialData.audienceType === 'rules' && initialData.audienceRules) {
+                setSelectedHospitalIds(initialData.audienceRules.hospitalIds || []);
                 setUnit(initialData.audienceRules.units?.[0] || 'all');
                 setBagian(initialData.audienceRules.bagians?.[0] || 'all');
                 setManualParticipants(new Set());
@@ -102,12 +106,14 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                 const participantIds = isActivity
                     ? (initialData as Activity).participantIds
                     : (initialData as TeamAttendanceSession).manualParticipantIds;
-                setManualParticipants(new Set(participantIds));
+                setManualParticipants(new Set(participantIds || []));
                 setUnit('all');
                 setBagian('all');
+                setSelectedHospitalIds([]);
             } else {
                 setUnit('all');
                 setBagian('all');
+                setSelectedHospitalIds([]);
                 setManualParticipants(new Set());
             }
         } else {
@@ -124,6 +130,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             setIsRecurring(false);
             setSelectedDays(new Set());
             setAudienceType('rules');
+            setSelectedHospitalIds([]);
             setUnit('all');
             setBagian('all');
             setManualParticipants(new Set());
@@ -133,18 +140,38 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     }, [isEditing, initialData]);
 
     // Computed values
-    const uniqueUnits = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.unit))).sort()], [allUsers]);
-    const uniqueBagians = useMemo(() => ['all', ...Array.from(new Set(allUsers.map(u => u.bagian))).sort()], [allUsers]);
+    const employeesInHospital = useMemo(() => {
+        if (selectedHospitalIds.length === 0) return allUsers;
+        const normalizedSelectedIds = selectedHospitalIds.map(id => id.toLowerCase().trim());
+        return allUsers.filter(u => {
+            const hId = (u.hospitalId || (u as any).hospital_id || '').toString().toLowerCase().trim();
+            return normalizedSelectedIds.includes(hId);
+        });
+    }, [allUsers, selectedHospitalIds]);
+
+    const uniqueUnits = useMemo(() => ['all', ...Array.from(new Set(employeesInHospital.map(u => u.unit))).sort()], [employeesInHospital]);
+    const uniqueBagians = useMemo(() => ['all', ...Array.from(new Set(employeesInHospital.map(u => u.bagian))).sort()], [employeesInHospital]);
 
     const audienceCount = useMemo(() => {
         if (audienceType === 'rules') {
-            return allUsers.filter(u =>
-                (unit === 'all' || u.unit === unit) &&
-                (bagian === 'all' || u.bagian === bagian)
-            ).length;
+            const normalizedSelectedHospitalIds = selectedHospitalIds.map(id => id.toLowerCase().trim());
+            const normalizedUnit = unit.toLowerCase().trim();
+            const normalizedBagian = bagian.toLowerCase().trim();
+
+            return allUsers.filter(u => {
+                const hId = (u.hospitalId || (u as any).hospital_id || '').toString().toLowerCase().trim();
+                const uUnit = (u.unit || '').toString().toLowerCase().trim();
+                const uBagian = (u.bagian || '').toString().toLowerCase().trim();
+
+                const matchesHospital = normalizedSelectedHospitalIds.length === 0 || normalizedSelectedHospitalIds.includes(hId);
+                const matchesUnit = normalizedUnit === 'all' || uUnit === normalizedUnit;
+                const matchesBagian = normalizedBagian === 'all' || uBagian === normalizedBagian;
+
+                return matchesHospital && matchesUnit && matchesBagian;
+            }).length;
         }
         return manualParticipants.size;
-    }, [allUsers, audienceType, unit, bagian, manualParticipants]);
+    }, [allUsers, audienceType, selectedHospitalIds, unit, bagian, manualParticipants]);
 
     const filteredParticipants = useMemo(() => {
         if (!participantSearch) return allUsers;
@@ -199,6 +226,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             // Create or Update Activity
             const participantIds = audienceType === 'manual' ? Array.from(manualParticipants) : [];
             const audienceRules: AudienceRules | undefined = audienceType === 'rules' ? {
+                hospitalIds: selectedHospitalIds.length > 0 ? selectedHospitalIds : undefined,
                 units: unit !== 'all' ? [unit] : undefined,
                 bagians: bagian !== 'all' ? [bagian] : undefined,
             } : undefined;
@@ -222,7 +250,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
         } else {
             // Create or Update Team Attendance Session(s)
             const baseSessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds' | 'date'> = {
-                type: (upperType as any) === 'UMUM' ? 'UMUM' : (upperType as any), // Match existing logic
+                type: (upperType as any) === 'UMUM' ? 'UMUM' : (upperType as any),
                 startTime,
                 endTime,
                 attendanceMode,
@@ -230,18 +258,18 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                 zoomUrl: zoomUrl.trim() || undefined,
                 youtubeUrl: youtubeUrl.trim() || undefined,
                 audienceRules: audienceType === 'rules' ? {
+                    hospitalIds: selectedHospitalIds.length > 0 ? selectedHospitalIds : undefined,
                     units: unit !== 'all' ? [unit] : undefined,
                     bagians: bagian !== 'all' ? [bagian] : undefined,
                 } : undefined,
                 manualParticipantIds: audienceType === 'manual' ? Array.from(manualParticipants) : [],
             };
 
-            const sessionsToCreate: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>[] = [];
+            const sessionsToCreate: any[] = [];
 
-            if (!isRecurring || isEditing) { // don't allow recurring edits for now
+            if (!isRecurring || isEditing) {
                 sessionsToCreate.push({ ...baseSessionData, date });
             } else {
-                // Create recurring sessions
                 const startDate = new Date(date + 'T12:00:00Z');
                 const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
 
@@ -262,8 +290,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
 
             onCreateSessions(sessionsToCreate);
         }
-
-        router.push('/jadwal-sesi');
     };
 
     // SegmentedControlButton component
@@ -287,13 +313,10 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
 
     return (
         <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full border border-white/20 flex flex-col">
-            {/* Form */}
             <div className="flex-1 flex flex-col min-h-0">
                 <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column: Basic Info */}
                     <div className="space-y-4">
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            {/* Type selector */}
                             <div className="mb-4">
                                 <label className="text-sm font-medium text-blue-100 block mb-1">Jenis</label>
                                 <select
@@ -315,7 +338,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 </select>
                             </div>
 
-                            {/* Name */}
                             <div className="mb-4">
                                 <label className="text-sm font-medium text-blue-100 block mb-1">Nama</label>
                                 <input
@@ -328,7 +350,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 />
                             </div>
 
-                            {/* Description (only for activity) */}
                             {isActivityType && (
                                 <div className="mb-4">
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Deskripsi (Opsional)</label>
@@ -342,7 +363,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 </div>
                             )}
 
-                            {/* Date */}
                             <div className="mb-4">
                                 <label className="text-sm font-medium text-blue-100 block mb-1">
                                     {isRecurring ? 'Tanggal Mulai' : 'Tanggal'}
@@ -360,7 +380,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                 </div>
                             </div>
 
-                            {/* Time */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
@@ -393,9 +412,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </div>
                         </div>
 
-                        {/* Attendance Mode (only for session) */}
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
+                            <h4 className="text-lg font-semibold text-teal-300 mb-3">Mode Presensi</h4>
                             <div className="flex items-center gap-4">
                                 <SegmentedControlButton
                                     label="Mandiri"
@@ -404,7 +422,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     onClick={() => !disabled && setAttendanceMode('self')}
                                 />
                                 <SegmentedControlButton
-                                    label="Oleh Atasan"
+                                    label="Atasan"
                                     icon={CheckBadgeIcon}
                                     isActive={attendanceMode === 'leader'}
                                     onClick={() => !disabled && setAttendanceMode('leader')}
@@ -413,11 +431,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                         </div>
                     </div>
 
-                    {/* Right Column: Audience & Links */}
                     <div className="space-y-4">
-                        {/* Links & Recurring (combined in one card) */}
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10">
-                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
@@ -448,7 +463,6 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                                     </div>
                                 </div>
 
-                                {/* Recurring (only for session) - integrated into the same card */}
                                 <div className="pt-4 border-t border-white/10">
                                     <div className="flex items-center justify-between mb-3">
                                         <h4 className="text-lg font-semibold text-teal-300">Pengulangan Sesi</h4>
@@ -485,13 +499,11 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </div>
                         </div>
 
-                        {/* Audience - separate card */}
                         <div className="p-4 bg-black/20 rounded-lg border border-white/10 grow flex flex-col">
-                            <h4 className="text-lg font-semibold text-teal-300 mb-3"></h4>
                             <div className="flex items-center gap-4 mb-4">
                                 <SegmentedControlButton
-                                    label="Aturan"
-                                    icon={GlobeAltIcon}
+                                    label="Aliansi"
+                                    icon={BuildingOffice2Icon}
                                     isActive={audienceType === 'rules'}
                                     onClick={() => !disabled && setAudienceType('rules')}
                                 />
@@ -504,27 +516,89 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </div>
                             {audienceType === 'rules' && (
                                 <div className="space-y-4">
-                                    <select
-                                        value={unit}
-                                        onChange={(e) => setUnit(e.target.value)}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
-                                        disabled={disabled}
-                                    >
-                                        {uniqueUnits.map(u => (
-                                            <option key={u} value={u} className="text-black bg-white">{u === 'all' ? 'Semua Unit' : u}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        value={bagian}
-                                        onChange={(e) => setBagian(e.target.value)}
-                                        className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
-                                        disabled={disabled}
-                                    >
-                                        {uniqueBagians.map(b => (
-                                            <option key={b} value={b} className="text-black bg-white">{b === 'all' ? 'Semua Bagian' : b}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-sm text-center text-blue-200">Estimasi Peserta: <strong>{audienceCount} orang</strong></p>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-blue-100 flex justify-between items-center">
+                                            <span>Pilih Aliansi (Rumah Sakit)</span>
+                                            <span className="text-xs text-teal-400">
+                                                {selectedHospitalIds.length === 0 ? 'Semua RS' : `${selectedHospitalIds.length} RS Terpilih`}
+                                            </span>
+                                        </label>
+                                        <div className="bg-black/30 border border-white/20 rounded-xl p-3 max-h-40 overflow-y-auto space-y-2">
+                                            <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10 transition-all">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedHospitalIds.length === 0}
+                                                    onChange={() => {
+                                                        setSelectedHospitalIds([]);
+                                                        setUnit('all');
+                                                        setBagian('all');
+                                                    }}
+                                                    className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
+                                                    disabled={disabled}
+                                                />
+                                                <span className={`text-sm font-semibold ${selectedHospitalIds.length === 0 ? 'text-teal-300' : 'text-gray-300'}`}>
+                                                    Semua Rumah Sakit (Aliansi)
+                                                </span>
+                                            </label>
+
+                                            <div className="border-t border-white/10 my-2 pt-2">
+                                                {(hospitals || []).map(h => (
+                                                    <label key={h.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10 transition-all">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedHospitalIds.includes(h.id)}
+                                                            onChange={(e) => {
+                                                                const newIds = e.target.checked
+                                                                    ? [...selectedHospitalIds, h.id]
+                                                                    : selectedHospitalIds.filter(id => id !== h.id);
+                                                                setSelectedHospitalIds(newIds);
+                                                                setUnit('all');
+                                                                setBagian('all');
+                                                            }}
+                                                            className="w-5 h-5 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
+                                                            disabled={disabled}
+                                                        />
+                                                        <div className="flex flex-col">
+                                                            <span className={`text-sm font-semibold ${selectedHospitalIds.includes(h.id) ? 'text-teal-300' : 'text-gray-300'}`}>
+                                                                {h.name}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">{h.brand}</span>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <select
+                                            value={unit}
+                                            onChange={(e) => setUnit(e.target.value)}
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                            disabled={disabled}
+                                        >
+                                            <option value="all" className="text-black bg-white">Semua Unit</option>
+                                            {uniqueUnits.filter(u => u !== 'all').map(u => (
+                                                <option key={u} value={u} className="text-black bg-white">{u}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={bagian}
+                                            onChange={(e) => setBagian(e.target.value)}
+                                            className="w-full bg-white/10 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 text-white disabled:opacity-50"
+                                            disabled={disabled}
+                                        >
+                                            <option value="all" className="text-black bg-white">Semua Bagian</option>
+                                            {uniqueBagians.filter(b => b !== 'all').map(b => (
+                                                <option key={b} value={b} className="text-black bg-white">{b}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl">
+                                        <p className="text-sm text-center text-teal-300">
+                                            Estimasi Peserta: <strong className="text-lg font-bold">{audienceCount}</strong> orang
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                             {audienceType === 'manual' && (
@@ -558,14 +632,12 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                     </div>
                 </div>
 
-                {/* Error */}
                 {error && (
                     <div className="mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200">
                         {error}
                     </div>
                 )}
 
-                {/* Footer */}
                 <div className="mt-4 flex gap-3">
                     <button
                         onClick={() => router.back()}

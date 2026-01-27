@@ -5,6 +5,8 @@ import Pengaturan from '@/components/Pengaturan';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
 import { useActivityStore } from '@/store/activityStore';
+import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
+import { useHospitalStore } from '@/store/hospitalStore';
 import { useCities } from '@/store/locationStore';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +29,8 @@ export default function ProfilePage() {
     const { addToast } = useUIStore();
     const { sunnahIbadahList } = useSunnahIbadahStore();
     const { activities } = useActivityStore();
+    const { dailyActivitiesConfig } = useDailyActivitiesStore();
+    const { hospitals } = useHospitalStore();
 
     // React Query untuk cities data (otomatis caching, loading, error handling)
     const { data: cities = [], isLoading: citiesLoading } = useCities();
@@ -94,6 +98,8 @@ export default function ProfilePage() {
             activities={activities}
             onUpdateProfile={handleUpdateProfile}
             onChangePassword={handleChangePassword}
+            dailyActivitiesConfig={dailyActivitiesConfig}
+            hospitals={hospitals}
             cities={cities}
             addToast={addToast}
         />

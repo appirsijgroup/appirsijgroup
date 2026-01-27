@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import type { Employee, Attendance, SunnahIbadah, Activity, City, FunctionalRole } from '../types';
-import { User, Camera, Users, ShieldCheck, Trash2, Sparkles, Upload, ChevronDown, Check, X, Building2, Tag, GraduationCap, Eye, BadgeCheck, Info } from 'lucide-react';
+import type { Employee, Attendance, SunnahIbadah, Activity, City, FunctionalRole, DailyActivity, Hospital } from '../types';
+import { User, Camera, Users, ShieldCheck, Trash2, Sparkles, Upload, ChevronDown, Check, X, Building2, Tag, GraduationCap, Eye, BadgeCheck, Info, FileText } from 'lucide-react';
+import RapotView from './RapotView';
 import SignaturePad, { type SignaturePadRef } from './SignaturePad';
 import { validatePassword, isPasswordValid, type PasswordValidationResult } from './passwordUtils';
 import PasswordInput from './PasswordInput';
@@ -18,6 +19,8 @@ interface ProfileProps {
     allUsersData: Record<string, { employee: Employee; attendance: Attendance; history: Record<string, Attendance> }>;
     sunnahIbadahList: SunnahIbadah[];
     activities: Activity[];
+    dailyActivitiesConfig: DailyActivity[];
+    hospitals: Hospital[];
     onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
     onChangePassword: (id: string, oldPass: string, newPass: string) => Promise<{ success: boolean; error?: string }>;
     cities: City[];
@@ -155,8 +158,8 @@ const RoleEmblem: React.FC<{ icon: React.FC<{ className: string }>, label: strin
     </div>
 );
 
-const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahList, activities, onUpdateProfile, onChangePassword, cities, addToast }) => {
-    const [openSection, setOpenSection] = useState<'profil' | 'keamanan' | null>(employee.mustChangePassword ? 'keamanan' : 'profil');
+const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahList, activities, dailyActivitiesConfig, hospitals, onUpdateProfile, onChangePassword, cities, addToast }) => {
+    const [openSection, setOpenSection] = useState<'profil' | 'keamanan' | 'appi' | null>(employee.mustChangePassword ? 'keamanan' : 'profil');
 
     // States for Profile Form
     const [name, setName] = useState(employee.name);
@@ -510,6 +513,20 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 <button onClick={() => setIsSignatureModalOpen(true)} className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm">{employee.signature ? 'Ubah' : 'Tambah'} Tanda Tangan</button>
                             </div>
                         </div>
+                    </div>
+                </SettingsSection>
+            </div>
+
+            {/* Full Width APPI Section at the Bottom */}
+            <div className="lg:col-span-3 mt-4">
+                <SettingsSection title="Transkrip Nilai (APPI)" icon={FileText} isOpen={openSection === 'appi'} onToggle={() => setOpenSection(openSection === 'appi' ? null : 'appi')}>
+                    <div className="bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                        <RapotView
+                            employee={employee}
+                            dailyActivitiesConfig={dailyActivitiesConfig}
+                            allUsersData={allUsersData as any}
+                            hospitals={hospitals}
+                        />
                     </div>
                 </SettingsSection>
             </div>

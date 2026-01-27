@@ -32,10 +32,9 @@ export const GlobalLoadingOverlay: React.FC = () => {
             ${globalLoading.show ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}>
 
-            {/* Background Solid atau Glassmorphism untuk menutupi konten di bawahnya dengan rapi */}
-            <div className="absolute inset-0 bg-[#0f172a] backdrop-blur-sm"></div>
 
             <BrandedLoader
+
                 fullScreen={true}
                 message={globalLoading.message}
             />

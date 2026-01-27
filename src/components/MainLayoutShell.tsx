@@ -59,7 +59,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const router = useRouter();
     const pathname = usePathname();
     const { loggedInEmployee, loadLoggedInEmployee, isHydrated, logoutEmployee, setHydrated, isLoggingOut } = useAppDataStore();
-    const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, shareModalState } = useUIStore();
+    const { isMenuOpen, setIsMenuOpen, isNotificationPanelOpen, setIsNotificationPanelOpen, toasts, removeToast, shareModalState, setGlobalLoading, globalLoading } = useUIStore();
+
     const { announcements } = useAnnouncementStore();
     const { notifications } = useNotificationStore();
     const { loadFromSupabase, subscribeToRealtime } = useMutabaahStore();
@@ -527,13 +528,45 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     }, [pathname, loggedInEmployee]);
 
     // 🔥 FIX: Show skeleton loader that matches app layout instead of spinner
-    if (isLoggingOut) {
-        return <BrandedLoader fullScreen={true} message="Sedang keluar..." />;
+    // 🔥 UNIFIED LOADING SYSTEM: 
+    // Instead of showing local loaders, we update the GlobalLoadingOverlay
+    // This ensures a single, stable logo throughout the entire process.
+    useEffect(() => {
+        if (isLoggingOut) {
+            setGlobalLoading(true, "Sedang keluar...");
+            return;
+        }
+
+        if (!isClient || !isHydrated || !loggedInEmployee) {
+            setGlobalLoading(true, "Menyiapkan Sesi...");
+            return;
+        }
+
+        if (activationStatus.isLoading) {
+            setGlobalLoading(true, "Mengecek status aktifasi...");
+            return;
+        }
+
+        // If we reach here, we are ready!
+        // But we only want to hide it if it's currently showing one of OUR messages
+        // or if it was started by the login process.
+        const ourMessages = ["Menyiapkan Sesi...", "Mengecek status aktifasi...", "Memproses login..."];
+        if (globalLoading.show && ourMessages.includes(globalLoading.message)) {
+            // Give a tiny buffer for the final render to settle
+            const timer = setTimeout(() => {
+                setGlobalLoading(false);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoggingOut, isClient, isHydrated, loggedInEmployee, activationStatus.isLoading, setGlobalLoading, globalLoading.show, globalLoading.message]);
+
+    // Render logic: while loading, we hide everything to let GlobalLoadingOverlay do its work
+    const isActuallyLoading = isLoggingOut || !isClient || !isHydrated || !loggedInEmployee || activationStatus.isLoading;
+
+    if (isActuallyLoading) {
+        return null; // The RootLayout's GlobalLoadingOverlay is already showing
     }
 
-    if (!isClient || !isHydrated || !loggedInEmployee) {
-        return <BrandedLoader fullScreen={true} message="Menyiapkan Sesi..." />;
-    }
 
 
     return (
@@ -565,9 +598,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                         }>
 
                             {/* Page content */}
-                            {activationStatus.isLoading ? (
-                                <BrandedLoader fullScreen={true} message="Mengecek status aktifasi..." />
-                            ) : activationStatus.shouldShowActivationRequired ? (
+                            {activationStatus.shouldShowActivationRequired ? (
+
 
                                 <div className="flex items-center justify-center min-h-[80vh] w-full px-2">
                                     <ActivationRequired

@@ -11,7 +11,9 @@ export default function PengumumanPage() {
     const { loggedInEmployee, allUsersData, markAnnouncementAsRead, hospitalsData, loadHospitals, loadAllEmployees } = useAppDataStore();
     const { announcements, addAnnouncement, updateAnnouncement, removeAnnouncement, loadAnnouncements, isLoading } = useAnnouncementStore();
     const { addToast } = useUIStore();
-    const [initLoaded, setInitLoaded] = useState(false);
+    // 🔥 OPTIMIZATION: Check if we already have data in store to show immediately
+    const hasData = announcements.length > 0;
+    const [initLoaded, setInitLoaded] = useState(hasData);
 
     // Get hospitals from hospitalsData
     const hospitalsList = React.useMemo(() => {
@@ -27,29 +29,45 @@ export default function PengumumanPage() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const promises = [
-                    loadAnnouncements(),
-                    loadHospitals()
-                ];
+                // Determine if we need to show a blocking loader
+                // If we already have data, we just do a silent refresh in background
+                const needsBlockingLoad = !hasData;
 
-                // Load employees for mentors/admins to populate mentee lists
-                if (loggedInEmployee && (isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor)) {
-                    promises.push(loadAllEmployees());
+                if (needsBlockingLoad) {
+                    setInitLoaded(false);
                 }
 
-                await Promise.all(promises);
+                // Phase 1: Announcements (Critical for this page)
+                // We always refresh but only await if we have no data
+                const announcePromise = loadAnnouncements(needsBlockingLoad);
+
+                // Phase 2: Non-blocking data (Hospitals, Employees)
+                // These are only needed for the Create/Edit modal
+                loadHospitals();
+
+                if (loggedInEmployee && (isAnyAdmin(loggedInEmployee) || loggedInEmployee.canBeMentor)) {
+                    // Separate loadAllEmployees context so it doesn't block the UI
+                    loadAllEmployees().catch(() => { });
+                }
+
+                if (needsBlockingLoad) {
+                    await announcePromise;
+                }
+
             } catch (error) {
+                console.error('Error loading pengumuman data:', error);
             } finally {
                 setInitLoaded(true);
             }
         };
+
         if (loggedInEmployee) {
             loadInitialData();
         } else {
-            // Still load public data if not logged in (though page might redirect)
+            // Public view refresh
             loadAnnouncements().then(() => setInitLoaded(true));
         }
-    }, [loadAnnouncements, loadHospitals, loadAllEmployees, loggedInEmployee]);
+    }, [loadAnnouncements, loadHospitals, loadAllEmployees, loggedInEmployee, hasData]);
 
     // Handler to create announcement with proper structure and save to Supabase
     const handleCreateAnnouncement = async (data: Omit<Announcement, 'id' | 'timestamp' | 'authorId' | 'authorName'>, imageFile?: File, documentFile?: File) => {

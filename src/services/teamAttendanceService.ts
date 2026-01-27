@@ -454,18 +454,20 @@ export const convertTeamAttendanceToActivities = async (
                 result[monthKey][dayKey] = {};
             }
 
-            // Map session type to activity ID from DAILY_ACTIVITIES
-            if (sessionType === 'KIE') {
+            // Map session type to activity ID from DAILY_ACTIVITIES (Case-insensitive)
+            const typeLower = sessionType?.toLowerCase().trim();
+
+            if (typeLower === 'kie') {
                 result[monthKey][dayKey]['tepat_waktu_kie'] = true;
-            } else if (sessionType === 'Doa Bersama') {
+            } else if (typeLower === 'doa bersama') {
                 result[monthKey][dayKey]['doa_bersama'] = true;
-            } else if (sessionType === 'BBQ' || sessionType === 'UMUM') {
+            } else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') {
                 result[monthKey][dayKey]['tadarus'] = true;
-            } else if (sessionType === 'Kajian Selasa') {
+            } else if (typeLower === 'kajian selasa') {
                 result[monthKey][dayKey]['kajian_selasa'] = true;
-            } else if (sessionType === 'Pengajian Persyarikatan') {
+            } else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') {
                 result[monthKey][dayKey]['persyarikatan'] = true;
-            } else if (sessionType === 'Membaca Al-Quran dan buku') {
+            } else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') {
                 result[monthKey][dayKey]['baca_alquran_buku'] = true;
             }
         });

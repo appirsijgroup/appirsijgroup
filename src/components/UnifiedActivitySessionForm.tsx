@@ -17,13 +17,12 @@ import type { Employee, Activity, TeamAttendanceSession, AudienceRules } from '@
 import { useRouter } from 'next/navigation';
 
 type ActivitySessionType =
-    | 'Umum'
-    | 'Kajian Selasa'
-    | 'Pengajian Persyarikatan'
+    | 'UMUM'
+    | 'KAJIAN SELASA'
+    | 'PENGAJIAN PERSYARIKATAN'
     | 'KIE'
-    | 'Doa Bersama'
-    | 'BBQ'
-    | 'UMUM';
+    | 'DOA BERSAMA'
+    | 'BBQ';
 
 interface UnifiedActivitySessionFormProps {
     allUsers: Employee[];
@@ -34,8 +33,8 @@ interface UnifiedActivitySessionFormProps {
     disabled?: boolean; // ⚡ Added disabled prop
 }
 
-const ACTIVITY_TYPES: ActivitySessionType[] = ['Umum', 'Kajian Selasa', 'Pengajian Persyarikatan'];
-const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'Doa Bersama', 'BBQ', 'UMUM'];
+const ACTIVITY_TYPES: ActivitySessionType[] = ['UMUM', 'KAJIAN SELASA', 'PENGAJIAN PERSYARIKATAN'];
+const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'DOA BERSAMA', 'BBQ', 'UMUM'];
 
 export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProps> = ({
     allUsers,
@@ -48,7 +47,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     const router = useRouter();
 
     // Common fields
-    const [type, setType] = useState<ActivitySessionType>('Umum');
+    const [type, setType] = useState<ActivitySessionType>('UMUM');
     const [name, setName] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState('08:00');
@@ -81,9 +80,9 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             const isActivity = 'activityType' in initialData;
             const isSession = !isActivity;
 
-            const currentType = isActivity ? initialData.activityType || 'Umum' : (initialData as TeamAttendanceSession).type;
-            setType(currentType);
-            setName(isActivity ? initialData.name : (initialData as TeamAttendanceSession).type);
+            const currentType = isActivity ? initialData.activityType || 'UMUM' : (initialData as TeamAttendanceSession).type;
+            setType(currentType.toUpperCase() as any);
+            setName(isActivity ? initialData.name.toUpperCase() : (initialData as TeamAttendanceSession).type.toUpperCase());
             setDate(initialData.date);
             setStartTime(initialData.startTime);
             setEndTime(initialData.endTime);
@@ -113,7 +112,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             }
         } else {
             // Reset to defaults for new item
-            setType('Umum');
+            setType('UMUM');
             setName('');
             setDescription('');
             setDate(new Date().toISOString().split('T')[0]);
@@ -192,6 +191,10 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             return;
         }
 
+        // 🚀 FORCE UPPERCASE for Consistency
+        const upperName = name.trim().toUpperCase();
+        const upperType = type.trim().toUpperCase();
+
         if (isActivityType) {
             // Create or Update Activity
             const participantIds = audienceType === 'manual' ? Array.from(manualParticipants) : [];
@@ -201,14 +204,14 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             } : undefined;
 
             const activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'> = {
-                name: name.trim(),
+                name: upperName,
                 description: description.trim() || undefined,
                 date,
                 startTime,
                 endTime,
                 zoomUrl: zoomUrl.trim() || undefined,
                 youtubeUrl: youtubeUrl.trim() || undefined,
-                activityType: type as Activity['activityType'],
+                activityType: upperType as Activity['activityType'],
                 audienceType,
                 audienceRules,
                 participantIds,
@@ -219,7 +222,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
         } else {
             // Create or Update Team Attendance Session(s)
             const baseSessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds' | 'date'> = {
-                type: type as TeamAttendanceSession['type'],
+                type: (upperType as any) === 'UMUM' ? 'UMUM' : (upperType as any), // Match existing logic
                 startTime,
                 endTime,
                 attendanceMode,

@@ -62,7 +62,7 @@ export interface Activity {
   participantIds: string[]; // For 'manual' type, or to see who matched the rules at creation time.
   zoomUrl?: string;
   youtubeUrl?: string;
-  activityType: 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+  activityType: 'UMUM' | 'KAJIAN SELASA' | 'PENGAJIAN PERSYARIKATAN' | 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
   status: 'scheduled' | 'postponed' | 'cancelled';
   audienceType: AudienceType;
   audienceRules?: AudienceRules;
@@ -393,7 +393,7 @@ export interface TeamAttendanceSession {
   id: string;
   creatorId: string;
   creatorName: string;
-  type: 'KIE' | 'Doa Bersama' | 'BBQ' | 'UMUM' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+  type: 'KIE' | 'DOA BERSAMA' | 'BBQ' | 'UMUM' | 'KAJIAN SELASA' | 'PENGAJIAN PERSYARIKATAN' | 'Doa Bersama' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM
   endTime: string; // HH:MM

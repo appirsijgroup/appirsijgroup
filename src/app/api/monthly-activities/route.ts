@@ -284,11 +284,20 @@ export async function GET(request: NextRequest) {
             mergedActivities[monthKey][dayKey] = {};
           }
 
-          // Map session type to activity ID
-          if (sessionType === 'KIE') {
+          // Map session type to activity ID (Case-insensitive)
+          const typeLower = sessionType?.toLowerCase().trim();
+          if (typeLower === 'kie') {
             mergedActivities[monthKey][dayKey]['tepat_waktu_kie'] = true;
-          } else if (sessionType === 'Doa Bersama') {
+          } else if (typeLower === 'doa bersama') {
             mergedActivities[monthKey][dayKey]['doa_bersama'] = true;
+          } else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') {
+            mergedActivities[monthKey][dayKey]['tadarus'] = true;
+          } else if (typeLower === 'kajian selasa') {
+            mergedActivities[monthKey][dayKey]['kajian_selasa'] = true;
+          } else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') {
+            mergedActivities[monthKey][dayKey]['persyarikatan'] = true;
+          } else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') {
+            mergedActivities[monthKey][dayKey]['baca_alquran_buku'] = true;
           }
         });
 
@@ -296,6 +305,56 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error('❌ [API] Error fetching team attendance records:', error);
+    }
+
+    // 🔥 NEW: Merge data from activity_attendance table (Scheduled Activities: Kajian Selasa, etc)
+    try {
+      let query = supabase
+        .from('activity_attendance')
+        .select('status, activities!inner(date, activity_type)')
+        .eq('employee_id', employeeId)
+        .eq('status', 'hadir');
+
+      if (startDate && endDate) {
+        // Using !inner specifies that activities filter should apply
+        query = query.gte('activities.date', startDate).lte('activities.date', endDate);
+      }
+
+      const { data: scheduledAttData, error: scheduledError } = await query;
+
+      if (scheduledError) {
+        console.error('❌ [API] Error fetching scheduled activities:', scheduledError);
+      } else if (scheduledAttData && scheduledAttData.length > 0) {
+        scheduledAttData.forEach((record: any) => {
+          if (!record.activities) return;
+
+          const date = record.activities.date; // YYYY-MM-DD
+          const monthKey = date.substring(0, 7);
+          const dayKey = date.substring(8, 10);
+          const activityType = record.activities.activity_type;
+          const typeLower = activityType?.toLowerCase().trim();
+
+          if (!mergedActivities[monthKey]) mergedActivities[monthKey] = {};
+          if (!mergedActivities[monthKey][dayKey]) mergedActivities[monthKey][dayKey] = {};
+
+          if (typeLower === 'kajian selasa') {
+            mergedActivities[monthKey][dayKey]['kajian_selasa'] = true;
+          } else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') {
+            mergedActivities[monthKey][dayKey]['persyarikatan'] = true;
+          } else if (typeLower === 'kie') {
+            mergedActivities[monthKey][dayKey]['tepat_waktu_kie'] = true;
+          } else if (typeLower === 'doa bersama') {
+            mergedActivities[monthKey][dayKey]['doa_bersama'] = true;
+          } else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') {
+            mergedActivities[monthKey][dayKey]['tadarus'] = true;
+          } else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') {
+            mergedActivities[monthKey][dayKey]['baca_alquran_buku'] = true;
+          }
+        });
+        console.log('✅ [API] Merged scheduled activity records:', scheduledAttData.length);
+      }
+    } catch (error) {
+      console.error('❌ [API] Error fetching activity_attendance:', error);
     }
 
     // 🔥 NEW: Merge APPROVED tadarus_requests

@@ -5,7 +5,7 @@ import { type Activity, type AudienceType, type AudienceRules } from '@/types';
 // TYPES (SESUAIKAN DENGAN TABEL activities YANG SUDAH ADA)
 // =====================================
 
-export type ActivityType = 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
+export type ActivityType = 'UMUM' | 'KAJIAN SELASA' | 'PENGAJIAN PERSYARIKATAN' | 'Umum' | 'Kajian Selasa' | 'Pengajian Persyarikatan';
 export type ActivityStatus = 'scheduled' | 'postponed' | 'cancelled';
 export type AttendanceStatus = 'hadir' | 'tidak-hadir' | 'izin' | 'sakit';
 
@@ -711,11 +711,21 @@ export const convertScheduledActivitiesToActivities = async (
             if (!result[monthKey]) result[monthKey] = {};
             if (!result[monthKey][dayKey]) result[monthKey][dayKey] = {};
 
-            // Map activity type to Mutabaah field ID
-            if (activityType === 'Kajian Selasa') {
+            // Map activity type to Mutabaah field ID (Case-insensitive matching)
+            const typeLower = activityType?.toLowerCase().trim();
+
+            if (typeLower === 'kajian selasa') {
                 result[monthKey][dayKey]['kajian_selasa'] = true;
-            } else if (activityType === 'Pengajian Persyarikatan') {
+            } else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') {
                 result[monthKey][dayKey]['persyarikatan'] = true;
+            } else if (typeLower === 'kie') {
+                result[monthKey][dayKey]['tepat_waktu_kie'] = true;
+            } else if (typeLower === 'doa bersama') {
+                result[monthKey][dayKey]['doa_bersama'] = true;
+            } else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') {
+                result[monthKey][dayKey]['tadarus'] = true;
+            } else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') {
+                result[monthKey][dayKey]['baca_alquran_buku'] = true;
             }
         });
 

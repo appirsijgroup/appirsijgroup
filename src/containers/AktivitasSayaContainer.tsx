@@ -614,11 +614,15 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                     // 3. If Approved, update local performance UI (Optimistic)
                     if (status === 'approved') {
                         const categoryMap: Record<string, string> = {
-                            'BBQ': 'tadarus', 'UMUM': 'tadarus', 'KIE': 'tepat_waktu_kie',
-                            'Doa Bersama': 'doa_bersama', 'Kajian Selasa': 'kajian_selasa',
-                            'Pengajian Persyarikatan': 'persyarikatan'
+                            'bbq': 'tadarus', 'umum': 'tadarus', 'tadarus': 'tadarus',
+                            'kie': 'tepat_waktu_kie',
+                            'doa bersama': 'doa_bersama',
+                            'kajian selasa': 'kajian_selasa',
+                            'pengajian persyarikatan': 'persyarikatan',
+                            'persyarikatan': 'persyarikatan'
                         };
-                        const activityId = categoryMap[req.category || 'UMUM'] || 'tadarus';
+                        const categoryKey = (req.category || 'umum').toLowerCase().trim();
+                        const activityId = categoryMap[categoryKey] || 'tadarus';
 
                         try {
                             const menteeData = allUsersData[req.menteeId]?.employee;

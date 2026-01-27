@@ -225,7 +225,17 @@ export async function GET(request: NextRequest) {
                 const date = record.session_date;
                 const monthKey = date.substring(0, 7);
                 const dayKey = date.substring(8, 10);
-                const activityId = record.session_type === 'KIE' ? 'tepat_waktu_kie' : (record.session_type === 'Doa Bersama' ? 'doa_bersama' : record.session_type);
+
+                const typeLower = record.session_type?.toLowerCase().trim();
+                let activityId = record.session_type;
+
+                if (typeLower === 'kie') activityId = 'tepat_waktu_kie';
+                else if (typeLower === 'doa bersama') activityId = 'doa_bersama';
+                else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') activityId = 'tadarus';
+                else if (typeLower === 'kajian selasa') activityId = 'kajian_selasa';
+                else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') activityId = 'persyarikatan';
+                else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') activityId = 'baca_alquran_buku';
+
                 addActivityEntry(record.user_id, monthKey, dayKey, activityId);
             });
         }
@@ -238,11 +248,20 @@ export async function GET(request: NextRequest) {
                 const monthKey = date.substring(0, 7);
                 const dayKey = date.substring(8, 10);
                 const type = record.activities.activity_type;
+                const typeLower = type?.toLowerCase().trim();
 
-                if (type === 'Kajian Selasa') {
+                if (typeLower === 'kajian selasa') {
                     addActivityEntry(record.employee_id, monthKey, dayKey, 'kajian_selasa');
-                } else if (type === 'Pengajian Persyarikatan') {
+                } else if (typeLower === 'pengajian persyarikatan' || typeLower === 'persyarikatan') {
                     addActivityEntry(record.employee_id, monthKey, dayKey, 'persyarikatan');
+                } else if (typeLower === 'kie') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'tepat_waktu_kie');
+                } else if (typeLower === 'doa bersama') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'doa_bersama');
+                } else if (typeLower === 'bbq' || typeLower === 'umum' || typeLower === 'tadarus') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'tadarus');
+                } else if (typeLower === 'membaca al-quran dan buku' || typeLower === 'baca alquran buku') {
+                    addActivityEntry(record.employee_id, monthKey, dayKey, 'baca_alquran_buku');
                 }
             });
         }

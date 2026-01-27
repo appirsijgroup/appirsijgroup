@@ -60,16 +60,27 @@ export async function GET(request: NextRequest) {
 
         const employeeIds = employees.map(e => e.id);
 
-        // 5. Fetch Activity Reports for these employees for the WHOLE year
-        // We fetch reports where key starts with the year
-        const { data: reports, error: reportError } = await supabase
-            .from('employee_monthly_reports')
-            .select('employee_id, reports')
-            .in('employee_id', employeeIds);
+        // 5. Fetch all relevant data in bulk for these employees for the requested year
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31T23:59:59`;
 
-        if (reportError) throw reportError;
+        const [
+            monthlyReportsRes,
+            attendanceRecordsRes,
+            teamAttendanceRes,
+            activityAttendanceRes
+        ] = await Promise.all([
+            // employee_monthly_reports
+            supabase.from('employee_monthly_reports').select('employee_id, reports').in('employee_id', employeeIds),
+            // attendance_records (shalat)
+            supabase.from('attendance_records').select('employee_id, timestamp, status').in('employee_id', employeeIds).eq('status', 'hadir').gte('timestamp', startDate).lte('timestamp', endDate),
+            // team_attendance_records (Doa Bersama, KIE)
+            supabase.from('team_attendance_records').select('user_id, session_date, session_type').in('user_id', employeeIds).gte('session_date', startDate).lte('session_date', year + '-12-31'),
+            // activity_attendance (Kajian Selasa, etc)
+            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startDate).lte('activities.date', year + '-12-31')
+        ]);
 
-        // 6. Process Stats
+        // 6. Process and Merge Stats
         const sidiqActivities = DAILY_ACTIVITIES.filter(a => a.category === 'SIDIQ (Integritas)');
         const tablighActivities = DAILY_ACTIVITIES.filter(a => a.category === 'TABLIGH (Teamwork)');
         const amanahActivities = DAILY_ACTIVITIES.filter(a => a.category === 'AMANAH (Disiplin)');
@@ -80,13 +91,81 @@ export async function GET(request: NextRequest) {
         const monthlyAmanahTarget = amanahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0);
         const monthlyFatonahTarget = fatonahActivities.reduce((sum, a) => sum + a.monthlyTarget, 0);
 
-        // Map reports for easier access
-        const reportMap = new Map();
-        reports.forEach(r => reportMap.set(r.employee_id, r.reports || {}));
+        // Pre-process merged data into a map: employeeId -> monthKey -> dayKey -> { activityId: true }
+        const performanceMap: Record<string, Record<string, Record<string, Record<string, boolean>>>> = {};
+
+        const addPerformance = (empId: string, monthKey: string, dayKey: string, activityId: string) => {
+            if (!performanceMap[empId]) performanceMap[empId] = {};
+            if (!performanceMap[empId][monthKey]) performanceMap[empId][monthKey] = {};
+            if (!performanceMap[empId][monthKey][dayKey]) performanceMap[empId][monthKey][dayKey] = {};
+            performanceMap[empId][monthKey][dayKey][activityId] = true;
+        };
+
+        // Process Attendance (Shalat)
+        attendanceRecordsRes.data?.forEach(r => {
+            const date = new Date(r.timestamp);
+            const mKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const dKey = String(date.getDate()).padStart(2, '0');
+            addPerformance(r.employee_id, mKey, dKey, 'shalat_berjamaah');
+        });
+
+        // Process Team Attendance (Doa Bersama, KIE)
+        teamAttendanceRes.data?.forEach(r => {
+            const mKey = r.session_date.substring(0, 7);
+            const dKey = r.session_date.substring(8, 10);
+            const type = r.session_type?.toLowerCase().trim();
+            if (type === 'kie') addPerformance(r.user_id, mKey, dKey, 'tepat_waktu_kie');
+            else if (type === 'doa bersama') addPerformance(r.user_id, mKey, dKey, 'doa_bersama');
+            else if (type === 'kajian selasa') addPerformance(r.user_id, mKey, dKey, 'kajian_selasa');
+            else if (type === 'pengajian persyarikatan' || type === 'persyarikatan') addPerformance(r.user_id, mKey, dKey, 'persyarikatan');
+        });
+
+        // Process Activity Attendance (Kajian Selasa, etc)
+        activityAttendanceRes.data?.forEach((r: any) => {
+            if (!r.activities) return;
+            const mKey = r.activities.date.substring(0, 7);
+            const dKey = r.activities.date.substring(8, 10);
+            const type = r.activities.activity_type?.toLowerCase().trim();
+            if (type === 'kajian selasa') addPerformance(r.employee_id, mKey, dKey, 'kajian_selasa');
+            else if (type === 'pengajian persyarikatan' || type === 'persyarikatan') addPerformance(r.employee_id, mKey, dKey, 'persyarikatan');
+            else if (type === 'kie') addPerformance(r.employee_id, mKey, dKey, 'tepat_waktu_kie');
+            else if (type === 'doa bersama') addPerformance(r.employee_id, mKey, dKey, 'doa_bersama');
+            else if (type === 'bbq' || type === 'umum' || type === 'tadarus') addPerformance(r.employee_id, mKey, dKey, 'tadarus');
+            else if (type === 'membaca al-quran dan buku' || type === 'baca alquran buku') addPerformance(r.employee_id, mKey, dKey, 'baca_alquran_buku');
+        });
+
+        // Pre-process Monthly Reports (Manual Counters) for unique days
+        const manualReportMap: Record<string, any> = {};
+        monthlyReportsRes.data?.forEach(r => {
+            manualReportMap[r.employee_id] = r.reports || {};
+            // Also merge manual reports into performanceMap for unified counting
+            Object.entries(r.reports || {}).forEach(([mKey, mData]: [string, any]) => {
+                Object.entries(mData).forEach(([actId, actData]: [string, any]) => {
+                    if (actData.entries && Array.isArray(actData.entries)) {
+                        actData.entries.forEach((e: any) => {
+                            const dKey = e.date.substring(8, 10);
+                            addPerformance(r.employee_id, mKey, dKey, actId);
+                        });
+                    }
+                    if (actData.bookEntries && Array.isArray(actData.bookEntries)) {
+                        actData.bookEntries.forEach((e: any) => {
+                            const dKey = e.dateCompleted.substring(8, 10);
+                            addPerformance(r.employee_id, mKey, dKey, actId);
+                        });
+                    }
+                    if (!actData.entries && !actData.bookEntries && actData.completedAt) {
+                        const date = new Date(actData.completedAt);
+                        const dKey = String(date.getDate()).padStart(2, '0');
+                        addPerformance(r.employee_id, mKey, dKey, actId);
+                    }
+                });
+            });
+        });
 
         // 7. Assemble final records
         const records = employees.map(emp => {
-            const allReports = reportMap.get(emp.id) || {};
+            const empPerf = performanceMap[emp.id] || {};
+            const allReports = manualReportMap[emp.id] || {};
 
             let sidiqCount = 0;
             let tablighCount = 0;
@@ -97,14 +176,32 @@ export async function GET(request: NextRequest) {
             // Iterate through months of the requested year
             for (let m = 1; m <= 12; m++) {
                 const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-                const monthData = allReports[monthKey];
+                const monthData = empPerf[monthKey];
+                const manualMonthData = allReports[monthKey];
 
-                if (monthData) {
+                if (monthData || manualMonthData) {
                     monthsCount++;
 
-                    // Helper to count entries for specific activity IDs 
+                    // Count unique days for each activity in this month
+                    const getCountForActivity = (activityId: string) => {
+                        // 1. Count from performanceMap (combined from all tables)
+                        let count = 0;
+                        if (monthData) {
+                            Object.values(monthData).forEach(day => {
+                                if (day[activityId]) count++;
+                            });
+                        }
+
+                        // 2. Also check if there's a raw count in employee_monthly_reports (compat)
+                        if (manualMonthData && manualMonthData[activityId]?.count > count) {
+                            count = manualMonthData[activityId].count;
+                        }
+
+                        return count;
+                    };
+
                     const countForCategory = (activities: any[]) => {
-                        return activities.reduce((sum, act) => sum + (monthData[act.id]?.count || 0), 0);
+                        return activities.reduce((sum, act) => sum + getCountForActivity(act.id), 0);
                     };
 
                     sidiqCount += countForCategory(sidiqActivities);

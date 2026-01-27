@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
                             'KIE': 'tepat_waktu_kie',
                             'Doa Bersama': 'doa_bersama',
                             'Kajian Selasa': 'kajian_selasa',
-                            'Pengajian Persyarikatan': 'pengajian_persyarikatan'
+                            'Pengajian Persyarikatan': 'persyarikatan'
                         };
                         activityId = categoryMap[category] || 'tadarus';
                     } else {

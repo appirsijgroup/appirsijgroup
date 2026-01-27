@@ -118,10 +118,6 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                 <div className="flex flex-col">
                     <span className="text-blue-300 text-sm font-medium uppercase tracking-wider mb-1">Total Karyawan</span>
                     <span className="text-4xl font-bold text-white mb-2">{stats.totalEmployees}</span>
-                    <div className="flex items-center gap-2 text-xs text-blue-200/60">
-                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-blue-300">Terdaftar</span>
-                        <span>di dalam sistem</span>
-                    </div>
                 </div>
             </div>
 
@@ -156,10 +152,6 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                 <div className="flex flex-col">
                     <span className="text-purple-300 text-sm font-medium uppercase tracking-wider mb-1">Jumlah Mentor</span>
                     <span className="text-4xl font-bold text-white mb-2">{stats.mentorCount}</span>
-                    <div className="flex items-center gap-2 text-xs text-purple-200/60">
-                        <span className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">Aktif</span>
-                        <span>Membimbing</span>
-                    </div>
                 </div>
             </div>
 
@@ -176,8 +168,7 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                     <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
                         <div className="bg-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.complianceRate}%` }}></div>
                     </div>
-                    <div className="flex justify-between text-xs text-orange-200/60">
-                        <span>{stats.complianceRate >= 80 ? 'Sangat Baik' : stats.complianceRate >= 50 ? 'Cukup' : 'Perlu Didorong'}</span>
+                    <div className="flex justify-end text-xs text-orange-200/60">
                         <span>Bulan Ini</span>
                     </div>
                 </div>

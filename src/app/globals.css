@@ -31,7 +31,8 @@
 body {
   /* 🔥 INDUSTRY STANDARD: Set global background here to prevent 'flicker' or color changes during transitions */
   background: linear-gradient(135deg, #0f172a 0%, #3730a3 100%);
-  background-attachment: fixed; /* Keeps background stable on scroll */
+  background-attachment: fixed;
+  /* Keeps background stable on scroll */
 
   color: var(--foreground);
   font-family: var(--font-sans);
@@ -40,12 +41,20 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
+
 @keyframes soft-ping {
-  75%, 100% {
+
+  75%,
+  100% {
     transform: scale(1.5);
     opacity: 0;
   }

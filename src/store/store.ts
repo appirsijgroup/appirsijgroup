@@ -537,7 +537,10 @@ interface UIState {
     setActivePrayerId: (id: string | null) => void;
     setCurrentTime: (time: Date) => void;
     setUserLocation: (location: { latitude: number; longitude: number } | null) => void;
+    globalLoading: { show: boolean; message: string };
+    setGlobalLoading: (show: boolean, message?: string) => void;
 }
+
 
 export const useUIStore = create<UIState>((set, get) => ({
     activeView: 'dashboard-saya',
@@ -606,7 +609,10 @@ export const useUIStore = create<UIState>((set, get) => ({
         }
     },
     setUserLocation: (location) => set({ userLocation: location }),
+    globalLoading: { show: false, message: 'Memuat...' },
+    setGlobalLoading: (show, message = 'Memuat...') => set({ globalLoading: { show, message } }),
 }));
+
 
 if (typeof window !== 'undefined') {
     setInterval(() => {

@@ -168,17 +168,14 @@ export default function AlquranPage() {
         }
     };
 
-    // Loading state gabungan
-    if (loading || bookmarksLoading) {
-        return <BrandedLoader fullScreen={false} />;
-    }
-
-
 
     return (
+
         <Alquran
             bookmarks={bookmarks}
+            isLoading={loading || bookmarksLoading}
             toggleBookmark={handleToggleBookmark}
+
             goToAyah={goToAyah}
             clearGoToAyah={() => setGoToAyah(null)}
             onQuranReadingSubmission={handleQuranReadingSubmission}

@@ -71,11 +71,12 @@ export const CompactBrandedLoader: React.FC<{ message?: string }> = ({ message =
                     <Image
                         src="/logorsijsp.png"
                         alt="Logo RSI Jakarta Group"
-                        width={64}
-                        height={64}
+                        width={80}
+                        height={80}
                         priority
-                        className="h-16 w-auto"
+                        className="h-20 w-auto"
                     />
+
                 </div>
             </div>
             <div className="animate-spin rounded-full h-8 w-8 border-3 border-slate-700 border-t-teal-400 mb-3"></div>

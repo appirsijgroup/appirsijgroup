@@ -4,14 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
 import BrandedLoader from '@/components/BrandedLoader';
-import { useAppDataStore } from '@/store/store';
+import { useAppDataStore, useUIStore } from '@/store/store';
+
 import { timeValidationService } from '@/services/timeValidationService';
 import { useEffect } from 'react';
 
 const LoginContainer = () => {
     const router = useRouter();
     const { loggedInEmployee, setLoggedInEmployee, setHydrated, setAllUsersData } = useAppDataStore();
+    const { setGlobalLoading } = useUIStore();
     const [isLoading, setIsLoading] = useState(false);
+
     const [loadingMessage, setLoadingMessage] = useState('Memuat...');
 
     // 🔥 FIX: Redirect to dashboard if already logged in (prevents "stuck" on login page)
@@ -23,9 +26,11 @@ const LoginContainer = () => {
 
     const handleLogin = async (identifier: string, password: string) => {
         setIsLoading(true);
+        setGlobalLoading(true, 'Memproses login...');
         setLoadingMessage('Memproses login...');
 
         try {
+
 
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -37,8 +42,10 @@ const LoginContainer = () => {
 
             if (!response.ok) {
                 setIsLoading(false);
+                setGlobalLoading(false);
                 return { employee: null, error: data.error };
             }
+
 
             const employee = data.employee;
 
@@ -70,8 +77,10 @@ const LoginContainer = () => {
 
         } catch (err) {
             setIsLoading(false);
+            setGlobalLoading(false);
             return { employee: null, error: 'Terjadi kesalahan' };
         }
+
     };
 
     return (

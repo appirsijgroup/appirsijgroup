@@ -7,6 +7,8 @@ import { baseMetadata } from "./metadata";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { Suspense } from "react";
 import BrandedLoader from "@/components/BrandedLoader";
+import GlobalLoadingOverlay from "@/components/GlobalLoadingOverlay";
+
 
 // 🔒 Disable console logs in production for cleaner browser console
 if (process.env.NODE_ENV === 'production') {
@@ -86,10 +88,12 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <SupressHydrationWarning />
         <QueryProvider>
+          <GlobalLoadingOverlay />
           <Suspense fallback={<BrandedLoader fullScreen={true} message="Memuat aplikasi..." />}>
             {children}
           </Suspense>
         </QueryProvider>
+
       </body>
     </html>
   );

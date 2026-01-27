@@ -12,7 +12,9 @@ interface AlquranProps {
 
 
     bookmarks: Bookmark[];
+    isLoading?: boolean;
     toggleBookmark: (bookmark: Omit<Bookmark, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { notes?: string | null }) => void;
+
     goToAyah: { surah: number; ayah: number } | null;
     clearGoToAyah: () => void;
     onQuranReadingSubmission: (details: { surahName: string; surahNumber: number; startAyah: number; endAyah: number; date: string; }) => void;
@@ -217,7 +219,8 @@ const ReportReadingModal: React.FC<{
     );
 };
 
-export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goToAyah, clearGoToAyah, onQuranReadingSubmission, monthlyReportSubmissions, loggedInEmployee: _loggedInEmployee, setGoToAyah }) => {
+export const Alquran: React.FC<AlquranProps> = ({ bookmarks, isLoading, toggleBookmark, goToAyah, clearGoToAyah, onQuranReadingSubmission, monthlyReportSubmissions, loggedInEmployee: _loggedInEmployee, setGoToAyah }) => {
+
     const [surahs, setSurahs] = useState<Surah[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<SurahDetail | null>(null);
     const [isLoadingList, setIsLoadingList] = useState(true);
@@ -379,7 +382,19 @@ export const Alquran: React.FC<AlquranProps> = ({ bookmarks, toggleBookmark, goT
         return new Set(bookmarks.map(b => `${b.surahNumber}:${b.ayahNumber}`));
     }, [bookmarks]);
 
+    // Unified primary loading state
+    const isPrimaryLoading = isLoading || (isLoadingList && surahs.length === 0);
+
+    if (isPrimaryLoading && !selectedSurah) {
+        return (
+            <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[400px] flex items-center justify-center">
+                <BrandedLoader message="Menyiapkan Al-Qur'an..." />
+            </div>
+        );
+    }
+
     if (isLoadingDetail || selectedSurah) {
+
         return (
             <div className="bg-gray-900/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">

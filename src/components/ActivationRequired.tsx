@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { CalendarDaysIcon } from './Icons';
+import { useUIStore } from '@/store/store';
+
 
 interface ActivationRequiredProps {
     monthName: string | undefined;
@@ -19,20 +21,25 @@ const ActivationRequired: React.FC<ActivationRequiredProps> = ({
     isLoading = false
 }) => {
     const [isActivating, setIsActivating] = useState(false);
+    const { setGlobalLoading } = useUIStore();
+
 
     const handleActivate = async () => {
         if (isPastMonth) return;
 
         setIsActivating(true);
+        setGlobalLoading(true, "Mengaktifkan Lembar Mutaba'ah...");
         try {
             const success = await onActivate(monthKey);
-            // Reset loading state regardless of success/fail
             // Parent will update state and trigger re-render
-            setIsActivating(false);
         } catch (error) {
+            console.error("Activation error:", error);
+        } finally {
             setIsActivating(false);
+            setGlobalLoading(false);
         }
     };
+
 
     const isButtonDisabled = isPastMonth || isLoading || isActivating;
 

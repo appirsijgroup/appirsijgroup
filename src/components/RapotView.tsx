@@ -667,7 +667,7 @@ const TranskripNilaiView: React.FC<TranskripNilaiViewProps> = ({ employee, allUs
             if (allUsersData[strId]) return allUsersData[strId].employee.name;
             // Fallback: search in values
             const foundData = Object.values(allUsersData).find(d => String(d.employee?.id).trim() === strId);
-            return foundData ? foundData.employee.name : `NIP: ${id}`;
+            return foundData ? foundData.employee.name : 'Belum Diatur';
         };
         return {
             mentor: getBossName(employee.mentorId),

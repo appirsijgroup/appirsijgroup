@@ -884,7 +884,7 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
 
 
 
-    // 🔥 FIX: Auto-load all employees data if user is a mentor/approver OR when entering Analytics
+    // 🔥 FIX: Auto-load all employees data if user is a mentor/approver OR when entering Analytics/Rapot
     useEffect(() => {
         const shouldLoadEmployees =
             (hasMentorRole || hasApprovalRole) || // Eagerly load for mentors/approvers
@@ -892,9 +892,10 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             activeTab === 'rapot'; // Or if APPI (Rapot) tab requires it for mentor names
 
         if (shouldLoadEmployees && props.onLoadEmployees) {
-            // Check if we need to load data (if allUsersData is empty or just has current user)
+            // 🔥 FIX: For rapot tab, ALWAYS trigger load to ensure mentor data is fresh
+            // For other tabs, only load if data is minimal
             const userCount = Object.keys(allUsersData).length;
-            if (userCount <= 1) {
+            if (activeTab === 'rapot' || userCount <= 1) {
                 props.onLoadEmployees();
             }
         }

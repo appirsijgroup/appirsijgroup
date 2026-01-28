@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
-import { isAdministrativeAccount } from '@/lib/rolePermissions';
+import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
 import { PdfIcon, ChartBarIcon } from './Icons';
 import { generateOfficialPdf, type ReportSection, type TableConfig } from './ReportGenerator';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
@@ -56,11 +56,17 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
+    // Filter out admin/super-admin - only count real employees (users)
+    const realEmployees = useMemo(() =>
+        allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u)),
+        [allUsers]
+    );
+
     // State for stats (initially from props, then updated from API)
     const [stats, setStats] = useState({
-        totalEmployees: allUsers.length,
-        activatedCount: allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
-        notActivatedCount: allUsers.length - allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
+        totalEmployees: realEmployees.length,
+        activatedCount: realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
+        notActivatedCount: realEmployees.length - realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
         mentorCount: allUsers.filter(u => u.canBeMentor || u.role === 'admin' || u.role === 'super-admin').length,
         complianceRate: 0,
         activationRate: 0
@@ -93,11 +99,11 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
 
     // Fallback update if props change and API hasn't loaded (optional, prioritizing API)
     useEffect(() => {
-        if (allUsers.length > stats.totalEmployees) {
+        if (realEmployees.length > stats.totalEmployees) {
             // If client has MORE data than initial state, update basics
             // This is a simple heuristic to show something while API loads
-            const total = allUsers.length;
-            const activated = allUsers.filter(u => u.activatedMonths?.includes(currentMonthKey)).length;
+            const total = realEmployees.length;
+            const activated = realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length;
             setStats(prev => ({
                 ...prev,
                 totalEmployees: total,
@@ -106,7 +112,7 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
                 activationRate: total > 0 ? Math.round((activated / total) * 100) : 0
             }));
         }
-    }, [allUsers, currentMonthKey]); // Careful not to overwrite API data if API is slower but more accurate? 
+    }, [realEmployees, currentMonthKey]); // Careful not to overwrite API data if API is slower but more accurate? 
     // Actually, let's trust the API more. This effect is just for immediate feedback if props are populated first.
 
     return (
@@ -248,12 +254,14 @@ const MutabaahPerformanceReport: React.FC<{
         fetchPerformance();
     }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter]);
 
-    // Filter options memoization (still from local allUsers for UI dropdowns)
+    // Filter options memoization (only from real employees, excluding admins)
     const filterOptions = useMemo(() => {
         const units = new Set<string>();
         const bagians = new Set<string>();
         const profesi = new Set<string>();
-        allUsers.forEach(user => {
+        // Only include real employees (non-admin) in filter options
+        const realEmployees = allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u));
+        realEmployees.forEach(user => {
             if (user.unit) units.add(user.unit);
             if (user.bagian) bagians.add(user.bagian);
             if (user.profession) profesi.add(user.profession);

@@ -36,8 +36,12 @@ export async function GET(request: NextRequest) {
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-        // 4. Fetch Targeted Employee IDs based on filters
-        let employeeQuery = supabase.from('employees').select('id').eq('is_active', true);
+        // 4. Fetch Targeted Employee IDs based on filters (Exclude non-numeric IDs)
+        let employeeQuery = supabase.from('employees')
+            .select('id')
+            .eq('is_active', true)
+            .filter('id', 'match', '^[0-9]+$')
+            .not('role', 'in', '(admin,super-admin)');
 
         if (employeeId && employeeId !== 'undefined' && employeeId !== 'all') {
             employeeQuery = employeeQuery.eq('id', employeeId);

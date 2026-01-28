@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         // 4. Build Employee Query
-        let empQuery = supabase.from('employees').select('id, name, unit, profession, hospital_id, mentor_id, profession_category', { count: 'exact' }).eq('is_active', true);
+        let empQuery = supabase.from('employees')
+            .select('id, name, unit, profession, hospital_id, mentor_id, profession_category', { count: 'exact' })
+            .eq('is_active', true)
+            .filter('id', 'match', '^[0-9]+$');
 
         if (hospitalId && hospitalId !== 'all') {
             // Find hospital brand/id to match

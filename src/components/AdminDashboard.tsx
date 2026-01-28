@@ -27,14 +27,14 @@ import {
     Trash2,
     RefreshCw,
     Check,
-    Shield // 🔥 NEW
+    ClipboardCheck
 } from 'lucide-react';
 import { availableIconsForSunnah } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
 import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
 import MutabaahReport from './MutabaahReport';
-import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin } from '@/lib/rolePermissions';
+import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
 import { useUIStore } from '@/store/store';
 
 // Lazy load heavy components that are only rendered conditionally
@@ -515,7 +515,6 @@ const ActivityManagement: React.FC<{
     allEmployees: Employee[];
     onOpenModal: (activity?: Activity | null) => void;
     onInitiateDelete: (activity: Activity) => void;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
 }> = ({ activities, allEmployees, onOpenModal, onInitiateDelete }) => {
 
     const sortedActivities = useMemo(() => {
@@ -889,7 +888,6 @@ const UserModal: React.FC<{
                                     <option value="user" className="text-black bg-white">User</option>
                                     <option value="admin" className="text-black bg-white">Admin</option>
                                     <option value="super-admin" className="text-black bg-white">Super Admin</option>
-                                    {/* Owner option removed as Super Admin is now highest role */}
                                 </select>
                             </div>
                             <div>
@@ -1146,7 +1144,7 @@ const UserImportModal: React.FC<{
                     const catStr = String(rawCategory || '').trim().toUpperCase();
                     if (catStr === 'MEDIS') return 'MEDIS';
                     return 'NON MEDIS';
-                }
+                };
                 const getSanitizedGender = (rawGender: unknown): 'Laki-laki' | 'Perempuan' => {
                     const genderStr = String(rawGender || '').trim().toLowerCase();
                     if (genderStr === 'perempuan') return 'Perempuan';
@@ -1154,7 +1152,7 @@ const UserImportModal: React.FC<{
                 };
                 const getSanitizedRole = (rawRole: unknown): Role => {
                     const roleStr = String(rawRole || '').trim().toLowerCase();
-                    if (['owner', 'super-admin', 'admin', 'user'].includes(roleStr)) return roleStr as Role;
+                    if (['super-admin', 'admin', 'user'].includes(roleStr)) return roleStr as Role;
                     return 'user';
                 };
 
@@ -1279,9 +1277,8 @@ const UserImportModal: React.FC<{
 interface DatabaseKaryawanProps {
     allUsers: Employee[];
     onInitiateDeleteUser: (user: Employee) => void;
-    onInitiateToggleStatus: (user: Employee) => void; // 🔥 NEW: Toggle account status
-    onInitiateSetRole: (user: Employee, newRole: Role) => void; // 🔥 NEW: Change user role
-    onManageAccess: (user: Employee) => void; // 🔥 NEW: Manage hospital access
+    onInitiateToggleStatus: (user: Employee) => void;
+    onManageAccess: (user: Employee) => void;
     onAddUser: AdminDashboardProps['onAddUser'];
     onUpdateUser: AdminDashboardProps['onUpdateUser'];
     onBulkUpdateUsers: AdminDashboardProps['onBulkUpdateUsers'];
@@ -1296,9 +1293,8 @@ interface DatabaseKaryawanProps {
 const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     allUsers,
     onInitiateDeleteUser,
-    onInitiateToggleStatus, // 🔥 NEW
-    onInitiateSetRole, // 🔥 NEW
-    onManageAccess, // 🔥 NEW
+    onInitiateToggleStatus,
+    onManageAccess,
     onOpenUserModal,
     onBulkUpdateUsers,
     hospitals,
@@ -1308,7 +1304,6 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     loggedInEmployee // 🔥 NEW
 }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [openRoleMenuId, setOpenRoleMenuId] = useState<string | null>(null); // 🔥 NEW: Track which role menu is open
 
     // 🔥 FIX: Use server-side paginated employees if available, fallback to client-side for compatibility
     const displayUsers = useMemo(() => {
@@ -1434,73 +1429,16 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex flex-col gap-2 min-w-[150px] items-center">
-                                            {/* Manage Access Button moved here */}
-                                            {isAnyAdmin({ ...user, role: user.role } as any) && !hideManageButtonForSelf && (
+                                            {/* Unified Manage Role & Access Button */}
+                                            {!isSelf && (
                                                 <button
                                                     onClick={() => onManageAccess(user)}
-                                                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded bg-gray-700 hover:bg-teal-600 text-white text-xs font-medium transition-colors border border-white/10"
-                                                    title="Kelola Akses Rumah Sakit"
+                                                    className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-200 hover:text-white border border-blue-500/30 text-[10px] font-bold uppercase transition-colors"
+                                                    title="Kelola Role & Akses"
                                                 >
-                                                    <Building2 className="w-3 h-3" />
-                                                    Kelola Akses
+                                                    <ShieldCheck className="w-4 h-4" />
+                                                    Kelola Role & Akses
                                                 </button>
-                                            )}
-
-                                            {/* 🔥 NEW: Clean "Manage Role" dropdown */}
-                                            {!isSelf && (
-                                                <div className="relative w-full">
-                                                    <button
-                                                        onClick={() => setOpenRoleMenuId(openRoleMenuId === user.id ? null : user.id)}
-                                                        className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-200 hover:text-white border border-blue-500/30 text-xs font-medium transition-colors"
-                                                        title="Ubah Role User"
-                                                    >
-                                                        <Shield className="w-3 h-3" />
-                                                        Kelola Role
-                                                        <ChevronDown className={`w-3 h-3 transition-transform ${openRoleMenuId === user.id ? 'rotate-180' : ''}`} />
-                                                    </button>
-
-                                                    {/* Dropdown Menu */}
-                                                    {openRoleMenuId === user.id && (
-                                                        <>
-                                                            {/* Backdrop to close on outside click */}
-                                                            <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenRoleMenuId(null)} />
-
-                                                            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-gray-800 border border-white/20 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                                <div className="p-1 flex flex-col gap-1">
-                                                                    {getAssignableRoles(loggedInEmployee).map((role) => {
-                                                                        if (user.role === role) return null;
-                                                                        const validationError = validateRoleChange(loggedInEmployee, user, role);
-                                                                        if (validationError) return null;
-
-                                                                        const buttonStyles = {
-                                                                            'owner': 'text-yellow-400 hover:bg-yellow-500/20',
-                                                                            'super-admin': 'text-purple-400 hover:bg-purple-500/20',
-                                                                            'admin': 'text-blue-400 hover:bg-blue-500/20',
-                                                                            'user': 'text-gray-300 hover:bg-gray-600/50'
-                                                                        };
-
-                                                                        return (
-                                                                            <button
-                                                                                key={role}
-                                                                                onClick={() => {
-                                                                                    onInitiateSetRole(user, role);
-                                                                                    setOpenRoleMenuId(null);
-                                                                                }}
-                                                                                className={`w-full text-left px-3 py-2 text-xs font-medium rounded transition-colors flex items-center gap-2 ${buttonStyles[role]} group`}
-                                                                            >
-                                                                                <div className={`w-1.5 h-1.5 rounded-full ${role === 'user' ? 'bg-gray-400' : role === 'admin' ? 'bg-blue-400' : role === 'super-admin' ? 'bg-purple-400' : 'bg-yellow-400'}`}></div>
-                                                                                {role === 'user' ? 'Reset ke User' : `Jadikan ${role.replace('-', ' ')}`}
-                                                                            </button>
-                                                                        );
-                                                                    })}
-                                                                    {getAssignableRoles(loggedInEmployee).filter(r => r !== user.role && !validateRoleChange(loggedInEmployee, user, r)).length === 0 && (
-                                                                        <div className="px-3 py-2 text-[10px] text-gray-500 text-center italic">Tidak ada opsi</div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
                                             )}
                                             {isSelf && <div className="text-[10px] text-gray-500 italic text-center">Akun Anda Sendiri</div>}
                                         </div>
@@ -1555,11 +1493,6 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                 </p>
             </div>
 
-            <UserImportModal
-                isOpen={isImportModalOpen}
-                onClose={() => setIsImportModalOpen(false)}
-                onImport={onBulkUpdateUsers}
-            />
         </div>
     );
 };
@@ -1750,6 +1683,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const professions = new Set<string>();
         const years = new Set<number>();
         Object.values(allUsersData).forEach(({ employee, history, attendance }) => {
+            if (isAdministrativeAccount(employee.id)) return;
             units.add(employee.unit);
             professions.add(employee.profession);
             Object.keys(history).forEach(dateStr => years.add(new Date(dateStr).getFullYear()));
@@ -1788,6 +1722,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const currentActivityMap = new Map(activities.map(a => [a.id, a.name]));
 
         Object.values(allUsersData).forEach(({ employee, attendance, history }) => {
+            if (!employee || !employee.id || isAdministrativeAccount(employee.id)) return;
             const processDailyAttendance = (date: string, dailyAttendance: Attendance) => {
                 Object.entries(dailyAttendance).forEach(([entityId, att]) => {
                     const isPrayerRecord = currentPrayerMap.has(entityId);
@@ -2018,8 +1953,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     const isMonthActivated = user?.activatedMonths?.includes(recordMonthKey) ?? false;
 
                     aggregatedData.set(key, {
-                        employeeId: record.employeeId, employeeName: record.employeeName, date: record.date,
-                        unit: record.unit, professionCategory: record.professionCategory, profession: record.profession,
+                        employeeId: record.employeeId, employeeName: record.employeeName, unit: record.unit, professionCategory: record.professionCategory, profession: record.profession,
                         isMonthActivated,
                         prayers: { subuh: '-', dzuhur: '-', ashar: '-', maghrib: '-', isya: '-' }
                     });
@@ -2168,7 +2102,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">{reportType === 'prayer' ? 'Sholat' : 'Kegiatan'}</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Status</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
+                            {isSuperAdmin(loggedInEmployee) && <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -2184,17 +2118,19 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                         {record.status}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <button onClick={() => onEditAttendance(record)} title="Edit Presensi" className="p-1.5 text-blue-300 hover:text-white rounded-md hover:bg-white/10"><Pencil className="w-4 h-4" /></button>
-                                        <button onClick={() => onDeleteAttendance(record)} title="Hapus Presensi" className="p-1.5 text-red-400 hover:text-red-300 rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
-                                    </div>
-                                </td>
+                                {isSuperAdmin(loggedInEmployee) && (
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <button onClick={() => onEditAttendance(record)} title="Edit Presensi" className="p-1.5 text-blue-300 hover:text-white rounded-md hover:bg-white/10"><Pencil className="w-4 h-4" /></button>
+                                            <button onClick={() => onDeleteAttendance(record)} title="Hapus Presensi" className="p-1.5 text-red-300 hover:text-red-300 rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                        </div>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                         {filteredData.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="text-center p-12">
+                                <td colSpan={isSuperAdmin(loggedInEmployee) ? 7 : 6} className="text-center p-12">
                                     <div className="flex flex-col items-center gap-3">
                                         <p className="text-blue-200 opacity-60">Tidak ada data presensi yang ditemukan untuk filter ini.</p>
                                         <button
@@ -2263,9 +2199,11 @@ const ActivationReport: React.FC<{
     const processedData = useMemo(() => {
         const users = Object.values(allUsersData).map(d => d.employee);
 
-        // Filter out admin accounts (IDs containing letters, e.g., RSIJSP, RSIJPK)
-        // Only include employees with numeric IDs (e.g., 6000, 6446)
-        const realEmployees = users.filter(user => /^\d+$/.test(user.id));
+        // Filter out admin accounts and administrative accounts
+        // Role hierarchy (from highest to lowest):
+        // - super-admin: highest authority
+        // - admin: partial administrative access
+        const realEmployees = users.filter(user => user && user.id && !isAdministrativeAccount(user.id) && !isAnyAdmin(user));
 
         return realEmployees.map(user => ({
             id: user.id,
@@ -3115,7 +3053,6 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
     }, [searchTerm]);
 
     const roleConfig: Record<Role, { label: string; className: string }> = {
-        'owner': { label: 'Owner', className: 'bg-yellow-500/20 text-yellow-300' },
         'super-admin': { label: 'Super Admin', className: 'bg-purple-500/20 text-purple-300' },
         'admin': { label: 'Admin', className: 'bg-blue-500/20 text-blue-300' },
         'user': { label: 'User', className: 'bg-gray-500/20 text-gray-300' },
@@ -3211,14 +3148,12 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
 
                                                         // Button styling based on role
                                                         const buttonStyles = {
-                                                            'owner': 'bg-yellow-600 hover:bg-yellow-500 text-white',
                                                             'super-admin': 'bg-purple-600 hover:bg-purple-500 text-white',
                                                             'admin': 'bg-blue-600 hover:bg-blue-500 text-white',
                                                             'user': 'bg-gray-600 hover:bg-gray-500 text-white'
                                                         };
 
                                                         const labels = {
-                                                            'owner': 'Jadikan Owner',
                                                             'super-admin': 'Jadikan Super Admin',
                                                             'admin': 'Jadikan Admin',
                                                             'user': 'Jadikan User'
@@ -3586,109 +3521,149 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
     );
 };
 
-interface ManageAdminAccessModalProps {
+// 🔥 NEW: Unified Modal Component
+const RoleAndAccessModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
-    onSave: (hospitalIds: string[]) => Promise<boolean>;
     user: Employee | null;
+    loggedInEmployee: Employee;
     availableHospitals: Hospital[];
-}
-
-const ManageAdminAccessModal: React.FC<ManageAdminAccessModalProps> = ({ isOpen, onClose, onSave, user, availableHospitals }) => {
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    onSaveRole: (userId: string, newRole: Role) => void;
+    onSaveAccess: (hospitalIds: string[]) => Promise<boolean>;
+}> = ({ isOpen, onClose, user, loggedInEmployee, availableHospitals, onSaveRole, onSaveAccess }) => {
+    const [selectedRole, setSelectedRole] = useState<Role>('user');
+    const [selectedHospitalIds, setSelectedHospitalIds] = useState<Set<string>>(new Set());
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen && user) {
-            setSelectedIds(new Set(user.managedHospitalIds || []));
-            setIsSaving(false);
+            setSelectedRole(user.role);
+            setSelectedHospitalIds(new Set(user.managedHospitalIds || []));
         }
     }, [isOpen, user]);
 
     if (!isOpen || !user) return null;
 
-    const handleToggle = (hospitalId: string) => {
-        if (isSaving) return;
-        setSelectedIds(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(hospitalId)) {
-                newSet.delete(hospitalId);
-            } else {
-                newSet.add(hospitalId);
-            }
-            return newSet;
+    const assignableRoles = getAssignableRoles(loggedInEmployee);
+
+    const handleAccessToggle = (id: string) => {
+        setSelectedHospitalIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
         });
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const success = await onSave(Array.from(selectedIds));
-            if (success) {
-                onClose();
+            // 1. Save Role if changed
+            if (selectedRole !== user.role) {
+                // Use the onSaveRole passed from parent (which calls onInitiateSetRole -> opens confirmation or does it)
+                // Wait, onInitiateSetRole usually opens a confirmation modal.
+                // We might want to bypass that or chain it.
+                // ideally we just call the action.
+                onSaveRole(user.id, selectedRole);
             }
+
+            // 2. Save Access if Role allows it (Admin/Super Admin) and changed
+            if (['admin', 'super-admin'].includes(selectedRole)) {
+                await onSaveAccess(Array.from(selectedHospitalIds));
+            } else if (selectedRole === 'user' && user.managedHospitalIds && user.managedHospitalIds.length > 0) {
+                // Clear access if demoted to user
+                await onSaveAccess([]);
+            }
+
+            onClose();
+        } catch (error) {
+            console.error(error);
         } finally {
             setIsSaving(false);
         }
     };
 
     return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
-                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-3">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
                     <ShieldCheck className="w-6 h-6 text-teal-400" />
-                    Kelola Akses Rumah Sakit
+                    Kelola Akses & Role User
                 </h3>
-                <p className="text-blue-200 mb-4">Pilih rumah sakit yang dapat dikelola oleh <strong className="text-teal-300">{user.name}</strong>.</p>
 
-                <div className="max-h-[50vh] overflow-y-auto space-y-2 p-2 bg-black/20 rounded-lg custom-scrollbar">
-                    {availableHospitals.map(hospital => (
-                        <label
-                            key={hospital.id}
-                            className={`flex items-center space-x-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedIds.has(hospital.id)
-                                ? 'bg-teal-500/20 border-teal-500/50 text-teal-100'
-                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                                }`}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={selectedIds.has(hospital.id)}
-                                onChange={() => handleToggle(hospital.id)}
-                                disabled={isSaving}
-                                className="w-5 h-5 rounded border-gray-500 text-teal-500 focus:ring-teal-500 focus:ring-offset-gray-800 disabled:opacity-50"
-                            />
-                            <div className="grow">
-                                <span className="text-white font-semibold block">{hospital.name}</span>
-                                <span className="text-xs opacity-60 block uppercase tracking-wider">{hospital.brand}</span>
+                <div className="space-y-6">
+                    {/* User Info */}
+                    <div className="bg-white/5 p-3 rounded-lg border border-white/10">
+                        <p className="text-sm text-gray-400">User Target</p>
+                        <p className="text-lg font-semibold text-white">{user.name}</p>
+                        <p className="text-xs text-blue-300 font-mono">{user.id}</p>
+                    </div>
+
+                    {/* Role Selection */}
+                    <div>
+                        <label className="text-sm font-medium text-blue-100 block mb-2">Pilih Role Sistem</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {assignableRoles.map(role => (
+                                <button
+                                    key={role}
+                                    onClick={() => setSelectedRole(role)}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all border ${selectedRole === role
+                                        ? role === 'super-admin' ? 'bg-purple-600 border-purple-400 text-white'
+                                            : role === 'admin' ? 'bg-blue-600 border-blue-400 text-white'
+                                                : 'bg-gray-600 border-gray-400 text-white'
+                                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                        }`}
+                                >
+                                    {role === 'user' ? 'User Biasa' : role.replace('-', ' ').toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* School/Hospital Access Selection - Only if Admin/Super Admin */}
+                    {['admin', 'super-admin'].includes(selectedRole) && (
+                        <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+                            <label className="text-sm font-medium text-blue-100 flex justify-between items-center mb-2">
+                                <span>Akses Rumah Sakit</span>
+                                <span className="text-[10px] text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">
+                                    {selectedRole === 'super-admin' && selectedHospitalIds.size === 0 ? 'Akses Global (Semua)' : `${selectedHospitalIds.size} Dipilih`}
+                                </span>
+                            </label>
+
+                            {selectedRole === 'super-admin' && selectedHospitalIds.size === 0 && (
+                                <div className="mb-2 p-2 bg-purple-500/20 border border-purple-500/30 rounded text-xs text-purple-200 text-center">
+                                    Super Admin tanpa pilihan RS akan memiliki akses <strong>GLOBAL</strong> ke semua data.
+                                </div>
+                            )}
+
+                            <div className="max-h-[200px] overflow-y-auto space-y-1 p-2 bg-black/20 rounded-lg custom-scrollbar border border-white/10">
+                                {availableHospitals.map(h => (
+                                    <label key={h.id} className="flex items-center space-x-3 p-2 rounded hover:bg-white/5 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedHospitalIds.has(h.id)}
+                                            onChange={() => handleAccessToggle(h.id)}
+                                            className="w-4 h-4 rounded border-gray-500 text-teal-500 focus:ring-teal-500 bg-gray-700"
+                                        />
+                                        <span className={`text-sm ${selectedHospitalIds.has(h.id) ? 'text-white font-medium' : 'text-gray-400'}`}>
+                                            {h.brand} - {h.name}
+                                        </span>
+                                    </label>
+                                ))}
                             </div>
-                            {selectedIds.has(hospital.id) && <Check className="w-5 h-5 text-teal-400" />}
-                        </label>
-                    ))}
-                    {availableHospitals.length === 0 && <p className="text-center text-gray-400 p-4">Tidak ada rumah sakit yang tersedia untuk dikelola.</p>}
+                        </div>
+                    )}
                 </div>
 
-                <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        disabled={isSaving}
-                        className="px-6 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 font-semibold text-white transition-colors disabled:opacity-50"
-                    >
-                        Batal
-                    </button>
+                <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-white/10">
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold text-white">Batal</button>
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-6 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 font-bold text-gray-900 transition-all flex items-center justify-center gap-2 min-w-[140px] disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold text-white flex items-center gap-2"
                     >
-                        {isSaving ? (
-                            <>
-                                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                                Menyimpan...
-                            </>
-                        ) : 'Simpan Akses'}
+                        {isSaving && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>}
+                        Simpan Perubahan
                     </button>
                 </div>
             </div>
@@ -3728,26 +3703,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     }, [activeView]);
 
+    const hasAutoSyncedEmployeesRef = useRef(false);
+
     // 🔥 Load employee data on-demand when switching to Manajemen Pengguna or Reports tab
     useEffect(() => {
-        if ((activeView === 'manajemen-pengguna' || activeView === 'reports') && onLoadEmployees) {
+        if ((activeView === 'manajemen-pengguna' || activeView === 'reports') && onLoadEmployees && !hasAutoSyncedEmployeesRef.current) {
             const hasEnoughData = Object.keys(allUsersData).length > 1;
             if (!hasEnoughData) {
+                hasAutoSyncedEmployeesRef.current = true; // Mark as attempted
                 onLoadEmployees();
             }
         }
     }, [activeView, allUsersData, onLoadEmployees]);
 
+    const hasAutoSyncedRef = useRef(false);
+
     // 🔥 NEW: Auto-sync attendance history when entering Reports tab if not already loaded
     useEffect(() => {
-        if (activeView === 'reports' && onLoadHeavyData) {
-            // Check if we have any attendance history. If not, trigger the heavy sync.
-            const hasAnyHistory = Object.values(allUsersData).some(d =>
+        if (activeView === 'reports' && onLoadHeavyData && !hasAutoSyncedRef.current) {
+            // Check if we have any attendance history for the whole team. 
+            // If only the logged-in user has history, it might just be the admin's personal record.
+            const historyCount = Object.values(allUsersData).filter(d =>
                 (d.history && Object.keys(d.history).length > 0) ||
                 (d.attendance && Object.keys(d.attendance).length > 0)
-            );
+            ).length;
 
-            if (!hasAnyHistory && !isLoadingEmployees) {
+            const hasEnoughHistory = historyCount > 1 || (Object.keys(allUsersData).length <= 1 && historyCount > 0);
+
+            if (!hasEnoughHistory && !isLoadingEmployees) {
+                hasAutoSyncedRef.current = true; // Mark as attempted
                 onLoadHeavyData();
             }
         }
@@ -3764,8 +3748,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     // States for modals
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
-    const [editingUser, setEditingUser] = useState<Employee | null>(null);
     const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+    const [editingUser, setEditingUser] = useState<Employee | null>(null);
     const [confirmingDestructiveAction, setConfirmingDestructiveAction] = useState<{
         action: DestructiveAction,
         data: unknown,
@@ -3780,7 +3764,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [pdfFileName, setPdfFileName] = useState('');
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
     const [userManagementSubView, setUserManagementSubView] = useState<UserManagementSubView>('database');
-    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('ibadah-sunnah');
+    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('kegiatan');
     const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah' | 'aktivasi'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -3992,18 +3976,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
                     </div>
 
-                    {/* 🔥 Global Refresh Button - Keep only for manually refreshing if needed, but remove 'Sinkronisasi Riwayat' text/emphasis if requested, or just hide for reports if that's the specific request. User said 'Delete Sync History button'. */}
-                    {/* User specifically asked to remove the 'Sinkronisasi Riwayat' button and the 'Mode Cepat Aktif' card */}
-
-                    {activeView === 'manajemen-pengguna' && onLoadEmployees && (
+                    {/* 🔥 Global Refresh/Sync Button - Restored for Reports and User Management */}
+                    {(activeView === 'manajemen-pengguna' || activeView === 'reports') && (
                         <button
-                            onClick={() => onLoadEmployees?.()}
+                            onClick={() => {
+                                if (activeView === 'manajemen-pengguna') onLoadEmployees?.();
+                                if (activeView === 'reports') onLoadHeavyData?.();
+                            }}
                             disabled={isLoadingEmployees}
-                            title="Refresh Data"
+                            title="Sinkronisasi Data"
                             className="flex items-center justify-center gap-2 px-4 h-10 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 hover:text-teal-200 rounded-lg transition-all border border-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                         >
                             <RefreshCw className={`w-5 h-5 ${isLoadingEmployees ? 'animate-spin' : ''}`} />
-                            <span className="text-xs font-bold uppercase hidden sm:inline">Refresh</span>
+                            <span className="text-xs font-bold uppercase hidden sm:inline">Sinkronisasi</span>
                         </button>
                     )}
                 </div>
@@ -4024,7 +4009,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                 allUsers={allUsers}
                                 onInitiateDeleteUser={handleInitiateDeleteUser}
                                 onInitiateToggleStatus={handleInitiateToggleStatus}
-                                onInitiateSetRole={handleInitiateSetRole}
                                 onManageAccess={setManagingAccessFor}
                                 onAddUser={onAddUser}
                                 onUpdateUser={onUpdateUser}
@@ -4056,12 +4040,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
+                                <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Jadwal & Sesi</SubTabButton>
                                 <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
                                 {isSuperAdmin(loggedInEmployee) && (
                                     <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
                                 )}
                             </div>
                         </div>
+                        {contentManagementSubView === 'kegiatan' && (
+                            <ActivityManagement
+                                activities={activities}
+                                onOpenModal={handleOpenActivityModal}
+                                onInitiateDelete={handleInitiateDeleteActivity}
+                                allEmployees={allUsers}
+                            />
+                        )}
                         {contentManagementSubView === 'ibadah-sunnah' && (
                             <SunnahIbadahManagement sunnahIbadahList={sunnahIbadahList} onAdd={onAddSunnahIbadah} onUpdate={onUpdateSunnahIbadah} onDelete={handleInitiateDeleteSunnahIbadah} />
                         )}
@@ -4076,11 +4069,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
                 )}
 
+
                 {activeView === 'reports' && (
                     <div className="space-y-6">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
-                                <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Laporan Sholat</SubTabButton>
+                                <SubTabButton active={reportSubView === 'sholat'} onClick={() => setReportSubView('sholat')}>Presensi Harian</SubTabButton>
                                 <SubTabButton active={reportSubView === 'kegiatan'} onClick={() => setReportSubView('kegiatan')}>Laporan Kegiatan</SubTabButton>
                                 <SubTabButton active={reportSubView === 'mutabaah'} onClick={() => setReportSubView('mutabaah')}>Laporan Mutaba'ah</SubTabButton>
                                 <SubTabButton active={reportSubView === 'aktivasi'} onClick={() => setReportSubView('aktivasi')}>Laporan Aktivasi</SubTabButton>
@@ -4164,12 +4158,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             />
             <PdfPreviewModal isOpen={isPdfPreviewOpen} onClose={() => setIsPdfPreviewOpen(false)} pdfDataUri={pdfDataUri} fileName={pdfFileName} />
             <EditAttendanceModal isOpen={!!editingAttendanceRecord} onClose={() => setEditingAttendanceRecord(null)} onSave={onAdminUpdateAttendance} record={editingAttendanceRecord} />
-            <ManageAdminAccessModal
+
+            {/* Role & Access Modal - Unified management of Role and Hospital Access */}
+            <RoleAndAccessModal
                 isOpen={!!managingAccessFor}
                 onClose={() => setManagingAccessFor(null)}
-                onSave={handleUpdateAdminAccess}
                 user={managingAccessFor}
+                loggedInEmployee={loggedInEmployee}
                 availableHospitals={hospitals}
+                onSaveRole={(userId, newRole) => {
+                    // Triggers the standard role change process in parent
+                    onSetRole(userId, newRole);
+                }}
+                onSaveAccess={async (hospitalIds) => {
+                    // Directly update managedHospitalIds via profile update
+                    return await onUpdateProfile(managingAccessFor!.id, { managedHospitalIds: hospitalIds });
+                }}
             />
         </div>
     );

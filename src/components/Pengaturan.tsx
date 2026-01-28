@@ -184,7 +184,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     // Logic for verified badge
     const shouldShowVerifiedBadge = useMemo(() => {
         if (!employee) return false;
-        const isAdmin = isAnyAdmin(employee); // 🔥 NOW INCLUDES OWNER!
+        const isAdmin = isAnyAdmin(employee);
         const hasHighFunctionalRole = employee.functionalRoles?.some(role => ['BPH', 'DIREKSI'].includes(role));
         const isGuidanceLeader = employee.canBeMentor || employee.canBeSupervisor || employee.canBeKaUnit;
         return isAdmin || hasHighFunctionalRole || isGuidanceLeader;

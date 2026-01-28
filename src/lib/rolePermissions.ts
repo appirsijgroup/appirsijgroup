@@ -14,7 +14,6 @@ import type { Employee, Role } from '@/types';
  */
 export function getRoleLevel(role: Role): number {
   const levels: Record<Role, number> = {
-    'owner': 1000,
     'super-admin': 100,
     'admin': 50,
     'user': 1
@@ -32,14 +31,9 @@ export function canModifyUserRole(
 ): boolean {
   if (!modifier) return false;
 
-  if (modifier.role === 'owner') {
-    return true; // Owner can do anything
-  }
-
   if (modifier.role === 'super-admin') {
-    if (targetUser.role === 'owner') return false; // Cannot modify owner (legacy protection)
-    // Allow modifying other super-admins (except self role change check handled elsewhere)
-    return newRole === 'super-admin' || newRole === 'admin' || newRole === 'user';
+    // Super Admin can modify anyone except maybe themselves (handled in validation)
+    return true;
   }
 
   if (modifier.role === 'admin') {
@@ -58,13 +52,9 @@ export function canDeleteUser(
 ): boolean {
   if (!modifier) return false;
 
-  if (modifier.role === 'owner') {
-    return modifier.id === targetUser.id ? false : true; // Owner can delete anyone except self
-  }
-
   if (modifier.role === 'super-admin') {
-    if (targetUser.role === 'owner') return false;
-    return targetUser.role !== 'super-admin' || modifier.id === targetUser.id;
+    // Super admin can delete anyone except self (usually handled in UI/confirmation)
+    return modifier.id !== targetUser.id;
   }
 
   if (modifier.role === 'admin') {
@@ -105,8 +95,6 @@ export function getAssignableRoles(modifier: Employee | null): Role[] {
   if (!modifier) return [];
 
   switch (modifier.role) {
-    case 'owner':
-      return ['super-admin', 'admin', 'user'];
     case 'super-admin':
       return ['super-admin', 'admin', 'user'];
     case 'admin':
@@ -121,7 +109,7 @@ export function getAssignableRoles(modifier: Employee | null): Role[] {
  */
 export function isAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return ['owner', 'super-admin', 'admin'].includes(user.role);
+  return ['super-admin', 'admin'].includes(user.role);
 }
 
 /**
@@ -129,7 +117,7 @@ export function isAdmin(user: Employee | null): boolean {
  */
 export function isSuperAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return ['owner', 'super-admin'].includes(user.role);
+  return user.role === 'super-admin';
 }
 
 /**
@@ -137,7 +125,18 @@ export function isSuperAdmin(user: Employee | null): boolean {
  */
 export function isAnyAdmin(user: Employee | null): boolean {
   if (!user) return false;
-  return ['owner', 'super-admin', 'admin'].includes(user.role);
+  return ['super-admin', 'admin'].includes(user.role);
+}
+
+/**
+ * Check if the ID belongs to an administrative (non-employee) account.
+ * Accounts with non-numeric IDs (like 'rsijsp') are considered administrative.
+ * These accounts are excluded from employee counts and mutabaah activation.
+ */
+export function isAdministrativeAccount(id: string | undefined): boolean {
+  if (!id) return false;
+  // If ID contains any non-digit character, it's considered administrative
+  return /[^0-9]/.test(id);
 }
 
 /**
@@ -149,13 +148,7 @@ export function getRoleDisplay(role: Role): {
   bgColor: string;
   level: number;
 } {
-  const roleConfig = {
-    'owner': {
-      label: 'Owner',
-      color: 'text-yellow-700',
-      bgColor: 'bg-yellow-100',
-      level: 1000
-    },
+  const roleConfig: Record<Role, { label: string; color: string; bgColor: string; level: number; }> = {
     'super-admin': {
       label: 'Super Admin',
       color: 'text-red-700',

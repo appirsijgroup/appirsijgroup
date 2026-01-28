@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
+import { isAdministrativeAccount } from '@/lib/rolePermissions';
 import { PdfIcon, ChartBarIcon } from './Icons';
 import { generateOfficialPdf, type ReportSection, type TableConfig } from './ReportGenerator';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
@@ -389,11 +390,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
     const allUsers = useMemo(() => {
         const employees = Object.values(allUsersData).map((d: { employee: Employee }) => d.employee);
-        // 🔥 REPAIR: Be extremely inclusive for analytics.
-        // If it has an ID, it's a valid employee record.
-        // Only exclude ceux qui sont explicitement inactifs (isActive === false).
-        // This ensures that even if some fields are null during loading, they show up in counts.
-        return employees.filter(e => e && e.id && e.isActive !== false);
+        // Only include those who are explicitly active (isActive !== false)
+        // AND exclude administrative accounts (e.g. ID like 'rsijsp')
+        // AND exclude those with admin/super-admin roles as they are not subject to the activation rules
+        return employees.filter(e => e && e.id && e.isActive !== false && !isAdministrativeAccount(e.id) && e.role !== 'admin' && e.role !== 'super-admin');
     }, [allUsersData]);
 
     // Check if we likely have partial data (e.g., exactly 50 records)

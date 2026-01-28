@@ -14,6 +14,7 @@ import { getTodayLocalDateString, getCurrentTime } from '@/utils/dateUtils';
 import { useGuidanceStore } from '@/store/guidanceStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { UnifiedManualRequestModal } from './UnifiedManualRequestModal';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 import {
   CalendarClock,
   CheckCircle2,
@@ -488,63 +489,60 @@ const PresensiComponent: React.FC = () => {
   return (
     <div className="space-y-10 animate-fade-in">
 
-      {/* 1. SHOLAT WAJIB SECTION */}
-      <section>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-teal-500/20 rounded-lg">
-              <LayoutGrid className="w-6 h-6 text-teal-300" />
+      {/* 1. SHOLAT WAJIB SECTION - Disabled for Admins */}
+      {!isAnyAdmin(loggedInEmployee) && (
+        <section>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-500/20 rounded-lg">
+                <LayoutGrid className="w-6 h-6 text-teal-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-white tracking-tight">Sholat Wajib</h2>
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Sholat Wajib</h2>
+
+            <button
+              onClick={() => setIsManualRequestModalOpen(true)}
+              className="w-full sm:w-auto px-5 py-2.5 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-black rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-95 text-xs uppercase tracking-widest mt-2 sm:mt-0"
+            >
+              <PlusCircle className="w-4 h-4" strokeWidth={3} />
+              Ajukan
+            </button>
           </div>
 
-          <button
-            onClick={() => setIsManualRequestModalOpen(true)}
-            className="w-full sm:w-auto px-5 py-2.5 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-black rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-95 text-xs uppercase tracking-widest mt-2 sm:mt-0"
-          >
-            <PlusCircle className="w-4 h-4" strokeWidth={3} />
-            Ajukan
-          </button>
-        </div>
+          {prayerTimesLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => <PrayerCardSkeleton key={i} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {prayersToDisplay.map(prayer => {
+                const { timeValidationService } = require('@/services/timeValidationService');
+                const jakartaTime = timeValidationService.getCorrectedTime();
+                const endTime = new Date(jakartaTime);
+                const [eh, em] = prayer.endTime.split(':').map(Number);
+                endTime.setHours(eh, em, 0, 0);
 
+                const att = prayerAttendance[prayer.id];
+                const isSubmitted = !!att?.submitted;
+                const isPast = jakartaTime > endTime && !isSubmitted;
 
-
-        {prayerTimesLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <PrayerCardSkeleton key={i} />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {prayersToDisplay.map(prayer => {
-              const { timeValidationService } = require('@/services/timeValidationService');
-              const jakartaTime = timeValidationService.getCorrectedTime();
-              const endTime = new Date(jakartaTime);
-              const [eh, em] = prayer.endTime.split(':').map(Number);
-              endTime.setHours(eh, em, 0, 0);
-
-              const att = prayerAttendance[prayer.id];
-              const isSubmitted = !!att?.submitted;
-              const isPast = jakartaTime > endTime && !isSubmitted;
-
-              return (
-                <PrayerCard
-                  key={prayer.id}
-                  prayer={prayer}
-                  attendanceStatus={att}
-                  isActive={activePrayerId === prayer.id}
-                  isTimePast={isPast}
-                  onHadir={() => handlePrayerSubmit(prayer.id, 'hadir')}
-                  onTidakHadir={() => openModal(prayer.id, prayer.name, 'prayer')}
-                  onUbah={() => { }}
-                />
-              );
-            })}
-          </div>
-        )}
-
-
-
-      </section>
+                return (
+                  <PrayerCard
+                    key={prayer.id}
+                    prayer={prayer}
+                    attendanceStatus={att}
+                    isActive={activePrayerId === prayer.id}
+                    isTimePast={isPast}
+                    onHadir={() => handlePrayerSubmit(prayer.id, 'hadir')}
+                    onTidakHadir={() => openModal(prayer.id, prayer.name, 'prayer')}
+                    onUbah={() => { }}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* 2. KEGIATAN TERJADWAL SECTION */}
       <section>

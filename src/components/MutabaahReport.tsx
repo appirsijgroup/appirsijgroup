@@ -3,6 +3,7 @@ import { type Employee, type MonthlyActivityProgress, type DailyActivity, type H
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import * as XLSX from 'xlsx';
 import { PdfIcon, ExcelIcon, SearchIcon } from './Icons';
+import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
 
 interface MutabaahReportProps {
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
@@ -80,7 +81,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
         const years = new Set<number>();
 
         Object.values(allUsersData).forEach(({ employee }) => {
-
+            if (!employee || !employee.id || isAdministrativeAccount(employee.id) || isAnyAdmin(employee)) return;
             units.add(employee.unit);
             professions.add(employee.profession);
 

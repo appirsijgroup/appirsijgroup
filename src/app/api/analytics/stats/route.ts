@@ -28,8 +28,12 @@ export async function GET(request: NextRequest) {
             mentorsRes,
             complianceRes
         ] = await Promise.all([
-            // Total Active Employees
-            supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true),
+            // Total Active Employees (Numeric IDs only, Exclude Admin/Super-Admin)
+            supabase.from('employees')
+                .select('id', { count: 'exact', head: false })
+                .eq('is_active', true)
+                .filter('id', 'match', '^[0-9]+$')
+                .not('role', 'in', '(admin,super-admin)'),
 
             // Activated This Month (Join with mutabaah_activations table)
             supabase
@@ -37,8 +41,12 @@ export async function GET(request: NextRequest) {
                 .select('employee_id', { count: 'exact', head: true })
                 .eq('month_key', currentMonthKey),
 
-            // Mentors
-            supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true).or('role.in.(admin,super-admin),can_be_mentor.eq.true'),
+            // Mentors (Numeric IDs only)
+            supabase.from('employees')
+                .select('id', { count: 'exact', head: false })
+                .eq('is_active', true)
+                .filter('id', 'match', '^[0-9]+$')
+                .or('role.in.(admin,super-admin),can_be_mentor.eq.true'),
 
             // Compliance (Has entry in employee_monthly_reports for this month)
             // Note: This assumes 'reports' column is JSONB and has month keys

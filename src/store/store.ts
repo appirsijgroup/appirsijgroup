@@ -242,31 +242,27 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         if (get().isLoadingEmployees) return;
         try {
             set({ isLoadingEmployees: true });
-            const { getAllAttendanceRecords, supabase } = await import('@/services/attendanceService');
-            const allEmployees = Object.values(get().allUsersData).map(u => u.employee);
-
-            if (allEmployees.length === 0) {
-                set({ isLoadingEmployees: false });
-                return;
-            }
 
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth() + 1;
             const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
 
-            const [allAttendanceRecords, teamRecordsRes, activityRecordsRes, bulkActivitiesRes] = await Promise.all([
-                getAllAttendanceRecords(startOfMonth), // Only get current month by default
-                supabase.from('team_attendance_records').select('*').gte('session_date', startOfMonth).limit(1000),
-                supabase.from('activity_attendance').select('*').gte('timestamp', startOfMonth).limit(1000),
+            // 🔥 FETCH ALL DATA VIA ADMIN FULL SYNC API (Bypasses RLS)
+            const [reportRes, bulkActivitiesRes] = await Promise.all([
+                fetch(`/api/admin/reports/full-sync?startDate=${startOfMonth}`, { credentials: 'include' }).then(r => r.ok ? r.json() : { data: {} }),
                 fetch(`/api/admin/bulk-monthly-activities?month=${currentMonth}&year=${currentYear}`, { credentials: 'include' }).then(r => r.ok ? r.json() : { allActivities: {} })
             ]);
 
+            const reportData = reportRes.data || {};
             const allMonthlyActivities = bulkActivitiesRes.allActivities || {};
-            const extraTeamRecords = (teamRecordsRes.data as any[]) || [];
-            const extraActivityRecords = (activityRecordsRes.data as any[]) || [];
-            const todayStr = new Date().toLocaleDateString('en-CA');
 
+            const attendanceRecords = (reportData.attendanceRecords as any[]) || [];
+            const teamRecords = (reportData.teamAttendanceRecords as any[]) || [];
+            const activityRecords = (reportData.activityAttendanceRecords as any[]) || [];
+            const employeesFromBypass = (reportData.employees as any[]) || [];
+
+            const todayStr = new Date().toLocaleDateString('en-CA');
             const updatedUsers: Record<string, Partial<UserData>> = {};
 
             const mergeToUpdate = (userId: string, entityId: string, data: any) => {
@@ -286,30 +282,47 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 }
             };
 
-            allEmployees.forEach(emp => {
-                if (allMonthlyActivities[emp.id]) {
-                    updatedUsers[emp.id] = {
-                        ...updatedUsers[emp.id],
-                        employee: { ...emp, monthlyActivities: allMonthlyActivities[emp.id] }
-                    };
+            // Phase 1: Ensure all employees from bypass are in the store
+            const { convertToCamelCase } = await import('@/services/employeeService');
+            const nextAllUsersData = { ...get().allUsersData };
+
+            employeesFromBypass.forEach(empRaw => {
+                const emp = convertToCamelCase(empRaw);
+                if (emp.id) {
+                    if (allMonthlyActivities[emp.id]) {
+                        emp.monthlyActivities = allMonthlyActivities[emp.id];
+                    }
+
+                    if (!nextAllUsersData[emp.id]) {
+                        nextAllUsersData[emp.id] = {
+                            employee: emp,
+                            attendance: {},
+                            history: {}
+                        };
+                    } else {
+                        nextAllUsersData[emp.id] = {
+                            ...nextAllUsersData[emp.id],
+                            employee: { ...emp, monthlyActivities: emp.monthlyActivities || nextAllUsersData[emp.id].employee.monthlyActivities }
+                        };
+                    }
                 }
             });
 
-            Object.entries(allAttendanceRecords).forEach(([userId, userRecords]) => {
-                Object.entries(userRecords).forEach(([entityId, record]: [string, any]) => {
-                    if (record && record.status) {
-                        mergeToUpdate(userId, entityId, {
-                            status: record.status,
-                            reason: record.reason || null,
-                            timestamp: new Date(record.timestamp).getTime(),
-                            submitted: true,
-                            isLateEntry: record.is_late_entry || false
-                        });
-                    }
-                });
+            // Phase 2: Merge Sholat Records
+            attendanceRecords.forEach((record: any) => {
+                if (record && record.status) {
+                    mergeToUpdate(record.employee_id, record.entity_id, {
+                        status: record.status,
+                        reason: record.reason || null,
+                        timestamp: new Date(record.timestamp).getTime(),
+                        submitted: true,
+                        isLateEntry: record.is_late_entry || false
+                    });
+                }
             });
 
-            extraTeamRecords.forEach(r => {
+            // Phase 3: Merge Team Records
+            teamRecords.forEach(r => {
                 const uid = r.user_id || r.userId;
                 if (!uid) return;
                 mergeToUpdate(uid, r.session_type || r.session_id || 'Kegiatan Tim', {
@@ -319,7 +332,8 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 });
             });
 
-            extraActivityRecords.forEach(r => {
+            // Phase 4: Merge Manual Activity Records
+            activityRecords.forEach(r => {
                 if (!r.employee_id) return;
                 mergeToUpdate(r.employee_id, r.activity_id, {
                     status: r.status,
@@ -328,20 +342,18 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
                 });
             });
 
-            set(state => {
-                const nextAllUsersData = { ...state.allUsersData };
-                Object.entries(updatedUsers).forEach(([userId, updates]) => {
-                    if (nextAllUsersData[userId]) {
-                        nextAllUsersData[userId] = {
-                            ...nextAllUsersData[userId],
-                            employee: updates.employee || nextAllUsersData[userId].employee,
-                            attendance: { ...nextAllUsersData[userId].attendance, ...updates.attendance },
-                            history: { ...nextAllUsersData[userId].history, ...updates.history }
-                        };
-                    }
-                });
-                return { allUsersData: nextAllUsersData, isLoadingEmployees: false };
+            // Apply all updates to nextAllUsersData
+            Object.entries(updatedUsers).forEach(([userId, updates]) => {
+                if (nextAllUsersData[userId]) {
+                    nextAllUsersData[userId] = {
+                        ...nextAllUsersData[userId],
+                        attendance: { ...nextAllUsersData[userId].attendance, ...updates.attendance },
+                        history: { ...nextAllUsersData[userId].history, ...updates.history }
+                    };
+                }
             });
+
+            set({ allUsersData: nextAllUsersData, isLoadingEmployees: false, lastHeavyAdminLoad: Date.now() });
 
             const { useUIStore } = await import('@/store/store');
             useUIStore.getState().addToast('⚡ Sinkronisasi riwayat berhasil!', 'success');

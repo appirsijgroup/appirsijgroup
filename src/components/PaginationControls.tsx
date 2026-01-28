@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SearchIcon, ChevronLeftIcon, ChevronRightIcon, RefreshIcon } from './Icons';
+import { Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 
 interface PaginationControlsProps {
     currentPage: number;
@@ -84,7 +84,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                         onKeyPress={handleKeyPress}
                         className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent text-white placeholder-gray-400"
                     />
-                    <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 </div>
 
                 {/* Role Filter */}
@@ -97,7 +97,6 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                     <option value="super-admin">Super Admin</option>
                     <option value="admin">Admin</option>
                     <option value="user">User</option>
-                    <option value="owner">Owner</option>
                 </select>
 
                 {/* Active Status Filter */}
@@ -120,7 +119,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                     className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg flex items-center gap-2 transition-colors"
                     title="Refresh data"
                 >
-                    <RefreshIcon className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                 </button>
             </div>
 
@@ -143,7 +142,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                         disabled={!hasPrev}
                         className="px-4 py-2 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors"
                     >
-                        <ChevronLeftIcon className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4" />
                         Previous
                     </button>
 
@@ -153,7 +152,7 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
                         className="px-4 py-2 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors"
                     >
                         Next
-                        <ChevronRightIcon className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>
             </div>

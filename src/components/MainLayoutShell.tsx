@@ -22,7 +22,7 @@ import { useMutabaah } from '@/contexts/MutabaahContext';
 import { logger } from '@/lib/logger';
 import { Suspense } from 'react';
 import type { Employee } from '@/types';
-import { isAnyAdmin } from '@/lib/rolePermissions';
+import { isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
 import {
     LayoutDashboard,
     History,
@@ -304,6 +304,13 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             loggedInEmployee.canBeDirut;
 
         return allNavItemsRaw.filter(item => {
+            // 🔥 NEW: Check if administrative account (e.g. ID 'rsijsp')
+            if (isAdministrativeAccount(loggedInEmployee.id)) {
+                // Restriction requested: 1. Dashboard, 2. Jadwal & Sesi, 3. Pengumuman, 4. Admin Dashboard, 5. Profile
+                const allowedIds = ['dashboard-saya', 'presensi', 'jadwal-sesi', 'pengumuman', 'admin', 'profile'];
+                if (!allowedIds.includes(item.id)) return false;
+            }
+
             // Hide Admin menu for non-admins
             if (item.id === 'admin' && !isAdmin) return false;
 
@@ -343,17 +350,17 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     // --- Check if current month is activated for Mutaba'ah ---
     const activationStatus = useMemo(() => {
         // 🔥 CRITICAL FIX: Check both for null/undefined AND invalid employee objects
-        if (!loggedInEmployee || !loggedInEmployee.id) {
+        if (!loggedInEmployee || !loggedInEmployee.id || isAdministrativeAccount(loggedInEmployee.id) || isAnyAdmin(loggedInEmployee)) {
             // Only log if we are hydrated and not logging out to reduce noise during initial mount
-            if (isHydrated && !isLoggingOut) {
-                console.log('⚠️ [MainLayoutShell] No valid employee, hiding activation prompt');
+            if (isHydrated && !isLoggingOut && (!loggedInEmployee || !loggedInEmployee.id)) {
+                console.log('⚠️ [MainLayoutShell] No valid employee or administrative/admin account, hiding activation prompt');
             }
             return {
                 isActivated: true,
                 shouldShowActivationRequired: false,
                 currentMonthName: '',
                 currentMonthKey: ''
-            }; // Default to true if no valid employee
+            }; // Default to true if no valid employee OR administrative/admin account
         }
 
         // 🔥 FIX: Admin dan super-admin JUGA karyawan yang perlu mengaktifkan bulan

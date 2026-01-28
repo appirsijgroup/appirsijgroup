@@ -85,11 +85,10 @@ export interface RawEmployee {
 // - super-admin: Can manage admins and users, full system access
 // - admin: Can manage regular users and content
 // - user: Regular employee
-export type Role = 'owner' | 'super-admin' | 'admin' | 'user';
+export type Role = 'super-admin' | 'admin' | 'user';
 
 // Role hierarchy level for permission checks
 export const ROLE_LEVELS: Record<Role, number> = {
-  'owner': 1000,
   'super-admin': 100,
   'admin': 50,
   'user': 1

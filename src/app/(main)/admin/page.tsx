@@ -11,7 +11,7 @@ import { useAppDataStore, useUIStore } from '@/store/store';
 import { useActivityStore } from '@/store/activityStore';
 import { useSunnahIbadahStore } from '@/store/sunnahIbadahStore';
 import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';
-import { useJobStructureStore } from '@/store/jobStructureStore';
+
 import { useAuditLogStore } from '@/store/auditLogStore';
 import { useAnnouncementStore } from '@/store/announcementStore';
 import { useMutabaahStore } from '@/store/mutabaahStore';
@@ -49,7 +49,7 @@ export default function AdminPage() {
     const { activities, addActivity, updateActivity, deleteActivity } = useActivityStore();
     const { sunnahIbadahList, addSunnahIbadah, updateSunnahIbadah, deleteSunnahIbadah } = useSunnahIbadahStore();
     const { dailyActivitiesConfig, updateDailyActivitiesConfig } = useDailyActivitiesStore();
-    const { jobStructure, updateJobStructure } = useJobStructureStore();
+
     const { auditLog, logAudit } = useAuditLogStore();
     const { mutabaahLockingMode, setMutabaahLockingMode } = useMutabaahStore();
     const { createNotification } = useNotificationStore();
@@ -155,9 +155,7 @@ export default function AdminPage() {
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
 
-                // 🔥 Load job structure from Supabase
-                const { fetchJobStructure } = useJobStructureStore.getState();
-                await fetchJobStructure();
+
 
 
             } catch (err: unknown) {
@@ -308,7 +306,7 @@ export default function AdminPage() {
                 canBeKaUnit: false,
                 canBeDirut: false,
                 functionalRoles: [],
-                managerScope: undefined,
+
                 locationId: undefined,
                 locationName: undefined,
                 readingHistory: [],
@@ -898,8 +896,7 @@ export default function AdminPage() {
                 onDeleteSunnahIbadah={deleteSunnahIbadah}
                 dailyActivitiesConfig={dailyActivitiesConfig}
                 onUpdateDailyActivitiesConfig={updateDailyActivitiesConfig}
-                jobStructure={jobStructure}
-                onUpdateJobStructure={updateJobStructure}
+
                 auditLog={auditLog}
                 onLogAudit={logAudit}
                 hospitals={hospitals}

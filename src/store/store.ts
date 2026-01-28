@@ -664,7 +664,7 @@ export * from './bookmarkStore';
 export * from './dailyActivitiesStore';
 export * from './guidanceStore';
 export * from './hospitalStore';
-export * from './jobStructureStore';
+
 export * from './mutabaahStore';
 export * from './notificationStore';
 export * from './sunnahIbadahStore';

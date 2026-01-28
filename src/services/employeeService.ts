@@ -32,7 +32,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         canBeManager: emp.can_be_manager,
         functionalRoles: emp.functional_roles,
         managerId: emp.manager_id,
-        managerScope: typeof emp.manager_scope === 'string' ? JSON.parse(emp.manager_scope) : emp.manager_scope,
+
         locationId: emp.location_id,
         locationName: emp.location_name,
         readingHistory: emp.reading_history || [],
@@ -147,7 +147,7 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
             can_be_ka_unit,
             can_be_dirut,
             functional_roles,
-            manager_scope,
+
             manager_id,
             can_be_manager,
             signature,
@@ -217,7 +217,7 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
             can_be_ka_unit,
             can_be_dirut,
             functional_roles,
-            manager_scope,
+
             manager_id,
             can_be_manager,
             signature,
@@ -294,7 +294,7 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         can_be_manager: employee.canBeManager,
         manager_id: employee.managerId,
         functional_roles: employee.functionalRoles as string[] | null, // Keep this cast
-        manager_scope: employee.managerScope || null,
+
         location_id: employee.locationId,
         location_name: employee.locationName,
 
@@ -372,7 +372,7 @@ export const updateEmployee = async (
     if (updates.canBeManager !== undefined) dbUpdates.can_be_manager = updates.canBeManager;
     if (updates.managerId !== undefined) dbUpdates.manager_id = updates.managerId;
     if (updates.functionalRoles !== undefined) dbUpdates.functional_roles = updates.functionalRoles as string[] | null;
-    if (updates.managerScope !== undefined) dbUpdates.manager_scope = updates.managerScope || null;
+
     if (updates.locationId !== undefined) dbUpdates.location_id = updates.locationId;
     if (updates.locationName !== undefined) dbUpdates.location_name = updates.locationName;
 

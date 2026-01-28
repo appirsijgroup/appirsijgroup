@@ -79,7 +79,8 @@ const ConfirmationModal: React.FC<{
     message: React.ReactNode;
     confirmText?: string;
     confirmColorClass?: string;
-}> = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Ya, Konfirmasi", confirmColorClass = "bg-red-600 hover:bg-red-500" }) => {
+    isLoading?: boolean;
+}> = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Ya, Konfirmasi", confirmColorClass = "bg-red-600 hover:bg-red-500", isLoading = false }) => {
     if (!isOpen) return null;
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -87,8 +88,9 @@ const ConfirmationModal: React.FC<{
                 <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
                 <div className="text-blue-200 mb-4">{message}</div>
                 <div className="mt-6 flex justify-end space-x-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                    <button onClick={onConfirm} className={`px-4 py-2 rounded-lg font-semibold ${confirmColorClass}`}>
+                    <button onClick={onClose} disabled={isLoading} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50 disabled:cursor-not-allowed">Batal</button>
+                    <button onClick={onConfirm} disabled={isLoading} className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 ${confirmColorClass} disabled:opacity-50 disabled:cursor-not-allowed`}>
+                        {isLoading && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>}
                         {confirmText}
                     </button>
                 </div>
@@ -622,6 +624,7 @@ const MenteeManagement: React.FC<{
     const [search, setSearch] = useState('');
     const [unitFilter, setUnitFilter] = useState('all');
     const [professionFilter, setProfessionFilter] = useState('all');
+    const [isProcessing, setIsProcessing] = useState(false);
     const [confirmation, setConfirmation] = useState<{ isOpen: boolean; title: string; message: React.ReactNode; onConfirm: () => void; } | null>(null);
 
     // Pagination state
@@ -650,31 +653,39 @@ const MenteeManagement: React.FC<{
     }, [unassignedUsers, search, unitFilter, professionFilter]);
 
     const handleAddMentees = async () => {
-        // Show loading state or immediate feedback
-        const selectedIds = Array.from(selectedToAdd);
-        let successCount = 0;
-        let failCount = 0;
+        setIsProcessing(true);
+        try {
+            const selectedIds = Array.from(selectedToAdd);
+            let successCount = 0;
+            let failCount = 0;
 
-        for (const id of selectedIds) {
-            const result = await onUpdateProfile(id, { mentorId });
-            if (result) {
-                successCount++;
-            } else {
-                failCount++;
+            for (const id of selectedIds) {
+                const result = await onUpdateProfile(id, { mentorId });
+                // Assuming onUpdateProfile returns true on success, or undefined/void if not handled explicitly
+                if (result !== false) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
             }
-        }
 
-        // Close modal and reset selection
-        setIsAddModalOpen(false);
-        setSelectedToAdd(new Set());
+            // Close modal and reset selection
+            setIsAddModalOpen(false);
+            setSelectedToAdd(new Set());
 
-        // Show success message
-        if (successCount > 0 && failCount === 0) {
-            addToast?.(`${successCount} anggota bimbingan berhasil ditambahkan!`, 'success');
-        } else if (successCount > 0 && failCount > 0) {
-            addToast?.(`${successCount} berhasil, ${failCount} gagal ditambahkan`, 'error');
-        } else if (failCount > 0) {
-            addToast?.(`Gagal menambahkan ${failCount} anggota bimbingan`, 'error');
+            // Show success message
+            if (successCount > 0 && failCount === 0) {
+                addToast?.(`${successCount} anggota bimbingan berhasil ditambahkan!`, 'success');
+            } else if (successCount > 0 && failCount > 0) {
+                addToast?.(`${successCount} berhasil, ${failCount} gagal ditambahkan`, 'error');
+            } else if (failCount > 0) {
+                addToast?.(`Gagal menambahkan ${failCount} anggota bimbingan`, 'error');
+            }
+        } catch (error) {
+            console.error("Error adding mentees:", error);
+            addToast?.("Terjadi kesalahan saat menambahkan anggota.", 'error');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -684,8 +695,17 @@ const MenteeManagement: React.FC<{
             title: 'Konfirmasi Hapus Anggota',
             message: <>Apakah Anda yakin ingin menghapus <strong>{mentee.name}</strong> dari daftar bimbingan Anda?</>,
             onConfirm: async () => {
-                await onUpdateProfile(mentee.id, { mentorId: undefined });
-                setConfirmation(null);
+                setIsProcessing(true);
+                try {
+                    await onUpdateProfile(mentee.id, { mentorId: undefined });
+                    setConfirmation(null);
+                    addToast?.(`Berhasil menghapus ${mentee.name}`, 'success');
+                } catch (error) {
+                    console.error("Error removing mentee:", error);
+                    addToast?.("Gagal menghapus anggota.", 'error');
+                } finally {
+                    setIsProcessing(false);
+                }
             },
         });
     };
@@ -802,8 +822,9 @@ const MenteeManagement: React.FC<{
                         <div className="mt-6 flex justify-between items-center">
                             <p className="text-sm text-blue-200">Terpilih: {selectedToAdd.size} orang</p>
                             <div className="flex gap-3">
-                                <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                                <button onClick={handleAddMentees} disabled={selectedToAdd.size === 0} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold disabled:bg-gray-500">
+                                <button onClick={() => setIsAddModalOpen(false)} disabled={isProcessing} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50">Batal</button>
+                                <button onClick={handleAddMentees} disabled={selectedToAdd.size === 0 || isProcessing} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold disabled:bg-gray-500 flex items-center gap-2">
+                                    {isProcessing && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>}
                                     Tambahkan
                                 </button>
                             </div>
@@ -822,6 +843,7 @@ const MenteeManagement: React.FC<{
                     message={confirmation.message}
                     confirmText="Ya, Hapus"
                     confirmColorClass="bg-red-600 hover:bg-red-500"
+                    isLoading={isProcessing}
                 />
             )}
         </div>

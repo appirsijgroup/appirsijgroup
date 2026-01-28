@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- Form state resets in modals are intentional */
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
+import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type AuditLogEntry, Announcement, FunctionalRole, Hospital, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
 import {
@@ -38,7 +38,7 @@ import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
 import MutabaahReport from './MutabaahReport';
 import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
-import { useUIStore, useAppDataStore, useJobStructureStore } from '@/store/store';
+import { useUIStore, useAppDataStore } from '@/store/store';
 import { getEmployeesByIds } from '@/services/employeeService';
 
 // Lazy load heavy components that are only rendered conditionally
@@ -65,8 +65,7 @@ interface AdminDashboardProps {
     onDeleteSunnahIbadah: (ibadahId: string) => void;
     dailyActivitiesConfig: DailyActivity[];
     onUpdateDailyActivitiesConfig: (newConfig: DailyActivity[]) => void;
-    jobStructure: JobStructure;
-    onUpdateJobStructure: (newStructure: JobStructure) => void;
+
     auditLog: AuditLogEntry[];
     onLogAudit: (entry: Omit<AuditLogEntry, "id" | "timestamp">) => void;
     hospitals: Hospital[];
@@ -2419,11 +2418,11 @@ const ToggleSwitch: React.FC<{
 interface JabatanManagementProps {
     allUsers: Employee[];
     onUpdateProfile: (userId: string, updates: Partial<Employee>) => void;
-    onOpenScopeModal: (user: Employee) => void;
+
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile, onOpenScopeModal }) => {
+const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
@@ -2487,9 +2486,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                     : currentRoles.filter(r => r !== role);
 
                 const updates: Partial<Employee> = { functionalRoles: newRoles };
-                if (role === 'MANAJER' && !isAddingRole) {
-                    updates.managerScope = undefined; // Clear scope when role is removed
-                }
+
 
                 onUpdateProfile(user.id, updates);
                 setConfirmation(null);
@@ -2498,16 +2495,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
         });
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getScopeSummary = (scope?: ManagerScope) => {
-        if (!scope) return "Belum diatur";
-        const parts: string[] = [];
-        if ((scope.managedBagians?.length || 0) > 0) parts.push(`${scope.managedBagians?.length} Bagian`);
-        if ((scope.managedUnits?.length || 0) > 0) parts.push(`${scope.managedUnits?.length} Unit`);
-        if ((scope.additionalManagedUserIds?.length || 0) > 0) parts.push(`${scope.additionalManagedUserIds?.length} Karyawan`);
-        if (parts.length === 0) return "Belum diatur";
-        return parts.join(', ');
-    };
+
 
     return (
         <div>
@@ -2530,7 +2518,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                             {FUNCTIONAL_ROLES.map(role => (
                                 <th key={role} className="px-4 py-3 text-center whitespace-nowrap">{FUNCTIONAL_ROLE_LABELS[role]}</th>
                             ))}
-                            <th className="px-4 py-3 whitespace-nowrap">Lingkup Pengawasan (Manajer)</th>
+
                         </tr>
                     </thead>
                     <tbody>
@@ -2550,29 +2538,12 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                         </div>
                                     </td>
                                 ))}
-                                <td className="px-4 py-3">
-                                    {user.functionalRoles?.includes('MANAJER') ? (
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs text-gray-300 font-medium bg-white/5 px-2 py-1 rounded border border-white/10">
-                                                {getScopeSummary(user.managerScope)}
-                                            </span>
-                                            <button
-                                                onClick={() => onOpenScopeModal(user)}
-                                                className="p-2 rounded-lg bg-teal-500/10 text-teal-400 hover:bg-teal-500 hover:text-gray-900 transition-all shadow-lg hover:shadow-teal-500/20"
-                                                title="Atur Lingkup Pengawasan"
-                                            >
-                                                <Settings className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-gray-500 text-xs italic">N/A</span>
-                                    )}
-                                </td>
+
                             </tr>
                         ))}
                         {sortedUsers.length === 0 && (
                             <tr>
-                                <td colSpan={FUNCTIONAL_ROLES.length + 2} className="text-center p-8 text-blue-200">
+                                <td colSpan={FUNCTIONAL_ROLES.length + 1} className="text-center p-8 text-blue-200">
                                     Tidak ada karyawan yang cocok dengan pencarian.
                                 </td>
                             </tr>
@@ -3158,351 +3129,7 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
     );
 };
 
-interface ManagerScopeModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (userId: string, scope: ManagerScope) => void;
-    user: Employee | null;
-    allUsers: Employee[];
-    jobStructure: JobStructure;
-}
 
-const ManagerScopeModal: React.FC<ManagerScopeModalProps> = ({ isOpen, onClose, onSave, user, allUsers, jobStructure }) => {
-    const [selectedBagians, setSelectedBagians] = useState<Set<string>>(new Set());
-    const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
-    const [additionalIds, setAdditionalIds] = useState<Set<string>>(new Set());
-    const [searchUser, setSearchUser] = useState('');
-    const [activeTab, setActiveTab] = useState<'unit' | 'bagian' | 'spesifik'>('unit');
-
-    useEffect(() => {
-        if (isOpen && user) {
-            setSelectedBagians(new Set(user.managerScope?.managedBagians || []));
-            setSelectedUnits(new Set(user.managerScope?.managedUnits || []));
-            setAdditionalIds(new Set(user.managerScope?.additionalManagedUserIds || []));
-            setActiveTab('unit');
-        }
-    }, [isOpen, user]);
-
-    // Data Processing for logical grouping
-    const unitBagiansMap = useMemo(() => {
-        const map = new Map<string, string[]>();
-        console.log('🔍 ManagerScopeModal - jobStructure:', jobStructure);
-
-        if (jobStructure && jobStructure['NON MEDIS']) {
-            console.log('📋 NON MEDIS data:', jobStructure['NON MEDIS']);
-            jobStructure['NON MEDIS'].forEach(u => {
-                if (u.unit && u.bagians) {
-                    const bNames = u.bagians.map(b => typeof b === 'string' ? b : (b as any).bagian).filter(Boolean);
-                    if (bNames.length > 0) {
-                        map.set(u.unit, bNames);
-                        console.log(`✅ Added unit "${u.unit}" with ${bNames.length} bagians`);
-                    }
-                }
-            });
-        }
-        console.log('📊 Final unitBagiansMap:', Array.from(map.entries()));
-        return map;
-    }, [jobStructure]);
-
-    const allUnits = useMemo(() => {
-        const units = new Set<string>();
-        if (jobStructure) {
-            if (jobStructure.MEDIS) {
-                jobStructure.MEDIS.forEach(u => { if (u.unit) units.add(u.unit); });
-            }
-            if (jobStructure['NON MEDIS']) {
-                jobStructure['NON MEDIS'].forEach(u => { if (u.unit) units.add(u.unit); });
-            }
-        }
-        const result = Array.from(units).sort();
-        console.log('🏢 All units:', result);
-        return result;
-    }, [jobStructure]);
-
-    const filteredUsers = useMemo(() => {
-        if (!searchUser || !user) return [];
-        const lowerSearch = searchUser.toLowerCase();
-        return allUsers
-            .filter(u =>
-                u.id !== user.id &&
-                !additionalIds.has(u.id) &&
-                (u.name.toLowerCase().includes(lowerSearch) || u.id.toLowerCase().includes(lowerSearch))
-            )
-            .slice(0, 8);
-    }, [allUsers, searchUser, user?.id, additionalIds]);
-
-    const selectedUsersFullData = useMemo(() => {
-        const userMap = new Map(allUsers.map(u => [u.id, u]));
-        return Array.from(additionalIds).map(id => {
-            const found = userMap.get(id);
-            return found || { id, name: `Karyawan (${id})`, unit: 'Menunggu...', isPlaceholder: true } as any;
-        });
-    }, [allUsers, additionalIds]);
-
-    // Auto-load missing employees only (jobStructure comes from props)
-    useEffect(() => {
-        if (isOpen && additionalIds.size > 0) {
-            const missingIds = Array.from(additionalIds).filter(id => !allUsers.some(u => u.id === id));
-            if (missingIds.length > 0) {
-                console.log('🔄 Fetching missing employees:', missingIds);
-                getEmployeesByIds(missingIds).then(newEmployees => {
-                    if (newEmployees.length > 0) {
-                        const { setAllUsersData } = useAppDataStore.getState();
-                        setAllUsersData(prev => {
-                            const next = { ...prev };
-                            newEmployees.forEach(emp => {
-                                if (!next[emp.id]) {
-                                    next[emp.id] = { employee: emp, attendance: {}, history: {} };
-                                }
-                            });
-                            return next;
-                        });
-                    }
-                }).catch(console.error);
-            }
-        }
-    }, [isOpen, additionalIds, allUsers.length]);
-
-    if (!isOpen || !user) return null;
-
-    const toggleItem = (set: Set<string>, item: string, setter: (val: Set<string>) => void) => {
-        const newSet = new Set(set);
-        if (newSet.has(item)) newSet.delete(item);
-        else newSet.add(item);
-        setter(newSet);
-    };
-
-    const handleSave = () => {
-        onSave(user.id, {
-            managedBagians: Array.from(selectedBagians),
-            managedUnits: Array.from(selectedUnits),
-            additionalManagedUserIds: Array.from(additionalIds)
-        });
-        onClose();
-    };
-
-    return createPortal(
-        <div className="fixed inset-0 bg-[#020617]/80 backdrop-blur-md flex items-center justify-center p-4 z-100">
-            <div className="bg-[#0f172a] w-full max-w-6xl h-[85vh] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden text-slate-100">
-                {/* Header */}
-                <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-slate-900/50">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                            <Shield className="w-6 h-6 text-indigo-400" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold tracking-tight">Pengaturan Yurisdiksi Pengawasan</h2>
-                            <p className="text-xs text-slate-400">Menentukan cakupan anak buah untuk manajer: <span className="text-indigo-300 font-bold">{user.name}</span></p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-500 hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Panel 1: Sidebar Nav */}
-                    <div className="w-56 bg-slate-900/40 border-r border-white/5 flex flex-col p-4 space-y-2">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2">Pilih Metode</div>
-                        {[
-                            { id: 'unit', label: 'Per Unit', icon: Building2, color: 'text-emerald-400' },
-                            { id: 'bagian', label: 'Per Bagian', icon: Share2, color: 'text-blue-400' },
-                            { id: 'spesifik', label: 'Pilih Karyawan', icon: Users, color: 'text-amber-400' },
-                        ].map((t: any) => (
-                            <button
-                                key={t.id}
-                                onClick={() => setActiveTab(t.id)}
-                                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all ${activeTab === t.id ? 'bg-slate-700 text-white font-bold shadow-lg shadow-black/20 border border-white/5' : 'text-slate-400 hover:bg-slate-800'}`}
-                            >
-                                <t.icon className={`w-4 h-4 ${t.color}`} />
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Panel 2: Selection List */}
-                    <div className="flex-1 overflow-y-auto bg-slate-800/10 p-6 custom-scrollbar">
-                        {activeTab === 'unit' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                                    <Building2 className="w-4 h-4 text-emerald-400" /> Daftar Unit Kerja
-                                </h3>
-                                {allUnits.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {allUnits.map(unit => (
-                                            <div
-                                                key={unit}
-                                                onClick={() => toggleItem(selectedUnits, unit, setSelectedUnits)}
-                                                className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${selectedUnits.has(unit) ? 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-slate-900/40 border-white/5 hover:border-white/10'}`}
-                                            >
-                                                <span className={`text-sm ${selectedUnits.has(unit) ? 'text-emerald-100 font-bold' : 'text-slate-400'}`}>{unit}</span>
-                                                {selectedUnits.has(unit) && <Check className="w-4 h-4 text-emerald-400" />}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="py-20 text-center bg-slate-900/20 rounded-xl border border-dashed border-white/10">
-                                        <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm text-slate-500 font-medium">Data Unit Kerja tidak tersedia</p>
-                                        <p className="text-xs text-slate-600 mt-1">Pastikan struktur jabatan sudah diisi di menu Manajemen Pengguna → Struktur Jabatan</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'bagian' && (
-                            <div className="space-y-8">
-                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                                    <Share2 className="w-4 h-4 text-blue-400" /> Bagian per Unit Kerja
-                                </h3>
-                                {Array.from(unitBagiansMap.entries()).map(([unit, bagians]) => (
-                                    <div key={unit} className="space-y-3">
-                                        <div className="px-1 flex items-center gap-2">
-                                            <div className="h-4 w-1 bg-blue-500 rounded-full"></div>
-                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{unit}</span>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {bagians.map(bagian => (
-                                                <div
-                                                    key={bagian}
-                                                    onClick={() => toggleItem(selectedBagians, bagian, setSelectedBagians)}
-                                                    className={`p-3 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${selectedBagians.has(bagian) ? 'bg-blue-500/10 border-blue-500/30 text-blue-100 font-bold' : 'bg-slate-900/20 border-white/5 hover:bg-slate-800 text-slate-400'}`}
-                                                >
-                                                    <span className="truncate">{bagian}</span>
-                                                    {selectedBagians.has(bagian) && <Check className="w-3.5 h-3.5" />}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {activeTab === 'spesifik' && (
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-amber-400" /> Pencarian Karyawan Spesifik
-                                </h3>
-                                <div className="relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                    <input
-                                        type="text"
-                                        value={searchUser}
-                                        onChange={e => setSearchUser(e.target.value)}
-                                        placeholder="Cari Nama atau NIP..."
-                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl pl-11 pr-4 py-4 text-sm focus:ring-1 focus:ring-amber-500/50 outline-none transition-all"
-                                    />
-                                </div>
-
-                                {searchUser && (
-                                    <div className="bg-slate-900 border border-white/10 rounded-xl divide-y divide-white/5 overflow-hidden">
-                                        {filteredUsers.map(u => (
-                                            <button
-                                                key={u.id}
-                                                onClick={() => { toggleItem(additionalIds, u.id, setAdditionalIds); setSearchUser(''); }}
-                                                className="w-full flex items-center p-4 hover:bg-slate-800 text-left transition-colors"
-                                            >
-                                                <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center text-[10px] font-bold text-slate-400 mr-4">
-                                                    {u.name.charAt(0)}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-bold text-slate-200">{u.name}</div>
-                                                    <div className="text-[11px] text-slate-500">{u.id} • {u.unit}</div>
-                                                </div>
-                                                <PlusCircle className="w-5 h-5 text-amber-500" />
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Panel 3: Persistent Summary */}
-                    <div className="w-80 bg-slate-900/50 border-l border-white/10 flex flex-col overflow-hidden">
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Daftar Terpilih</span>
-                            <span className="bg-slate-950 text-slate-400 text-[10px] px-2 py-0.5 rounded border border-white/5 font-mono">
-                                {selectedUnits.size + selectedBagians.size + additionalIds.size}
-                            </span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-                            {/* Units Section */}
-                            {selectedUnits.size > 0 && (
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-bold text-emerald-500 uppercase flex items-center justify-between">Unit <Building2 className="w-3 h-3" /></div>
-                                    <div className="space-y-1">
-                                        {Array.from(selectedUnits).map(u => (
-                                            <div key={u} className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-2 flex items-center justify-between group">
-                                                <span className="text-[11px] text-emerald-100 truncate flex-1 pr-2">{u}</span>
-                                                <button onClick={() => toggleItem(selectedUnits, u, setSelectedUnits)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Bagians Section */}
-                            {selectedBagians.size > 0 && (
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-bold text-blue-500 uppercase flex items-center justify-between">Bagian <Share2 className="w-3 h-3" /></div>
-                                    <div className="space-y-1">
-                                        {Array.from(selectedBagians).map(b => (
-                                            <div key={b} className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-2 flex items-center justify-between group">
-                                                <span className="text-[11px] text-blue-100 truncate flex-1 pr-2">{b}</span>
-                                                <button onClick={() => toggleItem(selectedBagians, b, setSelectedBagians)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Employees Section */}
-                            {additionalIds.size > 0 && (
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-bold text-amber-500 uppercase flex items-center justify-between">Karyawan <Users className="w-3 h-3" /></div>
-                                    <div className="space-y-1">
-                                        {selectedUsersFullData.map(u => (
-                                            <div key={u.id} className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-2 flex items-center justify-between group">
-                                                <div className="flex-1 min-w-0 pr-2">
-                                                    <div className="text-[11px] font-bold text-amber-100 truncate">{u.name}</div>
-                                                    <div className="text-[9px] text-slate-500 font-mono italic">{u.id}</div>
-                                                </div>
-                                                <button onClick={() => toggleItem(additionalIds, u.id, setAdditionalIds)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {selectedUnits.size + selectedBagians.size + additionalIds.size === 0 && (
-                                <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-20">
-                                    <ClipboardCheck className="w-12 h-12 mb-3 text-slate-500" />
-                                    <p className="text-[11px] text-slate-500 font-medium">Belum ada item yang dipilih</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10 flex items-center justify-end gap-3 bg-slate-900/50">
-                    <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all">Batal</button>
-                    <button onClick={handleSave} className="px-10 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-indigo-600/10 transition-all active:scale-95 flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Simpan Konfigurasi
-                    </button>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
 
 interface ManageRoleAndAccessModalProps {
     isOpen: boolean;
@@ -3700,7 +3327,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         allUsersData, loggedInEmployee, onToggleStatus, onSetRole, onAddUser, onUpdateUser,
         onDeleteUser, onBulkUpdateUsers, activities, onAddActivity, onUpdateActivity, onDeleteActivity,
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
-        dailyActivitiesConfig, onUpdateDailyActivitiesConfig, jobStructure, onUpdateJobStructure, auditLog, onLogAudit,
+        dailyActivitiesConfig, onUpdateDailyActivitiesConfig, auditLog, onLogAudit,
         onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,
         mutabaahLockingMode, onUpdateMutabaahLockingMode, onLoadEmployees, onLoadHeavyData, isLoadingEmployees,
         pagination, paginatedEmployees
@@ -3787,8 +3414,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('ibadah-sunnah');
     const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah' | 'aktivasi'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [managingScopeForUser, setManagingScopeForUser] = useState<Employee | null>(null);
+
 
     const allUsers = useMemo(() => Object.values(allUsersData).map((d: { employee: Employee }) => d.employee), [allUsersData]);
 
@@ -3957,18 +3583,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         return false;
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const handleSaveManagerScope = (userId: string, newScope: ManagerScope) => {
-        onUpdateProfile(userId, { managerScope: newScope });
-        onLogAudit({
-            adminId: loggedInEmployee.id,
-            adminName: loggedInEmployee.name,
-            action: 'Perbarui Lingkup Manajer',
-            target: `User: ${allUsersData[userId]?.employee.name} (${userId})`,
-            reason: `Mengatur lingkup ke: ${JSON.stringify(newScope)}`,
-        });
-        setManagingScopeForUser(null);
-    };
+
 
     return (
         <div>
@@ -4043,7 +3658,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             </Suspense>
                         )}
                         {userManagementSubView === 'jabatan' && (
-                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} onOpenScopeModal={setManagingScopeForUser} />
+                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} />
                         )}
                     </div>
                 )}
@@ -4172,14 +3787,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 availableHospitals={hospitals}
             />
 
-            <ManagerScopeModal
-                isOpen={!!managingScopeForUser}
-                onClose={() => setManagingScopeForUser(null)}
-                onSave={handleSaveManagerScope}
-                user={managingScopeForUser}
-                allUsers={allUsers}
-                jobStructure={jobStructure}
-            />
+
         </div>
     );
 };

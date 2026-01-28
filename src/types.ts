@@ -151,11 +151,7 @@ export interface Hospital {
   isActive: boolean;
 }
 
-export interface ManagerScope {
-  managedBagians: string[];
-  managedUnits: string[];
-  additionalManagedUserIds: string[];
-}
+
 
 export interface Employee extends RawEmployee {
   id: string; // This is the NIP/NOPEG
@@ -181,7 +177,7 @@ export interface Employee extends RawEmployee {
   canBeKaUnit?: boolean; // Added for Ka. Unit role
   canBeDirut?: boolean;
   functionalRoles?: FunctionalRole[];
-  managerScope?: ManagerScope;
+
   locationId?: string;
   locationName?: string;
   readingHistory?: ReadingHistory[];
@@ -606,19 +602,7 @@ export interface MenteeData {
   monthlyActivities: Employee['monthlyActivities'];
 }
 
-export interface JobStructure {
-  MEDIS: {
-    unit: string;
-    professions: string[];
-  }[];
-  'NON MEDIS': {
-    unit: string;
-    bagians: {
-      bagian: string;
-      professions: string[];
-    }[];
-  }[];
-}
+
 
 export interface AuditLogEntry {
   id: string;

@@ -781,7 +781,8 @@ const UserModal: React.FC<{
                 professionCategory,
                 profession,
                 gender,
-                hospitalId
+                hospitalId,
+                role
             });
 
             if (result.success) {
@@ -887,10 +888,7 @@ const UserModal: React.FC<{
                                     <option value="user" className="text-black bg-white">User</option>
                                     <option value="admin" className="text-black bg-white">Admin</option>
                                     <option value="super-admin" className="text-black bg-white">Super Admin</option>
-                                    {/* 🔥 NEW: Only show Owner option if current user is owner */}
-                                    {loggedInEmployee?.role === 'owner' && (
-                                        <option value="owner" className="text-black bg-white">Owner</option>
-                                    )}
+                                    {/* Owner option removed as Super Admin is now highest role */}
                                 </select>
                             </div>
                             <div>
@@ -1364,11 +1362,13 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NIP / NOPEG</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NAMA</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit / Bagian</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Bagian</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Kategori</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Status Akun</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Peran Sistem</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Hak Akses & Otorisasi</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap font-bold text-teal-300">Akses RS</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
@@ -1389,14 +1389,10 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                         {user.name}
                                         <span className="block text-[10px] text-gray-400 font-normal uppercase">{user.gender}</span>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="text-xs">{user.unit}</div>
-                                        <div className="text-[10px] text-blue-300/70">{user.bagian}</div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="text-xs font-medium">{user.profession}</div>
-                                        <div className="text-[10px] text-gray-400">{user.professionCategory}</div>
-                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs">{user.unit}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs text-blue-300/70">{user.bagian}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-[10px] text-gray-400">{user.professionCategory}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">{user.profession}</td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center">
                                             <button
@@ -1415,29 +1411,37 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                         {getRoleLabel(user.role)}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <div className="flex flex-col gap-2 min-w-[150px]">
-                                            {/* Hospital Access Section */}
-                                            {isAnyAdmin({ ...user, role: user.role } as any) && (
-                                                <div className="flex items-center gap-2 p-1.5 bg-black/20 rounded border border-white/5">
-                                                    <div className="grow overflow-hidden text-center sm:text-left">
-                                                        {(user.role === 'super-admin') && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
-                                                            <span className="text-[10px] font-bold text-purple-300">Global (Semua RS)</span>
-                                                        ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {user.managedHospitalIds.map(id => (
-                                                                    <span key={id} className="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded text-[9px] border border-white/10">{hospitalMap.get(id) || id}</span>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] text-yellow-500 italic">Belum ada akses</span>
-                                                        )}
+                                        {/* Hospital Access Display ONLY */}
+                                        {isAnyAdmin({ ...user, role: user.role } as any) ? (
+                                            <div className="text-center">
+                                                {(user.role === 'super-admin') && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
+                                                    <span className="text-[10px] font-bold text-purple-300">Global (Semua RS)</span>
+                                                ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1 justify-center max-w-[200px] mx-auto">
+                                                        {user.managedHospitalIds.map(id => (
+                                                            <span key={id} className="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded text-[9px] border border-white/10">{hospitalMap.get(id) || id}</span>
+                                                        ))}
                                                     </div>
-                                                    {!hideManageButtonForSelf && (
-                                                        <button onClick={() => onManageAccess(user)} className="p-1 rounded bg-gray-600 hover:bg-teal-600 text-white transition-colors" title="Kelola Akses Rumah Sakit">
-                                                            <Building2 className="w-3 h-3" />
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                ) : (
+                                                    <span className="text-[10px] text-yellow-500 italic">Belum ada akses</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center text-gray-500 text-[10px]">-</div>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex flex-col gap-2 min-w-[150px] items-center">
+                                            {/* Manage Access Button moved here */}
+                                            {isAnyAdmin({ ...user, role: user.role } as any) && !hideManageButtonForSelf && (
+                                                <button
+                                                    onClick={() => onManageAccess(user)}
+                                                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded bg-gray-700 hover:bg-teal-600 text-white text-xs font-medium transition-colors border border-white/10"
+                                                    title="Kelola Akses Rumah Sakit"
+                                                >
+                                                    <Building2 className="w-3 h-3" />
+                                                    Kelola Akses
+                                                </button>
                                             )}
 
                                             {/* Role Change Buttons */}

@@ -37,11 +37,9 @@ export function canModifyUserRole(
   }
 
   if (modifier.role === 'super-admin') {
-    if (targetUser.role === 'owner') return false; // Cannot modify owner
-    if (targetUser.role === 'super-admin' && modifier.id !== targetUser.id) {
-      return false;
-    }
-    return newRole === 'admin' || newRole === 'user';
+    if (targetUser.role === 'owner') return false; // Cannot modify owner (legacy protection)
+    // Allow modifying other super-admins (except self role change check handled elsewhere)
+    return newRole === 'super-admin' || newRole === 'admin' || newRole === 'user';
   }
 
   if (modifier.role === 'admin') {
@@ -110,7 +108,7 @@ export function getAssignableRoles(modifier: Employee | null): Role[] {
     case 'owner':
       return ['super-admin', 'admin', 'user'];
     case 'super-admin':
-      return ['admin', 'user'];
+      return ['super-admin', 'admin', 'user'];
     case 'admin':
       return ['user'];
     default:
@@ -200,7 +198,8 @@ export function validateRoleChange(
       return 'Super Admin tidak dapat mengubah Super Admin lain';
     }
     if (modifierRole === 'super-admin' && newRole === 'super-admin') {
-      return 'Super Admin hanya dapat menetapkan role: Admin, User';
+      // Allow super-admin to promote to super-admin
+      return null;
     }
     if (modifierRole === 'admin' && newRole !== 'user') {
       return 'Admin hanya dapat menetapkan role: User';

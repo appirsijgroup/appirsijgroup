@@ -78,6 +78,7 @@ export interface RawEmployee {
   profession: string;
   gender: 'Laki-laki' | 'Perempuan';
   email?: string;
+  role?: Role;
 }
 
 // Role hierarchy (from highest to lowest):

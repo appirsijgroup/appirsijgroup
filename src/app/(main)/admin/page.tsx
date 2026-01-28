@@ -277,6 +277,9 @@ export default function AdminPage() {
             });
         } catch (err: unknown) {
             addToast('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
+        } finally {
+            // 🔥 Refresh paginated list to ensure UI is in sync
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false).catch(console.error);
         }
     };
 
@@ -288,7 +291,7 @@ export default function AdminPage() {
                 id,
                 email: `${id}@rsijsp.co.id`, // Generate email from ID
                 password: `hashed_${id}`, // Default password
-                role: 'user', // Default role for new employees
+                role: newEmployeeData.role || 'user', // Use provided role or default to user
                 gender: newEmployeeData.gender || 'Laki-laki', // Use provided gender
                 isActive: true,
                 lastVisitDate: new Date().toISOString().split('T')[0],
@@ -694,6 +697,9 @@ export default function AdminPage() {
             console.error('Failed to update profile:', error);
             addToast('❌ Gagal menyimpan pengaturan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
             return false;
+        } finally {
+            // 🔥 Refresh paginated list to ensure UI is in sync, especially for Access Rights (managedHospitalIds)
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false).catch(console.error);
         }
     };
 

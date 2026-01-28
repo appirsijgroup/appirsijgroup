@@ -1322,7 +1322,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     const getRoleLabel = (role: Role) => {
         const roleDisplay = getRoleDisplay(role);
         return (
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleDisplay.bgColor} ${roleDisplay.color}`}>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${roleDisplay.bgColor} ${roleDisplay.color}`}>
                 {roleDisplay.label}
             </span>
         );
@@ -1359,6 +1359,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NIP / NOPEG</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">NAMA</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap text-center">JK</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Bagian</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Kategori</th>
@@ -1366,6 +1367,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Status Akun</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Peran Sistem</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap font-bold text-teal-300">Akses RS</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Kelola Peran & Akses</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
@@ -1382,9 +1384,14 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                         {user.hospitalId || '-'}
                                     </td>
                                     <td className="px-4 py-3 font-mono whitespace-nowrap">{user.id}</td>
-                                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                                        {user.name}
-                                        <span className="block text-[10px] text-gray-400 font-normal uppercase">{user.gender}</span>
+                                    <td className="px-4 py-3 font-semibold whitespace-nowrap text-teal-100">{user.name}</td>
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${user.gender?.toLowerCase().startsWith('l')
+                                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                : 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                                            }`}>
+                                            {user.gender?.charAt(0).toUpperCase() || '-'}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-xs">{user.unit}</td>
                                     <td className="px-4 py-3 whitespace-nowrap text-xs text-blue-300/70">{user.bagian}</td>
@@ -1407,20 +1414,22 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                     <td className="px-4 py-3 text-center">
                                         {getRoleLabel(user.role)}
                                     </td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
                                         {/* Hospital Access Display ONLY */}
                                         {isAnyAdmin({ ...user, role: user.role } as any) ? (
-                                            <div className="text-center">
+                                            <div className="flex justify-center">
                                                 {(user.role === 'super-admin') && (!user.managedHospitalIds || user.managedHospitalIds.length === 0) ? (
-                                                    <span className="text-[10px] font-bold text-purple-300">Global (Semua RS)</span>
+                                                    <span className="text-[10px] font-bold text-purple-300 uppercase tracking-tight">Global (Semua RS)</span>
                                                 ) : user.managedHospitalIds && user.managedHospitalIds.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-1 justify-center max-w-[200px] mx-auto">
+                                                    <div className="flex gap-1 items-center">
                                                         {user.managedHospitalIds.map(id => (
-                                                            <span key={id} className="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded text-[9px] border border-white/10">{hospitalMap.get(id) || id}</span>
+                                                            <span key={id} className="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded text-[9px] border border-white/10 whitespace-nowrap uppercase font-mono">
+                                                                {hospitalMap.get(id) || id}
+                                                            </span>
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] text-yellow-500 italic">Belum ada akses</span>
+                                                    <span className="text-[10px] text-yellow-500 italic whitespace-nowrap">Belum ada akses</span>
                                                 )}
                                             </div>
                                         ) : (
@@ -1428,6 +1437,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
+<<<<<<< HEAD
                                         <div className="flex flex-col gap-2 min-w-[150px] items-center">
                                             {/* Unified Manage Role & Access Button */}
                                             {!isSelf && (
@@ -1438,9 +1448,24 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                                 >
                                                     <ShieldCheck className="w-4 h-4" />
                                                     Kelola Role & Akses
+=======
+                                        <div className="flex items-center justify-center">
+                                            {!isSelf ? (
+                                                <button
+                                                    onClick={() => onManageAccess(user)}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 hover:text-white border border-teal-500/30 text-xs font-bold transition-all shadow-lg hover:shadow-teal-500/20 group"
+                                                >
+                                                    <Shield className="w-4 h-4 text-teal-400 group-hover:scale-110 transition-transform" />
+                                                    Peran
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
                                                 </button>
+                                            ) : (
+                                                <div className="text-[10px] text-gray-500 italic text-center">Akun Sendiri</div>
                                             )}
+<<<<<<< HEAD
                                             {isSelf && <div className="text-[10px] text-gray-500 italic text-center">Akun Anda Sendiri</div>}
+=======
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
@@ -3521,29 +3546,51 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
     );
 };
 
+<<<<<<< HEAD
 // 🔥 NEW: Unified Modal Component
 const RoleAndAccessModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
+=======
+interface ManageRoleAndAccessModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (role: Role, hospitalIds: string[]) => Promise<boolean>;
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
     user: Employee | null;
     loggedInEmployee: Employee;
     availableHospitals: Hospital[];
+<<<<<<< HEAD
     onSaveRole: (userId: string, newRole: Role) => void;
     onSaveAccess: (hospitalIds: string[]) => Promise<boolean>;
 }> = ({ isOpen, onClose, user, loggedInEmployee, availableHospitals, onSaveRole, onSaveAccess }) => {
     const [selectedRole, setSelectedRole] = useState<Role>('user');
     const [selectedHospitalIds, setSelectedHospitalIds] = useState<Set<string>>(new Set());
+=======
+    loggedInEmployee: Employee;
+}
+
+const ManageRoleAndAccessModal: React.FC<ManageRoleAndAccessModalProps> = ({ isOpen, onClose, onSave, user, availableHospitals, loggedInEmployee }) => {
+    const [selectedRole, setSelectedRole] = useState<Role>('user');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen && user) {
             setSelectedRole(user.role);
+<<<<<<< HEAD
             setSelectedHospitalIds(new Set(user.managedHospitalIds || []));
+=======
+            setSelectedIds(new Set(user.managedHospitalIds || []));
+            setIsSaving(false);
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
         }
     }, [isOpen, user]);
 
     if (!isOpen || !user) return null;
 
+<<<<<<< HEAD
     const assignableRoles = getAssignableRoles(loggedInEmployee);
 
     const handleAccessToggle = (id: string) => {
@@ -3552,12 +3599,25 @@ const RoleAndAccessModal: React.FC<{
             if (next.has(id)) next.delete(id);
             else next.add(id);
             return next;
+=======
+    const handleToggleHospital = (hospitalId: string) => {
+        if (isSaving) return;
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(hospitalId)) {
+                newSet.delete(hospitalId);
+            } else {
+                newSet.add(hospitalId);
+            }
+            return newSet;
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
         });
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
+<<<<<<< HEAD
             // 1. Save Role if changed
             if (selectedRole !== user.role) {
                 // Use the onSaveRole passed from parent (which calls onInitiateSetRole -> opens confirmation or does it)
@@ -3565,6 +3625,11 @@ const RoleAndAccessModal: React.FC<{
                 // We might want to bypass that or chain it.
                 // ideally we just call the action.
                 onSaveRole(user.id, selectedRole);
+=======
+            const success = await onSave(selectedRole, Array.from(selectedIds));
+            if (success) {
+                onClose();
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
             }
 
             // 2. Save Access if Role allows it (Admin/Super Admin) and changed
@@ -3583,6 +3648,7 @@ const RoleAndAccessModal: React.FC<{
         }
     };
 
+<<<<<<< HEAD
     return createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-white/20">
@@ -3664,6 +3730,140 @@ const RoleAndAccessModal: React.FC<{
                     >
                         {isSaving && <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>}
                         Simpan Perubahan
+=======
+    const assignableRoles = getAssignableRoles(loggedInEmployee);
+
+    return createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-60">
+            <div className="bg-gray-900 border border-white/20 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] w-full max-w-2xl overflow-hidden animate-pop-in">
+                {/* Header */}
+                <div className="bg-white/5 px-6 py-5 border-b border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-teal-500/20 rounded-xl flex items-center justify-center border border-teal-500/30">
+                            <Shield className="w-5 h-5 text-teal-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Kelola Peran & Akses</h3>
+                            <p className="text-gray-300 text-xs">Mengatur otoritas untuk <span className="text-teal-400 font-bold">{user.name}</span></p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 bg-white/5 rounded-lg">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="p-6 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    {/* Role Selection */}
+                    <div className="space-y-3">
+                        <label className="text-xs font-bold text-teal-400 uppercase tracking-widest pl-1">Pilih Peran Utama</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {assignableRoles.map((role) => {
+                                const roleInfo = getRoleDisplay(role);
+                                const isSelected = selectedRole === role;
+                                const error = validateRoleChange(loggedInEmployee, user, role);
+
+                                if (error && !isSelected) return null;
+
+                                return (
+                                    <button
+                                        key={role}
+                                        type="button"
+                                        onClick={() => setSelectedRole(role)}
+                                        disabled={!!error && !isSelected}
+                                        className={`relative p-4 rounded-xl border-2 transition-all text-center flex flex-col items-center justify-center gap-1 ${isSelected
+                                            ? 'bg-teal-500/10 border-teal-500 text-white shadow-[0_0_15px_rgba(20,184,166,0.2)]'
+                                            : 'bg-white/5 border-white/10 hover:border-white/30 text-gray-200 hover:bg-white/10'
+                                            } ${error ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                    >
+                                        <span className="text-sm font-black uppercase tracking-tight">
+                                            {roleInfo.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Hospital Access */}
+                    {selectedRole !== 'user' && (
+                        <div className="space-y-4 pt-2">
+                            <div className="flex items-center justify-between px-1">
+                                <label className="text-xs font-bold text-teal-400 uppercase tracking-widest">Otoritas Rumah Sakit</label>
+                                <span className="text-[10px] bg-teal-500/20 text-teal-300 px-3 py-1 rounded-full font-black uppercase tracking-wider">
+                                    {selectedIds.size} RS Terpilih
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {availableHospitals.map((hospital) => {
+                                    const isChecked = selectedIds.has(hospital.id);
+                                    return (
+                                        <button
+                                            key={hospital.id}
+                                            type="button"
+                                            onClick={() => handleToggleHospital(hospital.id)}
+                                            className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${isChecked
+                                                ? 'bg-blue-500/10 border-blue-500/60 text-white shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                                                : 'bg-white/5 border-white/10 text-gray-300 hover:border-white/30 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${isChecked ? 'bg-blue-500 border-blue-500' : 'border-white/20'
+                                                }`}>
+                                                {isChecked && <Check className="w-4 h-4 text-white font-black" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-black truncate text-white leading-tight uppercase tracking-tight">{hospital.brand}</div>
+                                                <div className="text-[11px] text-gray-400 truncate leading-normal uppercase">{hospital.name}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {selectedRole === 'super-admin' && selectedIds.size === 0 && (
+                                <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
+                                    <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-amber-200/80 leading-relaxed">
+                                        <strong className="text-amber-400">Mode Global Aktif:</strong> Super Admin tanpa filter RS akan memiliki akses penuh ke seluruh jaringan Rumah Sakit dalam sistem.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {selectedRole === 'user' && (
+                        <div className="py-12 px-6 bg-white/5 border border-dashed border-white/10 rounded-2xl text-center flex flex-col items-center justify-center gap-3">
+                            <Shield className="w-10 h-10 text-gray-600 opacity-30" />
+                            <p className="text-gray-400 text-sm italic">Peran <strong>User</strong> merupakan hak akses standar dan tidak memerlukan konfigurasi wilayah kerja tambahan.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-5 bg-black/50 border-t border-white/10 flex items-center justify-between gap-4">
+                    <button
+                        onClick={onClose}
+                        disabled={isSaving}
+                        className="px-6 py-2.5 rounded-xl border border-white/10 text-sm font-bold text-gray-300 hover:bg-white/5 hover:text-white transition-all disabled:opacity-50"
+                    >
+                        Batalkan
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-8 py-3 rounded-xl bg-teal-500 hover:bg-teal-400 font-black text-gray-900 shadow-xl shadow-teal-500/20 active:scale-95 transition-all flex items-center justify-center gap-3 min-w-[200px] disabled:opacity-50"
+                    >
+                        {isSaving ? (
+                            <>
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <span>Menyimpan...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Simpan</span>
+                            </>
+                        )}
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
                     </button>
                 </div>
             </div>
@@ -3928,17 +4128,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         }
     };
 
-    const handleUpdateAdminAccess = async (hospitalIds: string[]) => {
+    const handleUpdateRoleAndAccess = async (newRole: Role, hospitalIds: string[]) => {
         if (!managingAccessFor) return false;
+
+        // 1. Update Role if changed
+        if (managingAccessFor.role !== newRole) {
+            onSetRole(managingAccessFor.id, newRole);
+        }
+
+        // 2. Update Hospital Access
         const success = await onUpdateProfile(managingAccessFor.id, { managedHospitalIds: hospitalIds });
 
         if (success) {
             onLogAudit({
                 adminId: loggedInEmployee.id,
                 adminName: loggedInEmployee.name,
-                action: 'Perbarui Akses Admin',
+                action: 'Perbarui Peran & Akses',
                 target: `User: ${managingAccessFor.name} (${managingAccessFor.id})`,
-                reason: `Mengatur akses ke RS: ${hospitalIds.join(', ') || 'Tidak ada'}`,
+                reason: `Role: ${newRole}, RS: ${hospitalIds.join(', ') || 'Global/None'}`,
             });
             return true;
         }
@@ -4158,14 +4365,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             />
             <PdfPreviewModal isOpen={isPdfPreviewOpen} onClose={() => setIsPdfPreviewOpen(false)} pdfDataUri={pdfDataUri} fileName={pdfFileName} />
             <EditAttendanceModal isOpen={!!editingAttendanceRecord} onClose={() => setEditingAttendanceRecord(null)} onSave={onAdminUpdateAttendance} record={editingAttendanceRecord} />
+<<<<<<< HEAD
 
             {/* Role & Access Modal - Unified management of Role and Hospital Access */}
             <RoleAndAccessModal
                 isOpen={!!managingAccessFor}
                 onClose={() => setManagingAccessFor(null)}
+=======
+            <ManageRoleAndAccessModal
+                isOpen={!!managingAccessFor}
+                onClose={() => setManagingAccessFor(null)}
+                onSave={handleUpdateRoleAndAccess}
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
                 user={managingAccessFor}
                 loggedInEmployee={loggedInEmployee}
                 availableHospitals={hospitals}
+<<<<<<< HEAD
                 onSaveRole={(userId, newRole) => {
                     // Triggers the standard role change process in parent
                     onSetRole(userId, newRole);
@@ -4174,6 +4389,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     // Directly update managedHospitalIds via profile update
                     return await onUpdateProfile(managingAccessFor!.id, { managedHospitalIds: hospitalIds });
                 }}
+=======
+                loggedInEmployee={loggedInEmployee}
+>>>>>>> 71a0ab6 (Refine unified role and access management UI - improve modal visibility, separate gender column, and enhance table readability)
             />
         </div>
     );

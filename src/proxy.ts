@@ -11,7 +11,6 @@ const protectedRoutes = [
   '/pengumuman',
   '/kegiatan',
   '/alquran',
-  '/bookmarks',
   '/panduan-doa',
   '/profile',
 ];

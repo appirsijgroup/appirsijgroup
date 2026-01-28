@@ -580,6 +580,7 @@ const updateMonthlyActivitiesFromScheduledActivity = async (
         // HANYA 'Umum' yang dicatat otomatis ke monthly activities
         const activityFieldMap: Record<string, string> = {
             'Umum': 'kegiatanTerjadwal',
+            'UMUM': 'kegiatanTerjadwal',
         };
 
         const fieldName = activityFieldMap[activity.activity_type];

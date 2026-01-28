@@ -32,7 +32,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         canBeManager: emp.can_be_manager,
         functionalRoles: emp.functional_roles,
         managerId: emp.manager_id,
-        managerScope: emp.manager_scope,
+        managerScope: typeof emp.manager_scope === 'string' ? JSON.parse(emp.manager_scope) : emp.manager_scope,
         locationId: emp.location_id,
         locationName: emp.location_name,
         readingHistory: emp.reading_history || [],
@@ -105,7 +105,25 @@ export const getAllEmployees = async (limit?: number): Promise<Employee[]> => {
     return employees.map((emp: any) => convertToCamelCase(emp));
 };
 
-// Get employee by ID
+// Get multiple employees by IDs
+export const getEmployeesByIds = async (ids: string[]): Promise<Employee[]> => {
+    if (!ids || ids.length === 0) return [];
+
+    const response = await fetch('/api/employees/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+        credentials: 'include',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch bulk employees');
+    }
+
+    const { employees } = await response.json();
+    return employees.map((emp: any) => convertToCamelCase(emp));
+};
 export const getEmployeeById = async (id: string): Promise<Employee | null> => {
 
     const { data, error } = await supabase
@@ -276,7 +294,7 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         can_be_manager: employee.canBeManager,
         manager_id: employee.managerId,
         functional_roles: employee.functionalRoles as string[] | null, // Keep this cast
-        manager_scope: employee.managerScope ? JSON.stringify(employee.managerScope) : null, // Keep this stringify
+        manager_scope: employee.managerScope || null,
         location_id: employee.locationId,
         location_name: employee.locationName,
 
@@ -354,7 +372,7 @@ export const updateEmployee = async (
     if (updates.canBeManager !== undefined) dbUpdates.can_be_manager = updates.canBeManager;
     if (updates.managerId !== undefined) dbUpdates.manager_id = updates.managerId;
     if (updates.functionalRoles !== undefined) dbUpdates.functional_roles = updates.functionalRoles as string[] | null;
-    if (updates.managerScope !== undefined) dbUpdates.manager_scope = updates.managerScope ? JSON.stringify(updates.managerScope) : null;
+    if (updates.managerScope !== undefined) dbUpdates.manager_scope = updates.managerScope || null;
     if (updates.locationId !== undefined) dbUpdates.location_id = updates.locationId;
     if (updates.locationName !== undefined) dbUpdates.location_name = updates.locationName;
 

@@ -155,6 +155,10 @@ export default function AdminPage() {
                 const hospitalsData = await getAllHospitals();
                 setHospitals(hospitalsData);
 
+                // 🔥 Load job structure from Supabase
+                const { fetchJobStructure } = useJobStructureStore.getState();
+                await fetchJobStructure();
+
 
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : 'Failed to load employees from database');

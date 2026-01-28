@@ -49,7 +49,6 @@ const allNavItemsRaw = [
     { id: 'panel-mentor', label: 'Panel Supervisi', icon: Users, href: '/panel-mentor' },
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, href: '/pengumuman' },
     { id: 'alquran', label: "Al-Qur'an", icon: BookOpen, href: '/alquran' },
-    { id: 'bookmarks', label: 'Bookmark', icon: Bookmark, href: '/bookmarks' },
     { id: 'panduan-doa', label: 'Panduan & Doa', icon: HandHeart, href: '/panduan-doa' },
     { id: 'admin', label: 'Admin Dashboard', icon: ShieldCheck, href: '/admin' },
     { id: 'profile', label: 'Profil', icon: UserCircle, href: '/profile' },

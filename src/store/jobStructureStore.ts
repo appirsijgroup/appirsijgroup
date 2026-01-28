@@ -5,6 +5,7 @@ import type { JobStructure } from '@/types';
 interface JobStructureState {
     jobStructure: JobStructure;
     updateJobStructure: (newStructure: JobStructure) => void;
+    fetchJobStructure: () => Promise<void>;
 }
 
 export const useJobStructureStore = create<JobStructureState>()(
@@ -13,6 +14,15 @@ export const useJobStructureStore = create<JobStructureState>()(
             jobStructure: { MEDIS: [], 'NON MEDIS': [] },
             updateJobStructure: (newStructure) => {
                 set({ jobStructure: newStructure });
+            },
+            fetchJobStructure: async () => {
+                try {
+                    const { getJobStructure } = await import('@/services/jobStructureService');
+                    const structure = await getJobStructure();
+                    set({ jobStructure: structure });
+                } catch (error) {
+                    console.error('Failed to fetch job structure:', error);
+                }
             },
         }),
         {

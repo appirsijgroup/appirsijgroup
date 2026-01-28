@@ -8,17 +8,22 @@ import type { JobStructure } from '@/types';
 
 // Get all job structure
 export const getJobStructure = async (): Promise<JobStructure> => {
-    const { data, error } = await supabase
-        .from('job_structure')
-        .select('*');
+    const response = await fetch('/api/admin/job-structure', {
+        credentials: 'include'
+    });
 
-    if (error) throw error;
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch job structure');
+    }
+
+    const { data } = await response.json();
 
     // Transform database rows to JobStructure format
     const structure: JobStructure = { MEDIS: [], 'NON MEDIS': [] };
 
     (data as any)?.forEach((item: any) => {
-        const category = item.profession_category as 'MEDIS' | 'NON MEDIS';
+        const category = (item.profession_category || '').toUpperCase() as 'MEDIS' | 'NON MEDIS';
 
         if (category === 'MEDIS') {
             structure.MEDIS.push({

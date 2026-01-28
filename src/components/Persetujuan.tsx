@@ -189,6 +189,10 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
     // 🔥 FIX: Load detailed data when a report is selected (target only the relevant month)
     useEffect(() => {
         if (selectedSubmission && loadDetailedEmployeeData) {
@@ -296,7 +300,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         });
 
         // 2. Map Tadarus Requests
-        const tadarus = pendingTadarusRequests.map(r => ({
+        const tadarus = (pendingTadarusRequests || []).map((r: any) => ({
             id: r.id,
             type: 'tadarus' as const,
             menteeId: r.menteeId,
@@ -310,7 +314,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         }));
 
         // 3. Map Missed Prayer Requests
-        const missedPrayers = pendingMissedPrayerRequests.map(r => ({
+        const missedPrayers = (pendingMissedPrayerRequests || []).map((r: any) => ({
             id: r.id,
             type: 'prayer' as const,
             menteeId: r.menteeId,
@@ -336,7 +340,6 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
             } else if (statusFilter === 'pending') {
                 statusMatch = item.canReview;
             } else if (statusFilter === 'approved') {
-                // For reports, it's approved final or passed this user
                 if (item.type === 'report') {
                     const s = item.originalData as MonthlyReportSubmission;
                     const mentee = allUsersData[s.menteeId]?.employee;
@@ -361,13 +364,20 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         });
     }, [unifiedHistory, statusFilter, filterYear, filterMonth, loggedInEmployee, allUsersData]);
 
+    const totalPages = Math.ceil(filteredHistoryItems.length / itemsPerPage);
+    const paginatedHistoryItems = filteredHistoryItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, filterYear, filterMonth]);
 
     const menteeDataForDetail = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
     // Separate pending manual requests for the top section (dashboard style)
     const activePendingManual = useMemo(() => {
-        const tadarus = pendingTadarusRequests.filter(r => r.status === 'pending');
-        const prayer = pendingMissedPrayerRequests.filter(r => r.status === 'pending');
+        const tadarus = (pendingTadarusRequests || []).filter((r: any) => r.status === 'pending');
+        const prayer = (pendingMissedPrayerRequests || []).filter((r: any) => r.status === 'pending');
         return { tadarus, prayer };
     }, [pendingTadarusRequests, pendingMissedPrayerRequests]);
 
@@ -472,8 +482,8 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {filteredHistoryItems.length > 0 ? (
-                                        filteredHistoryItems.map(item => (
+                                    {paginatedHistoryItems.length > 0 ? (
+                                        paginatedHistoryItems.map(item => (
                                             <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5 transition-colors group">
                                                 <td className="px-4 py-4 font-semibold whitespace-nowrap">
                                                     <div className="flex flex-col">
@@ -535,6 +545,39 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    ←
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                                        Hal {currentPage} dari {totalPages}
+                                    </span>
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    →
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="mt-4 text-center">
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                                Total {filteredHistoryItems.length} data riwayat persetujuan
+                            </p>
                         </div>
                     </div>
                 </div>

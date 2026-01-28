@@ -3,14 +3,13 @@
 /* eslint-disable react-hooks/set-state-in-effect -- Form state resets in modals are intentional */
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, AudienceType, AudienceRules, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
+import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type JobStructure, type AuditLogEntry, Announcement, FunctionalRole, Hospital, ManagerScope, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
 import {
     Search,
     FileDown,
     FileSpreadsheet,
-    CalendarDays,
     User,
     Upload,
     Pencil,
@@ -29,7 +28,9 @@ import {
     RefreshCw,
     Check,
     ClipboardCheck,
-    Settings
+    Settings,
+    Share2,
+    Briefcase
 } from 'lucide-react';
 import { availableIconsForSunnah } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
@@ -37,7 +38,8 @@ import PdfPreviewModal from './PdfPreviewModal';
 import ConfirmationModal from './ConfirmationModal';
 import MutabaahReport from './MutabaahReport';
 import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
-import { useUIStore } from '@/store/store';
+import { useUIStore, useAppDataStore, useJobStructureStore } from '@/store/store';
+import { getEmployeesByIds } from '@/services/employeeService';
 
 // Lazy load heavy components that are only rendered conditionally
 const RelationManagement = lazy(() => import('./RelationManagement'));
@@ -104,11 +106,11 @@ interface AdminDashboardProps {
     };
 }
 
-type DestructiveAction = 'delete-user' | 'delete-activity' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
+type DestructiveAction = 'delete-user' | 'delete-attendance' | 'delete-sunnah-ibadah' | 'toggle-status' | 'set-role' | 'delete-hospital' | 'toggle-hospital-status';
 type DateFilterType = 'range' | 'monthly' | 'yearly' | 'all';
 
 type UserManagementSubView = 'database' | 'relasi' | 'jabatan';
-type ContentManagementSubView = 'kegiatan' | 'ibadah-sunnah' | 'mutabaah-automation';
+type ContentManagementSubView = 'ibadah-sunnah' | 'mutabaah-automation';
 
 const DestructiveConfirmationModal: React.FC<{
     isOpen: boolean;
@@ -265,432 +267,7 @@ const MultiSelectDropdown: React.FC<{
     );
 };
 
-// --- Activity Management Modal ---
-const ActivityModal: React.FC<{
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onUpdate: (activityId: string, updates: Partial<Activity>) => void;
-    existingActivity: Activity | null;
-    allEmployees: Employee[];
-    hospitals: Hospital[];
-}> = ({ isOpen, onClose, onSave, onUpdate, existingActivity, allEmployees, hospitals }) => {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [date, setDate] = useState('');
-    const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
-    const [zoomUrl, setZoomUrl] = useState('');
-    const [youtubeUrl, setYoutubeUrl] = useState('');
-    const [activityType, setActivityType] = useState<Activity['activityType']>('Umum');
-    const [error, setError] = useState('');
 
-    // New state for audience targeting
-    const [audienceType, setAudienceType] = useState<AudienceType>('public');
-    const [audienceRules, setAudienceRules] = useState<AudienceRules>({});
-    const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
-    const [participantSearch, setParticipantSearch] = useState('');
-
-    useEffect(() => {
-        if (isOpen) {
-            if (existingActivity) {
-                setName(existingActivity.name);
-                setDescription(existingActivity.description ?? '');
-                setDate(existingActivity.date);
-                setStartTime(existingActivity.startTime);
-                setEndTime(existingActivity.endTime);
-                setZoomUrl(existingActivity.zoomUrl || '');
-                setYoutubeUrl(existingActivity.youtubeUrl || '');
-                setActivityType(existingActivity.activityType || 'Umum');
-                setAudienceType(existingActivity.audienceType || 'public');
-                setAudienceRules(existingActivity.audienceRules || {});
-                setSelectedParticipants(new Set(existingActivity.participantIds || []));
-            } else {
-                setName('');
-                setDescription('');
-                const today = new Date().toISOString().split('T')[0];
-                setDate(today);
-                setStartTime('08:00');
-                setEndTime('09:00');
-                setZoomUrl('');
-                setYoutubeUrl('');
-                setActivityType('Umum');
-                setAudienceType('public');
-                setAudienceRules({});
-                setSelectedParticipants(new Set());
-            }
-            setError('');
-            setParticipantSearch('');
-        }
-    }, [isOpen, existingActivity]);
-
-    const handleParticipantToggle = (employeeId: string) => {
-        setSelectedParticipants(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(employeeId)) {
-                newSet.delete(employeeId);
-            } else {
-                newSet.add(employeeId);
-            }
-            return newSet;
-        });
-    };
-
-    const handleSubmit = () => {
-        if (!name || !date || !startTime || !endTime) {
-            setError('Nama, tanggal, dan waktu mulai/selesai wajib diisi.');
-            return;
-        }
-        if (startTime >= endTime) {
-            setError('Waktu mulai harus sebelum waktu selesai.');
-            return;
-        }
-        setError('');
-
-        const participantIds: string[] = audienceType === 'manual' ? [...selectedParticipants] : [];
-        const finalAudienceRules: AudienceRules | undefined = audienceType === 'rules' ? audienceRules : undefined;
-
-        const payload: Partial<Activity> = {
-            name, description, date, startTime, endTime,
-            zoomUrl: zoomUrl.trim(), youtubeUrl: youtubeUrl.trim(), activityType,
-            audienceType,
-            audienceRules: finalAudienceRules,
-            participantIds,
-        };
-
-        if (existingActivity) {
-            if (existingActivity.status === 'postponed' || existingActivity.status === 'cancelled') {
-                payload.status = 'scheduled';
-            }
-            onUpdate(existingActivity.id, payload);
-        } else {
-            onSave(payload as Omit<Activity, 'id' | 'createdBy' | 'createdByName'>);
-        }
-        onClose();
-    };
-
-    const filteredEmployees = useMemo(() => {
-        if (!participantSearch) return allEmployees;
-        const search = participantSearch.toLowerCase();
-        return allEmployees.filter(emp => emp.name.toLowerCase().includes(search) || emp.id.includes(search));
-    }, [allEmployees, participantSearch]);
-
-    if (!isOpen) return null;
-
-    return createPortal(
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-pop-in">
-            <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-5xl border border-white/20 h-[90vh] flex flex-col">
-                <h3 className="text-xl font-bold mb-4 text-white shrink-0">{existingActivity ? 'Edit Kegiatan' : 'Tambah Kegiatan Baru'}</h3>
-
-                <div className="grow overflow-y-auto pr-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left Column: Activity Details */}
-                    <div className="space-y-4">
-                        <h4 className="text-lg font-semibold text-teal-300 border-b border-white/10 pb-2">Detail Kegiatan</h4>
-                        <div>
-                            <label className="text-sm font-medium text-blue-100 block mb-1">Nama Kegiatan</label>
-                            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-blue-100 block mb-1">Deskripsi (Opsional)</label>
-                            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"></textarea>
-                        </div>
-                        <div>
-                            <label className="text-sm font-medium text-blue-100 block mb-1">Jenis Kegiatan</label>
-                            <select value={activityType} onChange={e => setActivityType(e.target.value as Activity['activityType'])} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white">
-                                <option value="Umum" className="text-black bg-white">Umum</option>
-                                <option value="Kajian Selasa" className="text-black bg-white">Kajian Selasa</option>
-                                <option value="Pengajian Persyarikatan" className="text-black bg-white">Pengajian Persyarikatan</option>
-                            </select>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-blue-100 block mb-1">Tanggal</label>
-                                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="text-sm font-medium text-blue-100 block mb-1">Mulai</label>
-                                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }} />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-blue-100 block mb-1">Selesai</label>
-                                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" style={{ colorScheme: 'dark' }} />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-blue-100 block mb-1">Tautan Zoom (Opsional)</label>
-                                <input type="url" value={zoomUrl} onChange={e => setZoomUrl(e.target.value)} placeholder="https://zoom.us/j/..." className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium text-blue-100 block mb-1">Tautan YouTube (Opsional)</label>
-                                <input type="url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column: Audience Targeting */}
-                    <div className="space-y-4 flex flex-col">
-                        <h4 className="text-lg font-semibold text-teal-300 border-b border-white/10 pb-2">Target Peserta</h4>
-                        <div className="flex items-center space-x-2 sm:space-x-4 bg-black/20 p-1.5 rounded-full">
-                            <button onClick={() => setAudienceType('public')} className={`flex-1 text-center py-2 px-4 rounded-full font-semibold transition-all duration-300 text-sm ${audienceType === 'public' ? 'bg-teal-500 text-white shadow-md' : 'text-blue-200 hover:bg-white/20'}`}>Publik</button>
-                            <button onClick={() => setAudienceType('rules')} className={`flex-1 text-center py-2 px-4 rounded-full font-semibold transition-all duration-300 text-sm ${audienceType === 'rules' ? 'bg-teal-500 text-white shadow-md' : 'text-blue-200 hover:bg-white/20'}`}>Target Atribut</button>
-                            <button onClick={() => setAudienceType('manual')} className={`flex-1 text-center py-2 px-4 rounded-full font-semibold transition-all duration-300 text-sm ${audienceType === 'manual' ? 'bg-teal-500 text-white shadow-md' : 'text-blue-200 hover:bg-white/20'}`}>Pilih Manual</button>
-                        </div>
-
-                        <div className="grow overflow-hidden flex flex-col">
-                            {audienceType === 'public' && (
-                                <div className="grow flex items-center justify-center p-4 bg-black/20 rounded-lg text-center">
-                                    <p className="text-blue-200">Kegiatan ini akan dapat dilihat oleh <br /> <strong className="text-white">semua karyawan di seluruh rumah sakit</strong>.</p>
-                                </div>
-                            )}
-
-                            {audienceType === 'rules' && (
-                                <div className="p-4 bg-black/20 rounded-lg space-y-4 overflow-y-auto">
-                                    <p className="text-xs text-blue-200">Karyawan akan melihat kegiatan ini jika cocok dengan SEMUA kriteria yang dipilih.</p>
-                                    <MultiSelectDropdown
-                                        label="Rumah Sakit"
-                                        options={hospitals.map(h => ({ value: h.id, label: `${h.brand} - ${h.name}` }))}
-                                        selectedValues={audienceRules.hospitalIds || []}
-                                        onSelectionChange={(newSelected) => setAudienceRules(prev => ({ ...prev, hospitalIds: newSelected }))}
-                                    />
-                                    <MultiSelectDropdown
-                                        label="Unit Kerja"
-                                        options={Array.from(new Set(allEmployees.map(e => e.unit))).sort().map(unit => ({ value: unit, label: unit }))}
-                                        selectedValues={audienceRules.units || []}
-                                        onSelectionChange={(newSelected) => setAudienceRules(prev => ({ ...prev, units: newSelected }))}
-                                    />
-                                    <MultiSelectDropdown
-                                        label="Bagian"
-                                        options={Array.from(new Set(allEmployees.map(e => e.bagian))).sort().map(bagian => ({ value: bagian, label: bagian }))}
-                                        selectedValues={audienceRules.bagians || []}
-                                        onSelectionChange={(newSelected) => setAudienceRules(prev => ({ ...prev, bagians: newSelected }))}
-                                    />
-                                    <MultiSelectDropdown
-                                        label="Kategori Profesi"
-                                        options={[{ value: 'MEDIS', label: 'MEDIS' }, { value: 'NON MEDIS', label: 'NON MEDIS' }]}
-                                        selectedValues={audienceRules.professionCategories || []}
-                                        onSelectionChange={(newSelected) => setAudienceRules(prev => ({ ...prev, professionCategories: newSelected as ('MEDIS' | 'NON MEDIS')[] }))}
-                                    />
-                                </div>
-                            )}
-
-                            {audienceType === 'manual' && (
-                                <div className="space-y-2 grow flex flex-col">
-                                    <div className="relative shrink-0">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input type="text" placeholder="Cari nama atau NIP..." value={participantSearch} onChange={e => setParticipantSearch(e.target.value)} className="w-full bg-white/15 border border-white/30 rounded-lg p-2.5 pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                                    </div>
-                                    <div className="grow overflow-y-auto border border-white/20 rounded-lg p-2 space-y-1 bg-black/20">
-                                        {filteredEmployees.map(emp => (
-                                            <label key={emp.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-white/10 cursor-pointer">
-                                                <input type="checkbox" checked={selectedParticipants.has(emp.id)} onChange={() => handleParticipantToggle(emp.id)} className="w-4 h-4 rounded bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500" />
-                                                <span className="text-white font-medium">{emp.name} <span className="text-xs text-gray-400">({emp.id})</span></span>
-                                            </label>
-                                        ))}
-                                        {filteredEmployees.length === 0 && <p className="text-center text-sm text-gray-400 p-4">Karyawan tidak ditemukan.</p>}
-                                    </div>
-                                    <p className="text-xs text-blue-200 text-right shrink-0 pt-1">Terpilih: {selectedParticipants.size} orang</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-6 shrink-0">
-                    {error && <p className="text-red-400 text-sm text-center mb-3">{error}</p>}
-                    <div className="flex justify-end space-x-3">
-                        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Batal</button>
-                        <button onClick={handleSubmit} className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold">Simpan Kegiatan</button>
-                    </div>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
-
-// --- Activity Management Component ---
-const ActivityManagement: React.FC<{
-    activities: Activity[];
-    allEmployees: Employee[];
-    onOpenModal: (activity?: Activity | null) => void;
-    onInitiateDelete: (activity: Activity) => void;
-}> = ({ activities, allEmployees, onOpenModal, onInitiateDelete }) => {
-
-    const sortedActivities = useMemo(() => {
-        return [...activities].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.startTime.localeCompare(a.startTime));
-    }, [activities]);
-
-    const getAudienceSummary = (activity: Activity) => {
-        switch (activity.audienceType) {
-            case 'public':
-                return <span className="text-green-300">Publik (Semua)</span>;
-            case 'manual':
-                return <span className="text-yellow-300">{activity.participantIds.length} Orang</span>;
-            case 'rules':
-                const ruleCount = Object.values(activity.audienceRules || {}).filter(val => Array.isArray(val) && val.length > 0).length;
-                return <span className="text-purple-300">Target Aturan ({ruleCount} kriteria)</span>;
-            default:
-                return (!activity.participantIds || activity.participantIds.length === 0) ?
-                    <span className="text-green-300">Publik (Semua)</span> :
-                    <span className="text-yellow-300">{activity.participantIds.length} Orang</span>;
-        }
-    };
-
-    return (
-        <div>
-            <div className="flex justify-end mb-4">
-                <button onClick={() => onOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
-                    <CalendarDays className="w-5 h-5" />
-                    Tambah Kegiatan Baru
-                </button>
-            </div>
-
-            <div className="overflow-x-auto rounded-lg border border-white/20">
-                <table className="min-w-full text-sm text-left text-white">
-                    <thead className="bg-white/10 text-xs uppercase text-blue-200">
-                        <tr>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama Kegiatan</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Tanggal</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Peserta</th>
-                            <th scope="col" className="px-4 py-3 whitespace-nowrap">Dibuat Oleh</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedActivities.map(activity => (
-                            <tr key={activity.id} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{activity.name}</td>
-                                <td className="px-4 py-3">{new Date(activity.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}<br /><span className="text-xs text-gray-400">{activity.startTime} - {activity.endTime}</span></td>
-                                <td className="px-4 py-3">
-                                    {getAudienceSummary(activity)}
-                                </td>
-                                <td className="px-4 py-3 text-blue-200 whitespace-nowrap">{activity.createdByName}</td>
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <button onClick={() => onOpenModal(activity)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">Edit</button>
-                                        <button onClick={() => onInitiateDelete(activity)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors">Hapus</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {sortedActivities.length === 0 && (
-                            <tr><td colSpan={5} className="text-center p-8 text-blue-200">Belum ada kegiatan yang dibuat.</td></tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-};
-
-// --- Kajian Management Component ---
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const KajianManagement: React.FC<{
-    activities: Activity[];
-    onAddActivity: (data: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onOpenEditModal: (activity: Activity) => void;
-    onInitiateUpdateStatus: (activity: Activity, status: 'postponed' | 'cancelled') => void;
-}> = ({ activities, onAddActivity, onOpenEditModal, onInitiateUpdateStatus }) => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-
-    const tuesdaysOfMonth = useMemo(() => {
-        const tuesdays: Date[] = [];
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        const date = new Date(year, month, 1);
-        while (date.getMonth() === month) {
-            if (date.getDay() === 2) { // 2 is Tuesday
-                tuesdays.push(new Date(date));
-            }
-            date.setDate(date.getDate() + 1);
-        }
-        return tuesdays;
-    }, [currentMonth]);
-
-    const handleScheduleKajian = (date: Date) => {
-        const dateString = date.toISOString().split('T')[0];
-        onAddActivity({
-            name: 'Kajian Selasa Pagi Online',
-            description: 'Kajian rutin mingguan yang diadakan setiap hari Selasa.',
-            date: dateString,
-            startTime: '08:00',
-            endTime: '09:00',
-            participantIds: [],
-            audienceType: 'public',
-            zoomUrl: '',
-            youtubeUrl: '',
-            activityType: 'Kajian Selasa',
-            status: 'scheduled',
-        });
-    };
-
-    const navigateMonth = (direction: 'prev' | 'next') => {
-        setCurrentMonth(prev => {
-            const newDate = new Date(prev);
-            newDate.setDate(1); // Avoid day-of-month issues
-            newDate.setMonth(newDate.getMonth() + (direction === 'prev' ? -1 : 1));
-            return newDate;
-        });
-    };
-
-    return (
-        <div>
-            <div className="flex items-center justify-between mb-6 bg-black/20 p-2 rounded-full">
-                <button onClick={() => navigateMonth('prev')} className="px-4 py-2 rounded-full hover:bg-white/10 transition-colors">&larr; Sebelumnya</button>
-                <span className="font-bold text-lg text-teal-300">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-                <button onClick={() => navigateMonth('next')} className="px-4 py-2 rounded-full hover:bg-white/10 transition-colors">Berikutnya &rarr;</button>
-            </div>
-            <div className="space-y-3">
-                {tuesdaysOfMonth.map(tuesday => {
-                    const dateString = tuesday.toISOString().split('T')[0];
-                    const existingKajian = activities.find(act => act.date === dateString && act.activityType === 'Kajian Selasa');
-
-                    const statusConfig = {
-                        scheduled: { text: "Kajian sudah dijadwalkan", color: "text-green-400" },
-                        postponed: { text: "Kajian ditunda", color: "text-yellow-400" },
-                        cancelled: { text: "Kajian dibatalkan", color: "text-red-400" },
-                    };
-                    const currentStatus = existingKajian?.status || 'scheduled';
-
-                    return (
-                        <div key={dateString} className="bg-white/5 p-4 rounded-lg flex items-center justify-between">
-                            <div>
-                                <p className="font-semibold text-white">{tuesday.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                                {existingKajian ? (
-                                    <p className={`text-xs font-semibold ${statusConfig[currentStatus].color}`}>{statusConfig[currentStatus].text}</p>
-                                ) : (
-                                    <p className="text-xs text-gray-400">Belum ada kajian terjadwal</p>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {existingKajian ? (
-                                    <>
-                                        <button onClick={() => onOpenEditModal(existingKajian)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-colors">
-                                            {currentStatus === 'scheduled' ? 'Ubah' : 'Aktifkan'}
-                                        </button>
-                                        {currentStatus === 'scheduled' && (
-                                            <button onClick={() => onInitiateUpdateStatus(existingKajian, 'postponed')} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-yellow-600 hover:bg-yellow-500 text-white transition-colors">Tunda</button>
-                                        )}
-                                        {currentStatus !== 'cancelled' && (
-                                            <button onClick={() => onInitiateUpdateStatus(existingKajian, 'cancelled')} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors">Batalkan</button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <button onClick={() => handleScheduleKajian(tuesday)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-teal-600 hover:bg-teal-500 text-white transition-colors">
-                                        Jadwalkan Kajian
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
 
 // --- User Modal for Add/Edit ---
 const UserModal: React.FC<{
@@ -1515,8 +1092,9 @@ interface AkunManagementProps {
 const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateToggleStatus }) => {
     const [activationFilter, setActivationFilter] = useState<'all' | 'active' | 'inactive'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const ITEMS_PER_BATCH = 15;
-    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 15;
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
     const filteredUsers = useMemo(() => {
@@ -1538,15 +1116,16 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [allUsers, activationFilter, searchTerm, currentMonthKey]);
 
-    const displayUsers = filteredUsers.slice(0, visibleCount);
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const displayUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const filterButtonClass = (filterType: 'all' | 'active' | 'inactive') =>
         `px-4 py-2 text-sm font-semibold rounded-full transition-colors duration-200 ${activationFilter === filterType ? 'bg-teal-500 text-white' : 'bg-white/10 hover:bg-white/20 text-blue-200'
         }`;
 
-    // Reset visible count when filters change
+    // Reset page count when filters change
     useEffect(() => {
-        setVisibleCount(ITEMS_PER_BATCH);
+        setCurrentPage(1);
     }, [activationFilter, searchTerm]);
 
     return (
@@ -1625,22 +1204,36 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                 </table>
             </div>
 
-            {/* Load More Pattern */}
-            <div className="mt-8 flex flex-col items-center gap-4">
-                {visibleCount < filteredUsers.length ? (
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
                     <button
-                        onClick={() => setVisibleCount(prev => prev + ITEMS_PER_BATCH)}
-                        className="px-10 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 shadow-lg transition-all transform hover:scale-105 flex items-center gap-2"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Users className="w-5 h-5 text-teal-400" />
-                        Tampilkan Akun Selanjutnya
+                        ←
                     </button>
-                ) : filteredUsers.length > 0 && (
-                    <p className="text-gray-500 text-sm italic">Semua akun telah ditampilkan</p>
-                )}
 
+                    <div className="flex items-center gap-1">
+                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
+                </div>
+            )}
+
+            <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
-                    Menampilkan {displayUsers.length} dari {filteredUsers.length} akun
+                    Total {filteredUsers.length} akun karyawan
                 </p>
             </div>
         </div>
@@ -2841,8 +2434,8 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     } | null>(null);
 
     // Pagination state
-    const ITEMS_PER_BATCH = 15;
-    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_BATCH);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 15;
 
     const FUNCTIONAL_ROLE_LABELS: Record<FunctionalRole, string> = {
         'BPH': 'BPH',
@@ -2866,11 +2459,12 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     }, [filteredUsers]);
 
     // Pagination logic
-    const paginatedUsers = sortedUsers.slice(0, visibleCount);
+    const totalPages = Math.ceil(sortedUsers.length / itemsPerPage);
+    const paginatedUsers = sortedUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    // Reset to initial batch when search term changes
+    // Reset to initial page when search term changes
     useEffect(() => {
-        setVisibleCount(ITEMS_PER_BATCH);
+        setCurrentPage(1);
     }, [searchTerm]);
 
     const handleRoleToggle = (user: Employee, role: FunctionalRole) => {
@@ -2908,9 +2502,9 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     const getScopeSummary = (scope?: ManagerScope) => {
         if (!scope) return "Belum diatur";
         const parts: string[] = [];
-        if (scope.managedBagians.length > 0) parts.push(`${scope.managedBagians.length} Bagian`);
-        if (scope.managedUnits.length > 0) parts.push(`${scope.managedUnits.length} Unit`);
-        if (scope.additionalManagedUserIds.length > 0) parts.push(`${scope.additionalManagedUserIds.length} Karyawan`);
+        if ((scope.managedBagians?.length || 0) > 0) parts.push(`${scope.managedBagians?.length} Bagian`);
+        if ((scope.managedUnits?.length || 0) > 0) parts.push(`${scope.managedUnits?.length} Unit`);
+        if ((scope.additionalManagedUserIds?.length || 0) > 0) parts.push(`${scope.additionalManagedUserIds?.length} Karyawan`);
         if (parts.length === 0) return "Belum diatur";
         return parts.join(', ');
     };
@@ -2987,22 +2581,36 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                 </table>
             </div>
 
-            {/* Load More Pattern */}
-            <div className="mt-8 flex flex-col items-center gap-4">
-                {visibleCount < sortedUsers.length ? (
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
                     <button
-                        onClick={() => setVisibleCount(prev => prev + ITEMS_PER_BATCH)}
-                        className="px-10 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 shadow-lg transition-all transform hover:scale-105 flex items-center gap-3"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <RefreshCw className="w-5 h-5 text-teal-400" />
-                        Tampilkan Data Selanjutnya
+                        ←
                     </button>
-                ) : sortedUsers.length > 0 && (
-                    <p className="text-gray-500 text-sm italic">Semua data telah ditampilkan</p>
-                )}
 
+                    <div className="flex items-center gap-1">
+                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
+                </div>
+            )}
+
+            <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
-                    Menampilkan {paginatedUsers.length} dari {sortedUsers.length} data
+                    Total {sortedUsers.length} data karyawan
                 </p>
             </div>
 
@@ -3564,37 +3172,105 @@ const ManagerScopeModal: React.FC<ManagerScopeModalProps> = ({ isOpen, onClose, 
     const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
     const [additionalIds, setAdditionalIds] = useState<Set<string>>(new Set());
     const [searchUser, setSearchUser] = useState('');
+    const [activeTab, setActiveTab] = useState<'unit' | 'bagian' | 'spesifik'>('unit');
 
     useEffect(() => {
         if (isOpen && user) {
             setSelectedBagians(new Set(user.managerScope?.managedBagians || []));
             setSelectedUnits(new Set(user.managerScope?.managedUnits || []));
             setAdditionalIds(new Set(user.managerScope?.additionalManagedUserIds || []));
+            setActiveTab('unit');
         }
     }, [isOpen, user]);
 
-    if (!isOpen || !user) return null;
+    // Data Processing for logical grouping
+    const unitBagiansMap = useMemo(() => {
+        const map = new Map<string, string[]>();
+        console.log('🔍 ManagerScopeModal - jobStructure:', jobStructure);
 
-    const allBagians = useMemo(() => {
-        const bagians = new Set<string>();
-        jobStructure['NON MEDIS'].forEach(u => u.bagians.forEach(b => bagians.add(b.bagian)));
-        return Array.from(bagians).sort();
+        if (jobStructure && jobStructure['NON MEDIS']) {
+            console.log('📋 NON MEDIS data:', jobStructure['NON MEDIS']);
+            jobStructure['NON MEDIS'].forEach(u => {
+                if (u.unit && u.bagians) {
+                    const bNames = u.bagians.map(b => typeof b === 'string' ? b : (b as any).bagian).filter(Boolean);
+                    if (bNames.length > 0) {
+                        map.set(u.unit, bNames);
+                        console.log(`✅ Added unit "${u.unit}" with ${bNames.length} bagians`);
+                    }
+                }
+            });
+        }
+        console.log('📊 Final unitBagiansMap:', Array.from(map.entries()));
+        return map;
     }, [jobStructure]);
 
     const allUnits = useMemo(() => {
         const units = new Set<string>();
-        jobStructure.MEDIS.forEach(u => units.add(u.unit));
-        jobStructure['NON MEDIS'].forEach(u => units.add(u.unit));
-        return Array.from(units).sort();
+        if (jobStructure) {
+            if (jobStructure.MEDIS) {
+                jobStructure.MEDIS.forEach(u => { if (u.unit) units.add(u.unit); });
+            }
+            if (jobStructure['NON MEDIS']) {
+                jobStructure['NON MEDIS'].forEach(u => { if (u.unit) units.add(u.unit); });
+            }
+        }
+        const result = Array.from(units).sort();
+        console.log('🏢 All units:', result);
+        return result;
     }, [jobStructure]);
 
     const filteredUsers = useMemo(() => {
-        if (!searchUser) return [];
+        if (!searchUser || !user) return [];
         const lowerSearch = searchUser.toLowerCase();
         return allUsers
-            .filter(u => u.id !== user.id && (u.name.toLowerCase().includes(lowerSearch) || u.id.toLowerCase().includes(lowerSearch)))
-            .slice(0, 5);
-    }, [allUsers, searchUser, user.id]);
+            .filter(u =>
+                u.id !== user.id &&
+                !additionalIds.has(u.id) &&
+                (u.name.toLowerCase().includes(lowerSearch) || u.id.toLowerCase().includes(lowerSearch))
+            )
+            .slice(0, 8);
+    }, [allUsers, searchUser, user?.id, additionalIds]);
+
+    const selectedUsersFullData = useMemo(() => {
+        const userMap = new Map(allUsers.map(u => [u.id, u]));
+        return Array.from(additionalIds).map(id => {
+            const found = userMap.get(id);
+            return found || { id, name: `Karyawan (${id})`, unit: 'Menunggu...', isPlaceholder: true } as any;
+        });
+    }, [allUsers, additionalIds]);
+
+    // Auto-load missing employees only (jobStructure comes from props)
+    useEffect(() => {
+        if (isOpen && additionalIds.size > 0) {
+            const missingIds = Array.from(additionalIds).filter(id => !allUsers.some(u => u.id === id));
+            if (missingIds.length > 0) {
+                console.log('🔄 Fetching missing employees:', missingIds);
+                getEmployeesByIds(missingIds).then(newEmployees => {
+                    if (newEmployees.length > 0) {
+                        const { setAllUsersData } = useAppDataStore.getState();
+                        setAllUsersData(prev => {
+                            const next = { ...prev };
+                            newEmployees.forEach(emp => {
+                                if (!next[emp.id]) {
+                                    next[emp.id] = { employee: emp, attendance: {}, history: {} };
+                                }
+                            });
+                            return next;
+                        });
+                    }
+                }).catch(console.error);
+            }
+        }
+    }, [isOpen, additionalIds, allUsers.length]);
+
+    if (!isOpen || !user) return null;
+
+    const toggleItem = (set: Set<string>, item: string, setter: (val: Set<string>) => void) => {
+        const newSet = new Set(set);
+        if (newSet.has(item)) newSet.delete(item);
+        else newSet.add(item);
+        setter(newSet);
+    };
 
     const handleSave = () => {
         onSave(user.id, {
@@ -3605,139 +3281,221 @@ const ManagerScopeModal: React.FC<ManagerScopeModalProps> = ({ isOpen, onClose, 
         onClose();
     };
 
-    const toggleItem = (set: Set<string>, item: string, setter: (val: Set<string>) => void) => {
-        const newSet = new Set(set);
-        if (newSet.has(item)) newSet.delete(item);
-        else newSet.add(item);
-        setter(newSet);
-    };
-
     return createPortal(
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-70">
-            <div className="bg-gray-900 border border-white/20 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-pop-in">
-                <div className="bg-white/5 px-6 py-4 border-b border-white/10 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center border border-blue-500/30">
-                            <Settings className="w-5 h-5 text-blue-400" />
+        <div className="fixed inset-0 bg-[#020617]/80 backdrop-blur-md flex items-center justify-center p-4 z-100">
+            <div className="bg-[#0f172a] w-full max-w-6xl h-[85vh] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden text-slate-100">
+                {/* Header */}
+                <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-slate-900/50">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                            <Shield className="w-6 h-6 text-indigo-400" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-white">Atur Lingkup Manajer</h3>
-                            <p className="text-gray-400 text-xs">Menentukan area pengawasan untuk <span className="text-blue-400 font-bold">{user.name}</span></p>
+                            <h2 className="text-xl font-bold tracking-tight">Pengaturan Yurisdiksi Pengawasan</h2>
+                            <p className="text-xs text-slate-400">Menentukan cakupan anak buah untuk manajer: <span className="text-indigo-300 font-bold">{user.name}</span></p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white">
-                        <X className="w-6 h-6" />
+                    <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-500 hover:text-white">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto space-y-8 custom-scrollbar">
-                    {/* Bagian Selection */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                            Akses Per Bagian (Non-Medis)
-                            <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-[10px]">{selectedBagians.size} Terpilih</span>
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {allBagians.map(bagian => (
-                                <button
-                                    key={bagian}
-                                    onClick={() => toggleItem(selectedBagians, bagian, setSelectedBagians)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all truncate text-left ${selectedBagians.has(bagian)
-                                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
-                                        }`}
-                                >
-                                    {bagian}
-                                </button>
-                            ))}
-                        </div>
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Panel 1: Sidebar Nav */}
+                    <div className="w-56 bg-slate-900/40 border-r border-white/5 flex flex-col p-4 space-y-2">
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-2">Pilih Metode</div>
+                        {[
+                            { id: 'unit', label: 'Per Unit', icon: Building2, color: 'text-emerald-400' },
+                            { id: 'bagian', label: 'Per Bagian', icon: Share2, color: 'text-blue-400' },
+                            { id: 'spesifik', label: 'Pilih Karyawan', icon: Users, color: 'text-amber-400' },
+                        ].map((t: any) => (
+                            <button
+                                key={t.id}
+                                onClick={() => setActiveTab(t.id)}
+                                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-all ${activeTab === t.id ? 'bg-slate-700 text-white font-bold shadow-lg shadow-black/20 border border-white/5' : 'text-slate-400 hover:bg-slate-800'}`}
+                            >
+                                <t.icon className={`w-4 h-4 ${t.color}`} />
+                                {t.label}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Unit Selection */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-teal-400 uppercase tracking-widest flex items-center gap-2">
-                            Akses Per Unit (Medis & Non-Medis)
-                            <span className="bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-full text-[10px]">{selectedUnits.size} Terpilih</span>
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {allUnits.map(unit => (
-                                <button
-                                    key={unit}
-                                    onClick={() => toggleItem(selectedUnits, unit, setSelectedUnits)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all truncate text-left ${selectedUnits.has(unit)
-                                        ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-500/20'
-                                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
-                                        }`}
-                                >
-                                    {unit}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Additional Users */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2">
-                            Akses Karyawan Spesifik
-                            <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full text-[10px]">{additionalIds.size} Terpilih</span>
-                        </label>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                            <input
-                                type="text"
-                                value={searchUser}
-                                onChange={e => setSearchUser(e.target.value)}
-                                placeholder="Cari nama atau NIP karyawan..."
-                                className="w-full bg-white/5 border border-white/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                            />
-                            {filteredUsers.length > 0 && (
-                                <div className="absolute top-full left-0 w-full mt-2 bg-gray-800 border border-white/10 rounded-xl shadow-2xl z-10 overflow-hidden backdrop-blur-xl">
-                                    {filteredUsers.map(u => (
-                                        <button
-                                            key={u.id}
-                                            onClick={() => {
-                                                toggleItem(additionalIds, u.id, setAdditionalIds);
-                                                setSearchUser('');
-                                            }}
-                                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors border-b border-white/5 last:border-0"
-                                        >
-                                            <div className="text-left">
-                                                <div className="text-sm font-bold text-white">{u.name}</div>
-                                                <div className="text-[10px] text-gray-400 font-mono">{u.id} • {u.unit}</div>
+                    {/* Panel 2: Selection List */}
+                    <div className="flex-1 overflow-y-auto bg-slate-800/10 p-6 custom-scrollbar">
+                        {activeTab === 'unit' && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                                    <Building2 className="w-4 h-4 text-emerald-400" /> Daftar Unit Kerja
+                                </h3>
+                                {allUnits.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {allUnits.map(unit => (
+                                            <div
+                                                key={unit}
+                                                onClick={() => toggleItem(selectedUnits, unit, setSelectedUnits)}
+                                                className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${selectedUnits.has(unit) ? 'bg-emerald-500/10 border-emerald-500/30 ring-1 ring-emerald-500/20' : 'bg-slate-900/40 border-white/5 hover:border-white/10'}`}
+                                            >
+                                                <span className={`text-sm ${selectedUnits.has(unit) ? 'text-emerald-100 font-bold' : 'text-slate-400'}`}>{unit}</span>
+                                                {selectedUnits.has(unit) && <Check className="w-4 h-4 text-emerald-400" />}
                                             </div>
-                                            {additionalIds.has(u.id) ? <Check className="w-4 h-4 text-purple-400" /> : <PlusCircle className="w-4 h-4 text-gray-600" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        {additionalIds.size > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                                {Array.from(additionalIds).map(id => {
-                                    const u = allUsers.find(x => x.id === id);
-                                    return (
-                                        <div key={id} className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-full group transition-all hover:bg-purple-500/20">
-                                            <span className="text-[11px] text-purple-300 font-bold">{u?.name || id}</span>
-                                            <button onClick={() => toggleItem(additionalIds, id, setAdditionalIds)} className="text-purple-500 hover:text-purple-300 transition-colors">
-                                                <X className="w-3.5 h-3.5" />
-                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-20 text-center bg-slate-900/20 rounded-xl border border-dashed border-white/10">
+                                        <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3 opacity-30" />
+                                        <p className="text-sm text-slate-500 font-medium">Data Unit Kerja tidak tersedia</p>
+                                        <p className="text-xs text-slate-600 mt-1">Pastikan struktur jabatan sudah diisi di menu Manajemen Pengguna → Struktur Jabatan</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'bagian' && (
+                            <div className="space-y-8">
+                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                                    <Share2 className="w-4 h-4 text-blue-400" /> Bagian per Unit Kerja
+                                </h3>
+                                {Array.from(unitBagiansMap.entries()).map(([unit, bagians]) => (
+                                    <div key={unit} className="space-y-3">
+                                        <div className="px-1 flex items-center gap-2">
+                                            <div className="h-4 w-1 bg-blue-500 rounded-full"></div>
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{unit}</span>
                                         </div>
-                                    );
-                                })}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {bagians.map(bagian => (
+                                                <div
+                                                    key={bagian}
+                                                    onClick={() => toggleItem(selectedBagians, bagian, setSelectedBagians)}
+                                                    className={`p-3 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${selectedBagians.has(bagian) ? 'bg-blue-500/10 border-blue-500/30 text-blue-100 font-bold' : 'bg-slate-900/20 border-white/5 hover:bg-slate-800 text-slate-400'}`}
+                                                >
+                                                    <span className="truncate">{bagian}</span>
+                                                    {selectedBagians.has(bagian) && <Check className="w-3.5 h-3.5" />}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {activeTab === 'spesifik' && (
+                            <div className="space-y-6">
+                                <h3 className="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-amber-400" /> Pencarian Karyawan Spesifik
+                                </h3>
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <input
+                                        type="text"
+                                        value={searchUser}
+                                        onChange={e => setSearchUser(e.target.value)}
+                                        placeholder="Cari Nama atau NIP..."
+                                        className="w-full bg-slate-950/50 border border-white/10 rounded-xl pl-11 pr-4 py-4 text-sm focus:ring-1 focus:ring-amber-500/50 outline-none transition-all"
+                                    />
+                                </div>
+
+                                {searchUser && (
+                                    <div className="bg-slate-900 border border-white/10 rounded-xl divide-y divide-white/5 overflow-hidden">
+                                        {filteredUsers.map(u => (
+                                            <button
+                                                key={u.id}
+                                                onClick={() => { toggleItem(additionalIds, u.id, setAdditionalIds); setSearchUser(''); }}
+                                                className="w-full flex items-center p-4 hover:bg-slate-800 text-left transition-colors"
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center text-[10px] font-bold text-slate-400 mr-4">
+                                                    {u.name.charAt(0)}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold text-slate-200">{u.name}</div>
+                                                    <div className="text-[11px] text-slate-500">{u.id} • {u.unit}</div>
+                                                </div>
+                                                <PlusCircle className="w-5 h-5 text-amber-500" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
+
+                    {/* Panel 3: Persistent Summary */}
+                    <div className="w-80 bg-slate-900/50 border-l border-white/10 flex flex-col overflow-hidden">
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Daftar Terpilih</span>
+                            <span className="bg-slate-950 text-slate-400 text-[10px] px-2 py-0.5 rounded border border-white/5 font-mono">
+                                {selectedUnits.size + selectedBagians.size + additionalIds.size}
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                            {/* Units Section */}
+                            {selectedUnits.size > 0 && (
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-bold text-emerald-500 uppercase flex items-center justify-between">Unit <Building2 className="w-3 h-3" /></div>
+                                    <div className="space-y-1">
+                                        {Array.from(selectedUnits).map(u => (
+                                            <div key={u} className="bg-emerald-500/5 border border-emerald-500/10 rounded-lg p-2 flex items-center justify-between group">
+                                                <span className="text-[11px] text-emerald-100 truncate flex-1 pr-2">{u}</span>
+                                                <button onClick={() => toggleItem(selectedUnits, u, setSelectedUnits)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bagians Section */}
+                            {selectedBagians.size > 0 && (
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-bold text-blue-500 uppercase flex items-center justify-between">Bagian <Share2 className="w-3 h-3" /></div>
+                                    <div className="space-y-1">
+                                        {Array.from(selectedBagians).map(b => (
+                                            <div key={b} className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-2 flex items-center justify-between group">
+                                                <span className="text-[11px] text-blue-100 truncate flex-1 pr-2">{b}</span>
+                                                <button onClick={() => toggleItem(selectedBagians, b, setSelectedBagians)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Employees Section */}
+                            {additionalIds.size > 0 && (
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-bold text-amber-500 uppercase flex items-center justify-between">Karyawan <Users className="w-3 h-3" /></div>
+                                    <div className="space-y-1">
+                                        {selectedUsersFullData.map(u => (
+                                            <div key={u.id} className="bg-amber-500/5 border border-amber-500/10 rounded-lg p-2 flex items-center justify-between group">
+                                                <div className="flex-1 min-w-0 pr-2">
+                                                    <div className="text-[11px] font-bold text-amber-100 truncate">{u.name}</div>
+                                                    <div className="text-[9px] text-slate-500 font-mono italic">{u.id}</div>
+                                                </div>
+                                                <button onClick={() => toggleItem(additionalIds, u.id, setAdditionalIds)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded text-red-500 transition-all">
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedUnits.size + selectedBagians.size + additionalIds.size === 0 && (
+                                <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-20">
+                                    <ClipboardCheck className="w-12 h-12 mb-3 text-slate-500" />
+                                    <p className="text-[11px] text-slate-500 font-medium">Belum ada item yang dipilih</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                <div className="px-6 py-4 bg-black/50 border-t border-white/10 flex items-center justify-between">
-                    <button onClick={onClose} className="px-5 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">
-                        Batal
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                    >
-                        Simpan Lingkup
+                {/* Footer */}
+                <div className="p-6 border-t border-white/10 flex items-center justify-end gap-3 bg-slate-900/50">
+                    <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white transition-all">Batal</button>
+                    <button onClick={handleSave} className="px-10 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-xl shadow-indigo-600/10 transition-all active:scale-95 flex items-center gap-2">
+                        <Check className="w-4 h-4" /> Simpan Konfigurasi
                     </button>
                 </div>
             </div>
@@ -4011,8 +3769,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     // States for modals
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
-    const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
     const [editingUser, setEditingUser] = useState<Employee | null>(null);
     const [confirmingDestructiveAction, setConfirmingDestructiveAction] = useState<{
         action: DestructiveAction,
@@ -4028,7 +3784,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     const [pdfFileName, setPdfFileName] = useState('');
     const [editingAttendanceRecord, setEditingAttendanceRecord] = useState<AdminReportRecord | null>(null);
     const [userManagementSubView, setUserManagementSubView] = useState<UserManagementSubView>('database');
-    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('kegiatan');
+    const [contentManagementSubView, setContentManagementSubView] = useState<ContentManagementSubView>('ibadah-sunnah');
     const [reportSubView, setReportSubView] = useState<'sholat' | 'kegiatan' | 'mutabaah' | 'aktivasi'>('sholat');
     const [managingAccessFor, setManagingAccessFor] = useState<Employee | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -4041,10 +3797,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         setIsUserModalOpen(true);
     };
 
-    const handleOpenActivityModal = (activity: Activity | null = null) => {
-        setEditingActivity(activity);
-        setIsActivityModalOpen(true);
-    };
+
     const handleInitiateToggleStatus = (user: Employee) => {
         setConfirmingDestructiveAction({
             action: 'toggle-status',
@@ -4076,14 +3829,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         });
     };
 
-    const handleInitiateDeleteActivity = (activity: Activity) => {
-        setConfirmingDestructiveAction({
-            action: 'delete-activity',
-            data: activity.id,
-            title: `Hapus Kegiatan "${activity.name}"`,
-            message: <p>Apakah Anda yakin? Semua data presensi terkait kegiatan ini juga akan dihapus secara permanen.</p>
-        });
-    };
+
 
     const handleInitiateDeleteAttendance = (record: AdminReportRecord) => {
         setConfirmingDestructiveAction({
@@ -4149,14 +3895,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 onDeleteUser(data as string);
                 break;
             }
-            case 'delete-activity': {
-                const activity = activities.find(a => a.id === data);
-                onLogAudit({ adminId: loggedInEmployee.id, adminName: loggedInEmployee.name, action: 'Hapus Kegiatan', target: `Activity: ${activity?.name || 'N/A'} (${data})`, reason });
-                onDeleteActivity(data as string);
-                break;
-            }
+
             case 'delete-attendance': {
-                const activityName = activities.find(a => a.id === (data as AdminReportRecord).entityId)?.name || PRAYERS.find(p => p.id === (data as AdminReportRecord).entityId)?.name || 'N/A';
+                const activityName = PRAYERS.find(p => p.id === (data as AdminReportRecord).entityId)?.name || 'N/A';
                 const userName = allUsersData[(data as AdminReportRecord).employeeId]?.employee.name || 'N/A';
                 onLogAudit({ adminId: loggedInEmployee.id, adminName: loggedInEmployee.name, action: 'Hapus Presensi', target: `User: ${userName}, Entity: ${activityName}, Date: ${(data as AdminReportRecord).date}`, reason });
                 onAdminUpdateAttendance({ userId: (data as AdminReportRecord).employeeId, date: (data as AdminReportRecord).date, entityId: (data as AdminReportRecord).entityId, status: null, reason: null });
@@ -4311,21 +4052,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
-                                <SubTabButton active={contentManagementSubView === 'kegiatan'} onClick={() => setContentManagementSubView('kegiatan')}>Jadwal & Sesi</SubTabButton>
+
                                 <SubTabButton active={contentManagementSubView === 'ibadah-sunnah'} onClick={() => setContentManagementSubView('ibadah-sunnah')}>Ibadah Sunnah</SubTabButton>
                                 {isSuperAdmin(loggedInEmployee) && (
                                     <SubTabButton active={contentManagementSubView === 'mutabaah-automation'} onClick={() => setContentManagementSubView('mutabaah-automation')}>Otomatisasi Mutaba&apos;ah</SubTabButton>
                                 )}
                             </div>
                         </div>
-                        {contentManagementSubView === 'kegiatan' && (
-                            <ActivityManagement
-                                activities={activities}
-                                onOpenModal={handleOpenActivityModal}
-                                onInitiateDelete={handleInitiateDeleteActivity}
-                                allEmployees={allUsers}
-                            />
-                        )}
+
                         {contentManagementSubView === 'ibadah-sunnah' && (
                             <SunnahIbadahManagement sunnahIbadahList={sunnahIbadahList} onAdd={onAddSunnahIbadah} onUpdate={onUpdateSunnahIbadah} onDelete={handleInitiateDeleteSunnahIbadah} />
                         )}
@@ -4416,7 +4150,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 hospitals={hospitals}
                 loggedInEmployee={loggedInEmployee}
             />
-            <ActivityModal isOpen={isActivityModalOpen} onClose={() => setIsActivityModalOpen(false)} onSave={onAddActivity} onUpdate={onUpdateActivity} existingActivity={editingActivity} allEmployees={allUsers} hospitals={hospitals} />
+
             <DestructiveConfirmationModal
                 isOpen={!!confirmingDestructiveAction}
                 onClose={() => setConfirmingDestructiveAction(null)}
@@ -4437,6 +4171,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 loggedInEmployee={loggedInEmployee}
                 availableHospitals={hospitals}
             />
+
             <ManagerScopeModal
                 isOpen={!!managingScopeForUser}
                 onClose={() => setManagingScopeForUser(null)}

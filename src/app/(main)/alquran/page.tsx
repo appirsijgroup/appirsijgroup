@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Alquran } from '@/components/Alquran';
 import { useAppDataStore, useUIStore } from '@/store/store';
-import { useBookmarks, useToggleBookmark } from '@/store/bookmarkStore';
+import { useBookmarks, useToggleBookmark, useDeleteBookmark } from '@/store/bookmarkStore';
 import type { Bookmark } from '@/types';
 import { submitQuranReading, getQuranSubmissions, type QuranReadingSubmission } from '@/services/quranSubmissionService';
 import { getUserMonthlyReports } from '@/services/monthlySubmissionService';
@@ -36,11 +36,13 @@ export default function AlquranPage() {
     // React Query untuk bookmarks (otomatis caching, loading, error handling)
     const { data: bookmarks = [], isLoading: bookmarksLoading } = useBookmarks(loggedInEmployee?.id);
     const toggleBookmarkMutation = useToggleBookmark();
+    const deleteBookmarkMutation = useDeleteBookmark();
 
     // Parse URL search params for navigation from bookmarks
     useEffect(() => {
         const surahParam = searchParams.get('surah');
         const ayahParam = searchParams.get('ayah');
+        const viewParam = searchParams.get('view');
 
         if (surahParam && ayahParam) {
             const surahNumber = parseInt(surahParam, 10);
@@ -88,6 +90,22 @@ export default function AlquranPage() {
             });
         } catch (error) {
             addToast('Gagal menyimpan bookmark. Silakan coba lagi.', 'error');
+        }
+    };
+
+    const handleDeleteBookmark = async (bookmarkId: string) => {
+        if (!loggedInEmployee) return;
+
+        try {
+            const success = await deleteBookmarkMutation.mutateAsync({
+                bookmarkId,
+                userId: loggedInEmployee.id,
+            });
+            if (!success) {
+                addToast('Gagal menghapus bookmark. Silakan coba lagi.', 'error');
+            }
+        } catch (error) {
+            addToast('Terjadi kesalahan saat menghapus bookmark.', 'error');
         }
     };
 
@@ -175,13 +193,14 @@ export default function AlquranPage() {
             bookmarks={bookmarks}
             isLoading={loading || bookmarksLoading}
             toggleBookmark={handleToggleBookmark}
-
+            deleteBookmark={handleDeleteBookmark}
             goToAyah={goToAyah}
             clearGoToAyah={() => setGoToAyah(null)}
             onQuranReadingSubmission={handleQuranReadingSubmission}
             monthlyReportSubmissions={monthlyReportSubmissions}
             loggedInEmployee={loggedInEmployee!}
             setGoToAyah={setGoToAyah}
+            initialSubView={searchParams.get('view') === 'bookmarks' ? 'bookmarks' : 'surah-list'}
         />
     );
 }

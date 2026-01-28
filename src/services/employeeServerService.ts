@@ -20,7 +20,7 @@ const convertToCamelCase = (emp: any): any => {
         canBeKaUnit: emp.can_be_ka_unit,
         canBeDirut: emp.can_be_dirut,
         functionalRoles: emp.functional_roles,
-        managerScope: emp.manager_scope,
+        managerScope: typeof emp.manager_scope === 'string' ? JSON.parse(emp.manager_scope) : emp.manager_scope,
         locationId: emp.location_id,
         locationName: emp.location_name,
         signature: emp.signature,

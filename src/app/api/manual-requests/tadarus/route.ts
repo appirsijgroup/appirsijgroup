@@ -155,8 +155,11 @@ export async function PATCH(request: NextRequest) {
                     'BBQ': 'tadarus',
                     'UMUM': 'tadarus',
                     'KIE': 'tepat_waktu_kie',
+                    'DOA BERSAMA': 'doa_bersama',
                     'Doa Bersama': 'doa_bersama',
+                    'KAJIAN SELASA': 'kajian_selasa',
                     'Kajian Selasa': 'kajian_selasa',
+                    'PENGAJIAN PERSYARIKATAN': 'persyarikatan',
                     'Pengajian Persyarikatan': 'persyarikatan',
                     'Membaca Al-Quran dan buku': 'baca_alquran_buku'
                 };
@@ -219,11 +222,11 @@ export async function PATCH(request: NextRequest) {
                             user_id: data.mentee_id,
                             user_name: data.mentee_name || 'User',
                             attended_at: new Date().toISOString(),
-                            session_type: category === 'BBQ' ? 'BBQ' :
-                                (category === 'KIE' ? 'KIE' :
-                                    (category === 'Doa Bersama' ? 'Doa Bersama' :
-                                        (category === 'Kajian Selasa' ? 'Kajian Selasa' :
-                                            (category === 'Pengajian Persyarikatan' ? 'Pengajian Persyarikatan' : 'UMUM')))),
+                            session_type: (category.toUpperCase() === 'BBQ') ? 'BBQ' :
+                                (category.toUpperCase() === 'KIE') ? 'KIE' :
+                                    (category.toUpperCase() === 'DOA BERSAMA') ? 'Doa Bersama' :
+                                        (category.toUpperCase() === 'KAJIAN SELASA') ? 'Kajian Selasa' :
+                                            (category.toUpperCase() === 'PENGAJIAN PERSYARIKATAN') ? 'Pengajian Persyarikatan' : 'UMUM',
                             session_date: date,
                             session_start_time: '00:00',
                             session_end_time: '23:59'

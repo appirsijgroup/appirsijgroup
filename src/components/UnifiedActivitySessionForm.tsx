@@ -17,12 +17,15 @@ import type { Employee, Activity, TeamAttendanceSession, AudienceRules, Hospital
 import { useRouter } from 'next/navigation';
 
 type ActivitySessionType =
-    | 'UMUM'
-    | 'KAJIAN SELASA'
-    | 'PENGAJIAN PERSYARIKATAN'
+    | 'Umum'
+    | 'Kajian Selasa'
+    | 'Pengajian Persyarikatan'
     | 'KIE'
     | 'DOA BERSAMA'
-    | 'BBQ';
+    | 'BBQ'
+    | 'UMUM'
+    | 'KAJIAN SELASA'
+    | 'PENGAJIAN PERSYARIKATAN';
 
 interface UnifiedActivitySessionFormProps {
     allUsers: Employee[];
@@ -34,8 +37,8 @@ interface UnifiedActivitySessionFormProps {
     disabled?: boolean;
 }
 
-const ACTIVITY_TYPES: ActivitySessionType[] = ['UMUM', 'KAJIAN SELASA', 'PENGAJIAN PERSYARIKATAN'];
-const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'DOA BERSAMA', 'BBQ', 'UMUM'];
+const ACTIVITY_TYPES: ActivitySessionType[] = ['Umum', 'Kajian Selasa', 'Pengajian Persyarikatan'];
+const SESSION_TYPES: ActivitySessionType[] = ['KIE', 'DOA BERSAMA', 'BBQ', 'Umum'];
 
 export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProps> = ({
     allUsers,
@@ -49,7 +52,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
     const router = useRouter();
 
     // Common fields
-    const [type, setType] = useState<ActivitySessionType>('UMUM');
+    const [type, setType] = useState<ActivitySessionType>('Umum');
     const [name, setName] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState('08:00');
@@ -83,8 +86,8 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
             const isActivity = 'activityType' in initialData;
             const isSession = !isActivity;
 
-            const currentType = isActivity ? (initialData as Activity).activityType || 'UMUM' : (initialData as TeamAttendanceSession).type;
-            setType(currentType.toUpperCase() as any);
+            const currentType = isActivity ? (initialData as Activity).activityType || 'Umum' : (initialData as TeamAttendanceSession).type;
+            setType(currentType as any);
             setName(isActivity ? (initialData as Activity).name.toUpperCase() : (initialData as TeamAttendanceSession).type.toUpperCase());
             setDate(initialData.date);
             setStartTime(initialData.startTime);
@@ -220,7 +223,18 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
 
         // 🚀 FORCE UPPERCASE for Consistency
         const upperName = name.trim().toUpperCase();
-        const upperType = type.trim().toUpperCase();
+
+        // Define mapping for activity types to match DB constraints
+        const typeMapping: Record<string, string> = {
+            'UMUM': 'Umum',
+            'KAJIAN SELASA': 'Kajian Selasa',
+            'PENGAJIAN PERSYARIKATAN': 'Pengajian Persyarikatan',
+            'umum': 'Umum',
+            'kajian selasa': 'Kajian Selasa',
+            'pengajian persyarikatan': 'Pengajian Persyarikatan'
+        };
+
+        const finalType = typeMapping[type] || type;
 
         if (isActivityType) {
             // Create or Update Activity
@@ -239,7 +253,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                 endTime,
                 zoomUrl: zoomUrl.trim() || undefined,
                 youtubeUrl: youtubeUrl.trim() || undefined,
-                activityType: upperType as Activity['activityType'],
+                activityType: finalType as Activity['activityType'],
                 audienceType,
                 audienceRules,
                 participantIds,
@@ -250,7 +264,7 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
         } else {
             // Create or Update Team Attendance Session(s)
             const baseSessionData: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds' | 'date'> = {
-                type: (upperType as any) === 'UMUM' ? 'UMUM' : (upperType as any),
+                type: (finalType as any) === 'Umum' ? 'UMUM' : (finalType as any),
                 startTime,
                 endTime,
                 attendanceMode,

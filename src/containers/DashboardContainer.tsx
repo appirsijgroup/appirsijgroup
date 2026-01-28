@@ -1185,8 +1185,11 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
                             'BBQ': 'bbq_tahsin',
                             'UMUM': 'tadarus',
                             'KIE': 'tepat_waktu_kie',
+                            'DOA BERSAMA': 'doa_bersama',
                             'Doa Bersama': 'doa_bersama',
+                            'KAJIAN SELASA': 'kajian_selasa',
                             'Kajian Selasa': 'kajian_selasa',
+                            'PENGAJIAN PERSYARIKATAN': 'pengajian_persyarikatan',
                             'Pengajian Persyarikatan': 'pengajian_persyarikatan'
                         };
 

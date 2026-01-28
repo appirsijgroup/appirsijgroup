@@ -17,7 +17,8 @@ import {
     Calendar,
     Bell,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Briefcase
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
@@ -27,7 +28,9 @@ import { useUIStore } from '@/store/store';
 import UniversalPersetujuan from './Persetujuan';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
-export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
+import SupervisionTeamManagement from './SupervisionTeamManagement';
+
+export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions' | 'team-management';
 
 interface MentorDashboardProps {
     employee: Employee;
@@ -621,6 +624,12 @@ const MenteeManagement: React.FC<{
     const [professionFilter, setProfessionFilter] = useState('all');
     const [confirmation, setConfirmation] = useState<{ isOpen: boolean; title: string; message: React.ReactNode; onConfirm: () => void; } | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(mentees.length / itemsPerPage);
+    const paginatedMentees = mentees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     const unassignedUsers = useMemo(() => {
         return allUsers
             .filter(u => !u.mentorId && u.id !== mentorId && !u.canBeMentor)
@@ -713,7 +722,7 @@ const MenteeManagement: React.FC<{
                         </tr>
                     </thead>
                     <tbody>
-                        {mentees.map(mentee => (
+                        {paginatedMentees.map(mentee => (
                             <tr key={mentee.id} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{mentee.name}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{mentee.unit}</td>
@@ -730,6 +739,39 @@ const MenteeManagement: React.FC<{
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        ←
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                            Hal {currentPage} dari {totalPages}
+                        </span>
+                    </div>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        →
+                    </button>
+                </div>
+            )}
+
+            <div className="mt-4 text-center">
+                <p className="text-xs text-gray-400 italic">
+                    Total {mentees.length} anggota bimbingan aktif
+                </p>
             </div>
 
             {isAddModalOpen && createPortal(
@@ -980,18 +1022,17 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-4 mt-6">
+                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
                     <button
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
-                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                        title="Halaman Sebelumnya"
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        ←
                     </button>
 
-                    <div className="flex items-center gap-2">
-                        <span className="px-4 py-2 rounded-lg bg-teal-500/20 border border-teal-500/30 text-teal-300 text-sm font-bold">
+                    <div className="flex items-center gap-1">
+                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
                             Hal {currentPage} dari {totalPages}
                         </span>
                     </div>
@@ -999,17 +1040,16 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                     <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
-                        className="p-2 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-colors"
-                        title="Halaman Berikutnya"
+                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        →
                     </button>
                 </div>
             )}
 
-            <div className="text-center">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-black opacity-50">
-                    TOTAL {allReadings.length} DATA LAPORAN BACAAN
+            <div className="mt-4 text-center">
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
+                    Total {allReadings.length} data laporan bacaan
                 </p>
             </div>
         </div>
@@ -1400,6 +1440,24 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
+    // Determine supervision role and supervised employees
+    const supervisionRole = useMemo<'manager' | 'kaunit' | 'supervisor' | null>(() => {
+        if (employee.canBeManager) return 'manager';
+        if (employee.canBeKaUnit) return 'kaunit';
+        if (employee.canBeSupervisor) return 'supervisor';
+        return null;
+    }, [employee]);
+
+    const supervisedEmployees = useMemo(() => {
+        if (!supervisionRole) return [];
+        return Object.values(allUsersData).map(d => d.employee).filter(u => {
+            if (supervisionRole === 'manager') return u.managerId === employee.id;
+            if (supervisionRole === 'kaunit') return u.kaUnitId === employee.id;
+            if (supervisionRole === 'supervisor') return u.supervisorId === employee.id;
+            return false;
+        });
+    }, [allUsersData, employee.id, supervisionRole]);
+
     const mentees = useMemo(() => {
         return menteesOfMentor.map(m => allUsersData[m.id]?.employee || m);
     }, [menteesOfMentor, allUsersData]);
@@ -1569,10 +1627,31 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                             <SubTabButton label="Laporan Bacaan" icon={BookOpen} active={mentorSubView === 'laporan-bacaan'} onClick={() => setMentorSubView('laporan-bacaan')} />
                         </>
                     )}
+
+                    {/* Tab Kelola Tim untuk Manajer/Supervisor/KaUnit */}
+                    {supervisionRole && (
+                        <SubTabButton
+                            label="Kelola Tim"
+                            icon={Briefcase}
+                            active={mentorSubView === 'team-management'}
+                            onClick={() => setMentorSubView('team-management')}
+                        />
+                    )}
                 </div>
             </div>
 
             <div className="animate-view-change">
+                {mentorSubView === 'team-management' && supervisionRole && (
+                    <SupervisionTeamManagement
+                        supervisedEmployees={supervisedEmployees}
+                        allUsers={Object.values(allUsersData).map(d => d.employee)}
+                        supervisorId={employee.id}
+                        supervisorRole={supervisionRole}
+                        addToast={addToast}
+                        onRefresh={() => window.location.reload()} // Simple refresh
+                    />
+                )}
+
                 {mentorSubView === 'persetujuan' && (
                     <UniversalPersetujuan
                         loggedInEmployee={employee}

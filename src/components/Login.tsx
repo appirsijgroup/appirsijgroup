@@ -94,8 +94,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticating: propIsAuthenti
                     <h1 className="text-2xl font-bold tracking-wide text-white leading-tight">
                         APLIKASI PERILAKU PELAYANAN ISLAMI
                     </h1>
-                    <p className="text-sm text-slate-300 mt-3">
-                        Rumah Sakit Islam Jakarta Group
+                    <p className="text-base font-medium text-white mt-2 tracking-wide">
+                        RUMAH SAKIT ISLAM JAKARTA GROUP
                     </p>
                 </div>
 

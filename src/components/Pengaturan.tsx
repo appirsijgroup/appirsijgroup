@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { Employee, Attendance, SunnahIbadah, Activity, City, FunctionalRole, DailyActivity, Hospital } from '../types';
-import { User, Camera, Users, ShieldCheck, Trash2, Sparkles, Upload, ChevronDown, Check, X, Building2, Tag, GraduationCap, Eye, BadgeCheck, Info, FileText } from 'lucide-react';
+import { User, Camera, Users, ShieldCheck, Trash2, Sparkles, Upload, ChevronDown, Check, X, Building2, Tag, GraduationCap, Eye, BadgeCheck, Info, FileText, Pen, Lock } from 'lucide-react';
 import RapotView from './RapotView';
 import SignaturePad, { type SignaturePadRef } from './SignaturePad';
 import { validatePassword, isPasswordValid, type PasswordValidationResult } from './passwordUtils';
@@ -159,10 +159,9 @@ const RoleEmblem: React.FC<{ icon: React.FC<{ className: string }>, label: strin
 );
 
 const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahList, activities, dailyActivitiesConfig, hospitals, onUpdateProfile, onChangePassword, cities, addToast }) => {
-    const [openSection, setOpenSection] = useState<'profil' | 'keamanan' | 'appi' | null>(employee.mustChangePassword ? 'keamanan' : 'profil');
+    const [openSection, setOpenSection] = useState<'profil' | 'keamanan' | 'appi' | 'signature' | null>(employee.mustChangePassword ? 'keamanan' : 'profil');
 
     // States for Profile Form
-    const [name, setName] = useState(employee.name);
     const [email, setEmail] = useState(employee.email);
     const [profilePicture, setProfilePicture] = useState<string | null>(employee.profilePicture);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,7 +226,6 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     }, [employee]);
 
     useEffect(() => {
-        setName(employee.name);
         setEmail(employee.email);
         setProfilePicture(employee.profilePicture);
         setLocationSearch(employee.locationName || '');
@@ -284,12 +282,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
     const handleProfileSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!name) {
-            addToast('Nama Lengkap tidak boleh kosong.', 'error');
-            return;
-        }
-
-        const isSuccess = await onUpdateProfile(employee.id, { name, email });
+        const isSuccess = await onUpdateProfile(employee.id, { email });
 
         if (isSuccess) {
             addToast('Profil berhasil diperbarui!', 'success');
@@ -373,7 +366,7 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                             {profilePicture ? (
                                 <img src={profilePicture} alt="Profile" className="w-full h-full object-cover object-top" />
                             ) : (
-                                <span>{getInitials(name)}</span>
+                                <span>{getInitials(employee.name)}</span>
                             )}
                             <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Camera className="h-8 w-8 text-white" />
@@ -453,15 +446,9 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                 )}
                 <SettingsSection title="Edit Informasi Profil" icon={User} isOpen={openSection === 'profil'} onToggle={() => setOpenSection(openSection === 'profil' ? null : 'profil')}>
                     <form onSubmit={handleProfileSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-blue-200 mb-1">Nama Lengkap</label>
-                                <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" required />
-                            </div>
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-blue-200 mb-1">Alamat Email</label>
-                                <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contoh@email.com" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                            </div>
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-blue-200 mb-1">Alamat Email</label>
+                            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contoh@email.com" className="w-full bg-white/10 border border-white/30 rounded-lg p-3 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
                         </div>
                         <div className="text-left sm:text-right pt-2">
                             <button type="submit" className="w-full sm:w-auto bg-blue-600 text-white font-bold py-2.5 px-6 rounded-lg shadow-md hover:bg-blue-500 transition-all duration-300 text-sm sm:text-base">
@@ -506,12 +493,28 @@ const Profile: React.FC<ProfileProps> = ({ employee, allUsersData, sunnahIbadahL
                                 </button>
                             </div>
                         </form>
-                        <div className="space-y-4 pt-6 border-t border-white/10">
-                            <h3 className="text-base sm:text-lg font-semibold text-teal-300">Tanda Tangan Digital</h3>
-                            <div className="bg-black/20 p-3 sm:p-4 rounded-lg border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <div className="flex items-center justify-center">{employee.signature ? <img src={employee.signature} alt="Tanda Tangan" className="h-12 sm:h-16 bg-white rounded-md p-2" /> : <p className="text-gray-400 text-sm">Belum ada tanda tangan.</p>}</div>
-                                <button onClick={() => setIsSignatureModalOpen(true)} className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm">{employee.signature ? 'Ubah' : 'Tambah'} Tanda Tangan</button>
+                    </div>
+                </SettingsSection>
+
+                <SettingsSection title="Tanda Tangan Digital" icon={Pen} isOpen={openSection === 'signature'} onToggle={() => setOpenSection(openSection === 'signature' ? null : 'signature')}>
+                    <div className="space-y-4">
+                        <p className="text-blue-200 text-sm">
+                            Tanda tangan ini akan digunakan untuk keperluan validasi dokumen digital dan laporan.
+                        </p>
+                        <div className="bg-black/20 p-3 sm:p-4 rounded-lg border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center justify-center">
+                                {employee.signature ? (
+                                    <img src={employee.signature} alt="Tanda Tangan" className="h-12 sm:h-16 bg-white rounded-md p-2" />
+                                ) : (
+                                    <p className="text-gray-400 text-sm italic">Belum ada tanda tangan.</p>
+                                )}
                             </div>
+                            <button
+                                onClick={() => setIsSignatureModalOpen(true)}
+                                className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm transition-colors shadow-lg shadow-blue-500/20"
+                            >
+                                {employee.signature ? 'Ubah' : 'Buat'} Tanda Tangan
+                            </button>
                         </div>
                     </div>
                 </SettingsSection>

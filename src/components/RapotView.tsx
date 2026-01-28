@@ -888,6 +888,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     const [activeTab, setActiveTab] = useState<'mutabaah' | 'transkrip'>('mutabaah');
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [viewingChecklistFor, setViewingChecklistFor] = useState<Date | null>(null);
+    const [viewingTranscriptFor, setViewingTranscriptFor] = useState<number | null>(null); // Year number
     const [isDownloading, setIsDownloading] = useState<string | null>(null); // 'transcript' | 'checklist' | null
     const [submissions, setSubmissions] = useState<MonthlyReportSubmission[]>([]);
 
@@ -927,6 +928,88 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                 return { label: 'Terkirim', color: 'bg-blue-500/20 text-blue-300 border-blue-500/20' };
         }
     };
+
+    // Helper to calculate yearly performance for a specific year
+    const calculateYearlyPerformance = (year: number) => {
+        const yearPrefix = `${year}-`;
+        const now = new Date();
+        const isCurrentYear = year === now.getFullYear();
+        const maxMonthIdx = isCurrentYear ? (now.getMonth() + 1) : 12;
+
+        const monthsToCalculate = Array.from({ length: maxMonthIdx }, (_, i) =>
+            `${year}-${(i + 1).toString().padStart(2, '0')}`
+        );
+
+        if (monthsToCalculate.length === 0) return { categories: [], ipResult: 0 };
+
+        const categoriesRaw: Record<string, {
+            name: string;
+            details: Record<string, { title: string; yearlyTarget: number; yearlyAchieved: number }>;
+        }> = {};
+
+        monthsToCalculate.forEach((mKey: string) => {
+            const mProgress = employee.monthlyActivities?.[mKey] || {};
+            const monthlyReports = (employee as any)._monthlyReportsDataCache?.[mKey] || {};
+
+            dailyActivitiesConfig.forEach(act => {
+                if (!categoriesRaw[act.category]) {
+                    categoriesRaw[act.category] = { name: act.category, details: {} };
+                }
+                if (!categoriesRaw[act.category].details[act.id]) {
+                    categoriesRaw[act.category].details[act.id] = { title: act.title, yearlyTarget: 0, yearlyAchieved: 0 };
+                }
+
+                categoriesRaw[act.category].details[act.id].yearlyTarget += act.monthlyTarget;
+
+                const submission = submissions.find(s => s.monthKey === mKey);
+                const isApproved = submission?.status === 'approved';
+
+                if (isApproved) {
+                    const combinedMonthProgress = { ...mProgress };
+                    if (monthlyReports) {
+                        Object.entries(monthlyReports).forEach(([day, data]: [string, any]) => {
+                            combinedMonthProgress[day] = { ...(combinedMonthProgress[day] || {}), ...data };
+                        });
+                    }
+
+                    const achievedInMonth = Object.values(combinedMonthProgress).reduce((count: number, daily: any) => {
+                        const val = daily[act.id];
+                        return count + (val === true || val === 'hadir' ? 1 : 0);
+                    }, 0);
+
+                    categoriesRaw[act.category].details[act.id].yearlyAchieved += achievedInMonth;
+                }
+            });
+        });
+
+        let totalBobot = 0;
+        const finalCategories = Object.values(categoriesRaw).map(cat => {
+            const details = Object.values(cat.details).map(d => ({
+                title: d.title,
+                target: d.yearlyTarget,
+                achieved: d.yearlyAchieved,
+                percentage: d.yearlyTarget > 0 ? Math.min(100, Math.round((d.yearlyAchieved / d.yearlyTarget) * 100)) : 0
+            }));
+
+            const totalPercentage = details.reduce((sum, d) => sum + d.percentage, 0);
+            const averageScore = details.length > 0 ? Math.round(totalPercentage / details.length) : 0;
+            const { grade, bobot } = getGradeDetails(averageScore);
+            totalBobot += bobot;
+
+            return {
+                name: cat.name,
+                details,
+                score: averageScore,
+                grade,
+                bobot
+            };
+        });
+
+        const ipResult = finalCategories.length > 0 ? totalBobot / finalCategories.length : 0;
+
+        return { categories: finalCategories, ipResult };
+    };
+
 
     const hospital = useMemo(() => {
         // Gabungkan pemeriksaan hospitalId (frontend) dan hospital_id (backend/Supabase)
@@ -1203,6 +1286,14 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
         return allUniqueMonths.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     }, [employee.monthlyActivities, employee.activatedMonths, (employee as any).activated_months]);
 
+    const availableYears = useMemo(() => {
+        // Extract unique years from availableMonths
+        const years = availableMonths.map(monthKey => parseInt(monthKey.split('-')[0]));
+        const uniqueYears = Array.from(new Set(years));
+        // Sort descending (newest first)
+        return uniqueYears.sort((a, b) => b - a);
+    }, [availableMonths]);
+
     const currentMonthKey = useMemo(() => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -1210,6 +1301,36 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
     if (viewingChecklistFor) {
         return <CeklisMutabaahView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} selectedMonth={viewingChecklistFor} allUsersData={allUsersData} onBack={() => setViewingChecklistFor(null)} />;
+    }
+
+    if (viewingTranscriptFor) {
+        // Show detailed transcript view for specific year
+        const yearDate = new Date(viewingTranscriptFor, 0, 1); // January 1st of the year
+        return (
+            <div className="space-y-6">
+                <button
+                    onClick={() => setViewingTranscriptFor(null)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white font-semibold"
+                >
+                    <span>←</span>
+                    <span>Kembali ke Daftar Transkrip</span>
+                </button>
+                <TranskripNilaiView
+                    employee={employee}
+                    allUsersData={allUsersData}
+                    selectedMonth={yearDate}
+                    performanceData={yearlyPerformanceData}
+                    ipForMonth={yearlyPerformanceData.ipResult}
+                    signatoryName={signatory.name}
+                    signatoryNip={signatory.nip}
+                    signatoryTitle={signatory.title}
+                    signatorySignature={signatory.signature || null}
+                    hospital={hospital}
+                    isDownloading={isDownloading}
+                    setIsDownloading={setIsDownloading}
+                />
+            </div>
+        );
     }
 
     return (
@@ -1310,28 +1431,104 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                     </div>
                 )}
                 {activeTab === 'transkrip' && (
-                    <div className="space-y-6">
-                        <div className="flex justify-center">
-                            <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto max-w-sm">
-                                <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
-                                <span className="font-semibold text-base text-teal-300 px-2 grow text-center">Tahun {selectedMonth.getFullYear()} (Jan - Des)</span>
-                                <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
-                            </div>
+                    <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20">
+                        <div className="overflow-x-auto rounded-lg border border-white/20">
+                            <table className="min-w-full text-sm text-left text-white">
+                                <thead className="bg-white/10 text-xs uppercase text-blue-200">
+                                    <tr>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">No</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Deskripsi</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap">Tahun</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap text-center">IPK</th>
+                                        <th scope="col" className="px-4 py-3 whitespace-nowrap text-center">Predikat</th>
+                                        <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {availableYears.map((year, index) => {
+                                        // Calculate IPK for this year
+                                        const yearPerformance = calculateYearlyPerformance(year);
+                                        const ipk = yearPerformance.ipResult;
+                                        const predicate = getPredicate(ipk);
+
+                                        return (
+                                            <tr key={year} className="border-b border-gray-700 hover:bg-white/5">
+                                                <td className="px-4 py-3 whitespace-nowrap">{index + 1}</td>
+                                                <td className="px-4 py-3 font-semibold whitespace-nowrap">Transkrip Nilai Karyawan</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">{year}</td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${ipk >= 3.5 ? 'bg-green-500/20 text-green-300' :
+                                                        ipk >= 3.0 ? 'bg-blue-500/20 text-blue-300' :
+                                                            ipk >= 2.5 ? 'bg-yellow-500/20 text-yellow-300' :
+                                                                'bg-red-500/20 text-red-300'
+                                                        }`}>
+                                                        {ipk.toFixed(2)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${predicate === 'Dengan Pujian' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                                            predicate === 'Sangat Memuaskan' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                                predicate === 'Memuaskan' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                                                    'bg-red-500/20 text-red-400 border-red-500/30'
+                                                        }`}>
+                                                        {predicate}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => setViewingTranscriptFor(year)}
+                                                            className="p-2 text-blue-300 hover:text-white rounded-full hover:bg-white/10"
+                                                            title="Lihat Transkrip"
+                                                        >
+                                                            <DocumentTextIcon className="w-5 h-5" />
+                                                        </button>
+                                                        <button
+                                                            disabled={isDownloading !== null}
+                                                            onClick={async () => {
+                                                                try {
+                                                                    setIsDownloading(`transcript-${year}`);
+                                                                    const yearDate = new Date(year, 0, 1);
+                                                                    const selectedMonthLabel = `Tahun ${year} (Jan - Des)`;
+                                                                    const mentorData = allUsersData[employee.mentorId || '']?.employee;
+                                                                    const mentorName = mentorData?.name || '-';
+                                                                    await generateTranscriptPdf(
+                                                                        employee,
+                                                                        yearPerformance,
+                                                                        ipk,
+                                                                        selectedMonthLabel,
+                                                                        signatory.name,
+                                                                        signatory.nip,
+                                                                        signatory.title,
+                                                                        mentorName,
+                                                                        hospital,
+                                                                        signatory.signature || null
+                                                                    );
+                                                                } finally {
+                                                                    setIsDownloading(null);
+                                                                }
+                                                            }}
+                                                            className={`p-2 rounded-full transition-all disabled:opacity-50
+                                                              ${isDownloading === `transcript-${year}` ? 'text-gray-400' : 'text-red-400 hover:text-red-300 hover:bg-white/10'}`}
+                                                            title="Unduh PDF"
+                                                        >
+                                                            {isDownloading === `transcript-${year}` ? (
+                                                                <div className="w-5 h-5 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                <PdfIcon className="w-5 h-5" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                    {availableYears.length === 0 && (
+                                        <tr><td colSpan={6} className="text-center p-8 text-blue-200">Tidak ada data transkrip yang tersedia.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                        <TranskripNilaiView
-                            employee={employee}
-                            allUsersData={allUsersData}
-                            selectedMonth={selectedMonth}
-                            performanceData={yearlyPerformanceData}
-                            ipForMonth={yearlyPerformanceData.ipResult}
-                            signatoryName={signatory.name}
-                            signatoryNip={signatory.nip}
-                            signatoryTitle={signatory.title}
-                            signatorySignature={signatory.signature || null}
-                            hospital={hospital}
-                            isDownloading={isDownloading}
-                            setIsDownloading={setIsDownloading}
-                        />
                     </div>
                 )}
             </div>

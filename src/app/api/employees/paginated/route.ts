@@ -32,7 +32,12 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseService
       .from('employees')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        mutabaah_activations (
+          month_key
+        )
+      `, { count: 'exact' })
 
     if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
     if (role) query = query.eq('role', role)
@@ -44,12 +49,19 @@ export async function GET(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: 'Database query failed' }, { status: 500 })
 
-    // 🔥 BANDWIDTH SAFETY
-    const sanitizedEmployees = (employees || []).map(emp => {
-      const { profile_picture, password, ...rest } = emp;
+    // 🔥 BANDWIDTH SAFETY + ACTIVATION MAPPING
+    const sanitizedEmployees = (employees || []).map((emp: any) => {
+      // Map nested mutabaah_activations to activated_months array for compatibility
+      let activatedMonths: string[] = [];
+      if (emp.mutabaah_activations && Array.isArray(emp.mutabaah_activations)) {
+        activatedMonths = emp.mutabaah_activations.map((a: any) => a.month_key);
+      }
+
+      const { profile_picture, password, mutabaah_activations, ...rest } = emp;
       return {
         ...rest,
-        profilePicture: rest.avatar_url || null
+        profilePicture: rest.avatar_url || null,
+        activated_months: activatedMonths
       };
     });
 

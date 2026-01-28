@@ -33,10 +33,15 @@ export async function GET(request: NextRequest) {
     const limitParam = request.nextUrl.searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam) : null;
 
-    // Build query for ALL employees
+    // Build query for ALL employees with mutabaah_activations
     let query = supabaseService
       .from('employees')
-      .select('*')
+      .select(`
+        *,
+        mutabaah_activations (
+          month_key
+        )
+      `)
       .order('name', { ascending: true });
 
     if (limit) {
@@ -49,16 +54,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database query failed', details: error.message }, { status: 500 })
     }
 
-    // 🔥 ROBUST BANDWIDTH OPTIMIZATION
+    // 🔥 ROBUST BANDWIDTH OPTIMIZATION + ACTIVATION MAPPING
     // Instead of choosing columns (which might fail if schema changes),
     // we programmatically remove heavy keys from the result objects.
-    const sanitizedEmployees = (employees || []).map(emp => {
+    const sanitizedEmployees = (employees || []).map((emp: any) => {
+      // Map nested mutabaah_activations to activated_months array for compatibility
+      let activatedMonths: string[] = [];
+      if (emp.mutabaah_activations && Array.isArray(emp.mutabaah_activations)) {
+        activatedMonths = emp.mutabaah_activations.map((a: any) => a.month_key);
+      }
+
       // Exclude password and old profile_picture blobs, but KEEP signature
-      const { profile_picture, password, ...rest } = emp;
+      const { profile_picture, password, mutabaah_activations, ...rest } = emp;
       return {
         ...rest,
         profilePicture: rest.avatar_url || null, // Keep UI compatibility 
-        monthly_activities: {} // Force empty, loaded separately
+        monthly_activities: {}, // Force empty, loaded separately
+        activated_months: activatedMonths // Add activated_months for compatibility
       };
     });
 

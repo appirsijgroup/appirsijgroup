@@ -31,8 +31,11 @@ export async function GET(request: NextRequest) {
             // Total Active Employees
             supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true),
 
-            // Activated This Month (JSONB array contains currentMonthKey)
-            supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true).contains('activated_months', [currentMonthKey]),
+            // Activated This Month (Join with mutabaah_activations table)
+            supabase
+                .from('mutabaah_activations')
+                .select('employee_id', { count: 'exact', head: true })
+                .eq('month_key', currentMonthKey),
 
             // Mentors
             supabase.from('employees').select('*', { count: 'exact', head: true }).eq('is_active', true).or('role.in.(admin,super-admin),can_be_mentor.eq.true'),

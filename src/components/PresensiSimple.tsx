@@ -489,60 +489,66 @@ const PresensiComponent: React.FC = () => {
   return (
     <div className="space-y-10 animate-fade-in">
 
-      {/* 1. SHOLAT WAJIB SECTION - Disabled for Admins */}
-      {!isAnyAdmin(loggedInEmployee) && (
-        <section>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-teal-500/20 rounded-lg">
-                <LayoutGrid className="w-6 h-6 text-teal-300" />
-              </div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Sholat Wajib</h2>
+      {/* 1. SHOLAT WAJIB SECTION */}
+      <section>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-teal-500/20 rounded-lg">
+              <LayoutGrid className="w-6 h-6 text-teal-300" />
             </div>
-
-            <button
-              onClick={() => setIsManualRequestModalOpen(true)}
-              className="w-full sm:w-auto px-5 py-2.5 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-black rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-95 text-xs uppercase tracking-widest mt-2 sm:mt-0"
-            >
-              <PlusCircle className="w-4 h-4" strokeWidth={3} />
-              Ajukan
-            </button>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Sholat Wajib</h2>
+              {isAnyAdmin(loggedInEmployee) && (
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded text-[10px] font-bold uppercase tracking-wider">
+                  Admin View
+                </span>
+              )}
+            </div>
           </div>
 
-          {prayerTimesLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => <PrayerCardSkeleton key={i} />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {prayersToDisplay.map(prayer => {
-                const { timeValidationService } = require('@/services/timeValidationService');
-                const jakartaTime = timeValidationService.getCorrectedTime();
-                const endTime = new Date(jakartaTime);
-                const [eh, em] = prayer.endTime.split(':').map(Number);
-                endTime.setHours(eh, em, 0, 0);
+          <button
+            onClick={() => setIsManualRequestModalOpen(true)}
+            className="w-full sm:w-auto px-5 py-2.5 bg-linear-to-r from-orange-500 to-amber-600 hover:from-orange-400 hover:to-amber-500 text-white font-black rounded-xl flex items-center justify-center gap-2.5 transition-all shadow-lg active:scale-95 text-xs uppercase tracking-widest mt-2 sm:mt-0"
+          >
+            <PlusCircle className="w-4 h-4" strokeWidth={3} />
+            Ajukan
+          </button>
+        </div>
 
-                const att = prayerAttendance[prayer.id];
-                const isSubmitted = !!att?.submitted;
-                const isPast = jakartaTime > endTime && !isSubmitted;
+        {prayerTimesLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <PrayerCardSkeleton key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {prayersToDisplay.map(prayer => {
+              const { timeValidationService } = require('@/services/timeValidationService');
+              const jakartaTime = timeValidationService.getCorrectedTime();
+              const endTime = new Date(jakartaTime);
+              const [eh, em] = prayer.endTime.split(':').map(Number);
+              endTime.setHours(eh, em, 0, 0);
 
-                return (
-                  <PrayerCard
-                    key={prayer.id}
-                    prayer={prayer}
-                    attendanceStatus={att}
-                    isActive={activePrayerId === prayer.id}
-                    isTimePast={isPast}
-                    onHadir={() => handlePrayerSubmit(prayer.id, 'hadir')}
-                    onTidakHadir={() => openModal(prayer.id, prayer.name, 'prayer')}
-                    onUbah={() => { }}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
+              const att = prayerAttendance[prayer.id];
+              const isSubmitted = !!att?.submitted;
+              const isPast = jakartaTime > endTime && !isSubmitted;
+
+              return (
+                <PrayerCard
+                  key={prayer.id}
+                  prayer={prayer}
+                  attendanceStatus={att}
+                  isActive={activePrayerId === prayer.id}
+                  isTimePast={isPast}
+                  onHadir={() => handlePrayerSubmit(prayer.id, 'hadir')}
+                  onTidakHadir={() => openModal(prayer.id, prayer.name, 'prayer')}
+                  onUbah={() => { }}
+                  isAdmin={isAnyAdmin(loggedInEmployee)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* 2. KEGIATAN TERJADWAL SECTION */}
       <section>
@@ -584,10 +590,12 @@ const PresensiComponent: React.FC = () => {
               const isOngoing = cMin >= sMin && cMin <= eMin;
               const isWaiting = cMin < sMin;
               const isPast = cMin > eMin;
-              const isActionable = (isOngoing || (isPast && !isSubmitted)) && !isSubmitted;
+
+              const isAdminAccount = isAnyAdmin(loggedInEmployee);
+              const isActionable = (isOngoing || (isPast && !isSubmitted) || isAdminAccount) && !isSubmitted;
 
               const isCreator = item.isTeamSession && item.creatorId === loggedInEmployee.id;
-              const leaderOnly = item.isTeamSession && (item as any).attendanceMode === 'leader' && !isCreator;
+              const leaderOnly = item.isTeamSession && (item as any).attendanceMode === 'leader' && !isCreator && !isAdminAccount;
 
               // Premium Design Assets
               const cardBg = isSubmitted ? 'bg-green-500/5 border-green-500/20' : isOngoing ? 'bg-indigo-500/10 border-indigo-400/30 shadow-indigo-500/10' : 'bg-white/5 border-white/10';

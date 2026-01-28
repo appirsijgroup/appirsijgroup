@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { type MyDashboardViewProps, Employee, ReadingHistory, QuranReadingHistory, MonthlyReportSubmission, MenteeTarget, DailyActivity } from '../types';
-import { isAdministrativeAccount } from '@/lib/rolePermissions';
+import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { BarChart3, FileText, TrendingUp, CalendarDays, Clock, Check, Trash2, CheckSquare, Pencil, PlusCircle, Eye, RotateCcw, CheckCircle2, Info } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
@@ -988,8 +988,8 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
             <nav className="border-b border-white/20">
                 <div className="overflow-x-auto overflow-y-hidden touch-pan-x">
                     <div className="flex items-center gap-2 -mb-px min-w-max">
-                        {!isAdministrativeAccount(employee.id) && <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />}
-                        {(canAccessAnalytics || isAdministrativeAccount(employee.id)) && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
+                        {(!isAdministrativeAccount(employee.id) || isAnyAdmin(employee)) && <TabButton label="Kinerja" icon={BarChart3} active={activeTab === 'kinerja'} onClick={() => setActiveTab('kinerja')} />}
+                        {(canAccessAnalytics || isAdministrativeAccount(employee.id) || isAnyAdmin(employee)) && <TabButton label="Analytics" icon={TrendingUp} active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />}
                     </div>
                 </div>
             </nav>

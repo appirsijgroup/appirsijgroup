@@ -62,54 +62,149 @@ export async function GET(request: NextRequest) {
         }
 
         // 5. Aggregate Data from Multiple Sources
-        // Priority 1: Manual Counter Activities (employee_monthly_reports)
-        // Priority 2: Prayers (attendance_records)
-        // Priority 3: Team Sessions (team_attendance_records)
-
-        const [monthlyReportsRes, attendanceRes, teamRecordsRes] = await Promise.all([
-            // Fetch reports for all target employees
+        // We need to fetch from multiple tables to get a complete picture
+        const [
+            monthlyReportsRes,
+            attendanceRes,
+            teamRecordsRes,
+            scheduledAttRes,
+            tadarusSessionsRes,
+            tadarusRequestsRes,
+            prayerRequestsRes,
+            readingHistoryRes,
+            quranHistoryRes
+        ] = await Promise.all([
+            // 1. Manual Counter Activities (from employee_monthly_reports)
             supabase.from('employee_monthly_reports').select('employee_id, reports').in('employee_id', employeeIds),
-            // Fetch specific month attendance
-            supabase.from('attendance_records').select('employee_id, entity_id').in('employee_id', employeeIds).eq('status', 'hadir').gte('timestamp', startOfMonth).lte('timestamp', endOfMonth + 'T23:59:59'),
-            // Fetch session records
-            supabase.from('team_attendance_records').select('user_id, session_type').in('user_id', employeeIds).eq('session_date', startOfMonth) // Simplified for session
+
+            // 2. Prayers (from attendance_records)
+            supabase.from('attendance_records').select('employee_id, entity_id, timestamp').in('employee_id', employeeIds).eq('status', 'hadir').gte('timestamp', startOfMonth).lte('timestamp', endOfMonth + 'T23:59:59'),
+
+            // 3. Team Sessions (from team_attendance_records - KIE, Doa Bersama)
+            supabase.from('team_attendance_records').select('user_id, session_type, session_date').in('user_id', employeeIds).gte('session_date', startOfMonth).lte('session_date', endOfMonth),
+
+            // 4. Scheduled Activities (from activity_attendance + activities)
+            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startOfMonth).lte('activities.date', endOfMonth),
+
+            // 5. Tadarus Sessions (Mentee in session)
+            supabase.from('tadarus_sessions').select('date, present_mentee_ids').gte('date', startOfMonth).lte('date', endOfMonth),
+
+            // 6. Approved Tadarus Requests (Manual)
+            supabase.from('tadarus_requests').select('mentee_id, date').in('mentee_id', employeeIds).eq('status', 'approved').gte('date', startOfMonth).lte('date', endOfMonth),
+
+            // 7. Approved Prayer Requests (Manual)
+            supabase.from('missed_prayer_requests').select('mentee_id, date, prayer_id').in('mentee_id', employeeIds).eq('status', 'approved').gte('date', startOfMonth).lte('date', endOfMonth),
+
+            // 8. Reading History (Books)
+            supabase.from('employee_reading_history').select('employee_id, date_completed').in('employee_id', employeeIds).gte('date_completed', startOfMonth).lte('date_completed', endOfMonth),
+
+            // 9. Reading History (Quran)
+            supabase.from('employee_quran_reading_history').select('employee_id, date').in('employee_id', employeeIds).gte('date', startOfMonth).lte('date', endOfMonth)
         ]);
 
         // 6. Processing Engine
-        const activityTotals: Record<string, { achieved: number; target: number }> = {};
+        // Track unique days per activity per employee to calculate achievement correctly
+        // Structure: activityId -> userId -> Set of dates
+        const userActivityDays: Record<string, Record<string, Set<string>>> = {};
+        // Also track direct counts for manual reports
+        const activityCounts: Record<string, number> = {};
+
         DAILY_ACTIVITIES.forEach(act => {
-            activityTotals[act.id] = { achieved: 0, target: employeeIds.length * act.monthlyTarget };
+            userActivityDays[act.id] = {};
+            activityCounts[act.id] = 0;
         });
 
-        // Process Manual Reports entries
+        const trackDay = (userId: string, actId: string, dateStr: string) => {
+            if (!userActivityDays[actId]) return;
+            if (!userActivityDays[actId][userId]) userActivityDays[actId][userId] = new Set();
+            // dateStr can be YYYY-MM-DD or full timestamp
+            const dayKey = dateStr.substring(0, 10);
+            userActivityDays[actId][userId].add(dayKey);
+        };
+
+        // 6a. Process Manual Reports (direct counts)
         monthlyReportsRes.data?.forEach(row => {
             const reports = row.reports || {};
             const monthData = reports[monthKey] || {};
             Object.entries(monthData).forEach(([actId, data]: [string, any]) => {
-                if (activityTotals[actId]) {
-                    activityTotals[actId].achieved += (data.count || 0);
+                if (activityCounts.hasOwnProperty(actId)) {
+                    activityCounts[actId] += (data.count || 0);
                 }
             });
         });
 
-        // Process Attendance (Prayers)
+        // 6b. Process Attendance Records (Prayers)
         attendanceRes.data?.forEach(row => {
-            // entity_id usually matches sholat ids like 'subuh', 'dzuhur'
-            // In DAILY_ACTIVITIES, we might have IDs like 'subuh-default'
-            const prayerId = row.entity_id;
-            const activityId = `${prayerId}-default`;
-            if (activityTotals[activityId]) {
-                activityTotals[activityId].achieved += 1;
-            }
+            // All sholat berjamaah contribute to the shalat_berjamaah activity
+            trackDay(row.employee_id, 'shalat_berjamaah', row.timestamp);
         });
 
-        // Map results back to chart format
+        // 6c. Process Team Attendance (KIE, Doa Bersama)
+        teamRecordsRes.data?.forEach(row => {
+            const type = row.session_type?.toLowerCase().trim();
+            if (type === 'kie') trackDay(row.user_id, 'tepat_waktu_kie', row.session_date);
+            else if (type === 'doa bersama') trackDay(row.user_id, 'doa_bersama', row.session_date);
+            else if (type === 'tadarus' || type === 'bbq' || type === 'umum') trackDay(row.user_id, 'tadarus', row.session_date);
+            else if (type === 'kajian selasa') trackDay(row.user_id, 'kajian_selasa', row.session_date);
+        });
+
+        // 6d. Process Scheduled Activities
+        scheduledAttRes.data?.forEach(row => {
+            const activitiesData = row.activities as any;
+            const activities = Array.isArray(activitiesData) ? activitiesData[0] : activitiesData;
+            if (!activities) return;
+
+            const type = activities.activity_type?.toLowerCase().trim();
+            if (type === 'kajian selasa') trackDay(row.employee_id, 'kajian_selasa', activities.date);
+            else if (type === 'persyarikatan' || type === 'pengajian persyarikatan') trackDay(row.employee_id, 'persyarikatan', activities.date);
+            else if (type === 'kie') trackDay(row.employee_id, 'tepat_waktu_kie', activities.date);
+            else if (type === 'doa bersama') trackDay(row.employee_id, 'doa_bersama', activities.date);
+            else if (type === 'tadarus' || type === 'bbq' || type === 'umum') trackDay(row.employee_id, 'tadarus', activities.date);
+        });
+
+        // 6e. Process Tadarus Sessions
+        tadarusSessionsRes.data?.forEach(session => {
+            const mentes = session.present_mentee_ids || [];
+            mentes.forEach((mid: string) => {
+                if (employeeIds.includes(mid)) {
+                    trackDay(mid, 'tadarus', session.date);
+                }
+            });
+        });
+
+        // 6f. Process Manual Approved Requests
+        tadarusRequestsRes.data?.forEach(req => trackDay(req.mentee_id, 'tadarus', req.date));
+        prayerRequestsRes.data?.forEach(req => trackDay(req.mentee_id, 'shalat_berjamaah', req.date));
+
+        // 6g. Process Reading Histories
+        readingHistoryRes.data?.forEach(row => trackDay(row.employee_id, 'baca_alquran_buku', row.date_completed));
+        quranHistoryRes.data?.forEach(row => trackDay(row.employee_id, 'baca_alquran_buku', row.date));
+
+        // 7. Calculate Aggregated Percentages
         const performanceByActivity = DAILY_ACTIVITIES.map(act => {
-            const totals = activityTotals[act.id];
-            const percentage = totals.target > 0 ? Math.min(100, Math.round((totals.achieved / totals.target) * 100)) : 0;
-            return { name: act.title, category: act.category, percentage };
+            let totalAchieved = activityCounts[act.id] || 0;
+
+            // Add counts from tracked days
+            if (userActivityDays[act.id]) {
+                Object.values(userActivityDays[act.id]).forEach(daysSet => {
+                    // For each user, they can only achieve up to the monthlyTarget for day-based activities
+                    totalAchieved += Math.min(act.monthlyTarget, daysSet.size);
+                });
+            }
+
+            const totalTarget = employeeIds.length * act.monthlyTarget;
+            const percentage = totalTarget > 0 ? Math.min(100, Math.round((totalAchieved / totalTarget) * 100)) : 0;
+
+            return {
+                name: act.title,
+                category: act.category,
+                percentage,
+                achieved: totalAchieved, // For debugging if needed
+                target: totalTarget
+            };
         });
 
+        // 8. Group by Category
         const categoryTotals: Record<string, { totalPercentage: number; count: number }> = {};
         performanceByActivity.forEach(item => {
             const categoryName = item.category || 'Lainnya';
@@ -137,7 +232,7 @@ export async function GET(request: NextRequest) {
         });
 
     } catch (error) {
-        console.error('❌ [API] Performance API Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('❌ [API] Performance Analytics Error:', error);
+        return NextResponse.json({ error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }

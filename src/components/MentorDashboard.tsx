@@ -25,6 +25,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerator';
 import { useUIStore } from '@/store/store';
 import UniversalPersetujuan from './Persetujuan';
+import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
@@ -1559,9 +1560,8 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         <div className="space-y-6">
             <div className="overflow-x-auto overflow-y-visible touch-pan-x pb-3 pt-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
-                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={employee.canBeMentor ? (pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length) : undefined} />
-
-                    {employee.canBeMentor && (
+                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={(employee.canBeMentor || isAnyAdmin(employee)) ? (pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length) : undefined} />
+                    {(employee.canBeMentor || isAnyAdmin(employee)) && (
                         <>
                             <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />
                             <SubTabButton label="Target Bimbingan" icon={Tag} active={mentorSubView === 'target'} onClick={() => setMentorSubView('target')} />

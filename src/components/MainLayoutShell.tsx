@@ -22,7 +22,7 @@ import { useMutabaah } from '@/contexts/MutabaahContext';
 import { logger } from '@/lib/logger';
 import { Suspense } from 'react';
 import type { Employee } from '@/types';
-import { isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
+import { isAnyAdmin, isAdministrativeAccount, isSuperAdmin } from '@/lib/rolePermissions';
 import {
     LayoutDashboard,
     History,
@@ -304,9 +304,16 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             loggedInEmployee.canBeDirut;
 
         return allNavItemsRaw.filter(item => {
-            // 🔥 NEW: Check if administrative account (e.g. ID 'rsijsp')
+            // 🔥 Super Admin & Admin gets FULL ACCESS to all menus (developer role)
+            if (isAdmin) {
+                return true; // Mentors/Admins see everything
+            }
+
+            // 🔥 Check if administrative account (e.g. ID 'rsijsp')
+            // Note: In current logic, isAdmin accounts are already handled above, 
+            // but this block remains for non-admin accounts that might have text IDs
             if (isAdministrativeAccount(loggedInEmployee.id)) {
-                // Restriction requested: 1. Dashboard, 2. Jadwal & Sesi, 3. Pengumuman, 4. Admin Dashboard, 5. Profile
+                // Restriction for non-Admin administrative accounts (if any)
                 const allowedIds = ['dashboard-saya', 'presensi', 'jadwal-sesi', 'pengumuman', 'admin', 'profile'];
                 if (!allowedIds.includes(item.id)) return false;
             }

@@ -11,9 +11,10 @@ interface PrayerCardProps {
   onHadir: () => void;
   onTidakHadir: () => void;
   onUbah: () => void;
+  isAdmin?: boolean;
 }
 
-const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isActive, isTimePast, onHadir, onTidakHadir, onUbah }) => {
+const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isActive, isTimePast, onHadir, onTidakHadir, onUbah, isAdmin }) => {
   const isSubmitted = !!attendanceStatus?.submitted;
 
   const cardClasses = `
@@ -33,7 +34,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
 
   return (
     <div className={cardClasses}>
-      {!isActive && !isSubmitted && !isTimePast && (
+      {!isActive && !isSubmitted && !isTimePast && !isAdmin && (
         <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center pt-16 z-10">
           <span className="text-sm font-semibold text-gray-300 px-2 text-center">
             Belum Waktunya
@@ -67,7 +68,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
               {attendanceStatus.status === 'hadir' ? 'Hadir (Terkirim)' : 'Tidak Hadir (Terkirim)'}
             </p>
           </div>
-        ) : isTimePast ? (
+        ) : (isTimePast && !isAdmin) ? (
           <div className="flex flex-col items-center text-center gap-1 opacity-60">
             <div className="flex items-center gap-1.5 text-gray-400">
               <ClockIcon className="w-4 h-4" />
@@ -77,10 +78,10 @@ const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, attendanceStatus, isAct
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={onHadir} disabled={!isActive} className="py-2 px-2 rounded-lg font-semibold flex items-center justify-center transition-all duration-300 bg-green-500 hover:bg-green-400 text-white shadow-md disabled:bg-gray-500/50 disabled:cursor-not-allowed">
+            <button onClick={onHadir} disabled={!isActive && !isAdmin} className="py-2 px-2 rounded-lg font-semibold flex items-center justify-center transition-all duration-300 bg-green-500 hover:bg-green-400 text-white shadow-md disabled:bg-gray-500/50 disabled:cursor-not-allowed">
               <CheckIcon className="h-5 w-5 mr-1" /> Hadir
             </button>
-            <button onClick={onTidakHadir} disabled={!isActive} className="py-2 px-2 rounded-lg font-semibold flex items-center justify-center transition-all duration-300 bg-red-500 hover:bg-red-400 text-white shadow-md disabled:bg-gray-500/50 disabled:cursor-not-allowed">
+            <button onClick={onTidakHadir} disabled={!isActive && !isAdmin} className="py-2 px-2 rounded-lg font-semibold flex items-center justify-center transition-all duration-300 bg-red-500 hover:bg-red-400 text-white shadow-md disabled:bg-gray-500/50 disabled:cursor-not-allowed">
               <XIcon className="h-5 w-5 mr-1" /> Tidak
             </button>
           </div>

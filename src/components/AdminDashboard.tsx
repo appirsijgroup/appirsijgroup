@@ -3938,7 +3938,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     }, [activeView, onLoadHeavyData, allUsersData, isLoadingEmployees]);
 
     useEffect(() => {
-        if (!isSuperAdmin(loggedInEmployee)) {
+        if (!isAnyAdmin(loggedInEmployee)) {
             if (['manajemen-pengguna', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(activeView)) {
                 setActiveView('manajemen-konten');
             }
@@ -4176,11 +4176,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             }
                         `}</style>
                         <TabButton active={activeView === 'reports'} onClick={() => setActiveView('reports')} label="Laporan" icon={BarChart3} />
-                        {isSuperAdmin(loggedInEmployee) && (
+                        {isAnyAdmin(loggedInEmployee) && (
                             <TabButton active={activeView === 'manajemen-pengguna'} onClick={() => setActiveView('manajemen-pengguna')} label="Manajemen Pengguna" icon={Users} />
                         )}
                         <TabButton active={activeView === 'manajemen-konten'} onClick={() => setActiveView('manajemen-konten')} label="Konten & Aktivitas" icon={FileText} />
-                        {isSuperAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
+                        {isAnyAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
                     </div>
 
                     {/* 🔥 Global Refresh/Sync Button - Restored for Reports and User Management */}
@@ -4202,7 +4202,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
             </div>
 
             <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-                {activeView === 'manajemen-pengguna' && isSuperAdmin(loggedInEmployee) && (
+                {activeView === 'manajemen-pengguna' && isAnyAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">
                             <div className="flex items-center gap-2 min-w-max px-1">
@@ -4341,7 +4341,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
                 )}
 
-                {activeView === 'manajemen-rs' && isSuperAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
+                {activeView === 'manajemen-rs' && isAnyAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
             </div>
 
             <UserModal

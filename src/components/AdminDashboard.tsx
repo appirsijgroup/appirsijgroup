@@ -26,7 +26,8 @@ import {
     PlusCircle,
     Trash2,
     RefreshCw,
-    Check
+    Check,
+    Shield // 🔥 NEW
 } from 'lucide-react';
 import { availableIconsForSunnah } from './Icons';
 import { generateOfficialPdf, type TableConfig, type ReportSection } from './ReportGenerator';
@@ -1307,6 +1308,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     loggedInEmployee // 🔥 NEW
 }) => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [openRoleMenuId, setOpenRoleMenuId] = useState<string | null>(null); // 🔥 NEW: Track which role menu is open
 
     // 🔥 FIX: Use server-side paginated employees if available, fallback to client-side for compatibility
     const displayUsers = useMemo(() => {
@@ -1444,33 +1446,60 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                                 </button>
                                             )}
 
-                                            {/* Role Change Buttons */}
+                                            {/* 🔥 NEW: Clean "Manage Role" dropdown */}
                                             {!isSelf && (
-                                                <div className="flex flex-wrap gap-1 justify-center">
-                                                    {getAssignableRoles(loggedInEmployee).map((role) => {
-                                                        if (user.role === role) return null;
-                                                        const validationError = validateRoleChange(loggedInEmployee, user, role);
-                                                        if (validationError) return null;
+                                                <div className="relative w-full">
+                                                    <button
+                                                        onClick={() => setOpenRoleMenuId(openRoleMenuId === user.id ? null : user.id)}
+                                                        className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded bg-blue-600/20 hover:bg-blue-600/40 text-blue-200 hover:text-white border border-blue-500/30 text-xs font-medium transition-colors"
+                                                        title="Ubah Role User"
+                                                    >
+                                                        <Shield className="w-3 h-3" />
+                                                        Kelola Role
+                                                        <ChevronDown className={`w-3 h-3 transition-transform ${openRoleMenuId === user.id ? 'rotate-180' : ''}`} />
+                                                    </button>
 
-                                                        const buttonStyles = {
-                                                            'owner': 'bg-yellow-600/80 hover:bg-yellow-500',
-                                                            'super-admin': 'bg-purple-600/80 hover:bg-purple-500',
-                                                            'admin': 'bg-blue-600/80 hover:bg-blue-500',
-                                                            'user': 'bg-gray-600/80 hover:bg-gray-500'
-                                                        };
+                                                    {/* Dropdown Menu */}
+                                                    {openRoleMenuId === user.id && (
+                                                        <>
+                                                            {/* Backdrop to close on outside click */}
+                                                            <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setOpenRoleMenuId(null)} />
 
-                                                        return (
-                                                            <button
-                                                                key={role}
-                                                                onClick={() => onInitiateSetRole(user, role)}
-                                                                className={`px-3 py-1.5 rounded-md text-xs font-semibold text-white transition-all shadow-sm hover:scale-105 active:scale-95 ${buttonStyles[role]}`}
-                                                                title={`Jadikan ${role}`}
-                                                            >
-                                                                {role === 'user' ? 'Reset User' : `Set ${role.replace('-', ' ')}`}
-                                                            </button>
-                                                        );
+                                                            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-gray-800 border border-white/20 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                                <div className="p-1 flex flex-col gap-1">
+                                                                    {getAssignableRoles(loggedInEmployee).map((role) => {
+                                                                        if (user.role === role) return null;
+                                                                        const validationError = validateRoleChange(loggedInEmployee, user, role);
+                                                                        if (validationError) return null;
 
-                                                    })}
+                                                                        const buttonStyles = {
+                                                                            'owner': 'text-yellow-400 hover:bg-yellow-500/20',
+                                                                            'super-admin': 'text-purple-400 hover:bg-purple-500/20',
+                                                                            'admin': 'text-blue-400 hover:bg-blue-500/20',
+                                                                            'user': 'text-gray-300 hover:bg-gray-600/50'
+                                                                        };
+
+                                                                        return (
+                                                                            <button
+                                                                                key={role}
+                                                                                onClick={() => {
+                                                                                    onInitiateSetRole(user, role);
+                                                                                    setOpenRoleMenuId(null);
+                                                                                }}
+                                                                                className={`w-full text-left px-3 py-2 text-xs font-medium rounded transition-colors flex items-center gap-2 ${buttonStyles[role]} group`}
+                                                                            >
+                                                                                <div className={`w-1.5 h-1.5 rounded-full ${role === 'user' ? 'bg-gray-400' : role === 'admin' ? 'bg-blue-400' : role === 'super-admin' ? 'bg-purple-400' : 'bg-yellow-400'}`}></div>
+                                                                                {role === 'user' ? 'Reset ke User' : `Jadikan ${role.replace('-', ' ')}`}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                    {getAssignableRoles(loggedInEmployee).filter(r => r !== user.role && !validateRoleChange(loggedInEmployee, user, r)).length === 0 && (
+                                                                        <div className="px-3 py-2 text-[10px] text-gray-500 text-center italic">Tidak ada opsi</div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                             {isSelf && <div className="text-[10px] text-gray-500 italic text-center">Akun Anda Sendiri</div>}

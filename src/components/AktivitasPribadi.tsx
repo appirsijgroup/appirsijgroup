@@ -518,7 +518,11 @@ export const RiwayatBacaan: React.FC<{
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">{item.detail}</td>
                                 <td className="px-4 py-3 text-center">
-                                    <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
+                                    <button
+                                        onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })}
+                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 text-red-400 hover:text-red-300 transition-all shadow-sm hover:shadow-md"
+                                        title="Hapus"
+                                    >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </td>

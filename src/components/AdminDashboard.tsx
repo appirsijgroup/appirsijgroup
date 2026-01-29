@@ -1729,8 +1729,20 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                 {isSuperAdmin(loggedInEmployee) && (
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center gap-2">
-                                            <button onClick={() => onEditAttendance(record)} title="Edit Presensi" className="p-1.5 text-blue-300 hover:text-white rounded-md hover:bg-white/10"><Pencil className="w-4 h-4" /></button>
-                                            <button onClick={() => onDeleteAttendance(record)} title="Hapus Presensi" className="p-1.5 text-red-300 hover:text-red-300 rounded-md hover:bg-white/10"><X className="w-4 h-4" /></button>
+                                            <button
+                                                onClick={() => onEditAttendance(record)}
+                                                title="Edit Presensi"
+                                                className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/30 text-blue-400 hover:text-blue-300 transition-all shadow-sm hover:shadow-md"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => onDeleteAttendance(record)}
+                                                title="Hapus Presensi"
+                                                className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 text-red-400 hover:text-red-300 transition-all shadow-sm hover:shadow-md"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </td>
                                 )}

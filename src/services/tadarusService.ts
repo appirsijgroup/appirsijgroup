@@ -248,6 +248,36 @@ export const getTadarusRequestsForMentor = async (mentorId: string): Promise<Tad
     }
 };
 
+// Get tadarus requests for a list of mentees
+export const getTadarusRequestsByMenteeIds = async (menteeIds: string[]): Promise<TadarusRequest[]> => {
+    try {
+        if (menteeIds.length === 0) return [];
+        const response = await fetch(`/api/manual-requests/tadarus?menteeIds=${menteeIds.join(',')}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch tadarus requests by mentees');
+        }
+
+        const result = await response.json();
+        const data = result.data || [];
+
+        return data.map((request: any) => ({
+            id: request.id,
+            menteeId: request.mentee_id,
+            menteeName: request.mentee_name,
+            mentorId: request.mentor_id,
+            date: request.date,
+            category: request.category,
+            notes: request.notes,
+            requestedAt: request.requested_at,
+            status: request.status,
+            reviewedAt: request.reviewed_at
+        }));
+    } catch (error) {
+        console.error('Error fetching tadarus requests by mentee IDs:', error);
+        return [];
+    }
+};
+
 // Create new tadarus request
 export const createTadarusRequest = async (
     request: Omit<TadarusRequest, 'id'>

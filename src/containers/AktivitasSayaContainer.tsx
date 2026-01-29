@@ -317,6 +317,19 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
 
             if (newSubmission) {
                 addOrUpdateMonthlyReportSubmission(newSubmission);
+
+                // Notify Mentor
+                if (loggedInEmployee.mentorId) {
+                    createNotification({
+                        userId: loggedInEmployee.mentorId,
+                        type: 'monthly_report_submitted',
+                        title: 'Laporan Bulanan Baru',
+                        message: `${loggedInEmployee.name} telah mengirimkan laporan bulanan ${monthKey}.`,
+                        linkTo: '/aktifitas-saya?tab=panel-mentor&subview=persetujuan' as any,
+                        relatedEntityId: newSubmission.id,
+                    });
+                }
+
                 addToast('Laporan bulanan berhasil dikirim', 'success');
             } else {
                 addToast('Gagal mengirim laporan bulanan. Mungkin Anda sudah mengirim laporan untuk bulan ini.', 'error');
@@ -537,7 +550,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
                         type: decision === 'approved' ? 'monthly_report_approved' : 'monthly_report_rejected',
                         title: `Laporan ${decision === 'approved' ? 'Disetujui' : 'Ditolak'}`,
                         message: message,
-                        linkTo: '/aktifitas-saya', // Consistent link
+                        linkTo: '/aktifitas-saya' as any, // Link to mentee's personal view
                         relatedEntityId: submissionId
                     });
                 }

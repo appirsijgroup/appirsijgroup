@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const menteeId = searchParams.get('menteeId');
+        const menteeIds = searchParams.get('menteeIds')?.split(',');
         const mentorId = searchParams.get('mentorId');
 
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,7 +40,9 @@ export async function GET(request: NextRequest) {
 
         let query = supabase.from('tadarus_requests').select('*').order('requested_at', { ascending: false });
 
-        if (menteeId) {
+        if (menteeIds && menteeIds.length > 0) {
+            query = query.in('mentee_id', menteeIds);
+        } else if (menteeId) {
             query = query.eq('mentee_id', menteeId);
         } else if (mentorId) {
             query = query.eq('mentor_id', mentorId);

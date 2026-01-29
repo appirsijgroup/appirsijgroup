@@ -1502,12 +1502,18 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     }, [mentorSubView, mentees.length, loadDetailedEmployeeData]);
 
     const pendingTadarusRequests = useMemo(() => {
-        return tadarusRequests.filter(r => r.mentorId === employee.id && r.status === 'pending');
-    }, [tadarusRequests, employee.id]);
+        return tadarusRequests.filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        });
+    }, [tadarusRequests, employee.id, allUsersData]);
 
     const pendingMissedPrayerRequests = useMemo(() => {
-        return missedPrayerRequests.filter(r => r.mentorId === employee.id && r.status === 'pending');
-    }, [missedPrayerRequests, employee.id]);
+        return missedPrayerRequests.filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        });
+    }, [missedPrayerRequests, employee.id, allUsersData]);
 
     const pendingMentorReviews = useMemo(() => {
         return monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.mentorId === employee.id && s.status === 'pending_mentor');
@@ -1640,7 +1646,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
         <div className="space-y-6">
             <div className="overflow-x-auto overflow-y-visible touch-pan-x pb-3 pt-3">
                 <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 min-w-max px-1">
-                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} count={(employee.canBeMentor || isAnyAdmin(employee)) ? (pendingMentorReviews.length + pendingTadarusRequests.length + pendingMissedPrayerRequests.length) : undefined} />
+                    <SubTabButton label="Persetujuan" icon={CheckSquare} active={mentorSubView === 'persetujuan'} onClick={() => setMentorSubView('persetujuan')} />
                     {(employee.canBeMentor || isAnyAdmin(employee)) && (
                         <>
                             <SubTabButton label="Anggota Bimbingan" icon={Users} active={mentorSubView === 'mentees'} onClick={() => setMentorSubView('mentees')} />

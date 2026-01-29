@@ -408,9 +408,9 @@ const PresensiComponent: React.FC = () => {
       await createNotification({
         userId: loggedInEmployee.mentorId,
         type: 'tadarus_request',
-        title: `Permintaan Kehadiran ${category || 'Sesi'}`,
-        message: `${loggedInEmployee.name} mengajukan kehadiran ${category || 'tadarus'} manual untuk tanggal ${new Date(date).toLocaleDateString('id-ID')}.`,
-        linkTo: '/aktifitas-saya?tab=panel-mentor' as any,
+        title: `Persetujuan ${category || 'Sesi'}`,
+        message: `${loggedInEmployee.name} mengajukan kehadiran untuk ${category || 'kegiatan'} tgl ${new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}.`,
+        linkTo: '/aktifitas-saya?tab=panel-mentor&subview=persetujuan' as any,
         relatedEntityId: newRequest.id,
       });
 
@@ -439,9 +439,9 @@ const PresensiComponent: React.FC = () => {
       await createNotification({
         userId: loggedInEmployee.mentorId,
         type: 'missed_prayer_request',
-        title: 'Permintaan Presensi Terlewat',
-        message: `${loggedInEmployee.name} meminta persetujuan untuk presensi terlewat.`,
-        linkTo: '/aktifitas-saya?tab=panel-mentor' as any,
+        title: 'Presensi Terlewat',
+        message: `${loggedInEmployee.name} mengajukan persetujuan untuk sholat ${data.prayerName} tgl ${new Date(data.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}.`,
+        linkTo: '/aktifitas-saya?tab=panel-mentor&subview=persetujuan' as any,
         relatedEntityId: newRequest.id,
       });
 

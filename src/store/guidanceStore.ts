@@ -101,18 +101,35 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             loadTadarusRequestsFromSupabase: async () => {
                 try {
-                    const { getAllTadarusRequests, getTadarusRequestsForMentor } = await import('@/services/tadarusService');
+                    const { getAllTadarusRequests, getTadarusRequestsForMentor, getTadarusRequestsByMenteeIds } = await import('@/services/tadarusService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+                    const allUsersData = useAppDataStore.getState().allUsersData;
 
                     if (!loggedInEmployee) return;
 
-                    let requests;
-                    // Broaden: If user has ANY superior role, load all to filter locally (safest)
-                    if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                    let requests: TadarusRequest[] = [];
+                    // 🔥 FIX: Restricted fetching. Admins load ALL, others load only THEIR assigned AND team requests.
+                    if (loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
                         requests = await getAllTadarusRequests();
+                    } else if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.canBeManager || loggedInEmployee.canBeDirut) {
+                        // 1. Fetch by Mentor ID (for history/assigned)
+                        const assignedRequests = await getTadarusRequestsForMentor(loggedInEmployee.id);
+
+                        // 2. Fetch by current Team (so it follows the mentee if they move)
+                        const currentMenteeIds = Object.values(allUsersData)
+                            .map(d => d.employee)
+                            .filter(emp => emp.mentorId === loggedInEmployee.id)
+                            .map(emp => emp.id);
+
+                        const teamRequests = await getTadarusRequestsByMenteeIds(currentMenteeIds);
+
+                        // Merge unique
+                        const requestMap = new Map<string, TadarusRequest>();
+                        assignedRequests.forEach(r => requestMap.set(r.id, r));
+                        teamRequests.forEach(r => requestMap.set(r.id, r));
+                        requests = Array.from(requestMap.values());
                     } else {
                         // Regular user only sees their own
-                        const { searchParams } = new URL(window.location.href); // Fallback: the API supports menteeId
                         const response = await fetch(`/api/manual-requests/tadarus?menteeId=${loggedInEmployee.id}`);
                         const result = await response.json();
                         requests = result.data || [];
@@ -125,14 +142,32 @@ export const useGuidanceStore = create<GuidanceState>()(
 
             loadMissedPrayerRequestsFromSupabase: async () => {
                 try {
-                    const { getAllMissedPrayerRequests, getMissedPrayerRequestsForMentor, getMissedPrayerRequestsForMentee } = await import('@/services/prayerRequestService');
+                    const { getAllMissedPrayerRequests, getMissedPrayerRequestsForMentor, getMissedPrayerRequestsForMentee, getMissedPrayerRequestsByMenteeIds } = await import('@/services/prayerRequestService');
                     const loggedInEmployee = useAppDataStore.getState().loggedInEmployee;
+                    const allUsersData = useAppDataStore.getState().allUsersData;
 
                     if (!loggedInEmployee) return;
 
-                    let requests;
-                    if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
+                    let requests: MissedPrayerRequest[] = [];
+                    if (loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin') {
                         requests = await getAllMissedPrayerRequests();
+                    } else if (loggedInEmployee.canBeMentor || loggedInEmployee.canBeSupervisor || loggedInEmployee.canBeKaUnit || loggedInEmployee.canBeManager || loggedInEmployee.canBeDirut) {
+                        // 1. Fetch by Mentor ID
+                        const assignedRequests = await getMissedPrayerRequestsForMentor(loggedInEmployee.id);
+
+                        // 2. Fetch by current Team
+                        const currentMenteeIds = Object.values(allUsersData)
+                            .map(d => d.employee)
+                            .filter(emp => emp.mentorId === loggedInEmployee.id)
+                            .map(emp => emp.id);
+
+                        const teamRequests = await getMissedPrayerRequestsByMenteeIds(currentMenteeIds);
+
+                        // Merge unique
+                        const requestMap = new Map<string, MissedPrayerRequest>();
+                        assignedRequests.forEach(r => requestMap.set(r.id, r));
+                        teamRequests.forEach(r => requestMap.set(r.id, r));
+                        requests = Array.from(requestMap.values());
                     } else {
                         requests = await getMissedPrayerRequestsForMentee(loggedInEmployee.id);
                     }

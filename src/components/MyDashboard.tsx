@@ -869,20 +869,36 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
 
     // Calculate pending counts for notification badges
     const mentorPanelCount = useMemo(() => {
-        const tadarusPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
-        const sholatPending = (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
-        const reportsPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_mentor' && s.mentorId === employee.id).length;
+        const tadarusPending = (props.tadarusRequests || []).filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        }).length;
+        const sholatPending = (props.missedPrayerRequests || []).filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        }).length;
+        const reportsPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => {
+            const mentee = allUsersData[s.menteeId]?.employee;
+            return s.status === 'pending_mentor' && mentee && mentee.mentorId === employee.id;
+        }).length;
         return tadarusPending + sholatPending + reportsPending;
-    }, [props.tadarusRequests, props.missedPrayerRequests, (props as any).monthlyReportSubmissions, employee.id]);
+    }, [props.tadarusRequests, props.missedPrayerRequests, (props as any).monthlyReportSubmissions, employee.id, allUsersData]);
 
     const approvalTabCount = useMemo(() => {
         const supervisorPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_supervisor' && s.supervisorId === employee.id).length;
         const kaUnitPending = (props as any).monthlyReportSubmissions.filter((s: MonthlyReportSubmission) => s.status === 'pending_kaunit' && s.kaUnitId === employee.id).length;
-        // Manual requests are also visible in the top-level Persetujuan tab now
-        const manualPending = (props.tadarusRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length +
-            (props.missedPrayerRequests || []).filter(r => r.mentorId === employee.id && r.status === 'pending').length;
+
+        // Manual requests follow the current mentor
+        const manualPending = (props.tadarusRequests || []).filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        }).length + (props.missedPrayerRequests || []).filter(r => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            return r.status === 'pending' && mentee && mentee.mentorId === employee.id;
+        }).length;
+
         return supervisorPending + kaUnitPending + manualPending;
-    }, [(props as any).monthlyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, employee.id]);
+    }, [(props as any).monthlyReportSubmissions, props.tadarusRequests, props.missedPrayerRequests, employee.id, allUsersData]);
 
 
 

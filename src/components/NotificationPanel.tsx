@@ -191,35 +191,55 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, onClose, 
                     {notifications.length > 0 ? (
                         <ul>
                             {notifications.map(notif => (
-                                <li key={notif.id} className={`border-b border-white/10 last:border-b-0 transition-colors ${isManageMode && selectedIds.has(notif.id) ? 'bg-teal-500/20' : ''}`}>
+                                <li key={notif.id} className={`border-b border-white/5 last:border-b-0 transition-all duration-200 ${isManageMode && selectedIds.has(notif.id) ? 'bg-teal-500/10' : ''}`}>
                                     {isManageMode ? (
-                                        <label className="w-full text-left p-4 flex items-start gap-4 cursor-pointer">
+                                        <label className="w-full text-left p-4 flex items-start gap-4 cursor-pointer hover:bg-white/5">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedIds.has(notif.id)}
                                                 onChange={() => handleToggleSelection(notif.id)}
                                                 className="w-5 h-5 rounded mt-3 bg-gray-700 border-gray-500 text-teal-500 focus:ring-teal-500"
                                             />
-                                            <NotificationIcon type={notif.type} />
+                                            <div className="relative group">
+                                                <div className="absolute -inset-1 bg-linear-to-r from-teal-500 to-indigo-500 rounded-full blur-sm opacity-0 group-hover:opacity-40 transition-opacity"></div>
+                                                <NotificationIcon type={notif.type} />
+                                            </div>
                                             <div className="grow">
-                                                <p className="font-semibold text-white">{notif.title}</p>
-                                                <p className="text-sm text-blue-200">{notif.message}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                                <p className="font-semibold text-white text-sm">{notif.title}</p>
+                                                <p className="text-sm text-blue-200/80 leading-relaxed">{notif.message}</p>
+                                                <p className="text-[10px] text-gray-500 mt-1.5 flex items-center gap-1.5 font-medium">
+                                                    <Clock className="w-3 h-3" />
+                                                    {new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                </p>
                                             </div>
                                         </label>
                                     ) : (
                                         <button
                                             onClick={() => handleItemClick(notif)}
-                                            className={`w-full text-left p-4 flex items-start gap-4 transition-colors ${!notif.isRead ? 'bg-teal-500/10' : ''} ${notif.linkTo ? 'hover:bg-white/10' : 'cursor-default'}`}
+                                            className={`w-full text-left p-4 flex items-start gap-4 transition-all relative group ${!notif.isRead ? 'bg-teal-400/5' : ''} ${notif.linkTo ? 'hover:bg-white/10 active:scale-[0.99]' : 'cursor-default'}`}
                                         >
-                                            {!notif.isRead && (
-                                                <div className="w-2.5 h-2.5 bg-teal-400 rounded-full shrink-0 mt-1.5 animate-pulse"></div>
-                                            )}
-                                            <NotificationIcon type={notif.type} />
-                                            <div className={`grow ${notif.isRead ? 'pl-5' : ''}`}>
-                                                <p className={`font-semibold ${!notif.isRead ? 'text-white' : 'text-gray-300'}`}>{notif.title}</p>
-                                                <p className={`text-sm ${!notif.isRead ? 'text-blue-200' : 'text-gray-400'}`}>{notif.message}</p>
-                                                <p className="text-xs text-gray-500 mt-1">{new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                            <div className="flex flex-col items-center gap-2 pt-1.5">
+                                                {!notif.isRead && (
+                                                    <div className="w-2 h-2 bg-teal-400 rounded-full shrink-0 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.6)]"></div>
+                                                )}
+                                                <div className="relative">
+                                                    <div className="absolute -inset-1 bg-linear-to-r from-teal-500 to-indigo-500 rounded-full blur-sm opacity-0 group-hover:opacity-30 transition-opacity"></div>
+                                                    <NotificationIcon type={notif.type} />
+                                                </div>
+                                            </div>
+
+                                            <div className="grow">
+                                                <p className={`font-bold transition-colors ${!notif.isRead ? 'text-white' : 'text-gray-400'}`}>{notif.title}</p>
+                                                <p className={`text-sm mt-0.5 leading-relaxed transition-colors ${!notif.isRead ? 'text-blue-100' : 'text-gray-500'}`}>{notif.message}</p>
+                                                <div className="flex items-center justify-between mt-2">
+                                                    <p className="text-[10px] text-gray-500 flex items-center gap-1 font-medium">
+                                                        <Clock className="w-3 h-3" />
+                                                        {new Date(notif.timestamp).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                    </p>
+                                                    {notif.linkTo && !isManageMode && (
+                                                        <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Buka &rarr;</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </button>
                                     )}

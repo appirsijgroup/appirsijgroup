@@ -99,6 +99,38 @@ export const getMissedPrayerRequestsForMentor = async (mentorId: string): Promis
     }
 };
 
+// Get requests for a list of mentees
+export const getMissedPrayerRequestsByMenteeIds = async (menteeIds: string[]): Promise<MissedPrayerRequest[]> => {
+    try {
+        if (menteeIds.length === 0) return [];
+        const response = await fetch(`/api/manual-requests/prayer?menteeIds=${menteeIds.join(',')}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch prayer requests by mentees');
+        }
+
+        const result = await response.json();
+        const data = result.data || [];
+
+        return data.map((req: any) => ({
+            id: req.id,
+            menteeId: req.mentee_id,
+            menteeName: req.mentee_name,
+            mentorId: req.mentor_id,
+            date: req.date,
+            prayerId: req.prayer_id,
+            prayerName: req.prayer_name,
+            reason: req.reason,
+            requestedAt: req.requested_at,
+            status: req.status,
+            reviewedAt: req.reviewed_at,
+            mentorNotes: req.mentor_notes
+        }));
+    } catch (error) {
+        console.error('Error fetching prayer requests by mentee IDs:', error);
+        return [];
+    }
+};
+
 // Create new request
 export const createMissedPrayerRequest = async (
     request: Omit<MissedPrayerRequest, 'id'>

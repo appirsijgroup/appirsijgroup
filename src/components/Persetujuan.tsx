@@ -300,32 +300,62 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
         });
 
         // 2. Map Tadarus Requests
-        const tadarus = (pendingTadarusRequests || []).map((r: any) => ({
-            id: r.id,
-            type: 'tadarus' as const,
-            menteeId: r.menteeId,
-            menteeName: r.menteeName,
-            periode: `Tadarus/BBQ - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
-            submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
-            monthKey: r.date.substring(0, 7),
-            status: r.status,
-            canReview: r.status === 'pending',
-            originalData: r
-        }));
+        const tadarus = (pendingTadarusRequests || [])
+            .filter((r: any) => {
+                const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
+                if (isAdmin) return true;
+
+                const mentee = allUsersData[r.menteeId]?.employee;
+                const isCurrentMentor = mentee && mentee.mentorId === myId;
+                const isOriginalMentor = r.mentorId === myId;
+
+                // Dynamic Authority: Pending items only show to CURRENT mentor.
+                // History items show to both (original reviewer & current mentor).
+                if (r.status === 'pending') {
+                    return isCurrentMentor;
+                }
+                return isOriginalMentor || isCurrentMentor;
+            })
+            .map((r: any) => ({
+                id: r.id,
+                type: 'tadarus' as const,
+                menteeId: r.menteeId,
+                menteeName: r.menteeName,
+                periode: `Tadarus/BBQ - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+                submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+                monthKey: r.date.substring(0, 7),
+                status: r.status,
+                canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
+                originalData: r
+            }));
 
         // 3. Map Missed Prayer Requests
-        const missedPrayers = (pendingMissedPrayerRequests || []).map((r: any) => ({
-            id: r.id,
-            type: 'prayer' as const,
-            menteeId: r.menteeId,
-            menteeName: r.menteeName,
-            periode: `Presensi Terlewat: ${r.prayerName} - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
-            submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
-            monthKey: r.date.substring(0, 7),
-            status: r.status,
-            canReview: r.status === 'pending',
-            originalData: r
-        }));
+        const missedPrayers = (pendingMissedPrayerRequests || [])
+            .filter((r: any) => {
+                const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
+                if (isAdmin) return true;
+
+                const mentee = allUsersData[r.menteeId]?.employee;
+                const isCurrentMentor = mentee && mentee.mentorId === myId;
+                const isOriginalMentor = r.mentorId === myId;
+
+                if (r.status === 'pending') {
+                    return isCurrentMentor;
+                }
+                return isOriginalMentor || isCurrentMentor;
+            })
+            .map((r: any) => ({
+                id: r.id,
+                type: 'prayer' as const,
+                menteeId: r.menteeId,
+                menteeName: r.menteeName,
+                periode: `Presensi Terlewat: ${r.prayerName} - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+                submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+                monthKey: r.date.substring(0, 7),
+                status: r.status,
+                canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
+                originalData: r
+            }));
 
         return [...reports, ...tadarus, ...missedPrayers].sort((a, b) => b.submittedAt - a.submittedAt);
     }, [submissionsForRole, pendingTadarusRequests, pendingMissedPrayerRequests, loggedInEmployee, allUsersData]);
@@ -376,10 +406,22 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
     // Separate pending manual requests for the top section (dashboard style)
     const activePendingManual = useMemo(() => {
-        const tadarus = (pendingTadarusRequests || []).filter((r: any) => r.status === 'pending');
-        const prayer = (pendingMissedPrayerRequests || []).filter((r: any) => r.status === 'pending');
+        const myId = loggedInEmployee.id;
+        const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
+
+        const tadarus = (pendingTadarusRequests || []).filter((r: any) => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            if (isAdmin) return r.status === 'pending';
+            // Only show pending items where I am the CURRENT mentor
+            return r.status === 'pending' && mentee && mentee.mentorId === myId;
+        });
+        const prayer = (pendingMissedPrayerRequests || []).filter((r: any) => {
+            const mentee = allUsersData[r.menteeId]?.employee;
+            if (isAdmin) return r.status === 'pending';
+            return r.status === 'pending' && mentee && mentee.mentorId === myId;
+        });
         return { tadarus, prayer };
-    }, [pendingTadarusRequests, pendingMissedPrayerRequests]);
+    }, [pendingTadarusRequests, pendingMissedPrayerRequests, loggedInEmployee, allUsersData]);
 
     return (
         <div className="w-full animate-fade-in">

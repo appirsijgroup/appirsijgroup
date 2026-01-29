@@ -13,6 +13,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import ActivationRequired from './ActivationRequired';
 import ConfirmationModal from './ConfirmationModal';
 import BrandedLoader from './BrandedLoader';
+import PageSkeleton from './PageSkeleton';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
 import { useAnnouncementStore } from '@/store/announcementStore';
@@ -620,11 +621,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 <main className="flex-1 overflow-y-auto p-2 sm:p-4 relative" id="main-content-area">
                     <ErrorBoundary>
                         {/* 🚀 OPTIMIZED: Using Suspense here ensures sidebar/navbar STAY visible during page transitions */}
-                        <Suspense fallback={
-                            <div className="flex items-center justify-center min-h-[60vh] w-full">
-                                <BrandedLoader fullScreen={false} message="Memuat konten..." />
-                            </div>
-                        }>
+                        <Suspense fallback={<PageSkeleton />}>
 
                             {/* Page content */}
                             {activationStatus.shouldShowActivationRequired ? (

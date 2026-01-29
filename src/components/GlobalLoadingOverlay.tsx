@@ -19,7 +19,7 @@ export const GlobalLoadingOverlay: React.FC = () => {
         if (globalLoading.show) {
             setShouldRender(true);
         } else {
-            const timer = setTimeout(() => setShouldRender(false), 300);
+            const timer = setTimeout(() => setShouldRender(false), 100);
             return () => clearTimeout(timer);
         }
     }, [globalLoading.show]);

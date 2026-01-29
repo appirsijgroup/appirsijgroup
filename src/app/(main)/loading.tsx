@@ -1,5 +1,5 @@
-import BrandedLoader from '@/components/BrandedLoader';
+import PageSkeleton from '@/components/PageSkeleton';
 
 export default function Loading() {
-  return <BrandedLoader fullScreen={false} message="Menyiapkan halaman..." />;
+  return <PageSkeleton />;
 }

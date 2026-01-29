@@ -192,20 +192,13 @@ export const deleteTadarusSession = async (sessionId: string): Promise<void> => 
 // Get all tadarus requests
 export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
     try {
-
-        const { data, error } = await supabase
-            .from('tadarus_requests')
-            .select('*')
-            .order('requested_at', { ascending: false });
-
-        if (error) {
-            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        const response = await fetch('/api/manual-requests/tadarus');
+        if (!response.ok) {
+            throw new Error('Failed to fetch all tadarus requests');
         }
 
-        if (!data || data.length === 0) {
-            return [];
-        }
-
+        const result = await response.json();
+        const data = result.data || [];
 
         // Convert snake_case to camelCase
         return data.map((request: any) => ({
@@ -221,7 +214,8 @@ export const getAllTadarusRequests = async (): Promise<TadarusRequest[]> => {
             reviewedAt: request.reviewed_at
         }));
     } catch (error) {
-        throw error;
+        console.error('Error fetching all tadarus requests:', error);
+        return [];
     }
 };
 

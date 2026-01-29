@@ -54,9 +54,6 @@ interface AdminDashboardProps {
     onDeleteUser: (userId: string) => void;
     onBulkUpdateUsers: (usersToProcess: (RawEmployee & { id: string; })[]) => Promise<{ added: number, updated: number, failed: { record: RawEmployee & { id: string }, reason: string; }[] }>;
     activities: Activity[];
-    onAddActivity: (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => void;
-    onUpdateActivity: (activityId: string, updates: Partial<Activity>) => void;
-    onDeleteActivity: (activityId: string) => void;
     onAdminUpdateAttendance: (payload: { userId: string; date: string; entityId: string; status: "hadir" | "tidak-hadir" | null; reason: string | null; }) => void;
     onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
     sunnahIbadahList: SunnahIbadah[];
@@ -908,25 +905,25 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
 
     return (
         <div>
-            <div className="flex flex-col sm:flex-row justify-between mb-4 gap-4">
-                <div className="relative w-full sm:max-w-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-6">
+                <div className="relative w-full md:max-w-xs">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         value={pagination?.searchTerm || ''}
                         onChange={e => pagination?.onSearch(e.target.value)}
                         placeholder="Cari nama atau NIP..."
-                        className="w-full bg-white/5 border border-white/20 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white transition-colors"
+                        className="w-full bg-white/5 border border-white/20 rounded-xl p-3 pl-10 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white transition-colors"
                     />
                 </div>
-                <div className="flex justify-end gap-2 w-full sm:w-auto">
-                    <button onClick={() => setIsImportModalOpen(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <button onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg transition-all active:scale-95">
                         <Upload className="w-5 h-5" />
-                        Impor
+                        Impor Data
                     </button>
-                    <button onClick={() => onOpenUserModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
+                    <button onClick={() => onOpenUserModal()} className="flex-1 sm:flex-none px-6 py-2.5 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg transition-all active:scale-95">
                         <User className="w-5 h-5" />
-                        Tambah
+                        Tambah Pengguna
                     </button>
                 </div>
             </div>
@@ -975,7 +972,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                     <td className="px-4 py-3 whitespace-nowrap text-xs text-blue-300/70">{user.bagian}</td>
                                     <td className="px-4 py-3 whitespace-nowrap text-[10px] text-gray-400">{user.professionCategory}</td>
                                     <td className="px-4 py-3 whitespace-nowrap text-xs font-medium">{user.profession}</td>
-                                    <td className="px-4 py-3">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         <div className="flex items-center justify-center">
                                             <button
                                                 onClick={() => onInitiateToggleStatus(user)}
@@ -989,7 +986,7 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                             </button>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-center">
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
                                         {getRoleLabel(user.role)}
                                     </td>
                                     <td className="px-4 py-3 text-center whitespace-nowrap">
@@ -1019,10 +1016,11 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                             {!isSelf ? (
                                                 <button
                                                     onClick={() => onManageAccess(user)}
-                                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 hover:text-white border border-teal-500/30 text-xs font-bold transition-all shadow-lg hover:shadow-teal-500/20 group"
+                                                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 hover:border-teal-400 text-xs font-bold transition-all shadow-lg hover:shadow-teal-500/20 group"
+                                                    title="Kelola Peran & Akses"
                                                 >
                                                     <Shield className="w-4 h-4 text-teal-400 group-hover:scale-110 transition-transform" />
-                                                    Peran
+                                                    <span className="hidden sm:inline">Peran</span>
                                                 </button>
                                             ) : (
                                                 <div className="text-[10px] text-gray-500 italic text-center">Akun Sendiri</div>
@@ -1030,12 +1028,20 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <div className="flex items-center justify-center gap-1 sm:gap-2">
-                                            <button onClick={() => onOpenUserModal(user)} className="p-2 rounded-md bg-blue-600/80 hover:bg-blue-500 text-white transition-colors" title="Edit Data Karyawan">
-                                                <Pencil className="w-4 h-4" />
+                                        <div className="flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => onOpenUserModal(user)}
+                                                className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/30 hover:border-blue-400 shadow-lg hover:shadow-blue-500/20 active:scale-95 group"
+                                                title="Edit Data Karyawan"
+                                            >
+                                                <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                             </button>
-                                            <button onClick={() => onInitiateDeleteUser(user)} className="p-2 rounded-md bg-red-600/80 hover:bg-red-500 text-white transition-colors" title="Hapus Karyawan">
-                                                <Trash2 className="w-4 h-4" />
+                                            <button
+                                                onClick={() => onInitiateDeleteUser(user)}
+                                                className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                                title="Hapus Karyawan"
+                                            >
+                                                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                             </button>
                                         </div>
                                     </td>
@@ -2604,14 +2610,14 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
 const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string; icon: any }> = ({ active, onClick, label, icon: Icon }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 py-3 px-5 rounded-t-lg font-semibold transition-all duration-300 ease-in-out text-base border-b-2 whitespace-nowrap shrink-0
+        className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-3 sm:px-5 rounded-t-lg font-bold transition-all duration-300 ease-in-out text-[10px] sm:text-base border-b-2 sm:whitespace-nowrap shrink-0
           ${active
-                ? 'border-teal-400 text-teal-300'
-                : 'border-transparent text-gray-400 hover:text-white'
+                ? 'border-teal-400 text-teal-300 bg-teal-400/5'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
             }`}
     >
-        <Icon className="w-5 h-5 hidden sm:block" />
-        <span>{label}</span>
+        <Icon className="w-5 h-5" />
+        <span className="text-center sm:text-left leading-tight max-w-[80px] sm:max-w-none">{label}</span>
     </button>
 );
 
@@ -2619,7 +2625,11 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string;
 const SubTabButton: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${active ? 'bg-teal-600 text-white' : 'hover:bg-white/10 text-blue-200'}`}
+        className={`px-3 py-2 text-xs sm:text-sm font-black rounded-lg transition-all flex items-center justify-center text-center
+          ${active
+                ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/20'
+                : 'bg-white/5 border border-white/10 text-blue-200 hover:bg-white/10'
+            }`}
     >
         {children}
     </button>
@@ -3103,11 +3113,30 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
                                 </td>
                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <div className="flex items-center justify-center gap-2">
-                                        <button onClick={() => handleOpenModal(hospital)} className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-md">Edit</button>
-                                        <button onClick={() => onToggleStatus(hospital)} className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap ${hospital.isActive ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-green-600 hover:bg-green-500'}`}>
-                                            {hospital.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                                        <button
+                                            onClick={() => handleOpenModal(hospital)}
+                                            className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/30 hover:border-blue-400 shadow-lg hover:shadow-blue-500/20 active:scale-95 group"
+                                            title="Edit"
+                                        >
+                                            <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                         </button>
-                                        <button onClick={() => onDelete(hospital)} className="px-3 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 rounded-md">Hapus</button>
+                                        <button
+                                            onClick={() => onToggleStatus(hospital)}
+                                            className={`p-2 rounded-xl transition-all border shadow-lg active:scale-95 group ${hospital.isActive
+                                                ? 'bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border-orange-500/30 hover:border-orange-400 shadow-orange-500/10'
+                                                : 'bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-white border-green-500/30 hover:border-green-400 shadow-green-500/10'
+                                                }`}
+                                            title={hospital.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                                        >
+                                            <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(hospital)}
+                                            className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                            title="Hapus"
+                                        >
+                                            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -3325,7 +3354,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     /* eslint-disable */
     const {
         allUsersData, loggedInEmployee, onToggleStatus, onSetRole, onAddUser, onUpdateUser,
-        onDeleteUser, onBulkUpdateUsers, activities, onAddActivity, onUpdateActivity, onDeleteActivity,
+        onDeleteUser, onBulkUpdateUsers, activities,
         onAdminUpdateAttendance, sunnahIbadahList, onAddSunnahIbadah, onUpdateSunnahIbadah, onDeleteSunnahIbadah,
         dailyActivitiesConfig, onUpdateDailyActivitiesConfig, auditLog, onLogAudit,
         onUpdateProfile, hospitals, onAddHospital, onUpdateHospital, onDeleteHospital, onToggleHospitalStatus,

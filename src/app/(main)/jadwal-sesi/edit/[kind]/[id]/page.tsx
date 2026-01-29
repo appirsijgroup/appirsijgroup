@@ -16,7 +16,7 @@ export default function EditActivitySessionPage() {
     const id = params.id as string;
 
     const { loggedInEmployee, allUsersData, loadAllEmployees } = useAppDataStore();
-    const { addToast } = useUIStore();
+    const { addToast, setGlobalLoading } = useUIStore();
     const { activities, teamAttendanceSessions, updateActivity, updateTeamAttendanceSessionData } = useActivityStore();
     const { hospitals, loadHospitals } = useHospitalStore();
 
@@ -35,24 +35,50 @@ export default function EditActivitySessionPage() {
             }
 
             try {
-                // Ensure dependencies are loaded
-                await Promise.all([
-                    loadAllEmployees(),
-                    loadHospitals()
-                ]);
-
+                // ⚡ OPTIMIZATION: Try to find data in existing store first (fastest)
                 let data: Activity | TeamAttendanceSession | undefined;
+
                 if (kind === 'activity') {
                     data = activities.find(a => a.id === id);
                 } else if (kind === 'session') {
                     data = teamAttendanceSessions.find(s => s.id === id);
                 }
 
+                // If found in store, use it immediately
                 if (data) {
                     setInitialData(data);
+                    // Still load dependencies in background for form dropdowns
+                    Promise.all([loadAllEmployees(), loadHospitals()]).catch(console.error);
                 } else {
-                    addToast('Data tidak ditemukan', 'error');
-                    router.push('/jadwal-sesi');
+                    // Not found in store? Then we MUST wait for everything
+                    await Promise.all([
+                        loadAllEmployees(),
+                        loadHospitals(),
+                        // Maybe user refreshed directly on edit page? Store might be empty.
+                        // We rely on the fact that app layout loads initial data, 
+                        // but let's be safe: 
+                        // (Ideally store hydration happens in layout, so this might just be a brief wait)
+                    ]);
+
+                    // Check again after ensuring data is loaded (if we implemented fetch-by-id)
+                    // For now, we assume if it wasn't in store initially, we might need to handle it.
+                    // But since we persist store, it should be there.
+                    // If refresh happened, LayoutShell loads data. 
+
+                    // Simple fallback: If really not found, maybe redirect or show error?
+                    // Let's rely on the previous logic but inside this block
+                    if (kind === 'activity') {
+                        // Re-check store after potential background sync (if any)
+                        data = useActivityStore.getState().activities.find(a => a.id === id);
+                    } else {
+                        data = useActivityStore.getState().teamAttendanceSessions.find(s => s.id === id);
+                    }
+
+                    if (data) setInitialData(data);
+                    else {
+                        addToast('Data tidak ditemukan', 'error');
+                        router.push('/jadwal-sesi');
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load data:', err);
@@ -102,17 +128,18 @@ export default function EditActivitySessionPage() {
     if (!initialData) return null;
 
     return (
-        <div className="container mx-auto p-4 max-w-5xl">
-            <div className="mb-6">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="mb-8">
                 <button
                     onClick={() => router.push('/jadwal-sesi')}
-                    className="text-gray-300 hover:text-white flex items-center gap-2 mb-4"
+                    className="text-teal-400 hover:text-teal-300 font-bold flex items-center gap-2 mb-4 group transition-colors"
                 >
-                    ← Kembali ke Jadwal & Sesi
+                    <span className="group-hover:-translate-x-1 transition-transform">←</span> Kembali ke Jadwal & Sesi
                 </button>
-                <h1 className="text-2xl font-bold text-white">
-                    Edit {kind === 'activity' ? 'Kegiatan' : 'Sesi Presensi'}
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    Edit <span className="text-teal-400">{kind === 'activity' ? 'Kegiatan' : 'Sesi Presensi'}</span>
                 </h1>
+                <p className="text-gray-400 text-sm mt-1">Perbarui informasi kegiatan atau sesi presensi karyawan.</p>
             </div>
 
             <UnifiedActivitySessionForm

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Employee } from '../types';
-import { UserPlus, Users, Briefcase } from 'lucide-react';
+import { UserPlus, Users, Briefcase, Trash2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { manageSupervisionTeam } from '@/services/supervisionService';
 
@@ -169,9 +169,10 @@ const SupervisionTeamManagement: React.FC<SupervisionTeamManagementProps> = ({
                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                     <button
                                         onClick={() => handleRemoveTeamMember(emp.id, emp.name)}
-                                        className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors"
+                                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                        title="Hapus dari Tim"
                                     >
-                                        Hapus
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </td>
                             </tr>

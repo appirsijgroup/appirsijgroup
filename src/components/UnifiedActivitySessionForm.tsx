@@ -651,17 +651,17 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                     </div>
                 )}
 
-                <div className="mt-4 flex gap-3">
+                <div className="mt-8 flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-white/10">
                     <button
                         onClick={() => router.back()}
-                        className="flex-1 px-6 py-2.5 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold disabled:opacity-50"
+                        className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold transition-all disabled:opacity-50 min-w-[120px]"
                         disabled={disabled}
                     >
                         Batal
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="flex-1 px-6 py-2.5 rounded-lg bg-teal-500 hover:bg-teal-400 font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 rounded-xl bg-linear-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white font-bold shadow-lg shadow-teal-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 min-w-[120px]"
                         disabled={disabled}
                     >
                         {disabled ? (
@@ -671,8 +671,10 @@ export const UnifiedActivitySessionForm: React.FC<UnifiedActivitySessionFormProp
                             </>
                         ) : (
                             <>
-                                <CheckIcon className="w-5 h-5" />
-                                <span>{isEditing ? 'Simpan Perubahan' : 'Buat'}</span>
+                                <CheckIcon className="w-5 h-5 shrink-0" />
+                                <span>
+                                    {isEditing ? 'Simpan' : 'Terbitkan'}
+                                </span>
                             </>
                         )}
                     </button>

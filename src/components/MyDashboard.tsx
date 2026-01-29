@@ -608,9 +608,9 @@ const RiwayatBacaan: React.FC<{
 
     return (
         <div className="bg-gray-800/50 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/10">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <h3 className="text-lg sm:text-xl font-bold text-white">Riwayat Bacaan</h3>
-                <div className="flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto">
+                <div className="flex items-center justify-between bg-black/20 p-1 rounded-full w-full md:w-auto">
                     <button onClick={() => navigateMonth('prev')} className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full hover:bg-white/10 transition-colors text-sm sm:text-base">
                         &larr;
                     </button>
@@ -642,9 +642,13 @@ const RiwayatBacaan: React.FC<{
                                     </span>
                                 </td>
                                 <td className="px-2 sm:px-4 py-2 sm:py-3 text-[11px] sm:text-sm whitespace-nowrap">{item.detail}</td>
-                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
-                                    <button onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })} className="p-1.5 sm:p-2 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10">
-                                        <Trash2 className="w-4 h-4 sm:w-4 sm:h-4" />
+                                <td className="px-2 sm:px-4 py-2 sm:py-3 text-center whitespace-nowrap">
+                                    <button
+                                        onClick={() => setConfirmDelete({ type: item.type.toLowerCase() as 'book' | 'quran', id: item.id, date: item.date, detail: item.detail })}
+                                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                        title="Hapus"
+                                    >
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </td>
                             </tr>

@@ -150,7 +150,7 @@ interface StatusFilterButtonProps {
 }
 
 const StatusFilterButton: React.FC<StatusFilterButtonProps> = ({ filter, label, activeFilter, onFilterChange }) => (
-    <button onClick={() => onFilterChange(filter)} className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-full transition-colors duration-200 ${activeFilter === filter ? 'bg-teal-500 text-white' : 'bg-gray-700/50 text-blue-200 hover:bg-gray-700'}`}>
+    <button onClick={() => onFilterChange(filter)} className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-black rounded-full transition-all duration-200 ${activeFilter === filter ? 'bg-teal-500 text-gray-900 shadow-lg shadow-teal-500/20' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}`}>
         {label}
     </button>
 );
@@ -438,160 +438,156 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
-                            Riwayat Persetujuan
+                <div className="space-y-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
+                        <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                            Riwayat <span className="text-teal-400">Persetujuan</span>
                         </h3>
-
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                                <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
-                            </div>
-
-                            <div className="grid grid-cols-2 lg:flex items-center gap-2">
-                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full lg:w-40 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
-                                    <option value="all" className="text-black bg-white">Semua Tahun</option>
-                                    {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
-                                </select>
-                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full lg:w-48 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
-                                    <option value="all" className="text-black bg-white">Semua Bulan</option>
-                                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                                        <option key={month} value={month} className="text-black bg-white">{new Date(0, month - 1).toLocaleString('id-ID', { month: 'long' })}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20 min-h-[200px]">
-                            <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
-                                <thead className="bg-gray-800/80 text-[10px] sm:text-xs uppercase text-teal-300">
-                                    <tr>
-                                        <th className="px-3 py-4 font-bold border-b border-white/10 text-center">No</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">NIP</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">NAMA</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">TIPE</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">Periode Pengajuan</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">Tanggal Pengajuan</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">Catatan</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {paginatedHistoryItems.length > 0 ? (
-                                        paginatedHistoryItems.map((item, index) => (
-                                            <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5 transition-colors group">
-                                                <td className="px-3 py-4 text-center text-gray-500 font-mono text-xs">
-                                                    {(currentPage - 1) * itemsPerPage + index + 1}
-                                                </td>
-                                                <td className="px-4 py-4 font-mono text-xs text-gray-300">
-                                                    {item.menteeNip}
-                                                </td>
-                                                <td className="px-4 py-4 font-semibold whitespace-nowrap text-white">
-                                                    {item.menteeName}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded w-fit tracking-tighter
-                                                        ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
-                                                            item.type === 'tadarus' ? 'bg-indigo-500/20 text-indigo-300' :
-                                                                'bg-purple-500/20 text-purple-300'}`}>
-                                                        {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 text-blue-100 text-xs">
-                                                    {item.periode}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-gray-400 text-[10px] sm:text-xs">
-                                                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
-                                                </td>
-                                                <td className="px-4 py-4 text-gray-400 text-[10px] leading-relaxed max-w-[150px] truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-gray-800/80 group-hover:z-10 relative">
-                                                    {item.notes}
-                                                </td>
-                                                <td className="px-4 py-4 text-center">
-                                                    {item.type === 'report' ? (
-                                                        <button onClick={() => setSelectedSubmission(item.originalData as MonthlyReportSubmission)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-400 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
-                                                            Tinjau
-                                                        </button>
-                                                    ) : (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            {item.status === 'pending' ? (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => setRejectionTarget({ type: item.type as any, id: item.id })}
-                                                                        className="px-2 py-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-600/50 rounded text-[10px] font-bold transition-all"
-                                                                    >
-                                                                        Tolak
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setApprovalTarget({ type: item.type as any, id: item.id })}
-                                                                        className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold shadow-md transition-all active:scale-95"
-                                                                    >
-                                                                        Setujui
-                                                                    </button>
-                                                                </>
-                                                            ) : (
-                                                                <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-tighter ${item.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
-                                                                    {item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={8} className="text-center py-20">
-                                                <div className="flex flex-col items-center opacity-40">
-                                                    <CheckCircle2 className="w-12 h-12 text-gray-400 mb-3" />
-                                                    <p className="text-lg text-gray-400 font-medium">Tidak ada data ditemukan.</p>
-                                                    <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    ←
-                                </button>
-
-                                <div className="flex items-center gap-1">
-                                    <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                                        Hal {currentPage} dari {totalPages}
-                                    </span>
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    →
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="mt-4 text-center">
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
-                                Total {filteredHistoryItems.length} data riwayat persetujuan
-                            </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <StatusFilterButton filter="all" label="Semua" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                            <StatusFilterButton filter="pending" label="Menunggu" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                            <StatusFilterButton filter="approved" label="Disetujui" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
+                            <StatusFilterButton filter="rejected" label="Ditolak" activeFilter={statusFilter} onFilterChange={setStatusFilter} />
                         </div>
                     </div>
-                </div >
+
+                    <div className="grid grid-cols-2 lg:flex items-center gap-2">
+                        <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-full lg:w-40 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
+                            <option value="all" className="text-black bg-white">Semua Tahun</option>
+                            {availableYears.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
+                        </select>
+                        <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="w-full lg:w-48 bg-gray-800 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none cursor-pointer">
+                            <option value="all" className="text-black bg-white">Semua Bulan</option>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                                <option key={month} value={month} className="text-black bg-white">{new Date(0, month - 1).toLocaleString('id-ID', { month: 'long' })}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20 min-h-[200px]">
+                        <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
+                            <thead className="bg-gray-800/90 text-xs sm:text-sm uppercase text-teal-300 tracking-wider">
+                                <tr>
+                                    <th className="px-3 py-5 font-black border-b-2 border-teal-500/30 text-center whitespace-nowrap">No</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">NIP</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">NAMA</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">TIPE</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">Periode Pengajuan</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">Tanggal Pengajuan</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 whitespace-nowrap">Catatan</th>
+                                    <th className="px-4 py-5 font-black border-b-2 border-teal-500/30 text-center whitespace-nowrap">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {paginatedHistoryItems.length > 0 ? (
+                                    paginatedHistoryItems.map((item, index) => (
+                                        <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5 transition-colors group">
+                                            <td className="px-3 py-4 text-center text-gray-500 font-mono text-xs whitespace-nowrap">
+                                                {(currentPage - 1) * itemsPerPage + index + 1}
+                                            </td>
+                                            <td className="px-4 py-4 font-mono text-sm text-white border-b border-white/5 whitespace-nowrap">
+                                                {item.menteeNip}
+                                            </td>
+                                            <td className="px-4 py-4 font-semibold whitespace-nowrap text-white">
+                                                {item.menteeName}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap border-b border-white/5">
+                                                <span className={`text-xs uppercase font-black px-2 py-1 rounded w-fit tracking-tight
+                                                        ${item.type === 'report' ? 'bg-blue-600 text-blue-50' :
+                                                        item.type === 'tadarus' ? 'bg-indigo-600 text-indigo-50' :
+                                                            'bg-purple-600 text-purple-50'}`}>
+                                                    {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-4 text-white font-bold text-xs border-b border-white/5 whitespace-nowrap">
+                                                {item.periode}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-white font-medium text-xs border-b border-white/5">
+                                                {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                                            </td>
+                                            <td className="px-4 py-4 text-gray-100 text-xs leading-relaxed min-w-[200px] whitespace-nowrap border-b border-white/5">
+                                                {item.notes}
+                                            </td>
+                                            <td className="px-4 py-4 text-center whitespace-nowrap">
+                                                {item.type === 'report' ? (
+                                                    <button onClick={() => setSelectedSubmission(item.originalData as MonthlyReportSubmission)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-400 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
+                                                        Tinjau
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        {item.status === 'pending' ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => setRejectionTarget({ type: item.type as any, id: item.id })}
+                                                                    className="px-2 py-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-600/50 rounded text-[10px] font-bold transition-all"
+                                                                >
+                                                                    Tolak
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setApprovalTarget({ type: item.type as any, id: item.id })}
+                                                                    className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold shadow-md transition-all active:scale-95"
+                                                                >
+                                                                    Setujui
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <span className={`px-2 py-1.5 rounded text-xs font-black uppercase tracking-tight ${item.status === 'approved' ? 'bg-green-600 text-white border border-white/20' : 'bg-red-600 text-white border border-white/20'}`}>
+                                                                {item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={8} className="text-center py-20">
+                                            <div className="flex flex-col items-center opacity-40">
+                                                <CheckCircle2 className="w-12 h-12 text-gray-400 mb-3" />
+                                                <p className="text-lg text-gray-400 font-medium">Tidak ada data ditemukan.</p>
+                                                <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                ←
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
+                                    Hal {currentPage} dari {totalPages}
+                                </span>
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                →
+                            </button>
+                        </div>
+                    )}
+
+                    <div className="mt-4 text-center">
+                        <p className="text-xs text-gray-300 uppercase tracking-widest font-black">
+                            Total {filteredHistoryItems.length} data riwayat persetujuan
+                        </p>
+                    </div>
+                </div>
             )}
 
             <ConfirmationModal

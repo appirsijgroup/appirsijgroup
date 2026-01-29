@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { PencilIcon, TrashIcon } from '@/components/Icons';
 import { Activity, TeamAttendanceSession } from '@/types';
 
@@ -31,57 +32,82 @@ export const CombinedScheduleTable: React.FC<CombinedScheduleTableProps> = ({ it
     }
 
     return (
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
-            <div className="overflow-x-auto">
+        <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full table-auto">
-                    <thead className="bg-black/20">
-                        <tr>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[140px] sm:min-w-[200px]">Nama/Jenis</th>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[120px] sm:min-w-[150px] whitespace-nowrap">Tanggal</th>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[100px] whitespace-nowrap">Jam</th>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[80px] whitespace-nowrap">Tipe</th>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[80px] whitespace-nowrap">Mode</th>
-                            <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[70px] whitespace-nowrap">Aksi</th>
+                    <thead>
+                        <tr className="bg-white/5 border-b border-white/10">
+                            <th className="px-4 py-4 text-left text-[10px] font-black text-teal-400 uppercase tracking-widest min-w-[180px] whitespace-nowrap">Nama / Judul</th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black text-teal-400 uppercase tracking-widest min-w-[140px] whitespace-nowrap">Waktu Pelaksanaan</th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black text-teal-400 uppercase tracking-widest min-w-[100px] whitespace-nowrap">Tipe</th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black text-teal-400 uppercase tracking-widest min-w-[100px] whitespace-nowrap">Mode Presensi</th>
+                            <th className="px-4 py-4 text-center text-[10px] font-black text-teal-400 uppercase tracking-widest min-w-[160px] whitespace-nowrap">Aksi</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {items.map(item => (
-                            <tr key={`${item.kind}-${item.id}`} className="hover:bg-white/5 transition-colors">
-                                <td className="px-3 sm:px-4 py-3">
-                                    <div className="text-sm font-medium text-white whitespace-nowrap">{item.name}</div>
-                                </td>
-                                <td className="px-3 sm:px-4 py-3">
-                                    <div className="text-sm text-gray-300 whitespace-nowrap">{item.date}</div>
-                                </td>
-                                <td className="px-3 sm:px-4 py-3">
-                                    <div className="text-sm text-gray-300 whitespace-nowrap">{item.startTime} - {item.endTime}</div>
-                                </td>
-                                <td className="px-3 sm:px-4 py-3">
-                                    <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ${item.kind === 'activity' ? 'bg-teal-500/20 text-teal-300' : 'bg-purple-500/20 text-purple-300'}`}>
-                                        {item.type}
-                                    </span>
-                                </td>
-                                <td className="px-3 sm:px-4 py-3">
-                                    {item.mode ? (
-                                        <span className="px-2 py-1 bg-gray-500/20 text-gray-300 text-xs rounded whitespace-nowrap">
-                                            {item.mode}
+                        {items.map(item => {
+                            const dateObj = new Date(item.date);
+                            const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                            return (
+                                <tr key={`${item.kind}-${item.id}`} className="hover:bg-white/5 transition-all group">
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-white group-hover:text-teal-300 transition-colors uppercase tracking-tight">
+                                                {item.name}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 uppercase font-medium mt-0.5">
+                                                {item.kind === 'activity' ? 'Kegiatan Terjadwal' : 'Sesi Presensi Tim'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="text-sm font-semibold text-gray-200">{formattedDate}</div>
+                                            <div className="text-xs text-teal-400/80 font-medium flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                                {item.startTime} - {item.endTime}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        <span className={`px-2.5 py-1 text-[10px] font-black rounded-full uppercase tracking-wider border ${item.kind === 'activity'
+                                            ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                                            : 'bg-purple-500/10 text-purple-300 border-purple-500/20'
+                                            }`}>
+                                            {item.type}
                                         </span>
-                                    ) : (
-                                        <span className="text-gray-500">-</span>
-                                    )}
-                                </td>
-                                <td className="px-3 sm:px-4 py-3">
-                                    <div className="flex items-center gap-1 sm:gap-2">
-                                        <button onClick={() => onEdit(item)} className="text-gray-400 hover:text-white p-1" title="Edit">
-                                            <PencilIcon className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => onDelete(item)} className="text-gray-400 hover:text-red-500 p-1" title="Hapus">
-                                            <TrashIcon className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        {item.mode ? (
+                                            <span className="px-2.5 py-1 bg-white/5 text-gray-300 text-[10px] font-bold rounded-full uppercase tracking-wider border border-white/10">
+                                                {item.mode}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-600 text-xs font-medium italic">Universal</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => onEdit(item)}
+                                                className="p-2 bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-gray-900 rounded-xl transition-all border border-teal-500/30 hover:border-teal-400 shadow-lg hover:shadow-teal-500/20 active:scale-95 group"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                            <button
+                                                onClick={() => onDelete(item)}
+                                                className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                                title="Hapus"
+                                            >
+                                                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

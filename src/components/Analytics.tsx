@@ -295,9 +295,9 @@ const MutabaahPerformanceReport: React.FC<{
 
     return (
         <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-xl font-bold text-white">Analisis Kinerja Mutaba&apos;ah</h3>
-                <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full sm:w-auto">
+                <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full md:w-auto">
                     <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
                     <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
                     <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>

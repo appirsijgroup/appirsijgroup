@@ -15,21 +15,21 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ isMenuOpen, toggleMenu, employee, title, unreadNotificationsCount, onToggleNotifications }) => {
   return (
-    <header className="shrink-0 bg-gray-900/50 backdrop-blur-sm h-20 grid grid-cols-3 items-center px-4 sm:px-6 lg:px-8 border-b border-white/10 sticky top-0 z-20">
+    <header className="shrink-0 bg-gray-900/50 backdrop-blur-sm h-20 flex items-center justify-between px-4 sm:px-6 lg:px-8 border-b border-white/10 sticky top-0 z-20">
       {/* Left */}
-      <div className="flex justify-start">
+      <div className="w-12 sm:w-20">
         <button onClick={toggleMenu} className="lg:hidden p-2 -ml-2 text-white" aria-label="Toggle Menu">
           {isMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
         </button>
       </div>
 
-      {/* Center */}
-      <div className="text-center col-span-1">
-        <h2 className="text-lg font-bold text-white tracking-wide truncate" title={title}>
+      {/* Center - Title Area */}
+      <div className="flex-1 flex flex-col items-center justify-center min-w-0 px-2">
+        <h2 className="text-sm sm:text-lg font-black text-white tracking-tight leading-tight text-center line-clamp-2" title={title}>
           {title}
         </h2>
-        <p className="text-xs text-blue-300 hidden sm:block">
-          Rumah Sakit Islam Jakarta Group
+        <p className="text-[10px] sm:text-xs text-blue-300 font-medium hidden sm:block uppercase tracking-widest mt-0.5">
+          RSI Jakarta Group
         </p>
       </div>
 

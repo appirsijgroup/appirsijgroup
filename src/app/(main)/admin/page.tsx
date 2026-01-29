@@ -46,7 +46,7 @@ export default function AdminPage() {
         isHydrated
     } = useAppDataStore();
     const { addToast } = useUIStore();
-    const { activities, addActivity, updateActivity, deleteActivity } = useActivityStore();
+    const { activities } = useActivityStore();
     const { sunnahIbadahList, addSunnahIbadah, updateSunnahIbadah, deleteSunnahIbadah } = useSunnahIbadahStore();
     const { dailyActivitiesConfig, updateDailyActivitiesConfig } = useDailyActivitiesStore();
 
@@ -782,32 +782,6 @@ export default function AdminPage() {
         }
     };
 
-    const handleAddActivity = async (activityData: Omit<Activity, 'id' | 'createdBy' | 'createdByName'>) => {
-        const creator = {
-            id: loggedInEmployee?.id || '',
-            name: loggedInEmployee?.name || 'System'
-        };
-
-        try {
-            // ⚡ UPDATE: addActivity sekarang sudah handle insert ke Supabase
-            const newActivity: Activity = {
-                ...activityData,
-                id: '', // ID akan di-generate oleh Supabase (UUID)
-                createdBy: creator.id,
-                createdByName: creator.name
-            };
-
-            // addActivity akan insert ke Supabase dan update local store
-            await addActivity(newActivity);
-
-            addToast('Kegiatan berhasil dibuat!', 'success');
-        } catch (error) {
-            // Error handling
-            console.error('Failed to create activity:', error);
-            addToast('Gagal membuat kegiatan: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
-        }
-    };
-
     const handleAddSunnahIbadah = async (ibadahData: Omit<SunnahIbadah, 'id' | 'createdBy' | 'createdByName'>) => {
         const creator = {
             id: loggedInEmployee?.id || '',
@@ -885,9 +859,6 @@ export default function AdminPage() {
                 onDeleteUser={handleDeleteUser}
                 onBulkUpdateUsers={handleBulkUpdateUsers}
                 activities={activities}
-                onAddActivity={handleAddActivity}
-                onUpdateActivity={updateActivity}
-                onDeleteActivity={deleteActivity}
                 onAdminUpdateAttendance={handleAdminUpdateAttendance}
                 onUpdateProfile={handleUpdateProfile}
                 sunnahIbadahList={sunnahIbadahList}

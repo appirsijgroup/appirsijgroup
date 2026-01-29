@@ -445,26 +445,28 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
-                <div>
-                    <h2 className="text-4xl font-black text-white flex items-center gap-4 tracking-tight">
-                        <div className="p-3 bg-teal-500/20 rounded-2xl">
-                            <Megaphone className="w-8 h-8 text-teal-400" />
-                        </div>
-                        Pengumuman
-                        {unreadCount > 0 && (
-                            <span className="flex h-3 w-3 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                        )}
-                    </h2>
-                    <p className="text-blue-200/60 mt-2 font-medium">Berita terbaru dan informasi penting untuk seluruh civitas.</p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-teal-500/20 rounded-2xl shrink-0">
+                        <Megaphone className="w-8 h-8 text-teal-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight flex items-center gap-3">
+                            Pengumuman <span className="text-teal-400">Terbaru</span>
+                            {unreadCount > 0 && (
+                                <span className="flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                            )}
+                        </h2>
+                        <p className="text-blue-200/60 mt-1 text-sm font-medium hidden sm:block">Berita terbaru dan informasi penting untuk seluruh civitas.</p>
+                    </div>
                 </div>
                 {canCreate && (
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="group w-full md:w-auto px-6 py-3.5 bg-linear-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-teal-500/20 transition-all hover:scale-105 active:scale-95"
+                        className="group w-full sm:w-auto px-6 py-4 bg-linear-to-r from-teal-500 to-blue-500 hover:from-teal-400 hover:to-blue-400 text-white font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-teal-500/20 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
                     >
                         <PlusCircle className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                         Buat Baru
@@ -564,17 +566,17 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                                             <div className="pt-4 flex justify-end gap-2">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setEditingAnnouncement(ann); setIsModalOpen(true); }}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-teal-400 hover:text-white hover:bg-teal-500/20 rounded-xl border border-teal-500/20 transition-all"
+                                                    className="p-2 bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white rounded-xl transition-all border border-teal-500/30 hover:border-teal-400 shadow-lg hover:shadow-teal-500/20 active:scale-95 group"
+                                                    title="Edit"
                                                 >
-                                                    <Pencil className="w-4 h-4" />
-                                                    Edit
+                                                    <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setConfirmDelete(ann); }}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-white hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all"
+                                                    className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                                    title="Hapus"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Hapus
+                                                    <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                                 </button>
                                             </div>
                                         )}

@@ -14,6 +14,7 @@ export default function JadwalSesiPage() {
     const { loggedInEmployee } = useAppDataStore();
     const { addToast } = useUIStore();
     const { activities, deleteActivity, teamAttendanceSessions, deleteTeamAttendanceSession, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase } = useActivityStore();
+    const { setGlobalLoading } = useUIStore();
     const router = useRouter();
 
     // State for ConfirmationModal
@@ -135,15 +136,22 @@ export default function JadwalSesiPage() {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-white"></h1>
-                    <p className="text-sm text-gray-400"></p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        Jadwal & <span className="text-teal-400">Sesi</span>
+                    </h1>
+                    <p className="text-sm text-gray-400 mt-1 font-medium">Kelola jadwal kegiatan dan sesi presensi karyawan secara terpusat.</p>
                 </div>
-                <Link href="/jadwal-sesi/create" className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-semibold shadow-lg transition-all">
-                    <PlusCircleIcon className="w-5 h-5" />
+                <button
+                    onClick={() => {
+                        router.push('/jadwal-sesi/create');
+                    }}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 text-white rounded-xl font-bold shadow-xl shadow-teal-500/20 transition-all active:scale-95 w-full sm:w-auto"
+                >
+                    <PlusCircleIcon className="w-6 h-6" />
                     Buat Baru
-                </Link>
+                </button>
             </div>
 
             {/* Stats Grid */}

@@ -14,6 +14,8 @@ import {
     BookOpen,
     Tag,
     Trash2,
+    RefreshCw,
+    Pencil,
     Calendar,
     Bell,
     ChevronLeft,
@@ -724,9 +726,9 @@ const MenteeManagement: React.FC<{
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-xl font-bold text-white">Kelola Anggota Bimbingan</h3>
-                <button onClick={() => setIsAddModalOpen(true)} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2 text-sm">
+                <button onClick={() => setIsAddModalOpen(true)} className="w-full md:w-auto px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center justify-center gap-2 text-sm">
                     <UserPlus className="w-5 h-5" />
                     Tambah Anggota
                 </button>
@@ -748,8 +750,12 @@ const MenteeManagement: React.FC<{
                                 <td className="px-4 py-3 whitespace-nowrap">{mentee.unit}</td>
                                 <td className="px-4 py-3 whitespace-nowrap">{mentee.profession}</td>
                                 <td className="px-4 py-3 text-center whitespace-nowrap">
-                                    <button onClick={() => initiateRemoveMentee(mentee)} className="px-3 py-1.5 rounded-md font-semibold text-xs bg-red-600 hover:bg-red-500 text-white transition-colors">
-                                        Hapus
+                                    <button
+                                        onClick={() => initiateRemoveMentee(mentee)}
+                                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                        title="Hapus Anggota"
+                                    >
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </td>
                             </tr>
@@ -1167,9 +1173,10 @@ const TargetManagement: React.FC<TargetManagementProps> = ({
                                     </span>
                                     <button
                                         onClick={() => setConfirmDeleteTarget(target)}
-                                        className="p-1.5 text-red-400 hover:text-red-300 rounded-full hover:bg-white/10"
+                                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                        title="Hapus Target"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                                     </button>
                                 </div>
                             </div>
@@ -1369,8 +1376,20 @@ const SesiBimbingan: React.FC<SesiBimbinganProps> = ({
                                         <button onClick={() => onMentorAttendOwnSession(session.id)} className="px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white rounded-md">Hadir</button>
                                     )}
                                     {session.mentorPresent && <span className="px-3 py-1.5 text-xs font-semibold bg-green-500/30 text-green-300 rounded-md">Sudah Hadir</span>}
-                                    <button onClick={() => onEditSession(session)} className="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-md">Edit</button>
-                                    <button onClick={() => onDeleteSession(session)} className="px-3 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-md">Hapus</button>
+                                    <button
+                                        onClick={() => onEditSession(session)}
+                                        className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/30 hover:border-blue-400 shadow-lg hover:shadow-blue-500/20 active:scale-95 group"
+                                        title="Edit"
+                                    >
+                                        <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                    </button>
+                                    <button
+                                        onClick={() => onDeleteSession(session)}
+                                        className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                        title="Hapus"
+                                    >
+                                        <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                    </button>
                                 </div>
                             </div>
                         );

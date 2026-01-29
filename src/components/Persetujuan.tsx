@@ -2,6 +2,7 @@ import React, { useMemo, useState, Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Employee, type MonthlyReportSubmission, type DailyActivity } from '../types';
 import { ArrowLeftIcon, CheckIcon, XIcon, CheckSquareIcon, SquareIcon, CheckCircleIcon } from './Icons';
+import { CheckCircle2 } from 'lucide-react';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -284,11 +285,13 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 id: s.id,
                 type: 'report' as const,
                 menteeId: s.menteeId,
+                menteeNip: mentee?.id || 'N/A',
                 menteeName: s.menteeName,
                 periode: `${new Date(s.monthKey + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
                 submittedAt: s.submittedAt ? new Date(s.submittedAt).getTime() : 0,
                 monthKey: s.monthKey,
                 status: s.status,
+                notes: s.mentorNotes || s.supervisorNotes || s.kaUnitNotes || '-',
                 canReview: (
                     (s.status === 'pending_mentor' && (s.mentorId === myId || mentee?.mentorId === myId) && !!loggedInEmployee.canBeMentor) ||
                     (s.status === 'pending_supervisor' && (s.supervisorId === myId || mentee?.supervisorId === myId) && !!loggedInEmployee.canBeSupervisor) ||
@@ -309,25 +312,28 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 const isCurrentMentor = mentee && mentee.mentorId === myId;
                 const isOriginalMentor = r.mentorId === myId;
 
-                // Dynamic Authority: Pending items only show to CURRENT mentor.
-                // History items show to both (original reviewer & current mentor).
                 if (r.status === 'pending') {
                     return isCurrentMentor;
                 }
                 return isOriginalMentor || isCurrentMentor;
             })
-            .map((r: any) => ({
-                id: r.id,
-                type: 'tadarus' as const,
-                menteeId: r.menteeId,
-                menteeName: r.menteeName,
-                periode: `Tadarus/BBQ - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
-                submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
-                monthKey: r.date.substring(0, 7),
-                status: r.status,
-                canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
-                originalData: r
-            }));
+            .map((r: any) => {
+                const mentee = allUsersData[r.menteeId]?.employee;
+                return {
+                    id: r.id,
+                    type: 'tadarus' as const,
+                    menteeId: r.menteeId,
+                    menteeNip: mentee?.id || 'N/A',
+                    menteeName: r.menteeName,
+                    periode: `Tadarus/BBQ - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+                    submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+                    monthKey: r.date.substring(0, 7),
+                    status: r.status,
+                    notes: r.notes || '-',
+                    canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
+                    originalData: r
+                };
+            });
 
         // 3. Map Missed Prayer Requests
         const missedPrayers = (pendingMissedPrayerRequests || [])
@@ -344,18 +350,23 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 }
                 return isOriginalMentor || isCurrentMentor;
             })
-            .map((r: any) => ({
-                id: r.id,
-                type: 'prayer' as const,
-                menteeId: r.menteeId,
-                menteeName: r.menteeName,
-                periode: `Presensi Terlewat: ${r.prayerName} - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
-                submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
-                monthKey: r.date.substring(0, 7),
-                status: r.status,
-                canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
-                originalData: r
-            }));
+            .map((r: any) => {
+                const mentee = allUsersData[r.menteeId]?.employee;
+                return {
+                    id: r.id,
+                    type: 'prayer' as const,
+                    menteeId: r.menteeId,
+                    menteeNip: mentee?.id || 'N/A',
+                    menteeName: r.menteeName,
+                    periode: `Presensi Terlewat: ${r.prayerName} - ${new Date(r.date + 'T12:00:00Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}`,
+                    submittedAt: r.requestedAt ? new Date(r.requestedAt).getTime() : new Date(r.date).getTime(),
+                    monthKey: r.date.substring(0, 7),
+                    status: r.status,
+                    notes: r.reason || r.mentorNotes || '-',
+                    canReview: r.status === 'pending' && (allUsersData[r.menteeId]?.employee?.mentorId === myId || loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin'),
+                    originalData: r
+                };
+            });
 
         return [...reports, ...tadarus, ...missedPrayers].sort((a, b) => b.submittedAt - a.submittedAt);
     }, [submissionsForRole, pendingTadarusRequests, pendingMissedPrayerRequests, loggedInEmployee, allUsersData]);
@@ -458,22 +469,31 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
                         <div className="overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-y sm:border border-white/10 bg-black/20 min-h-[200px]">
                             <table className="min-w-full text-sm text-left text-white border-separate border-spacing-0">
-                                <thead className="bg-gray-800/80 text-xs uppercase text-teal-300">
+                                <thead className="bg-gray-800/80 text-[10px] sm:text-xs uppercase text-teal-300">
                                     <tr>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">Nama</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10">Keterangan / Periode</th>
-                                        <th className="hidden md:table-cell px-4 py-4 font-bold border-b border-white/10">Tanggal</th>
-                                        <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Status / Aksi</th>
+                                        <th className="px-3 py-4 font-bold border-b border-white/10 text-center">No</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">NIP</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">NAMA</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">Periode Pengajuan</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">Tanggal Pengajuan</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">Catatan</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {paginatedHistoryItems.length > 0 ? (
-                                        paginatedHistoryItems.map(item => (
+                                        paginatedHistoryItems.map((item, index) => (
                                             <tr key={`${item.type}-${item.id}`} className="hover:bg-white/5 transition-colors group">
+                                                <td className="px-3 py-4 text-center text-gray-500 font-mono text-xs">
+                                                    {(currentPage - 1) * itemsPerPage + index + 1}
+                                                </td>
+                                                <td className="px-4 py-4 font-mono text-xs text-gray-300">
+                                                    {item.menteeNip}
+                                                </td>
                                                 <td className="px-4 py-4 font-semibold whitespace-nowrap">
                                                     <div className="flex flex-col">
                                                         <span>{item.menteeName}</span>
-                                                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded w-fit mt-1 
+                                                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded w-fit mt-1 tracking-tighter
                                                             ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
                                                                 item.type === 'tadarus' ? 'bg-indigo-500/20 text-indigo-300' :
                                                                     'bg-purple-500/20 text-purple-300'}`}>
@@ -481,13 +501,18 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-blue-200">{item.periode}</td>
-                                                <td className="hidden md:table-cell px-4 py-4 whitespace-nowrap text-gray-400 text-xs">
-                                                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID') : '-'}
+                                                <td className="px-4 py-4 text-blue-100 text-xs">
+                                                    {item.periode}
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-gray-400 text-[10px] sm:text-xs">
+                                                    {item.submittedAt ? new Date(item.submittedAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                                                </td>
+                                                <td className="px-4 py-4 text-gray-400 text-[10px] leading-relaxed max-w-[150px] truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:bg-gray-800/80 group-hover:z-10 relative">
+                                                    {item.notes}
                                                 </td>
                                                 <td className="px-4 py-4 text-center">
                                                     {item.type === 'report' ? (
-                                                        <button onClick={() => setSelectedSubmission(item.originalData as MonthlyReportSubmission)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
+                                                        <button onClick={() => setSelectedSubmission(item.originalData as MonthlyReportSubmission)} className="px-4 py-1.5 rounded-full font-bold text-xs bg-teal-500/10 hover:bg-teal-400 text-teal-400 hover:text-white border border-teal-500/30 transition-all active:scale-95 shadow-lg">
                                                             Tinjau
                                                         </button>
                                                     ) : (
@@ -496,19 +521,19 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                                                 <>
                                                                     <button
                                                                         onClick={() => setRejectionTarget({ type: item.type as any, id: item.id })}
-                                                                        className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white rounded text-[10px] font-bold"
+                                                                        className="px-2 py-1 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-600/50 rounded text-[10px] font-bold transition-all"
                                                                     >
                                                                         Tolak
                                                                     </button>
                                                                     <button
                                                                         onClick={() => setApprovalTarget({ type: item.type as any, id: item.id })}
-                                                                        className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold"
+                                                                        className="px-2 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold shadow-md transition-all active:scale-95"
                                                                     >
                                                                         Setujui
                                                                     </button>
                                                                 </>
                                                             ) : (
-                                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${item.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                                                <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-tighter ${item.status === 'approved' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
                                                                     {item.status === 'approved' ? 'Disetujui' : 'Ditolak'}
                                                                 </span>
                                                             )}
@@ -519,9 +544,9 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={4} className="text-center py-20">
+                                            <td colSpan={7} className="text-center py-20">
                                                 <div className="flex flex-col items-center opacity-40">
-                                                    <CheckCircleIcon className="w-12 h-12 text-gray-400 mb-3" />
+                                                    <CheckCircle2 className="w-12 h-12 text-gray-400 mb-3" />
                                                     <p className="text-lg text-gray-400 font-medium">Tidak ada data ditemukan.</p>
                                                     <p className="text-sm text-gray-500 mt-1">Gunakan filter di atas untuk melihat data lainnya.</p>
                                                 </div>

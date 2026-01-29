@@ -324,36 +324,69 @@ const generateChecklistPdf = async (
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     const pageMargin = 14;
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const monthKey = `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`;
     const monthLabel = selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
     const hospitalName = hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP';
 
-    // Header
+    // Modern Header with Logo and Border
+    let startY = 10;
     if (hospital?.logo) {
         try {
             const rawLogo = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
             const logoBase64 = await flattenImageWithWhiteBackground(rawLogo);
-            doc.addImage(logoBase64, 'JPEG', pageMargin, 10, 15, 15, undefined, 'FAST');
+            doc.addImage(logoBase64, 'JPEG', pageMargin, startY, 18, 18, undefined, 'FAST');
         } catch (e) { }
     }
-    doc.setFontSize(14);
+
+    // Hospital Name and Title
     doc.setFont('helvetica', 'bold');
-    doc.text(hospitalName.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text('LEMBAR MUTABAAH HARIAN KARYAWAN', pageWidth / 2, 22, { align: 'center' });
+    doc.setFontSize(16);
+    doc.setTextColor('#0F766E'); // Teal-700
+    doc.text(hospitalName.toUpperCase(), pageWidth / 2, startY + 8, { align: 'center' });
+
+    doc.setFontSize(13);
+    doc.setTextColor('#134E4A'); // Teal-800
+    doc.text('LEMBAR MUTABA\'AH HARIAN KARYAWAN', pageWidth / 2, startY + 15, { align: 'center' });
+
     doc.setFontSize(10);
-    doc.text(`Periode: ${monthLabel.toUpperCase()}`, pageWidth / 2, 28, { align: 'center' });
-
-    // Info
-    doc.setFontSize(9);
+    doc.setTextColor('#475569'); // Slate-600
     doc.setFont('helvetica', 'normal');
-    doc.text(`Nama: ${employee.name}`, pageMargin, 38);
-    doc.text(`Bagian/Unit: ${employee.bagian}/${employee.unit}`, pageMargin, 43);
-    doc.text(`Nopeg: ${employee.id}`, pageWidth - pageMargin - 40, 38);
+    doc.text(`Periode: ${monthLabel.toUpperCase()}`, pageWidth / 2, startY + 21, { align: 'center' });
 
+    // Decorative line under header
+    doc.setDrawColor('#14B8A6'); // Teal-500
+    doc.setLineWidth(0.8);
+    doc.line(pageMargin, startY + 24, pageWidth - pageMargin, startY + 24);
+
+    // Employee Info Section - Modern Card Style
+    const infoY = startY + 30;
+    doc.setFillColor(247, 254, 253); // Teal-50
+    doc.roundedRect(pageMargin, infoY, pageWidth - 2 * pageMargin, 14, 2, 2, 'F');
+
+    doc.setDrawColor(204, 251, 241); // Teal-200
+    doc.setLineWidth(0.3);
+    doc.roundedRect(pageMargin, infoY, pageWidth - 2 * pageMargin, 14, 2, 2, 'S');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor('#0F766E'); // Teal-700
+    doc.text('Nama:', pageMargin + 3, infoY + 4);
+    doc.text('NIP:', pageMargin + 3, infoY + 9);
+    doc.text('Unit:', pageWidth / 2 + 5, infoY + 4);
+    doc.text('Bagian:', pageWidth / 2 + 5, infoY + 9);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor('#1E293B'); // Slate-800
+    doc.text(employee.name, pageMargin + 18, infoY + 4);
+    doc.text(employee.id, pageMargin + 18, infoY + 9);
+    doc.text(employee.unit, pageWidth / 2 + 20, infoY + 4);
+    doc.text(employee.bagian, pageWidth / 2 + 20, infoY + 9);
+
+    // Table
     const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
     const headers = [['No', 'Indikator Penilaian', ...Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString()), 'Total']];
 
@@ -369,7 +402,7 @@ const generateChecklistPdf = async (
             const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
             const val = (progress as any)?.[activity.id];
             const isDone = val === true || val === 'hadir';
-            row.push(isDone ? 'v' : '');
+            row.push(isDone ? '✓' : '');
             if (isDone) total++;
         }
         row.push(total.toString());
@@ -377,61 +410,125 @@ const generateChecklistPdf = async (
     });
 
     autoTable(doc, {
-        startY: 48,
+        startY: infoY + 18,
         head: headers,
         body: data,
         theme: 'grid',
-        styles: { fontSize: 6, cellPadding: 1, halign: 'center' },
-        columnStyles: {
-            1: { halign: 'left', cellWidth: 50 },
-            [daysInMonth + 2]: { fontStyle: 'bold' }
+        styles: {
+            fontSize: 7,
+            cellPadding: 1.5,
+            halign: 'center',
+            lineColor: [203, 213, 225], // Slate-300
+            lineWidth: 0.1,
+            textColor: [30, 41, 59] // Slate-800
         },
-        headStyles: { fillColor: [13, 148, 136] }
+        columnStyles: {
+            0: { cellWidth: 10, fontStyle: 'bold', fillColor: [241, 245, 249] }, // No column
+            1: { halign: 'left', cellWidth: 55, fillColor: [241, 245, 249] }, // Indikator column
+            [daysInMonth + 2]: { fontStyle: 'bold', fillColor: [240, 253, 250], textColor: [13, 148, 136] } // Total column
+        },
+        headStyles: {
+            fillColor: [13, 148, 136], // Teal-600
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 7,
+            cellPadding: 2
+        },
+        alternateRowStyles: {
+            fillColor: [248, 250, 252] // Slate-50
+        }
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    // Signature Section - Modern 4-Column Layout
+    const finalY = (doc as any).lastAutoTable.finalY + 8;
+
+    // Section Title
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text('Mengetahui,', pageMargin + 20, finalY);
-    doc.text('Mentor,', pageMargin + 20, finalY + 5);
-    doc.text('Karyawan,', pageWidth - pageMargin - 60, finalY + 5);
+    doc.setTextColor('#1E293B'); // Slate-800
+    doc.text('Pihak yang Menyetujui', pageWidth / 2, finalY, { align: 'center' });
 
-    const mentorId = employee.mentorId;
-    const mentor = mentorId ? allUsersData[mentorId]?.employee : null;
-    const mentorName = mentor ? mentor.name : '.........................';
-
-    // Signatures for Checklist with white background flattening
-    if (mentor?.signature) {
-        try {
-            const rawSig = mentor.signature.startsWith('http') ? await imageUrlToBase64(mentor.signature) : mentor.signature;
-            const mentorSigBase64 = await flattenImageWithWhiteBackground(rawSig);
-            doc.addImage(mentorSigBase64, 'JPEG', pageMargin + 15, finalY + 7, 20, 12, undefined, 'FAST');
-        } catch (e) { }
-    }
-    if (employee.signature) {
-        try {
-            const rawSig = employee.signature.startsWith('http') ? await imageUrlToBase64(employee.signature) : employee.signature;
-            const empSigBase64 = await flattenImageWithWhiteBackground(rawSig);
-            doc.addImage(empSigBase64, 'JPEG', pageWidth - pageMargin - 55, finalY + 7, 20, 12, undefined, 'FAST');
-        } catch (e) { }
-    }
-
-    // Auto-scale font for names in checklist
-    const drawNameFit = (name: string, x: number, y: number, maxWidth: number) => {
-        let fSize = 9;
-        doc.setFontSize(fSize);
-        while (doc.getTextWidth(name) > maxWidth && fSize > 5) {
-            fSize -= 0.5;
-            doc.setFontSize(fSize);
-        }
-        doc.setFont('helvetica', 'bold');
-        doc.text(name, x, y);
+    // Helper to get names
+    const getName = (id?: string) => {
+        if (!id) return null;
+        const strId = String(id).trim();
+        if (allUsersData[strId]) return allUsersData[strId].employee.name;
+        const foundData = Object.values(allUsersData).find(d => String(d.employee?.id).trim() === strId);
+        return foundData ? foundData.employee.name : null;
     };
 
-    drawNameFit(mentorName, pageMargin + 20, finalY + 25, 50);
-    drawNameFit(employee.name, pageWidth - pageMargin - 60, finalY + 25, 50);
+    const kaUnitName = getName(employee.kaUnitId) || 'Belum Diatur';
+    const supervisorName = getName(employee.supervisorId) || 'Belum Diatur';
+    const mentorName = getName(employee.mentorId) || 'Belum Diatur';
+
+    // Calculate column width for 4 signatures
+    const sigSectionWidth = pageWidth - 2 * pageMargin;
+    const colWidth = sigSectionWidth / 4;
+    const sigStartY = finalY + 5;
+
+    // Signature data
+    const signatures = [
+        { title: 'Kepala Unit', name: kaUnitName, nip: employee.kaUnitId || '-', signature: employee.kaUnitId ? allUsersData[employee.kaUnitId]?.employee?.signature : null },
+        { title: 'Supervisor', name: supervisorName, nip: employee.supervisorId || '-', signature: employee.supervisorId ? allUsersData[employee.supervisorId]?.employee?.signature : null },
+        { title: 'Mentor', name: mentorName, nip: employee.mentorId || '-', signature: employee.mentorId ? allUsersData[employee.mentorId]?.employee?.signature : null },
+        { title: 'Karyawan', name: employee.name, nip: employee.id, signature: employee.signature }
+    ];
+
+    // Draw each signature column
+    for (let i = 0; i < signatures.length; i++) {
+        const sig = signatures[i];
+        const x = pageMargin + i * colWidth;
+        const centerX = x + colWidth / 2;
+
+        // Title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor('#0F766E'); // Teal-700
+        doc.text(sig.title, centerX, sigStartY, { align: 'center' });
+
+        // Signature image
+        if (sig.signature) {
+            try {
+                const rawSig = sig.signature.startsWith('http') ? await imageUrlToBase64(sig.signature) : sig.signature;
+                const sigBase64 = await flattenImageWithWhiteBackground(rawSig);
+                const imgW = 20;
+                const imgH = 12;
+                doc.addImage(sigBase64, 'JPEG', centerX - imgW / 2, sigStartY + 3, imgW, imgH, undefined, 'FAST');
+            } catch (e) { }
+        }
+
+        // Name with underline
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor('#1E293B'); // Slate-800
+
+        // Auto-scale name if too long
+        let fontSize = 7.5;
+        doc.setFontSize(fontSize);
+        while (doc.getTextWidth(sig.name) > colWidth - 6 && fontSize > 5) {
+            fontSize -= 0.3;
+            doc.setFontSize(fontSize);
+        }
+
+        const nameY = sigStartY + 18;
+        doc.text(sig.name, centerX, nameY, { align: 'center' });
+
+        // Underline for name
+        const nameWidth = doc.getTextWidth(sig.name);
+        doc.setDrawColor('#1E293B');
+        doc.setLineWidth(0.3);
+        doc.line(centerX - nameWidth / 2, nameY + 0.5, centerX + nameWidth / 2, nameY + 0.5);
+
+        // NIP
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.setTextColor('#64748B'); // Slate-500
+        doc.text(`NIP. ${sig.nip}`, centerX, nameY + 4, { align: 'center' });
+    }
 
     doc.save(`mutabaah_${employee.name.replace(/\s/g, '_')}_${monthKey}.pdf`);
 };
+
 
 interface CeklisMutabaahViewProps {
     employee: Employee;
@@ -480,33 +577,58 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                     <ArrowLeftIcon className="w-6 h-6 text-white" />
                 </button>
                 <h2 className="text-xl font-bold text-white">
-                    Checklist Mutabaah - {selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                    Checklist Mutaba'ah - {selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                 </h2>
             </div>
 
-            <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-                <div className="overflow-x-auto max-h-[70vh]">
+            {/* Modern White Theme Card */}
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+                {/* Header Info */}
+                <div className="mb-6 pb-6 border-b-2 border-teal-500">
+                    <h3 className="text-2xl font-black text-gray-800 mb-4 tracking-tight">Lembar Mutaba'ah Harian</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div className="flex gap-2">
+                            <span className="font-semibold text-gray-600 min-w-[100px]">Nama:</span>
+                            <span className="text-gray-900 font-medium">{employee.name}</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="font-semibold text-gray-600 min-w-[100px]">NIP:</span>
+                            <span className="text-gray-900 font-medium">{employee.id}</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="font-semibold text-gray-600 min-w-[100px]">Unit:</span>
+                            <span className="text-gray-900 font-medium">{employee.unit}</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="font-semibold text-gray-600 min-w-[100px]">Bagian:</span>
+                            <span className="text-gray-900 font-medium">{employee.bagian}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Table Container */}
+                <div className="overflow-x-auto max-h-[65vh] rounded-lg border border-gray-300 shadow-inner">
                     <div className="inline-block min-w-full align-middle">
-                        <table className="min-w-full text-[10px] sm:text-xs text-left text-white border-collapse">
-                            <thead className="sticky top-0 z-20 bg-[#1e293b]">
+                        <table className="min-w-full text-[10px] sm:text-xs border-collapse">
+                            <thead className="sticky top-0 z-20 bg-linear-to-r from-teal-600 to-teal-500 text-white">
                                 <tr>
-                                    <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-0 z-30">No</th>
-                                    <th className="p-2 border border-white/20 bg-[#1e293b] sticky left-[30px] z-30 min-w-[150px]">Indikator Penilaian</th>
+                                    <th className="p-2 border border-teal-700 sticky left-0 z-30 bg-teal-600 font-bold">No</th>
+                                    <th className="p-2 border border-teal-700 sticky left-[40px] z-30 bg-teal-600 min-w-[180px] text-left font-bold">Indikator Penilaian</th>
                                     {Array.from({ length: daysInMonth }, (_, i) => (
-                                        <th key={i} className={`p-1 border border-white/20 text-center min-w-[25px] ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/30' : ''}`}>
+                                        <th key={i} className={`p-1 border border-teal-700 text-center min-w-[28px] font-semibold ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-400 text-gray-900' : ''}`}>
                                             {i + 1}
                                         </th>
                                     ))}
-                                    <th className="p-2 border border-white/20 text-center font-bold bg-[#1e293b] sticky right-0 z-30">Total</th>
+                                    <th className="p-2 border border-teal-700 text-center font-bold sticky right-0 z-30 bg-teal-600 min-w-[60px]">Total</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="bg-white">
                                 {dailyActivitiesConfig.map((activity, index) => {
                                     let rowTotal = 0;
                                     return (
-                                        <tr key={activity.id} className="hover:bg-white/5 group">
-                                            <td className="p-2 border border-white/20 text-center sticky left-0 bg-[#28364d] group-hover:bg-[#32435e]">{index + 1}</td>
-                                            <td className="p-2 border border-white/20 sticky left-[30px] bg-[#28364d] group-hover:bg-[#32435e]">{activity.title}</td>
+                                        <tr key={activity.id} className="hover:bg-teal-50/50 group transition-colors">
+                                            <td className="p-2 border border-gray-300 text-center sticky left-0 bg-gray-50 group-hover:bg-teal-50 font-medium text-gray-700">{index + 1}</td>
+                                            <td className="p-2 border border-gray-300 sticky left-[40px] bg-gray-50 group-hover:bg-teal-50 font-medium text-gray-800">{activity.title}</td>
                                             {Array.from({ length: daysInMonth }, (_, i) => {
                                                 const dayKey = (i + 1).toString().padStart(2, '0');
                                                 const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
@@ -514,12 +636,12 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                                                 const isDone = val === true || val === 'hadir';
                                                 if (isDone) rowTotal++;
                                                 return (
-                                                    <td key={i} className={`p-1 border border-white/20 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-teal-500/10' : ''}`}>
-                                                        {isDone ? <span className="text-teal-400 font-bold">✓</span> : <span className="text-white/10">-</span>}
+                                                    <td key={i} className={`p-1 border border-gray-300 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-50' : ''}`}>
+                                                        {isDone ? <span className="text-teal-600 font-black text-base">✓</span> : <span className="text-gray-300">-</span>}
                                                     </td>
                                                 );
                                             })}
-                                            <td className="p-2 border border-white/20 text-center font-bold sticky right-0 bg-[#28364d] group-hover:bg-[#32435e] text-teal-300">
+                                            <td className="p-2 border border-gray-300 text-center font-bold sticky right-0 bg-teal-50 text-teal-700 text-base">
                                                 {rowTotal}
                                             </td>
                                         </tr>
@@ -530,95 +652,105 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                     </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-4 text-[10px] text-gray-400 border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-1"><span className="text-teal-400 font-bold">✓</span> Terisi/Hadir</div>
-                    <div className="flex items-center gap-1"><span className="text-white/10">-</span> Belum Terisi/Tidak Hadir</div>
-                    {isCurrentMonthView && <div className="flex items-center gap-1"><div className="w-2 h-2 bg-teal-500/30 border border-teal-500/50"></div> Hari Ini</div>}
+                {/* Legend */}
+                <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <span className="text-teal-600 font-black text-base">✓</span>
+                        <span>Terisi/Hadir</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-gray-300 font-bold">-</span>
+                        <span>Belum Terisi/Tidak Hadir</span>
+                    </div>
+                    {isCurrentMonthView && (
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-amber-400 rounded border border-amber-600"></div>
+                            <span className="font-semibold">Hari Ini</span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Pihak Yang Menyetujui - Aligned with Table Width */}
-                <div className="mt-8 pt-8 text-center px-4 pb-4">
-                    <h4 className="text-base font-semibold text-white mb-6 tracking-wide">Pihak yang Menyetujui</h4>
-                    <div className="flex flex-col sm:flex-row justify-between items-stretch gap-4 sm:gap-6">
+                {/* Signature Section - Modern Design */}
+                <div className="mt-10 pt-8 border-t-2 border-gray-200">
+                    <h4 className="text-lg font-bold text-gray-800 mb-6 text-center">Pihak yang Menyetujui</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* Ka. Unit */}
-                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
-                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Kepala Unit</p>
-                            <div className="flex-1 flex items-center justify-center my-2">
-                                {/* Using employee ID for lookup in allUsersData to find signature if available */}
+                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Kepala Unit</p>
+                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
                                 {employee.kaUnitId && allUsersData[employee.kaUnitId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.kaUnitId].employee.signature!} alt="Tanda Tangan Ka. Unit" className="h-14 w-auto object-contain brightness-110" />
+                                    <img src={allUsersData[employee.kaUnitId].employee.signature!} alt="TTD Ka. Unit" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="w-full">
-                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
+                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
+                                <p className={`font-bold text-gray-900 leading-tight ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
                                     {kaUnitName || (employee.kaUnitId ? `NIP: ${employee.kaUnitId}` : 'Belum Diatur')}
                                 </p>
-                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.kaUnitId || '-'}</p>
+                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.kaUnitId || '-'}</p>
                             </div>
                         </div>
+
                         {/* Supervisor */}
-                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
-                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Supervisor</p>
-                            <div className="flex-1 flex items-center justify-center my-2">
+                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Supervisor</p>
+                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
                                 {employee.supervisorId && allUsersData[employee.supervisorId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.supervisorId].employee.signature!} alt="Tanda Tangan SPV" className="h-14 w-auto object-contain brightness-110" />
+                                    <img src={allUsersData[employee.supervisorId].employee.signature!} alt="TTD SPV" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="w-full">
-                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
+                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
+                                <p className={`font-bold text-gray-900 leading-tight ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
                                     {supervisorName || (employee.supervisorId ? `NIP: ${employee.supervisorId}` : 'Belum Diatur')}
                                 </p>
-                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.supervisorId || '-'}</p>
+                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.supervisorId || '-'}</p>
                             </div>
                         </div>
+
                         {/* Mentor */}
-                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
-                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Mentor</p>
-                            <div className="flex-1 flex items-center justify-center my-2">
+                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Mentor</p>
+                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
                                 {employee.mentorId && allUsersData[employee.mentorId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.mentorId].employee.signature!} alt="Tanda Tangan Mentor" className="h-14 w-auto object-contain brightness-110" />
+                                    <img src={allUsersData[employee.mentorId].employee.signature!} alt="TTD Mentor" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                        <span className="text-[9px] text-gray-500 italic">Belum Ada TTD</span>
+                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="w-full">
-                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
+                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
+                                <p className={`font-bold text-gray-900 leading-tight ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
                                     {mentorName || (employee.mentorId ? `NIP: ${employee.mentorId}` : 'Belum Diatur')}
                                 </p>
-                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.mentorId || '-'}</p>
+                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.mentorId || '-'}</p>
                             </div>
                         </div>
+
                         {/* Karyawan */}
-                        <div className="flex flex-col text-center px-2 py-4 bg-black/20 rounded-lg h-44 justify-between flex-1 w-full sm:min-w-[180px] border border-white/5">
-                            <p className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Karyawan</p>
-                            <div className="flex-1 flex items-center justify-center my-2">
+                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-teal-50 to-white rounded-xl border-2 border-teal-300 shadow-sm hover:shadow-md transition-shadow">
+                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Karyawan</p>
+                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
                                 {employee.signature ? (
-                                    <img src={employee.signature} alt="Tanda Tangan Karyawan" className="h-14 w-auto object-contain brightness-110" />
+                                    <img src={employee.signature} alt="TTD Karyawan" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-14 w-full flex items-center justify-center border border-dashed border-white/10 rounded-md">
-                                        <span className="text-[10px] text-gray-500 italic">Belum Ada TTD</span>
+                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-teal-300 rounded-lg bg-teal-50">
+                                        <span className="text-xs text-teal-600 italic">Belum Ada TTD</span>
                                     </div>
                                 )}
                             </div>
-                            <div className="w-full">
-                                <p className={`font-bold text-white leading-tight px-1 transition-all duration-300 ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
+                            <div className="border-t-2 border-teal-700 pt-2 mt-2">
+                                <p className={`font-bold text-gray-900 leading-tight ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
                                     {employee.name}
                                 </p>
-                                <div className="w-full h-px bg-gray-600/50 my-1 mx-auto"></div>
-                                <p className="font-mono text-[9px] text-gray-400">NIP. {employee.id}</p>
+                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.id}</p>
                             </div>
                         </div>
                     </div>
@@ -1467,9 +1599,9 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                 </td>
                                                 <td className="px-4 py-3 text-center whitespace-nowrap">
                                                     <span className={`px-3 py-1 rounded-full text-xs font-bold border ${predicate === 'Dengan Pujian' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                                            predicate === 'Sangat Memuaskan' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
-                                                                predicate === 'Memuaskan' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                                                                    'bg-red-500/20 text-red-400 border-red-500/30'
+                                                        predicate === 'Sangat Memuaskan' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                                            predicate === 'Memuaskan' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                                                'bg-red-500/20 text-red-400 border-red-500/30'
                                                         }`}>
                                                         {predicate}
                                                     </span>

@@ -35,6 +35,55 @@ export default function ProfilePage() {
     // React Query untuk cities data (otomatis caching, loading, error handling)
     const { data: cities = [], isLoading: citiesLoading } = useCities();
 
+    // Ensure mentor/supervisor/kaUnit/manager data is loaded for RapotView
+    React.useEffect(() => {
+        if (!loggedInEmployee) return;
+
+        const checkAndLoad = async () => {
+            const bossIds = [
+                loggedInEmployee.mentorId,
+                loggedInEmployee.supervisorId,
+                loggedInEmployee.kaUnitId,
+                loggedInEmployee.managerId
+            ].filter(id => id && typeof id === 'string' && id.trim() !== '' && !allUsersData[id]) as string[];
+
+            if (bossIds.length === 0) return;
+
+            // Remove duplicates
+            const uniqueIds = Array.from(new Set(bossIds));
+            if (uniqueIds.length === 0) return;
+
+            try {
+                // Dynamically import to avoid server-side issues if any
+                const { getEmployeeById } = await import('@/services/employeeService');
+
+                const loadedEmployees = await Promise.all(
+                    uniqueIds.map(id => getEmployeeById(id).catch(() => null))
+                );
+
+                setAllUsersData((prev) => {
+                    const next = { ...prev };
+                    let hasChanges = false;
+                    loadedEmployees.forEach(emp => {
+                        if (emp && !next[emp.id]) {
+                            next[emp.id] = {
+                                employee: emp,
+                                attendance: {},
+                                history: {}
+                            };
+                            hasChanges = true;
+                        }
+                    });
+                    return hasChanges ? next : prev;
+                });
+            } catch (e) {
+                console.error('Failed to load boss data', e);
+            }
+        };
+
+        checkAndLoad();
+    }, [loggedInEmployee, allUsersData, setAllUsersData]);
+
     const handleUpdateProfile = async (userId: string, updates: any) => {
         try {
             // Update to Supabase database using employee service

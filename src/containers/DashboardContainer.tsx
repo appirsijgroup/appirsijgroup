@@ -1378,68 +1378,6 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({ initialTab }) =
             onUpdateMenteeTargetStatus={(id, status) => updateMenteeTarget(id, { status })}
             onDeleteMenteeTarget={deleteMenteeTarget}
             addToast={addToast}
-            teamAttendanceSessions={teamAttendanceSessions}
-            onCreateTeamAttendanceSessions={async (sessionsData) => {
-                // 🔥 FIX: Implement create team attendance sessions with Supabase sync
-                try {
-
-                    if (!loggedInEmployee) {
-                        throw new Error('User not logged in');
-                    }
-
-                    // Import the service
-                    const { createTeamAttendanceSession } = await import('@/services/teamAttendanceService');
-
-                    // Create all sessions
-                    const createdSessions = await Promise.all(
-                        sessionsData.map(sessionData => {
-                            const sessionWithCreator = {
-                                ...sessionData,
-                                creatorId: loggedInEmployee.id,
-                                creatorName: loggedInEmployee.name,
-                                presentUserIds: [] // Initialize as empty array as it's required
-                                // Note: createdAt is handled by Supabase default value (NOW())
-                            };
-                            return createTeamAttendanceSession(sessionWithCreator);
-                        })
-                    );
-
-                    // Update local state (pass array, not spread)
-                    addTeamAttendanceSessions(createdSessions);
-
-                    addToast(`${createdSessions.length} sesi presensi berhasil dibuat!`, 'success');
-                } catch (error) {
-
-                    // Better error logging
-                    let errorMessage = 'Unknown error';
-                    if (error instanceof Error) {
-                        errorMessage = error.message;
-                    } else if (typeof error === 'object' && error !== null) {
-                        errorMessage = JSON.stringify(error);
-                    }
-
-                    addToast('Gagal membuat sesi presensi: ' + errorMessage, 'error');
-                }
-            }}
-            onAddActivity={handleAddActivity}
-            onUpdateTeamAttendance={async (id, presentUserIds) => {
-                // 🔥 FIX: Implement bulk update or single record creation logic here
-                // For now, let's just create a record if it's the current user attending
-                if (loggedInEmployee && presentUserIds.includes(loggedInEmployee.id)) {
-                    await createTeamAttendanceRecord({
-                        sessionId: id,
-                        userId: loggedInEmployee.id,
-                        userName: loggedInEmployee.name,
-                        attendedAt: Date.now(),
-                        sessionType: 'KIE', // Default or derive from session
-                        sessionDate: '',
-                        sessionStartTime: '',
-                        sessionEndTime: ''
-                    } as any);
-                }
-            }}
-            onUpdateSession={(id, sessionData) => updateTeamAttendanceSessionData(id, sessionData)}
-            onDeleteTeamAttendanceSession={deleteTeamAttendanceSession}
             onOpenAssignmentLetter={handleOpenAssignmentLetter}
         />
     );

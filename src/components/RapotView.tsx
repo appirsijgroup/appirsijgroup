@@ -117,9 +117,9 @@ const generateTranscriptPdf = async (
     const headerBottom = Math.max(logoBottomY, textBlockBottomY);
     const lineY = headerBottom + 5;
 
-    doc.setDrawColor('#0F766E'); // Teal-700
-    doc.setLineWidth(1);
-    doc.line(pageMargin, lineY, pageWidth - pageMargin, lineY);
+    doc.setDrawColor(204, 251, 241); // Teal-200
+    doc.setLineWidth(0.3);
+    // doc.roundedRect(pageMargin, infoY, pageWidth - 2 * pageMargin, 16, 2, 2, 'S');
 
     // 2. Title
     doc.setFont('helvetica', 'bold');
@@ -322,69 +322,110 @@ const generateChecklistPdf = async (
     hospital: Hospital | null
 ) => {
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
-    const pageMargin = 14;
+    const marginLeft = 10;
+    const marginRight = 10;
     const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - marginLeft - marginRight;
     const pageHeight = doc.internal.pageSize.getHeight();
     const monthKey = `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`;
     const monthLabel = selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
-    const hospitalName = hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP';
-
-    // Modern Header with Logo and Border
-    let startY = 10;
+    // HEADER SECTION
+    // 1. Logo
+    let startY = 6;
     if (hospital?.logo) {
         try {
             const rawLogo = hospital.logo.startsWith('http')
                 ? await imageUrlToBase64(hospital.logo)
                 : hospital.logo;
             const logoBase64 = await flattenImageWithWhiteBackground(rawLogo);
-            doc.addImage(logoBase64, 'JPEG', pageMargin, startY, 18, 18, undefined, 'FAST');
+            // Reduced size slightly to 18x18 and kept startY at 6 to prevent overlap
+            doc.addImage(logoBase64, 'JPEG', marginLeft, startY, 18, 18, undefined, 'FAST');
         } catch (e) { }
     }
 
-    // Hospital Name and Title
+    // 2. Hospital Name & Address
+    const hospitalNameUpper = (hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP').toUpperCase();
+
+    // Ensure "RUMAH SAKIT" is fully spelled out if it starts with "RS "
+    const formattedHospitalName = hospitalNameUpper.startsWith('RS ')
+        ? hospitalNameUpper.replace('RS ', 'RUMAH SAKIT ')
+        : hospitalNameUpper;
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor('#0F766E'); // Teal-700
-    doc.text(hospitalName.toUpperCase(), pageWidth / 2, startY + 8, { align: 'center' });
+    // Adjusted Y position to align with smaller logo
+    doc.text(formattedHospitalName, pageWidth / 2, startY + 7, { align: 'center' });
 
-    doc.setFontSize(13);
-    doc.setTextColor('#134E4A'); // Teal-800
-    doc.text('LEMBAR MUTABA\'AH HARIAN KARYAWAN', pageWidth / 2, startY + 15, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor('#475569'); // Slate-600
+    // Address
+    const address = hospital?.address || 'Jl. Tipar Cakung No.5, RT.5/RW.5, Sukapura, Kec. Cilincing, Jkt Utara, Daerah Khusus Ibukota Jakarta 14140';
     doc.setFont('helvetica', 'normal');
-    doc.text(`Periode: ${monthLabel.toUpperCase()}`, pageWidth / 2, startY + 21, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor('#64748B'); // Slate-500
+    doc.text(address, pageWidth / 2, startY + 13, { align: 'center' });
 
-    // Decorative line under header
-    doc.setDrawColor('#14B8A6'); // Teal-500
-    doc.setLineWidth(0.8);
-    doc.line(pageMargin, startY + 24, pageWidth - pageMargin, startY + 24);
+    // 3. Line Separator (Double Line Standard for Official Documents)
+    // Moved lineY down to 22 (from 20) to give extra breathing room for the logo
+    const lineY = startY + 22;
+    doc.setDrawColor('#000000'); // Black standard
+    doc.setLineWidth(1);
+    doc.line(marginLeft, lineY, pageWidth - marginRight, lineY); // Thick line
+    doc.setLineWidth(0.5);
+    doc.line(marginLeft, lineY + 1.5, pageWidth - marginRight, lineY + 1.5); // Thin line below
 
-    // Employee Info Section - Modern Card Style
-    const infoY = startY + 30;
-    doc.setFillColor(247, 254, 253); // Teal-50
-    doc.roundedRect(pageMargin, infoY, pageWidth - 2 * pageMargin, 14, 2, 2, 'F');
-
-    doc.setDrawColor(204, 251, 241); // Teal-200
-    doc.setLineWidth(0.3);
-    doc.roundedRect(pageMargin, infoY, pageWidth - 2 * pageMargin, 14, 2, 2, 'S');
-
+    // 4. Report Title & Period (Below Line)
+    const titleY = lineY + 10;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor('#0F766E'); // Teal-700
-    doc.text('Nama:', pageMargin + 3, infoY + 4);
-    doc.text('NIP:', pageMargin + 3, infoY + 9);
-    doc.text('Unit:', pageWidth / 2 + 5, infoY + 4);
-    doc.text('Bagian:', pageWidth / 2 + 5, infoY + 9);
+    doc.setFontSize(14);
+    doc.setTextColor('#000000'); // Black
+    doc.text('LEMBAR MUTABA\'AH HARIAN KARYAWAN', pageWidth / 2, titleY, { align: 'center' });
 
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor('#1E293B'); // Slate-800
-    doc.text(employee.name, pageMargin + 18, infoY + 4);
-    doc.text(employee.id, pageMargin + 18, infoY + 9);
-    doc.text(employee.unit, pageWidth / 2 + 20, infoY + 4);
-    doc.text(employee.bagian, pageWidth / 2 + 20, infoY + 9);
+    const periodY = titleY + 6;
+    doc.setFont('helvetica', 'bold'); // Bold for emphasis
+    doc.setFontSize(11);
+    doc.setTextColor('#000000'); // Black
+    doc.text(`PERIODE: ${monthLabel.toUpperCase()}`, pageWidth / 2, periodY, { align: 'center' });
+
+
+    // Employee Info Section - Official Clean Style (No Colored Box)
+    const infoY = periodY + 15;
+
+    // Coordinates for alignment
+    const col1X = marginLeft + 5;
+    const col1SepX = marginLeft + 35; // Wider for better spacing
+    const col1ValX = marginLeft + 38;
+
+    const centerPage = pageWidth / 2;
+    const col2X = centerPage + 5;
+    const col2SepX = centerPage + 35;
+    const col2ValX = centerPage + 38;
+
+    doc.setFont('helvetica', 'normal'); // Standard font weight
+    doc.setFontSize(10); // Standard readable size
+    doc.setTextColor('#000000'); // Black standard
+
+    // Left Column Labels
+    doc.text('Nama', col1X, infoY);
+    doc.text('NIP', col1X, infoY + 6);
+    // Separators
+    doc.text(':', col1SepX, infoY);
+    doc.text(':', col1SepX, infoY + 6);
+
+    // Right Column Labels
+    doc.text('Unit Kerja', col2X, infoY);
+    doc.text('Bagian', col2X, infoY + 6);
+    // Separators
+    doc.text(':', col2SepX, infoY);
+    doc.text(':', col2SepX, infoY + 6);
+
+    doc.setFont('helvetica', 'bold'); // Bold for values
+
+    // Values
+    doc.text(employee.name, col1ValX, infoY);
+    doc.text(employee.id, col1ValX, infoY + 6);
+    doc.text(employee.unit, col2ValX, infoY);
+    doc.text(employee.bagian, col2ValX, infoY + 6);
 
     // Table
     const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate();
@@ -402,41 +443,78 @@ const generateChecklistPdf = async (
             const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
             const val = (progress as any)?.[activity.id];
             const isDone = val === true || val === 'hadir';
-            row.push(isDone ? '✓' : '');
+            row.push(isDone ? 'CHECK' : ''); // Marker for custom drawing
             if (isDone) total++;
         }
         row.push(total.toString());
         return row;
     });
 
+    // Generate column styles for fixed date column widths
+    const dateColumnStyles: Record<string, any> = {};
+    for (let i = 2; i < daysInMonth + 2; i++) {
+        dateColumnStyles[i] = { cellWidth: 7, halign: 'center' }; // Fixed width for date columns
+    }
+
     autoTable(doc, {
-        startY: infoY + 18,
+        startY: infoY + 22,
+        margin: { left: marginLeft, right: marginRight, bottom: 35 },
         head: headers,
         body: data,
         theme: 'grid',
         styles: {
-            fontSize: 7,
-            cellPadding: 1.5,
+            fontSize: 6.5, // Slightly smaller to fit vertical space
+            cellPadding: 0.8, // Reduced padding
             halign: 'center',
+            valign: 'middle',
             lineColor: [203, 213, 225], // Slate-300
             lineWidth: 0.1,
             textColor: [30, 41, 59] // Slate-800
         },
         columnStyles: {
-            0: { cellWidth: 10, fontStyle: 'bold', fillColor: [241, 245, 249] }, // No column
-            1: { halign: 'left', cellWidth: 55, fillColor: [241, 245, 249] }, // Indikator column
-            [daysInMonth + 2]: { fontStyle: 'bold', fillColor: [240, 253, 250], textColor: [13, 148, 136] } // Total column
+            0: { cellWidth: 8, fontStyle: 'bold', fillColor: [241, 245, 249] }, // No column
+            1: { halign: 'left', cellWidth: 50, fillColor: [241, 245, 249] }, // Indikator column
+            ...dateColumnStyles, // Apply fixed widths for all date columns
+            [daysInMonth + 2]: { fontStyle: 'bold', fillColor: [240, 253, 250], textColor: [13, 148, 136], cellWidth: 10 } // Total column
         },
         headStyles: {
             fillColor: [13, 148, 136], // Teal-600
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 7,
-            cellPadding: 2
+            fontSize: 6.5,
+            cellPadding: 2,
+            halign: 'center',
+            valign: 'middle'
         },
         alternateRowStyles: {
-            fillColor: [248, 250, 252] // Slate-50
-        }
+            fillColor: [255, 255, 255]
+        },
+        didDrawCell: (data) => {
+            // Custom drawing for checkmarks to make them larger
+            if (data.section === 'body' && data.column.index >= 2 && data.column.index < daysInMonth + 2) {
+                if (data.cell.raw === 'CHECK') {
+                    const cell = data.cell;
+                    const x = cell.x + cell.width / 2;
+                    const y = cell.y + cell.height / 2;
+
+                    // Draw a large checkmark
+                    doc.setDrawColor('#0D9488'); // Teal-600
+                    doc.setLineWidth(0.5);
+
+                    // Scaling factor for the checkmark
+                    const scale = 1.2;
+
+                    // Draw checkmark lines manually
+                    doc.line(x - 1 * scale, y, x - 0.3 * scale, y + 1.2 * scale); // Short leg
+                    doc.line(x - 0.3 * scale, y + 1.2 * scale, x + 1.5 * scale, y - 1.5 * scale); // Long leg
+                }
+            }
+        },
+        willDrawCell: (data) => {
+            if (data.section === 'body' && data.cell.raw === 'CHECK') {
+                data.cell.text = []; // Clear text so we only see our custom drawing
+            }
+        },
     });
 
     // Signature Section - Modern 4-Column Layout
@@ -457,12 +535,20 @@ const generateChecklistPdf = async (
         return foundData ? foundData.employee.name : null;
     };
 
-    const kaUnitName = getName(employee.kaUnitId) || 'Belum Diatur';
-    const supervisorName = getName(employee.supervisorId) || 'Belum Diatur';
-    const mentorName = getName(employee.mentorId) || 'Belum Diatur';
+    // Logic: If ID exists but Name not found -> Return '-' (Don't use 'Belum Diatur' if NIP exists)
+    // If ID is missing -> Return 'Belum Diatur'
+    const getDisplayName = (id?: string) => {
+        if (!id) return 'Belum Diatur';
+        const name = getName(id);
+        return name || '-';
+    };
+
+    const kaUnitName = getDisplayName(employee.kaUnitId);
+    const supervisorName = getDisplayName(employee.supervisorId);
+    const mentorName = getDisplayName(employee.mentorId);
 
     // Calculate column width for 4 signatures
-    const sigSectionWidth = pageWidth - 2 * pageMargin;
+    const sigSectionWidth = pageWidth - marginLeft - marginRight;
     const colWidth = sigSectionWidth / 4;
     const sigStartY = finalY + 5;
 
@@ -477,7 +563,7 @@ const generateChecklistPdf = async (
     // Draw each signature column
     for (let i = 0; i < signatures.length; i++) {
         const sig = signatures[i];
-        const x = pageMargin + i * colWidth;
+        const x = marginLeft + i * colWidth;
         const centerX = x + colWidth / 2;
 
         // Title
@@ -513,11 +599,11 @@ const generateChecklistPdf = async (
         const nameY = sigStartY + 18;
         doc.text(sig.name, centerX, nameY, { align: 'center' });
 
-        // Underline for name
+        // Underline for name (Spaced nicely)
         const nameWidth = doc.getTextWidth(sig.name);
         doc.setDrawColor('#1E293B');
         doc.setLineWidth(0.3);
-        doc.line(centerX - nameWidth / 2, nameY + 0.5, centerX + nameWidth / 2, nameY + 0.5);
+        doc.line(centerX - nameWidth / 2, nameY + 1.5, centerX + nameWidth / 2, nameY + 1.5);
 
         // NIP
         doc.setFont('helvetica', 'normal');
@@ -536,9 +622,10 @@ interface CeklisMutabaahViewProps {
     selectedMonth: Date;
     allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>;
     onBack?: () => void;
+    hospital: Hospital | null;
 }
 
-const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack }) => {
+const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack, hospital }) => {
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);
 
     const daysInMonth = useMemo(() => {
@@ -582,53 +669,98 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
             </div>
 
             {/* Modern White Theme Card */}
-            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-                {/* Header Info */}
-                <div className="mb-6 pb-6 border-b-2 border-teal-500">
-                    <h3 className="text-2xl font-black text-gray-800 mb-4 tracking-tight">Lembar Mutaba'ah Harian</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div className="flex gap-2">
-                            <span className="font-semibold text-gray-600 min-w-[100px]">Nama:</span>
-                            <span className="text-gray-900 font-medium">{employee.name}</span>
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-200 overflow-hidden text-gray-900 relative">
+
+                {/* Visual Kop Surat (Matching PDF) */}
+                <div className="mb-8 pt-2">
+                    <div className="flex flex-col md:flex-row items-center justify-center relative mb-6 gap-4 md:gap-0 min-h-[80px]">
+                        {/* Logo positioned appropriately */}
+                        {hospital?.logo && (
+                            <div className="md:absolute md:left-4 md:top-0">
+                                <img
+                                    src={hospital.logo}
+                                    alt="Logo RS"
+                                    className="h-24 w-auto object-contain"
+                                />
+                            </div>
+                        )}
+
+                        <div className="text-center flex flex-col items-center z-10">
+                            <h1 className="text-2xl font-bold text-teal-700 tracking-wide uppercase">
+                                {hospital?.name?.startsWith('RS ') ? hospital.name.replace('RS ', 'RUMAH SAKIT ') : (hospital?.name || 'RUMAH SAKIT ISLAM JAKARTA GROUP')}
+                            </h1>
+                            <p className="text-xs text-slate-500 mt-1 max-w-lg mx-auto">
+                                {hospital?.address || 'Jl. Tipar Cakung No.5, RT.5/RW.5, Sukapura, Kec. Cilincing, Jkt Utara, Daerah Khusus Ibukota Jakarta 14140'}
+                            </p>
                         </div>
-                        <div className="flex gap-2">
-                            <span className="font-semibold text-gray-600 min-w-[100px]">NIP:</span>
-                            <span className="text-gray-900 font-medium">{employee.id}</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <span className="font-semibold text-gray-600 min-w-[100px]">Unit:</span>
-                            <span className="text-gray-900 font-medium">{employee.unit}</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <span className="font-semibold text-gray-600 min-w-[100px]">Bagian:</span>
-                            <span className="text-gray-900 font-medium">{employee.bagian}</span>
+                    </div>
+
+                    {/* Garis Kop Double Line */}
+                    <div className="border-t-4 border-black mb-1"></div>
+                    <div className="border-t border-black mb-6"></div>
+
+                    {/* Judul & Periode - Standard Document Style */}
+                    <div className="text-center mb-6">
+                        <h2 className="text-lg font-bold text-black uppercase underline decoration-2 underline-offset-4">LEMBAR MUTABA'AH HARIAN KARYAWAN</h2>
+                        <h3 className="text-sm font-semibold text-gray-900 mt-2 uppercase">PERIODE: {selectedMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3>
+                    </div>
+
+                    {/* Employee Info - Clean Plain Style (No Box) */}
+                    <div className="px-4 mb-6 text-sm text-black">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-1">
+                            {/* Left Column */}
+                            <div className="space-y-1">
+                                <div className="grid grid-cols-[100px_10px_auto]">
+                                    <span className="font-normal">Nama</span>
+                                    <span className="text-center">:</span>
+                                    <span className="font-bold uppercase">{employee.name}</span>
+                                </div>
+                                <div className="grid grid-cols-[100px_10px_auto]">
+                                    <span className="font-normal">NIP</span>
+                                    <span className="text-center">:</span>
+                                    <span className="font-bold">{employee.id}</span>
+                                </div>
+                            </div>
+                            {/* Right Column */}
+                            <div className="space-y-1">
+                                <div className="grid grid-cols-[100px_10px_auto]">
+                                    <span className="font-normal">Unit Kerja</span>
+                                    <span className="text-center">:</span>
+                                    <span className="font-bold uppercase">{employee.unit}</span>
+                                </div>
+                                <div className="grid grid-cols-[100px_10px_auto]">
+                                    <span className="font-normal">Bagian</span>
+                                    <span className="text-center">:</span>
+                                    <span className="font-bold uppercase">{employee.bagian}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Table Container */}
-                <div className="overflow-x-auto max-h-[65vh] rounded-lg border border-gray-300 shadow-inner">
+                {/* Table Container - Remove vertical scroll to make it one long document page */}
+                <div className="overflow-x-auto rounded-none border-t border-l border-r border-gray-400">
                     <div className="inline-block min-w-full align-middle">
-                        <table className="min-w-full text-[10px] sm:text-xs border-collapse">
-                            <thead className="sticky top-0 z-20 bg-linear-to-r from-teal-600 to-teal-500 text-white">
+                        <table className="min-w-full text-[10px] sm:text-xs border-collapse border-b border-gray-400">
+                            <thead className="bg-gray-100 text-black border-b border-black">
                                 <tr>
-                                    <th className="p-2 border border-teal-700 sticky left-0 z-30 bg-teal-600 font-bold">No</th>
-                                    <th className="p-2 border border-teal-700 sticky left-[40px] z-30 bg-teal-600 min-w-[180px] text-left font-bold">Indikator Penilaian</th>
+                                    <th className="p-2 border border-black font-bold text-center bg-gray-200">No</th>
+                                    <th className="p-2 border border-black min-w-[180px] text-left font-bold bg-gray-200">Indikator Penilaian</th>
                                     {Array.from({ length: daysInMonth }, (_, i) => (
-                                        <th key={i} className={`p-1 border border-teal-700 text-center min-w-[28px] font-semibold ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-400 text-gray-900' : ''}`}>
+                                        <th key={i} className={`p-1 border border-black text-center min-w-[28px] font-semibold ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-200 text-black' : 'bg-gray-200'}`}>
                                             {i + 1}
                                         </th>
                                     ))}
-                                    <th className="p-2 border border-teal-700 text-center font-bold sticky right-0 z-30 bg-teal-600 min-w-[60px]">Total</th>
+                                    <th className="p-2 border border-black text-center font-bold min-w-[60px] bg-gray-200">Total</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white">
                                 {dailyActivitiesConfig.map((activity, index) => {
                                     let rowTotal = 0;
                                     return (
-                                        <tr key={activity.id} className="hover:bg-teal-50/50 group transition-colors">
-                                            <td className="p-2 border border-gray-300 text-center sticky left-0 bg-gray-50 group-hover:bg-teal-50 font-medium text-gray-700">{index + 1}</td>
-                                            <td className="p-2 border border-gray-300 sticky left-[40px] bg-gray-50 group-hover:bg-teal-50 font-medium text-gray-800">{activity.title}</td>
+                                        <tr key={activity.id} className="hover:bg-gray-50 group transition-colors">
+                                            <td className="p-2 border border-black text-center font-medium text-black">{index + 1}</td>
+                                            <td className="p-2 border border-black font-medium text-black">{activity.title}</td>
                                             {Array.from({ length: daysInMonth }, (_, i) => {
                                                 const dayKey = (i + 1).toString().padStart(2, '0');
                                                 const progress = employee.monthlyActivities?.[monthKey]?.[dayKey];
@@ -636,12 +768,12 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                                                 const isDone = val === true || val === 'hadir';
                                                 if (isDone) rowTotal++;
                                                 return (
-                                                    <td key={i} className={`p-1 border border-gray-300 text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-50' : ''}`}>
-                                                        {isDone ? <span className="text-teal-600 font-black text-base">✓</span> : <span className="text-gray-300">-</span>}
+                                                    <td key={i} className={`p-1 border border-black text-center ${isCurrentMonthView && (i + 1) === today ? 'bg-amber-50' : ''}`}>
+                                                        {isDone ? <span className="text-black font-bold text-base">✓</span> : <span className="text-transparent">-</span>}
                                                     </td>
                                                 );
                                             })}
-                                            <td className="p-2 border border-gray-300 text-center font-bold sticky right-0 bg-teal-50 text-teal-700 text-base">
+                                            <td className="p-2 border border-black text-center font-bold text-black text-base">
                                                 {rowTotal}
                                             </td>
                                         </tr>
@@ -670,89 +802,89 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                     )}
                 </div>
 
-                {/* Signature Section - Modern Design */}
-                <div className="mt-10 pt-8 border-t-2 border-gray-200">
-                    <h4 className="text-lg font-bold text-gray-800 mb-6 text-center">Pihak yang Menyetujui</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Signature Section - Official Document Style */}
+                <div className="mt-8 pt-4">
+                    <h4 className="text-sm font-bold text-black mb-6 text-center uppercase">Pihak yang Menyetujui</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-black">
+
                         {/* Ka. Unit */}
-                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Kepala Unit</p>
-                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
+                        <div className="flex flex-col items-center text-center">
+                            <p className="text-xs font-bold uppercase mb-4 h-4">Kepala Unit</p>
+                            <div className="h-20 w-full flex items-end justify-center mb-1">
                                 {employee.kaUnitId && allUsersData[employee.kaUnitId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.kaUnitId].employee.signature!} alt="TTD Ka. Unit" className="h-16 w-auto object-contain" />
+                                    <img src={allUsersData[employee.kaUnitId].employee.signature!} alt="TTD" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
+                                    <div className="h-16 w-full flex items-center justify-center">
+                                        {/* Empty space for signature */}
                                     </div>
                                 )}
                             </div>
-                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
-                                <p className={`font-bold text-gray-900 leading-tight ${(kaUnitName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={kaUnitName || 'Belum Diatur'}>
-                                    {kaUnitName || (employee.kaUnitId ? `NIP: ${employee.kaUnitId}` : 'Belum Diatur')}
+                            <div className="w-full">
+                                <p className="font-bold text-xs uppercase px-1 min-h-[16px]">
+                                    {kaUnitName || (employee.kaUnitId ? '-' : 'Belum Diatur')}
                                 </p>
-                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.kaUnitId || '-'}</p>
+                                <div className="border-t border-black w-full my-1"></div>
+                                <p className="text-[10px]">NIP. {employee.kaUnitId || '-'}</p>
                             </div>
                         </div>
 
                         {/* Supervisor */}
-                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Supervisor</p>
-                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
+                        <div className="flex flex-col items-center text-center">
+                            <p className="text-xs font-bold uppercase mb-4 h-4">Supervisor</p>
+                            <div className="h-20 w-full flex items-end justify-center mb-1">
                                 {employee.supervisorId && allUsersData[employee.supervisorId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.supervisorId].employee.signature!} alt="TTD SPV" className="h-16 w-auto object-contain" />
+                                    <img src={allUsersData[employee.supervisorId].employee.signature!} alt="TTD" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
-                                    </div>
+                                    <div className="h-16 w-full flex items-center justify-center"></div>
                                 )}
                             </div>
-                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
-                                <p className={`font-bold text-gray-900 leading-tight ${(supervisorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={supervisorName || 'Belum Diatur'}>
-                                    {supervisorName || (employee.supervisorId ? `NIP: ${employee.supervisorId}` : 'Belum Diatur')}
+                            <div className="w-full">
+                                <p className="font-bold text-xs uppercase px-1 min-h-[16px]">
+                                    {supervisorName || (employee.supervisorId ? '-' : 'Belum Diatur')}
                                 </p>
-                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.supervisorId || '-'}</p>
+                                <div className="border-t border-black w-full my-1"></div>
+                                <p className="text-[10px]">NIP. {employee.supervisorId || '-'}</p>
                             </div>
                         </div>
 
                         {/* Mentor */}
-                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-gray-50 to-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Mentor</p>
-                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
+                        <div className="flex flex-col items-center text-center">
+                            <p className="text-xs font-bold uppercase mb-4 h-4">Mentor</p>
+                            <div className="h-20 w-full flex items-end justify-center mb-1">
                                 {employee.mentorId && allUsersData[employee.mentorId]?.employee?.signature ? (
-                                    <img src={allUsersData[employee.mentorId].employee.signature!} alt="TTD Mentor" className="h-16 w-auto object-contain" />
+                                    <img src={allUsersData[employee.mentorId].employee.signature!} alt="TTD" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                                        <span className="text-xs text-gray-400 italic">Belum Ada TTD</span>
-                                    </div>
+                                    <div className="h-16 w-full flex items-center justify-center"></div>
                                 )}
                             </div>
-                            <div className="border-t-2 border-gray-800 pt-2 mt-2">
-                                <p className={`font-bold text-gray-900 leading-tight ${(mentorName?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={mentorName || 'Belum Diatur'}>
-                                    {mentorName || (employee.mentorId ? `NIP: ${employee.mentorId}` : 'Belum Diatur')}
+                            <div className="w-full">
+                                <p className="font-bold text-xs uppercase px-1 min-h-[16px]">
+                                    {mentorName || (employee.mentorId ? '-' : 'Belum Diatur')}
                                 </p>
-                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.mentorId || '-'}</p>
+                                <div className="border-t border-black w-full my-1"></div>
+                                <p className="text-[10px]">NIP. {employee.mentorId || '-'}</p>
                             </div>
                         </div>
 
                         {/* Karyawan */}
-                        <div className="flex flex-col text-center p-4 bg-linear-to-b from-teal-50 to-white rounded-xl border-2 border-teal-300 shadow-sm hover:shadow-md transition-shadow">
-                            <p className="text-xs text-teal-700 font-bold uppercase tracking-wider mb-3">Karyawan</p>
-                            <div className="flex-1 flex items-center justify-center my-3 min-h-[60px]">
+                        <div className="flex flex-col items-center text-center">
+                            <p className="text-xs font-bold uppercase mb-4 h-4">Karyawan</p>
+                            <div className="h-20 w-full flex items-end justify-center mb-1">
                                 {employee.signature ? (
-                                    <img src={employee.signature} alt="TTD Karyawan" className="h-16 w-auto object-contain" />
+                                    <img src={employee.signature} alt="TTD" className="h-16 w-auto object-contain" />
                                 ) : (
-                                    <div className="h-16 w-full flex items-center justify-center border-2 border-dashed border-teal-300 rounded-lg bg-teal-50">
-                                        <span className="text-xs text-teal-600 italic">Belum Ada TTD</span>
-                                    </div>
+                                    <div className="h-16 w-full flex items-center justify-center"></div>
                                 )}
                             </div>
-                            <div className="border-t-2 border-teal-700 pt-2 mt-2">
-                                <p className={`font-bold text-gray-900 leading-tight ${(employee.name?.length || 0) > 20 ? 'text-[10px]' : 'text-xs'}`} title={employee.name}>
+                            <div className="w-full">
+                                <p className="font-bold text-xs uppercase px-1">
                                     {employee.name}
                                 </p>
-                                <p className="font-mono text-[9px] text-gray-500 mt-1">NIP. {employee.id}</p>
+                                <div className="border-t border-black w-full my-1"></div>
+                                <p className="text-[10px]">NIP. {employee.id}</p>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -1374,31 +1506,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
 
     const { signatory } = useMemo(() => {
         const allUsersList = Object.values(allUsersData).map(d => d.employee);
-        const managers = allUsersList.filter(u => u.functionalRoles?.includes('MANAJER'));
-
-        let foundManager: Employee | undefined;
-        for (const manager of managers) {
-            const scope = manager.managerScope;
-            if (scope) {
-                if (scope.managedBagians?.includes(employee.bagian)) {
-                    foundManager = manager;
-                    break;
-                }
-                if (scope.managedUnits?.includes(employee.unit)) {
-                    foundManager = manager;
-                    break;
-                }
-                if (scope.additionalManagedUserIds?.includes(employee.id)) {
-                    foundManager = manager;
-                    break;
-                }
-            }
-        }
-
         const dirut = allUsersList.find(u => u.canBeDirut);
-        if (foundManager) {
-            return { signatory: { name: foundManager.name, nip: foundManager.id, title: 'Manajer', signature: foundManager.signature } };
-        }
+
         if (dirut) {
             return { signatory: { name: dirut.name, nip: dirut.id, title: 'Direktur Utama', signature: dirut.signature } };
         }
@@ -1432,7 +1541,7 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     }, []);
 
     if (viewingChecklistFor) {
-        return <CeklisMutabaahView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} selectedMonth={viewingChecklistFor} allUsersData={allUsersData} onBack={() => setViewingChecklistFor(null)} />;
+        return <CeklisMutabaahView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} selectedMonth={viewingChecklistFor} allUsersData={allUsersData} onBack={() => setViewingChecklistFor(null)} hospital={hospital} />;
     }
 
     if (viewingTranscriptFor) {

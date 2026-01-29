@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- Form state resets in modals are intentional */
 import React, { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
-import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type AuditLogEntry, Announcement, FunctionalRole, Hospital, FailedOperationRecord, type MutabaahLockingMode } from "../types";
+import { type Employee, type Role, type Attendance, type AdminReportRecord, type Activity, type RawEmployee, type AdminView, type SunnahIbadah, type DailyActivity, type AuditLogEntry, FunctionalRole, Hospital, FailedOperationRecord, type MutabaahLockingMode } from "../types";
 import { PRAYERS } from '../data/prayers';
 import * as XLSX from 'xlsx';
 import {
@@ -21,7 +21,6 @@ import {
     ChevronDown,
     Shield,
     ShieldCheck,
-    Megaphone,
     Building2,
     PlusCircle,
     Trash2,

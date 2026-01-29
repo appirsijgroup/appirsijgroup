@@ -404,25 +404,6 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
 
     const menteeDataForDetail = selectedSubmission ? allUsersData[selectedSubmission.menteeId]?.employee : null;
 
-    // Separate pending manual requests for the top section (dashboard style)
-    const activePendingManual = useMemo(() => {
-        const myId = loggedInEmployee.id;
-        const isAdmin = loggedInEmployee.role === 'admin' || loggedInEmployee.role === 'super-admin';
-
-        const tadarus = (pendingTadarusRequests || []).filter((r: any) => {
-            const mentee = allUsersData[r.menteeId]?.employee;
-            if (isAdmin) return r.status === 'pending';
-            // Only show pending items where I am the CURRENT mentor
-            return r.status === 'pending' && mentee && mentee.mentorId === myId;
-        });
-        const prayer = (pendingMissedPrayerRequests || []).filter((r: any) => {
-            const mentee = allUsersData[r.menteeId]?.employee;
-            if (isAdmin) return r.status === 'pending';
-            return r.status === 'pending' && mentee && mentee.mentorId === myId;
-        });
-        return { tadarus, prayer };
-    }, [pendingTadarusRequests, pendingMissedPrayerRequests, loggedInEmployee, allUsersData]);
-
     return (
         <div className="w-full animate-fade-in">
             {selectedSubmission && menteeDataForDetail ? (
@@ -447,44 +428,6 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {/* Pending Requests Section (Manual Requests) - Only show if PENDING and in PENDING filter or ALL */}
-                    {(statusFilter === 'all' || statusFilter === 'pending') && (activePendingManual.tadarus.length > 0 || activePendingManual.prayer.length > 0) && (
-                        <div className="space-y-4">
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                <span className="w-2 h-6 bg-amber-400 rounded-full"></span>
-                                Menunggu Persetujuan Manual
-                            </h3>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {activePendingManual.tadarus.map(req => (
-                                    <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
-                                        <div className="w-full sm:w-auto">
-                                            <p className="font-bold text-white">Pengajuan {req.category || 'Tadarus'}: {req.menteeName}</p>
-                                            <p className="text-sm text-teal-300">Tanggal: {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                            {req.notes && <p className="text-xs text-gray-400 mt-2 p-2 bg-black/20 rounded-md italic">&quot;{req.notes}&quot;</p>}
-                                        </div>
-                                        <div className="flex gap-2 w-full sm:w-auto shrink-0">
-                                            <button onClick={() => setRejectionTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/30 font-semibold rounded-lg text-sm transition-all">Tolak</button>
-                                            <button onClick={() => setApprovalTarget({ type: 'tadarus', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg text-sm transition-all shadow-md">Setujui</button>
-                                        </div>
-                                    </div>
-                                ))}
-                                {activePendingManual.prayer.map(req => (
-                                    <div key={req.id} className="bg-gray-800/40 p-4 rounded-xl border border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-800/60 transition-colors">
-                                        <div className="w-full sm:w-auto">
-                                            <p className="font-bold text-white">Presensi Terlewat: {req.menteeName}</p>
-                                            <p className="text-sm text-teal-300">{req.prayerName}, {new Date(req.date + 'T12:00:00Z').toLocaleDateString('id-ID')}</p>
-                                            {req.reason && <p className="text-xs text-gray-400 mt-2 p-2 bg-black/20 rounded-md italic">&quot;{req.reason}&quot;</p>}
-                                        </div>
-                                        <div className="flex gap-2 w-full sm:w-auto shrink-0">
-                                            <button onClick={() => setRejectionTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-500/30 font-semibold rounded-lg text-sm transition-all">Tolak</button>
-                                            <button onClick={() => setApprovalTarget({ type: 'prayer', id: req.id })} className="flex-1 sm:flex-none px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-lg text-sm transition-all shadow-md">Setujui</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold text-white flex items-center gap-2">
                             <span className="w-2 h-6 bg-teal-400 rounded-full"></span>
@@ -622,7 +565,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                             </p>
                         </div>
                     </div>
-                </div>
+                </div >
             )}
 
             <ConfirmationModal
@@ -642,7 +585,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                 title="Tolak Pengajuan"
                 prompt="Berikan alasan penolakan pengajuan ini."
             />
-        </div>
+        </div >
     );
 };
 export default Persetujuan;

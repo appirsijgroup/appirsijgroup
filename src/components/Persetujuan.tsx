@@ -474,6 +474,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                         <th className="px-3 py-4 font-bold border-b border-white/10 text-center">No</th>
                                         <th className="px-4 py-4 font-bold border-b border-white/10">NIP</th>
                                         <th className="px-4 py-4 font-bold border-b border-white/10">NAMA</th>
+                                        <th className="px-4 py-4 font-bold border-b border-white/10">TIPE</th>
                                         <th className="px-4 py-4 font-bold border-b border-white/10">Periode Pengajuan</th>
                                         <th className="px-4 py-4 font-bold border-b border-white/10">Tanggal Pengajuan</th>
                                         <th className="px-4 py-4 font-bold border-b border-white/10">Catatan</th>
@@ -490,16 +491,16 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                                 <td className="px-4 py-4 font-mono text-xs text-gray-300">
                                                     {item.menteeNip}
                                                 </td>
-                                                <td className="px-4 py-4 font-semibold whitespace-nowrap">
-                                                    <div className="flex flex-col">
-                                                        <span>{item.menteeName}</span>
-                                                        <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded w-fit mt-1 tracking-tighter
-                                                            ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
-                                                                item.type === 'tadarus' ? 'bg-indigo-500/20 text-indigo-300' :
-                                                                    'bg-purple-500/20 text-purple-300'}`}>
-                                                            {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
-                                                        </span>
-                                                    </div>
+                                                <td className="px-4 py-4 font-semibold whitespace-nowrap text-white">
+                                                    {item.menteeName}
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap">
+                                                    <span className={`text-[9px] uppercase font-black px-1.5 py-0.5 rounded w-fit tracking-tighter
+                                                        ${item.type === 'report' ? 'bg-blue-500/20 text-blue-300' :
+                                                            item.type === 'tadarus' ? 'bg-indigo-500/20 text-indigo-300' :
+                                                                'bg-purple-500/20 text-purple-300'}`}>
+                                                        {item.type === 'report' ? 'Laporan' : item.type === 'tadarus' ? 'Tadarus/BBQ' : 'Presensi Terlewat'}
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-4 text-blue-100 text-xs">
                                                     {item.periode}
@@ -544,7 +545,7 @@ const Persetujuan: React.FC<PersetujuanProps> = ({
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-20">
+                                            <td colSpan={8} className="text-center py-20">
                                                 <div className="flex flex-col items-center opacity-40">
                                                     <CheckCircle2 className="w-12 h-12 text-gray-400 mb-3" />
                                                     <p className="text-lg text-gray-400 font-medium">Tidak ada data ditemukan.</p>

@@ -126,18 +126,22 @@ const findOptimalDoaFontSizes = (
     maxWidth: number,
     maxHeight: number
 ) => {
-    let arabicSize = 110;
-    const minArabicSize = 40;
-
-    const PADDING_BETWEEN_SECTIONS = 30;
-    const translation = `Artinya: "${doa.translation}"`;
+    let arabicSize = 90; // Slightly smaller initial size
+    const minArabicSize = 35;
+    const PADDING_BETWEEN_SECTIONS = 60; // Increased for aesthetics
 
     while (arabicSize >= minArabicSize) {
+        const titleSize = 52;
         const latinSize = Math.max(24, arabicSize * 0.45);
         const translationSize = Math.max(26, arabicSize * 0.40);
-        const arabicLineHeight = arabicSize * 1.4;
+
+        const titleLineHeight = titleSize * 1.3;
+        const arabicLineHeight = arabicSize * 1.6; // More breathing room for Arabic
         const latinLineHeight = latinSize * 1.4;
         const translationLineHeight = translationSize * 1.5;
+
+        ctx.font = `600 ${titleSize}px "Inter", sans-serif`;
+        const { height: titleHeight } = getTextLinesAndHeight(ctx, doa.title, maxWidth, titleLineHeight);
 
         ctx.font = `700 ${arabicSize}px "Noto Naskh Arabic", serif`;
         const { height: arabicHeight } = getTextLinesAndHeight(ctx, doa.arabic, maxWidth, arabicLineHeight);
@@ -145,18 +149,28 @@ const findOptimalDoaFontSizes = (
         ctx.font = `italic 400 ${latinSize}px "Inter", sans-serif`;
         const { height: latinHeight } = getTextLinesAndHeight(ctx, doa.latin, maxWidth, latinLineHeight);
 
+        const translationText = `Artinya: "${doa.translation}"`;
         ctx.font = `400 ${translationSize}px "Inter", sans-serif`;
-        const { height: translationHeight } = getTextLinesAndHeight(ctx, translation, maxWidth, translationLineHeight);
+        const { height: translationHeight } = getTextLinesAndHeight(ctx, translationText, maxWidth, translationLineHeight);
 
-        const totalContentHeight = arabicHeight + PADDING_BETWEEN_SECTIONS + latinHeight + PADDING_BETWEEN_SECTIONS + translationHeight;
+        // Calculate total block height
+        const totalHeight = titleHeight + 40 + arabicHeight + PADDING_BETWEEN_SECTIONS + latinHeight + PADDING_BETWEEN_SECTIONS + translationHeight;
 
-        if (totalContentHeight <= maxHeight) {
-            return { arabicSize, latinSize, translationSize };
+        if (totalHeight <= maxHeight) {
+            return { arabicSize, latinSize, translationSize, titleSize, totalHeight };
         }
         arabicSize -= 2;
     }
 
-    return { arabicSize: minArabicSize, latinSize: Math.max(24, minArabicSize * 0.45), translationSize: Math.max(26, minArabicSize * 0.40) };
+    // Fallback
+    const lastArabicSize = minArabicSize;
+    return {
+        arabicSize: lastArabicSize,
+        latinSize: Math.max(24, lastArabicSize * 0.45),
+        translationSize: Math.max(26, lastArabicSize * 0.40),
+        titleSize: 42, // Smaller fallback title
+        totalHeight: maxHeight // Cap it
+    };
 };
 
 const findOptimalQuoteFontSize = (
@@ -294,27 +308,10 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
         } else if (type === 'doa' && content && 'arabic' in content) {
             const doa = content as DailyPrayer;
 
-            // Title height
-            ctx.font = `600 52px "Inter", sans-serif`;
-            const { height: prayerTitleHeight } = getTextLinesAndHeight(ctx, doa.title, contentAreaWidth, 52 * 1.2);
-
-            // Doa content heights
-            const arabicSize = 80;
-            const latinSize = 36;
-            const translationSize = 38;
-            const PADDING_SECTION_GAP = 30;
-
-            ctx.font = `700 ${arabicSize}px "Noto Naskh Arabic", serif`;
-            const { height: arabicHeight } = getTextLinesAndHeight(ctx, doa.arabic, contentAreaWidth, arabicSize * 1.4);
-
-            ctx.font = `italic 400 ${latinSize}px "Inter", sans-serif`;
-            const { height: latinHeight } = getTextLinesAndHeight(ctx, doa.latin, contentAreaWidth, latinSize * 1.4);
-
-            const translationText = `Artinya: "${doa.translation}"`;
-            ctx.font = `400 ${translationSize}px "Inter", sans-serif`;
-            const { height: translationHeight } = getTextLinesAndHeight(ctx, translationText, contentAreaWidth, translationSize * 1.5);
-
-            calculatedContentHeight = prayerTitleHeight + 30 + arabicHeight + PADDING_SECTION_GAP + latinHeight + PADDING_SECTION_GAP + translationHeight;
+            // Available height for EVERYTHING between header and footer
+            const maxAvailableH = 1500; // Aiming for roughly this height if possible
+            const { totalHeight } = findOptimalDoaFontSizes(ctx, doa, contentAreaWidth, maxAvailableH);
+            calculatedContentHeight = totalHeight;
 
         } else if (type === 'quote') {
             const quote = content as Quote;
@@ -518,48 +515,49 @@ const ShareImageModal: React.FC<ShareImageModalProps> = ({ isOpen, onClose, init
             const doa = content as DailyPrayer;
             ctx.textBaseline = 'top';
 
-            const prayerTitleY = headerBottomY + 40;
+            const availableContentStartY = headerBottomY + 40;
+            const availableContentEndY = H - PADDING - FOOTER_MARGIN_TOP - FOOTER_LINE_MARGIN - FOOTER_HEIGHT;
+            const availableContentAreaHeight = availableContentEndY - availableContentStartY;
 
-            ctx.font = `600 52px "Inter", sans-serif`;
+            // Find optimal sizes based on finalized canvas height
+            const { arabicSize, latinSize, translationSize, titleSize, totalHeight } = findOptimalDoaFontSizes(
+                ctx, doa, contentWidth, availableContentAreaHeight - 60
+            );
+
+            const PADDING_SECTION_GAP = 60; // Consistent with findOptimalDoaFontSizes
+
+            // Center the entire block (Title + Content)
+            let currentY = availableContentStartY + (availableContentAreaHeight - totalHeight) / 2;
+
+            // 1. Draw Title
+            ctx.font = `600 ${titleSize}px "Inter", sans-serif`;
             ctx.fillStyle = '#67e8f9';
-            const { height: prayerTitleHeight, lines: prayerTitleLines } = getTextLinesAndHeight(ctx, doa.title, contentWidth, 52 * 1.2);
-            wrapText(ctx, prayerTitleLines, W / 2, prayerTitleY, 52 * 1.2);
+            const { height: titleHeight, lines: titleLines } = getTextLinesAndHeight(ctx, doa.title, contentWidth, titleSize * 1.3);
+            currentY = wrapText(ctx, titleLines, W / 2, currentY, titleSize * 1.3);
 
-            const arabicSize = 80;
-            const latinSize = 36;
-            const translationSize = 38;
-            const PADDING_SECTION_GAP = 30;
+            currentY += 40; // Gap between title and arabic
 
-            const availableContentHeight = H - PADDING - FOOTER_MARGIN_TOP - FOOTER_LINE_MARGIN - FOOTER_HEIGHT;
-            const doaContentStartY = prayerTitleY + prayerTitleHeight + 30;
-            const doaContentAreaHeight = availableContentHeight - doaContentStartY - 40;
-
-            ctx.font = `700 ${arabicSize}px "Noto Naskh Arabic", serif`;
-            const { height: arabicHeight, lines: arabicLines } = getTextLinesAndHeight(ctx, doa.arabic, contentWidth, arabicSize * 1.4);
-
-            ctx.font = `italic 400 ${latinSize}px "Inter", sans-serif`;
-            const { height: latinHeight, lines: latinLines } = getTextLinesAndHeight(ctx, doa.latin, contentWidth, latinSize * 1.4);
-
-            const translationText = `Artinya: "${doa.translation}"`;
-            ctx.font = `400 ${translationSize}px "Inter", sans-serif`;
-            const { height: translationHeight, lines: translationLines } = getTextLinesAndHeight(ctx, translationText, contentWidth, translationSize * 1.5);
-
-            const totalDoaContentHeight = arabicHeight + PADDING_SECTION_GAP + latinHeight + PADDING_SECTION_GAP + translationHeight;
-
-            let currentY = doaContentStartY + (doaContentAreaHeight - totalDoaContentHeight) / 2;
-
+            // 2. Draw Arabic
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.font = `700 ${arabicSize}px "Noto Naskh Arabic", serif`;
-            currentY = wrapText(ctx, arabicLines, W / 2, currentY, arabicSize * 1.4);
+            const { height: arabicHeight, lines: arabicLines } = getTextLinesAndHeight(ctx, doa.arabic, contentWidth, arabicSize * 1.6);
+            currentY = wrapText(ctx, arabicLines, W / 2, currentY, arabicSize * 1.6);
+
             currentY += PADDING_SECTION_GAP;
 
+            // 3. Draw Latin
             ctx.fillStyle = 'rgba(155, 236, 224, 0.8)';
             ctx.font = `italic 400 ${latinSize}px "Inter", sans-serif`;
+            const { height: latinHeight, lines: latinLines } = getTextLinesAndHeight(ctx, doa.latin, contentWidth, latinSize * 1.4);
             currentY = wrapText(ctx, latinLines, W / 2, currentY, latinSize * 1.4);
+
             currentY += PADDING_SECTION_GAP;
 
+            // 4. Draw Translation
+            const translationText = `Artinya: "${doa.translation}"`;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.font = `400 ${translationSize}px "Inter", sans-serif`;
+            const { lines: translationLines } = getTextLinesAndHeight(ctx, translationText, contentWidth, translationSize * 1.5);
             wrapText(ctx, translationLines, W / 2, currentY, translationSize * 1.5);
         }
 

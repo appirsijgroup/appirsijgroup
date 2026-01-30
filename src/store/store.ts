@@ -49,6 +49,7 @@ export interface AppDataState {
     refreshActivityStats: () => void;
     loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     loadHeavyAdminData: () => Promise<void>;
+    setIsLoggingOut: (isLoggingOut: boolean) => void;
 }
 
 export const useAppDataStore = create<AppDataState>((set, get) => ({
@@ -66,9 +67,10 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
     paginationInfo: null,
 
     setAllUsersData: (fn) => set(state => ({ allUsersData: fn(state.allUsersData) })),
-    setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee }),
+    setLoggedInEmployee: (employee) => set({ loggedInEmployee: employee, isLoggingOut: false }),
     setHospitalsData: (hospitals) => set({ hospitalsData: hospitals }),
     setHydrated: (isHydrated) => set({ isHydrated }),
+    setIsLoggingOut: (isLoggingOut) => set({ isLoggingOut }),
     refreshActivityStats: () => set((state) => ({ activityStatsRefreshCounter: state.activityStatsRefreshCounter + 1 })),
 
     loadLoggedInEmployee: async () => {

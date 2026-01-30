@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 
 const LoginContainer = () => {
     const router = useRouter();
-    const { loggedInEmployee, setLoggedInEmployee, setHydrated, setAllUsersData } = useAppDataStore();
+    const { loggedInEmployee, setLoggedInEmployee, setHydrated, setAllUsersData, setIsLoggingOut } = useAppDataStore();
     const { setGlobalLoading } = useUIStore();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -19,7 +19,8 @@ const LoginContainer = () => {
     // 🔥 FIX: Clear global loading when on login page (e.g. after logout)
     useEffect(() => {
         setGlobalLoading(false);
-    }, [setGlobalLoading]);
+        setIsLoggingOut(false);
+    }, [setGlobalLoading, setIsLoggingOut]);
 
     // 🔥 FIX: Redirect to dashboard if already logged in (prevents "stuck" on login page)
     useEffect(() => {

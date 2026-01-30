@@ -46,6 +46,10 @@ export default function JadwalSesiPage() {
         loadData();
     }, [loggedInEmployee, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase]);
 
+    // ⚡ TAMBAH: State for filtering
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterType, setFilterType] = useState<'all' | 'activity' | 'session'>('all');
+
     const handleEdit = (item: CombinedScheduleItem) => {
         // ⚡ FIX: Sertakan kind (activity/session) di URL agar edit page tahu jenis item
         router.push(`/jadwal-sesi/edit/${item.kind}/${item.id}`);
@@ -110,7 +114,23 @@ export default function JadwalSesiPage() {
             original: s,
         }));
 
-        return [...activityItems, ...sessionItems].sort((a, b) => {
+        let filtered = [...activityItems, ...sessionItems];
+
+        // Apply type filter
+        if (filterType !== 'all') {
+            filtered = filtered.filter(item => item.kind === filterType);
+        }
+
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(item =>
+                item.name.toLowerCase().includes(query) ||
+                item.type.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered.sort((a, b) => {
             // ⚡ FIX: Handle undefined/null values safely
             const dateA = a.date || '';
             const dateB = b.date || '';
@@ -121,7 +141,7 @@ export default function JadwalSesiPage() {
             if (dateComparison !== 0) return dateComparison;
             return timeA.localeCompare(timeB);
         });
-    }, [activities, teamAttendanceSessions]);
+    }, [activities, teamAttendanceSessions, searchQuery, filterType]);
 
 
     if (!loggedInEmployee) {
@@ -200,6 +220,53 @@ export default function JadwalSesiPage() {
                         </div>
                         <ClockIcon className="w-10 h-10 text-pink-400 opacity-50" />
                     </div>
+                </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="relative grow">
+                    <input
+                        type="text"
+                        placeholder="Cari nama atau tipe..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-medium"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setFilterType('all')}
+                        className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${filterType === 'all'
+                            ? 'bg-teal-500 text-white border-teal-500 shadow-lg shadow-teal-500/20'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
+                            }`}
+                    >
+                        Semua
+                    </button>
+                    <button
+                        onClick={() => setFilterType('activity')}
+                        className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${filterType === 'activity'
+                            ? 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
+                            }`}
+                    >
+                        Kegiatan
+                    </button>
+                    <button
+                        onClick={() => setFilterType('session')}
+                        className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${filterType === 'session'
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-lg shadow-purple-500/20'
+                            : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
+                            }`}
+                    >
+                        Sesi
+                    </button>
                 </div>
             </div>
 

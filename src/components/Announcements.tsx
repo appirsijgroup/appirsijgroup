@@ -65,7 +65,8 @@ const AnnouncementModal: React.FC<{
             // Reset form when creating new
             setTitle('');
             setContent('');
-            setScope('alliansi');
+            // ⚡ UPDATED: Default to 'mentor' if the user is a mentor, as requested
+            setScope(loggedInEmployee?.canBeMentor ? 'mentor' : 'alliansi');
             setSelectedHospitalIds([]);
             setFile(null);
             setFilePreview(null);
@@ -118,7 +119,8 @@ const AnnouncementModal: React.FC<{
         onClose();
         setTitle('');
         setContent('');
-        setScope('alliansi');
+        // ⚡ UPDATED: Default to 'mentor' if the user is a mentor
+        setScope(loggedInEmployee?.canBeMentor ? 'mentor' : 'alliansi');
         setSelectedHospitalIds([]);
         setFile(null);
         setFilePreview(null);

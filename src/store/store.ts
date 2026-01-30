@@ -45,7 +45,7 @@ export interface AppDataState {
         hasPrev: boolean;
     } | null;
     loadHospitals: () => Promise<void>;
-    logoutEmployee: () => void;
+    logoutEmployee: (router?: any) => void;
     refreshActivityStats: () => void;
     loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
     loadHeavyAdminData: () => Promise<void>;
@@ -146,7 +146,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
     },
 
-    logoutEmployee: async () => {
+    logoutEmployee: async (router) => {
         if (get().isLoggingOut) return;
         set({ isLoggingOut: true });
 
@@ -173,7 +173,11 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
 
             const currentPath = window.location.pathname;
             if (currentPath !== '/login' && currentPath !== '/login/') {
-                window.location.href = '/login';
+                if (router) {
+                    router.push('/login');
+                } else {
+                    window.location.href = '/login';
+                }
             } else {
                 set({ isLoggingOut: false });
             }

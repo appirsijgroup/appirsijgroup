@@ -28,6 +28,11 @@
   }
 }
 
+html {
+  background-color: #0f172a; /* slate-900 - Prevents white flash before CSS loads */
+  color-scheme: dark;
+}
+
 body {
   /* 🔥 INDUSTRY STANDARD: Set global background here to prevent 'flicker' or color changes during transitions */
   background: linear-gradient(135deg, #0f172a 0%, #3730a3 100%);
@@ -37,7 +42,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   scroll-behavior: smooth;
-  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {

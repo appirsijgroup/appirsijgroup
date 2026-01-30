@@ -416,8 +416,8 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
 
     const confirmLogout = useCallback(() => {
         setShowLogoutConfirm(false);
-        logoutEmployee();
-    }, [logoutEmployee]);
+        logoutEmployee(router);
+    }, [logoutEmployee, router]);
 
     const handleToggleNotifications = useCallback(() => {
         setIsNotificationPanelOpen(true);

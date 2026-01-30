@@ -75,11 +75,17 @@ export interface ActivityAttendance {
 /**
  * Get all activities
  */
-export const getAllActivities = async (): Promise<Activity[]> => {
+export const getAllActivities = async (creatorId?: string): Promise<Activity[]> => {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('activities')
-            .select('*')
+            .select('*');
+
+        if (creatorId) {
+            query = query.eq('created_by', creatorId);
+        }
+
+        const { data, error } = await query
             .order('date', { ascending: true })
             .order('start_time', { ascending: true });
 
@@ -329,12 +335,14 @@ export const updateActivity = async (
  */
 export const deleteActivity = async (id: string): Promise<void> => {
     try {
-        const { error } = await supabase
-            .from('activities')
-            .delete()
-            .eq('id', id);
+        const response = await fetch(`/api/activities?id=${id}`, {
+            method: 'DELETE',
+        });
 
-        if (error) throw error;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to delete activity: ${errorData.error || 'Unknown error'}`);
+        }
     } catch (error) {
         throw error;
     }

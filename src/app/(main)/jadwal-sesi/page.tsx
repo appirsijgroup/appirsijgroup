@@ -29,17 +29,21 @@ export default function JadwalSesiPage() {
     // ⚡ TAMBAH: Auto-load data dari Supabase saat halaman mount
     useEffect(() => {
         const loadData = async () => {
+            if (!loggedInEmployee) return;
+
             try {
-                await loadTeamAttendanceSessionsFromSupabase();
-                await loadActivitiesFromSupabase();
+                // Filter by creatorId if not super-admin
+                const isSuperAdmin = loggedInEmployee.role === 'super-admin';
+                const creatorId = isSuperAdmin ? undefined : loggedInEmployee.id;
+
+                await loadTeamAttendanceSessionsFromSupabase(creatorId);
+                await loadActivitiesFromSupabase(undefined, creatorId);
             } catch (error) {
                 console.error('Failed to load data:', error);
             }
         };
 
-        if (loggedInEmployee) {
-            loadData();
-        }
+        loadData();
     }, [loggedInEmployee, loadTeamAttendanceSessionsFromSupabase, loadActivitiesFromSupabase]);
 
     const handleEdit = (item: CombinedScheduleItem) => {
@@ -64,9 +68,11 @@ export default function JadwalSesiPage() {
             } else {
                 await deleteTeamAttendanceSession(item.id);
             }
-            // ⚡ TAMBAH: Reload data dari Supabase setelah delete
-            await loadTeamAttendanceSessionsFromSupabase();
-            await loadActivitiesFromSupabase();
+            // ⚡ TAMBAH: Reload data dari Supabase setelah delete (tetap gunakan filter)
+            const isSuperAdmin = loggedInEmployee?.role === 'super-admin';
+            const creatorId = isSuperAdmin ? undefined : loggedInEmployee?.id;
+            await loadTeamAttendanceSessionsFromSupabase(creatorId);
+            await loadActivitiesFromSupabase(undefined, creatorId);
             addToast('Item berhasil dihapus', 'success');
         } catch (error) {
             console.error('Failed to delete:', error);

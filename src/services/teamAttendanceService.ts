@@ -7,12 +7,17 @@ import { supabase } from './attendanceService';
 import type { TeamAttendanceSession, TeamAttendanceRecord } from '../types';
 
 // Get all team attendance sessions with attendance count
-export const getAllTeamAttendanceSessions = async (): Promise<TeamAttendanceSession[]> => {
+export const getAllTeamAttendanceSessions = async (creatorId?: string): Promise<TeamAttendanceSession[]> => {
     try {
-        // 🔥 FIX: Remove JOIN to avoid PGRST201 error - get sessions without count first
-        const { data, error } = await supabase
+        let query = supabase
             .from('team_attendance_sessions')
-            .select('*')
+            .select('*');
+
+        if (creatorId) {
+            query = query.eq('creator_id', creatorId);
+        }
+
+        const { data, error } = await query
             .order('date', { ascending: false })
             .order('created_at', { ascending: false });
 
@@ -358,11 +363,11 @@ export const hasUserAttendedSession = async (sessionId: string, userId: string):
 // Update full session data (type, date, time, audience, links, etc)
 export const updateTeamAttendanceSessionData = async (
     sessionId: string,
-    updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentUserIds'>
+    updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>
 ): Promise<void> => {
     try {
-
         const dbUpdates: any = {
+            id: sessionId,
             type: updates.type,
             date: updates.date,
             start_time: updates.startTime,
@@ -373,18 +378,19 @@ export const updateTeamAttendanceSessionData = async (
             manual_participant_ids: updates.manualParticipantIds,
             zoom_url: updates.zoomUrl,
             youtube_url: updates.youtubeUrl,
-            // ⚡ CRITICAL: Always update updated_at when session data changes
-            updated_at: new Date().toISOString()
         };
 
+        const response = await fetch('/api/team-attendance/sessions', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dbUpdates),
+        });
 
-        const { error } = await (supabase
-            .from('team_attendance_sessions') as any)
-            .update(dbUpdates)
-            .eq('id', sessionId);
-
-        if (error) {
-            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to update session: ${errorData.error || 'Unknown error'}`);
         }
 
     } catch (error) {
@@ -395,15 +401,13 @@ export const updateTeamAttendanceSessionData = async (
 // Delete session
 export const deleteTeamAttendanceSession = async (sessionId: string): Promise<void> => {
     try {
+        const response = await fetch(`/api/team-attendance/sessions?id=${sessionId}`, {
+            method: 'DELETE',
+        });
 
-        const { data, error } = await supabase
-            .from('team_attendance_sessions')
-            .delete()
-            .eq('id', sessionId)
-            .select();
-
-        if (error) {
-            throw new Error(`Supabase error: ${error.message} (Code: ${error.code})`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to delete session: ${errorData.error || 'Unknown error'}`);
         }
 
     } catch (error) {

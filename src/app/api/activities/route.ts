@@ -83,6 +83,23 @@ export async function PATCH(request: NextRequest) {
             auth: { autoRefreshToken: false, persistSession: false }
         });
 
+        // ⚡ ADD: Permission Check - Only creator or super-admin can update
+        if (session.role !== 'super-admin') {
+            const { data: existing, error: checkError } = await supabase
+                .from('activities')
+                .select('created_by')
+                .eq('id', id)
+                .single();
+
+            if (checkError || !existing) {
+                return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
+            }
+
+            if (existing.created_by !== (session.nip || session.userId)) {
+                return NextResponse.json({ error: 'You do not have permission to update this activity' }, { status: 403 });
+            }
+        }
+
         const { data, error } = await supabase
             .from('activities')
             .update(updates)
@@ -130,6 +147,23 @@ export async function DELETE(request: NextRequest) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey, {
             auth: { autoRefreshToken: false, persistSession: false }
         });
+
+        // ⚡ ADD: Permission Check - Only creator or super-admin can delete
+        if (session.role !== 'super-admin') {
+            const { data: existing, error: checkError } = await supabase
+                .from('activities')
+                .select('created_by')
+                .eq('id', id)
+                .single();
+
+            if (checkError || !existing) {
+                return NextResponse.json({ error: 'Activity not found' }, { status: 404 });
+            }
+
+            if (existing.created_by !== (session.nip || session.userId)) {
+                return NextResponse.json({ error: 'You do not have permission to delete this activity' }, { status: 403 });
+            }
+        }
 
         const { error } = await supabase
             .from('activities')

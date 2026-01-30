@@ -46,6 +46,16 @@ export default function EditActivitySessionPage() {
 
                 // If found in store, use it immediately
                 if (data) {
+                    // ⚡ ADD: Permission Check - Only creator or super-admin can edit
+                    const isSuperAdmin = loggedInEmployee?.role === 'super-admin';
+                    const creatorId = (data as any).createdBy || (data as any).creatorId;
+
+                    if (!isSuperAdmin && creatorId !== loggedInEmployee?.id) {
+                        addToast('Anda tidak memiliki akses untuk mengedit data ini', 'error');
+                        router.push('/jadwal-sesi');
+                        return;
+                    }
+
                     setInitialData(data);
                     // Still load dependencies in background for form dropdowns
                     Promise.all([loadAllEmployees(), loadHospitals()]).catch(console.error);
@@ -54,10 +64,6 @@ export default function EditActivitySessionPage() {
                     await Promise.all([
                         loadAllEmployees(),
                         loadHospitals(),
-                        // Maybe user refreshed directly on edit page? Store might be empty.
-                        // We rely on the fact that app layout loads initial data, 
-                        // but let's be safe: 
-                        // (Ideally store hydration happens in layout, so this might just be a brief wait)
                     ]);
 
                     // Check again after ensuring data is loaded (if we implemented fetch-by-id)
@@ -74,8 +80,20 @@ export default function EditActivitySessionPage() {
                         data = useActivityStore.getState().teamAttendanceSessions.find(s => s.id === id);
                     }
 
-                    if (data) setInitialData(data);
-                    else {
+                    if (data) {
+                        // ⚡ ADD: Permission Check - Only creator or super-admin can edit
+                        const isSuperAdmin = useAppDataStore.getState().loggedInEmployee?.role === 'super-admin';
+                        const currentEmpId = useAppDataStore.getState().loggedInEmployee?.id;
+                        const creatorId = (data as any).createdBy || (data as any).creatorId;
+
+                        if (!isSuperAdmin && creatorId !== currentEmpId) {
+                            addToast('Anda tidak memiliki akses untuk mengedit data ini', 'error');
+                            router.push('/jadwal-sesi');
+                            return;
+                        }
+
+                        setInitialData(data);
+                    } else {
                         addToast('Data tidak ditemukan', 'error');
                         router.push('/jadwal-sesi');
                     }

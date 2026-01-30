@@ -18,8 +18,8 @@ interface ActivityState {
     createTeamAttendanceRecord: (record: Omit<TeamAttendanceRecord, 'id' | 'createdAt'>) => Promise<void>;
     updateTeamAttendanceSessionData: (sessionId: string, updates: Omit<TeamAttendanceSession, 'id' | 'createdAt' | 'creatorId' | 'creatorName' | 'presentCount' | 'updatedAt'>) => Promise<void>;
     deleteTeamAttendanceSession: (sessionId: string) => Promise<void>;
-    loadTeamAttendanceSessionsFromSupabase: () => Promise<void>;
-    loadActivitiesFromSupabase: (employeeId?: string) => Promise<void>;
+    loadTeamAttendanceSessionsFromSupabase: (creatorId?: string) => Promise<void>;
+    loadActivitiesFromSupabase: (employeeId?: string, creatorId?: string) => Promise<void>;
     // ⚡ TAMBAH: Fungsi helper untuk cek dan get attendance records
     hasUserAttendedSession: (sessionId: string, userId: string) => Promise<boolean>;
     getAttendanceRecordsForSession: (sessionId: string) => Promise<TeamAttendanceRecord[]>;
@@ -158,13 +158,13 @@ export const useActivityStore = create<ActivityState>()(
                 }
             },
 
-            loadTeamAttendanceSessionsFromSupabase: async () => {
+            loadTeamAttendanceSessionsFromSupabase: async (creatorId?: string) => {
                 set({ isLoadingTeamAttendance: true, teamAttendanceError: null });
 
                 try {
                     // Dynamic import to avoid circular dependencies
                     const { getAllTeamAttendanceSessions } = await import('@/services/teamAttendanceService');
-                    const sessions = await getAllTeamAttendanceSessions();
+                    const sessions = await getAllTeamAttendanceSessions(creatorId);
 
                     set({
                         teamAttendanceSessions: sessions,
@@ -180,7 +180,7 @@ export const useActivityStore = create<ActivityState>()(
                 }
             },
 
-            loadActivitiesFromSupabase: async (employeeId?: string) => {
+            loadActivitiesFromSupabase: async (employeeId?: string, creatorId?: string) => {
                 set({ isLoadingActivities: true, activitiesError: null });
 
                 try {
@@ -192,8 +192,8 @@ export const useActivityStore = create<ActivityState>()(
                         // getActivitiesForEmployee expects employeeId as string, not employee object
                         activities = await getActivitiesForEmployee(employeeId);
                     } else {
-                        // Get all activities (admin view)
-                        activities = await getAllActivities();
+                        // Get all activities (admin view) - support optional creatorId filtering
+                        activities = await getAllActivities(creatorId);
                     }
 
                     set({

@@ -939,10 +939,12 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Kategori</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Status Akun</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Peran Sistem</th>
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap text-teal-100">Peran Sistem</th>
                             <th scope="col" className="px-4 py-3 text-center whitespace-nowrap font-bold text-teal-300">Akses RS</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Kelola Peran & Akses</th>
-                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap">Aksi</th>
+                            {isSuperAdmin(loggedInEmployee) && (
+                                <th scope="col" className="px-4 py-3 text-center whitespace-nowrap text-teal-100">Kelola Peran & Akses</th>
+                            )}
+                            <th scope="col" className="px-4 py-3 text-center whitespace-nowrap text-teal-100">Aksi</th>
                         </tr>
                     </thead>
                     <tbody className={isLoading ? "opacity-40 transition-opacity duration-300" : "opacity-100 transition-opacity duration-300"}>
@@ -1010,22 +1012,24 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                             <div className="text-center text-gray-500 text-[10px]">-</div>
                                         )}
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center justify-center">
-                                            {!isSelf ? (
-                                                <button
-                                                    onClick={() => onManageAccess(user)}
-                                                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 hover:border-teal-400 text-xs font-bold transition-all shadow-lg hover:shadow-teal-500/20 group"
-                                                    title="Kelola Peran & Akses"
-                                                >
-                                                    <Shield className="w-4 h-4 text-teal-400 group-hover:scale-110 transition-transform" />
-                                                    <span className="hidden sm:inline">Peran</span>
-                                                </button>
-                                            ) : (
-                                                <div className="text-[10px] text-gray-500 italic text-center">Akun Sendiri</div>
-                                            )}
-                                        </div>
-                                    </td>
+                                    {isSuperAdmin(loggedInEmployee) && (
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center justify-center">
+                                                {!isSelf ? (
+                                                    <button
+                                                        onClick={() => onManageAccess(user)}
+                                                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-500/10 hover:bg-teal-500 text-teal-400 hover:text-white border border-teal-500/30 hover:border-teal-400 text-xs font-bold transition-all shadow-lg hover:shadow-teal-500/20 group"
+                                                        title="Kelola Peran & Akses"
+                                                    >
+                                                        <Shield className="w-4 h-4 text-teal-400 group-hover:scale-110 transition-transform" />
+                                                        <span className="hidden sm:inline">Peran</span>
+                                                    </button>
+                                                ) : (
+                                                    <div className="text-[10px] text-gray-500 italic text-center">Akun Sendiri</div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center gap-2">
                                             <button

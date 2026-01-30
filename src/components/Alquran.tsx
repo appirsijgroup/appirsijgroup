@@ -6,7 +6,8 @@ import { fetchSurahs, fetchSurahDetail } from '../services/quranService';
 import { Search, ArrowLeft, Bookmark as BookmarkIcon, CheckSquare, Lock, Share2, BookOpen } from 'lucide-react';
 import { useUIStore } from '../store/store';
 import { timeValidationService } from '../services/timeValidationService';
-import { BrandedLoader, CompactBrandedLoader } from './BrandedLoader';
+import MinimalistLoader from './MinimalistLoader';
+import PageSkeleton from './PageSkeleton';
 import Bookmarks from './Bookmarks';
 
 interface AlquranProps {
@@ -216,7 +217,7 @@ export const Alquran: React.FC<AlquranProps> = ({
     const [subView, setSubView] = useState<'surah-list' | 'bookmarks'>(initialSubView);
     const [surahs, setSurahs] = useState<Surah[]>([]);
     const [selectedSurah, setSelectedSurah] = useState<SurahDetail | null>(null);
-    const [isLoadingList, setIsLoadingList] = useState(true);
+    const [isLoadingList, setIsLoadingList] = useState(false);
     const AYAT_PER_PAGE = 25;
     const SURAH_PER_BATCH = 24;
     const [visibleAyahCount, setVisibleAyahCount] = useState(AYAT_PER_PAGE);
@@ -247,6 +248,7 @@ export const Alquran: React.FC<AlquranProps> = ({
 
     useEffect(() => {
         const loadSurahs = async () => {
+            setIsLoadingList(true);
             try {
                 const data = await fetchSurahs();
                 setSurahs(data);
@@ -363,11 +365,7 @@ export const Alquran: React.FC<AlquranProps> = ({
     const isPrimaryLoading = isLoading || (isLoadingList && surahs.length === 0);
 
     if (isPrimaryLoading && !selectedSurah) {
-        return (
-            <div className="bg-white/10 p-4 sm:p-6 rounded-2xl shadow-lg border border-white/20 min-h-[400px] flex items-center justify-center">
-                <BrandedLoader message="Menyiapkan Al-Qur'an..." />
-            </div>
-        );
+        return <PageSkeleton />;
     }
 
     if (isLoadingDetail || selectedSurah) {
@@ -400,7 +398,9 @@ export const Alquran: React.FC<AlquranProps> = ({
                     </div>
                 </div>
 
-                {isLoadingDetail && <CompactBrandedLoader message="Memuat Detail Surah..." />}
+                {isLoadingDetail && (
+                    <MinimalistLoader message="Memuat ayat..." />
+                )}
                 {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                 {selectedSurah && (
@@ -593,7 +593,9 @@ export const Alquran: React.FC<AlquranProps> = ({
                             </form>
                         </div>
 
-                        {isLoadingList && <CompactBrandedLoader message="Memuat Daftar Surah..." />}
+                        {isLoadingList && (
+                            <MinimalistLoader message="Memuat surah..." />
+                        )}
                         {error && <div className="text-center p-10 text-red-400">{error}</div>}
 
                         {filteredSurahs.length > 0 && (

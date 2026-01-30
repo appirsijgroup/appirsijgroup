@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 import { useActivityStore } from '@/store/activityStore';
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useHospitalStore } from '@/store/hospitalStore';
@@ -122,7 +122,7 @@ export default function EditActivitySessionPage() {
     };
 
     if (loading) {
-        return <BrandedLoader message="Memuat data..." />;
+        return <MinimalistLoader message="Memuat data..." />;
     }
 
     if (!initialData) return null;

@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppDataStore, useDailyActivitiesStore } from '@/store/store';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 
 // ⚡ OPTIMIZATION: Dynamic import untuk Analytics component - hanya load ketika dibutuhkan
 const Analytics = dynamic(() => import('@/components/Analytics'), {
-    loading: () => <BrandedLoader fullScreen={false} message="Memuat grafik..." />,
+    loading: () => <MinimalistLoader message="Memuat grafik..." />,
     ssr: false
 });
 
@@ -48,7 +48,7 @@ export default function AnalyticsPage() {
 
     // Show loading state
     if (isLoading) {
-        return <BrandedLoader fullScreen={false} message="Menganalisis data..." />;
+        return <MinimalistLoader message="Menganalisis data..." />;
     }
 
     // Show error state

@@ -23,9 +23,6 @@ export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat.
 
             {/* Logo Container with Modern Glass Look */}
             <div className="relative mb-6">
-                {/* Subtle soft pulse rings */}
-                <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-soft-ping"></div>
-
                 {/* Logo with slight hover-like effect */}
                 <div className="relative z-10 bg-white/5 backdrop-blur-xs rounded-full border border-white/5 shadow-xl p-8">
 
@@ -44,7 +41,7 @@ export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat.
             {/* Minimal Spinner */}
             <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-teal-500/20 border-t-teal-400"></div>
-                <p className="text-teal-200/60 text-sm font-medium tracking-wide animate-pulse">
+                <p className="text-teal-200/60 text-sm font-medium tracking-wide">
                     {message}
                 </p>
             </div>
@@ -67,7 +64,6 @@ export const CompactBrandedLoader: React.FC<{ message?: string }> = ({ message =
     return (
         <div className="flex flex-col items-center justify-center p-8">
             <div className="relative mb-4">
-                <div className="absolute inset-0 rounded-full bg-teal-400/10 animate-ping"></div>
                 <div className="relative bg-slate-900 rounded-full p-4 border border-teal-400/30">
                     <Image
                         src="/logorsijsp.png"

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Announcements from '@/components/Announcements';
 import { useAppDataStore, useAnnouncementStore, useUIStore } from '@/store/store';
 import type { Announcement } from '@/types';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
 export default function PengumumanPage() {
@@ -133,7 +133,7 @@ export default function PengumumanPage() {
     if (!initLoaded || isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh] w-full">
-                <BrandedLoader fullScreen={false} message="Memuat pengumuman..." />
+                <MinimalistLoader message="Memuat pengumuman..." />
             </div>
         );
     }

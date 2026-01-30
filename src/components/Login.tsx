@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { User, Lock } from 'lucide-react';
 import PasswordInput from './PasswordInput';
 import type { Employee } from '@/types';
-import BrandedLoader from './BrandedLoader';
 
 
 interface LoginProps {

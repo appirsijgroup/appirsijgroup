@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import MonthlyActivities from '@/components/MonthlyActivities';
 import { useAppDataStore, useDailyActivitiesStore, useMutabaahStore, useUIStore } from '@/store/store';
 import { useMutabaah } from '@/contexts/MutabaahContext';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 import { submitMonthlyReport as submitReport, hasSubmittedReport } from '@/services/monthlySubmissionService';
 import { getAllEmployees } from '@/services/employeeService';
 
@@ -145,11 +145,11 @@ export default function AktivitasBulananPage() {
 
     // Conditional renders MUST be AFTER all hooks
     if (!loggedInEmployee || isLoading) {
-        return <BrandedLoader fullScreen={false} message="Memuat data mutabaah..." />;
+        return <MinimalistLoader message="Memuat data mutabaah..." />;
     }
 
     if (isLoadingEmployees) {
-        return <BrandedLoader fullScreen={false} message="Memuat data karyawan..." />;
+        return <MinimalistLoader message="Memuat data karyawan..." />;
     }
 
     return (

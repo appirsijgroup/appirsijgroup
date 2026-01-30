@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Login from '@/components/Login';
-import BrandedLoader from '@/components/BrandedLoader';
 import { useAppDataStore, useUIStore } from '@/store/store';
 
 import { timeValidationService } from '@/services/timeValidationService';

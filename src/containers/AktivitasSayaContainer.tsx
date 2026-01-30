@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AktivitasSaya from '@/components/AktivitasSaya';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 import AssignmentLetter from '@/components/AssignmentLetter';
 import {
     useAppDataStore,
@@ -784,7 +784,7 @@ const AktivitasSayaContainer: React.FC<AktivitasSayaContainerProps> = ({ initial
             loadDetailedEmployeeData={loadDetailedEmployeeData}
         />
     ) : (
-        <BrandedLoader fullScreen={false} message="Memuat data..." />
+        <MinimalistLoader message="Memuat data..." />
     );
 
     return (

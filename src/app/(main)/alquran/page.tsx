@@ -10,7 +10,6 @@ import { submitQuranReading, getQuranSubmissions, type QuranReadingSubmission } 
 import { getUserMonthlyReports } from '@/services/monthlySubmissionService';
 import type { MonthlyReportSubmission } from '@/types';
 import { useMutabaah } from '@/contexts/MutabaahContext';
-import BrandedLoader from '@/components/BrandedLoader';
 
 
 /**

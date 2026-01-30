@@ -2,11 +2,11 @@
 
 import dynamic from 'next/dynamic';
 
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 
 // ⚡ LAZY LOADING: AktivitasSayaContainer will only load when user visits /aktifitas-saya
 const AktivitasSayaContainer = dynamic(() => import('@/containers/AktivitasSayaContainer'), {
-    loading: () => <BrandedLoader fullScreen={false} message="Memuat Aktivitas..." />,
+    loading: () => <MinimalistLoader message="Memuat Aktivitas..." />,
     ssr: false // Disable SSR for this client component
 });
 

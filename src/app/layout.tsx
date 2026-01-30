@@ -6,7 +6,7 @@ import { QueryProvider } from "@/lib/react-query/QueryProvider";
 import { baseMetadata } from "./metadata";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { Suspense } from "react";
-import BrandedLoader from "@/components/BrandedLoader";
+import PageSkeleton from "@/components/PageSkeleton";
 import GlobalLoadingOverlay from "@/components/GlobalLoadingOverlay";
 
 
@@ -89,7 +89,7 @@ export default function RootLayout({
         <SupressHydrationWarning />
         <QueryProvider>
           <GlobalLoadingOverlay />
-          <Suspense fallback={<BrandedLoader fullScreen={true} message="Memuat aplikasi..." />}>
+          <Suspense fallback={<div className="p-4 sm:p-8 ml-0 lg:ml-64"><PageSkeleton /></div>}>
             {children}
           </Suspense>
         </QueryProvider>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useUIStore } from '@/store/store';
-import BrandedLoader from './BrandedLoader';
+import MinimalistLoader from './MinimalistLoader';
 
 /**
  * GlobalLoadingOverlay - Melayani loading state yang bersifat global
@@ -33,7 +33,7 @@ export const GlobalLoadingOverlay: React.FC = () => {
         `}>
 
 
-            <BrandedLoader
+            <MinimalistLoader
 
                 fullScreen={true}
                 message={globalLoading.message}

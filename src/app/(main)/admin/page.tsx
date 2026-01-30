@@ -17,12 +17,12 @@ import { useAnnouncementStore } from '@/store/announcementStore';
 import { useMutabaahStore } from '@/store/mutabaahStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import ConfirmationModal from '@/components/ConfirmationModal';
-import BrandedLoader from '@/components/BrandedLoader';
+import MinimalistLoader from '@/components/MinimalistLoader';
 
 // 🔥 OPTIMIZATION: Dynamic import untuk AdminDashboard - 200KB+ akan di-load LAZY!
 // Ini mengurangi initial bundle size dan mempercepat first load
 const AdminDashboard = dynamicImport(() => import('@/components/AdminDashboard'), {
-    loading: () => <BrandedLoader fullScreen={false} message="Menyiapkan dashboard..." />,
+    loading: () => <MinimalistLoader message="Menyiapkan dashboard..." />,
     ssr: false // Admin Dashboard tidak butuh SEO
 });
 import { Activity, SunnahIbadah, Announcement, type RawEmployee, type Hospital, type Employee, type Attendance, type FunctionalRole, type MutabaahLockingMode, type Role } from '@/types';
@@ -805,7 +805,7 @@ export default function AdminPage() {
 
 
     if (isLoading) {
-        return <BrandedLoader fullScreen={false} message="Menyiapkan data admin..." />;
+        return <MinimalistLoader message="Menyiapkan data admin..." />;
     }
 
     if (error) {

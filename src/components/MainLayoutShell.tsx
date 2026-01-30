@@ -14,6 +14,7 @@ import ActivationRequired from './ActivationRequired';
 import ConfirmationModal from './ConfirmationModal';
 import BrandedLoader from './BrandedLoader';
 import PageSkeleton from './PageSkeleton';
+import MinimalistLoader from './MinimalistLoader';
 import { useUIStore, useNotificationStore, useAppDataStore, useMutabaahStore } from '@/store/store';
 import { activateMonth as activateMonthService } from '@/services/monthlyActivityService';
 import { useAnnouncementStore } from '@/store/announcementStore';
@@ -594,7 +595,23 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
     const isActuallyLoading = isLoggingOut || !isClient || !isHydrated || (!loggedInEmployee && isHydrated && pathname !== '/login') || (isMutabaahLoading && !isCurrentMonthActivated);
 
     if (isActuallyLoading) {
-        return null; // The RootLayout's GlobalLoadingOverlay is already showing
+        // 🔥 FIX: Show PageSkeleton instead of BrandedLoader for initial session preparation
+        // This provides a much smoother transition once hydration is complete.
+        return (
+            <div className="flex-1 flex flex-col min-h-screen bg-transparent ml-0 lg:ml-64">
+                <Header
+                    isMenuOpen={false}
+                    toggleMenu={() => { }}
+                    employee={{} as any}
+                    title={activeTitle}
+                    unreadNotificationsCount={0}
+                    onToggleNotifications={() => { }}
+                />
+                <div className="p-4 sm:p-8">
+                    <PageSkeleton />
+                </div>
+            </div>
+        );
     }
 
 
@@ -621,7 +638,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
                 <main className="flex-1 overflow-y-auto p-2 sm:p-4 relative" id="main-content-area">
                     <ErrorBoundary>
                         {/* 🚀 OPTIMIZED: Using Suspense here ensures sidebar/navbar STAY visible during page transitions */}
-                        <Suspense fallback={<PageSkeleton />}>
+                        <Suspense fallback={<MinimalistLoader message="Menyiapkan halaman..." />}>
 
                             {/* Page content */}
                             {activationStatus.shouldShowActivationRequired ? (

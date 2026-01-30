@@ -16,6 +16,11 @@ const LoginContainer = () => {
 
     const [loadingMessage, setLoadingMessage] = useState('Memuat...');
 
+    // 🔥 FIX: Clear global loading when on login page (e.g. after logout)
+    useEffect(() => {
+        setGlobalLoading(false);
+    }, [setGlobalLoading]);
+
     // 🔥 FIX: Redirect to dashboard if already logged in (prevents "stuck" on login page)
     useEffect(() => {
         if (loggedInEmployee && !isLoading) {

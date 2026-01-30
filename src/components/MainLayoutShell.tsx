@@ -575,6 +575,17 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             }, 600);
             return () => clearTimeout(timer);
         }
+
+        // --- PHASE 3: Safety cleanup on unmount ---
+        return () => {
+            // Check state ref-like or just clear if it was one of ours
+            // We use a small timeout to ensure we don't clear it too early during navigation jumps
+            setTimeout(() => {
+                if (useUIStore.getState().globalLoading.show && ourMessages.includes(useUIStore.getState().globalLoading.message)) {
+                    useUIStore.getState().setGlobalLoading(false);
+                }
+            }, 100);
+        };
     }, [isLoggingOut, isClient, isHydrated, isMutabaahLoading, isCurrentMonthActivated, setGlobalLoading, globalLoading.show, globalLoading.message]);
 
     // Render logic: while loading, we hide everything to let GlobalLoadingOverlay do its work

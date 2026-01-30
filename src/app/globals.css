@@ -29,7 +29,8 @@
 }
 
 html {
-  background-color: #0f172a; /* slate-900 - Prevents white flash before CSS loads */
+  background-color: #0f172a;
+  /* slate-900 - Prevents white flash before CSS loads */
   color-scheme: dark;
 }
 
@@ -218,7 +219,20 @@ a {
   scroll-behavior: smooth;
 }
 
-/* 🔥 Hide scrollbars for navigation menus on desktop */
+/* 🔥 Hide visual scrollbar indicators while keeping scrolling functional */
+* {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @media (min-width: 1024px) {
   nav.overflow-x-auto {
     scrollbar-width: none;

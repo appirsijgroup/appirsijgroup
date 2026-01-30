@@ -11,26 +11,29 @@ import BrandedLoader from './BrandedLoader';
  */
 export const GlobalLoadingOverlay: React.FC = () => {
     const { globalLoading } = useUIStore();
-    const [shouldRender, setShouldRender] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
-    // Gunakan local state untuk menangani sedikit delay saat closing 
-    // agar transisi visual lebih halus
+    // Track active state to prevent "blink" during internal state updates
     useEffect(() => {
         if (globalLoading.show) {
-            setShouldRender(true);
+            setIsVisible(true);
         } else {
-            const timer = setTimeout(() => setShouldRender(false), 200);
+            // Give time for CSS transition to finish before unmounting
+            const timer = setTimeout(() => setIsVisible(false), 500);
             return () => clearTimeout(timer);
         }
     }, [globalLoading.show]);
 
-    if (!shouldRender) return null;
+    if (!isVisible && !globalLoading.show) return null;
 
     return (
-        <div className={`
-            fixed inset-0 z-9999 transition-opacity duration-300
-            ${globalLoading.show ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-        `}>
+        <div
+            className={`
+                fixed inset-0 z-9999 transition-opacity duration-500
+                ${globalLoading.show ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                bg-slate-950
+            `}
+        >
             <BrandedLoader
                 fullScreen={true}
                 message={globalLoading.message}

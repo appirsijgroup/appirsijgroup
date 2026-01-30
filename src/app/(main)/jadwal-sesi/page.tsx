@@ -259,111 +259,103 @@ export default function JadwalSesiPage() {
                 </div>
             </div>
 
-            {/* Filters Section */}
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 space-y-4 shadow-xl">
-                <div className="flex flex-col lg:flex-row gap-4">
+            {/* Compact Filters Section */}
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-5 mb-8 shadow-xl">
+                <div className="flex flex-col lg:flex-row gap-4 items-end">
                     {/* Search bar */}
-                    <div className="relative grow">
-                        <input
-                            type="text"
-                            placeholder="Cari nama atau tipe..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-medium"
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                    <div className="relative grow w-full">
+                        <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-1.5 px-1">Cari Jadwal</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Ketik nama kegiatan..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-medium"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Category Buttons */}
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setFilterType('all')}
-                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'all'
-                                ? 'bg-teal-500 text-white border-teal-500 shadow-lg shadow-teal-500/20'
-                                : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                                }`}
-                        >
-                            Semua
-                        </button>
-                        <button
-                            onClick={() => setFilterType('activity')}
-                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'activity'
-                                ? 'bg-blue-500 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                                : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                                }`}
-                        >
-                            Kegiatan
-                        </button>
-                        <button
-                            onClick={() => setFilterType('session')}
-                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === 'session'
-                                ? 'bg-purple-500 text-white border-purple-500 shadow-lg shadow-purple-500/20'
-                                : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20'
-                                }`}
-                        >
-                            Sesi
-                        </button>
-                    </div>
-                </div>
+                    <div className="flex flex-wrap sm:flex-nowrap gap-4 w-full lg:w-auto shrink-0">
+                        {/* Month Picker Dropdown */}
+                        <div className="grow sm:w-40">
+                            <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-1.5 px-1">Bulan</label>
+                            <select
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-medium appearance-none cursor-pointer"
+                            >
+                                {months.map((m) => (
+                                    <option key={m.value} value={m.value} className="bg-gray-900 text-white font-medium">
+                                        {m.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                <div className="h-px bg-white/5 w-full lg:hidden" />
+                        {/* Year Picker Dropdown */}
+                        <div className="grow sm:w-28">
+                            <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-1.5 px-1">Tahun</label>
+                            <select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-medium appearance-none cursor-pointer"
+                            >
+                                {years.map((y) => (
+                                    <option key={y} value={y} className="bg-gray-900 text-white font-medium">
+                                        {y === 'all' ? 'Semua Tahun' : y}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Month Picker */}
-                    <div className="grow sm:w-1/2">
-                        <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-2 px-1">Filter Bulan</label>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                            {months.map((m) => (
+                        {/* Category Filter */}
+                        <div className="grow sm:w-auto">
+                            <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-1.5 px-1">Jenis</label>
+                            <div className="flex p-1 bg-white/5 border border-white/10 rounded-xl">
                                 <button
-                                    key={m.value}
-                                    onClick={() => setSelectedMonth(m.value)}
-                                    className={`py-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${selectedMonth === m.value
-                                        ? 'bg-teal-500/20 border-teal-500 text-teal-400'
-                                        : 'bg-white/5 border-white/5 text-gray-500 hover:text-white hover:border-white/10'
-                                        }`}
+                                    onClick={() => setFilterType('all')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight transition-all ${filterType === 'all' ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'text-gray-500 hover:text-white'}`}
                                 >
-                                    {m.label.substring(0, 3)}
+                                    Semua
                                 </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Year Picker */}
-                    <div className="sm:w-1/3">
-                        <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest block mb-2 px-1">Filter Tahun</label>
-                        <div className="flex flex-wrap gap-2">
-                            {years.map((y) => (
                                 <button
-                                    key={y}
-                                    onClick={() => setSelectedYear(y)}
-                                    className={`px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${selectedYear === y
-                                        ? 'bg-teal-500/20 border-teal-500 text-teal-400'
-                                        : 'bg-white/5 border-white/5 text-gray-500 hover:text-white hover:border-white/10'
-                                        }`}
+                                    onClick={() => setFilterType('activity')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight transition-all ${filterType === 'activity' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-gray-500 hover:text-white'}`}
                                 >
-                                    {y === 'all' ? 'SEMUA' : y}
+                                    Kegiatan
                                 </button>
-                            ))}
+                                <button
+                                    onClick={() => setFilterType('session')}
+                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tight transition-all ${filterType === 'session' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-white'}`}
+                                >
+                                    Sesi
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Reset Button */}
-                    <div className="flex items-end shrink-0">
-                        <button
-                            onClick={() => {
-                                setSearchQuery('');
-                                setFilterType('all');
-                                setSelectedMonth('all');
-                                setSelectedYear(new Date().getFullYear().toString());
-                            }}
-                            className="w-full sm:w-auto px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all h-[34px]"
-                        >
-                            Reset Filter
-                        </button>
+                        {/* Reset Button Icon */}
+                        <div className="flex items-end shrink-0">
+                            <button
+                                onClick={() => {
+                                    setSearchQuery('');
+                                    setFilterType('all');
+                                    setSelectedMonth('all');
+                                    setSelectedYear(new Date().getFullYear().toString());
+                                }}
+                                className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/40 hover:text-white rounded-xl transition-all aspect-square flex items-center justify-center group"
+                                title="Reset Filter"
+                            >
+                                <svg className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

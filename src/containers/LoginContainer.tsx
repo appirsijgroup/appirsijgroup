@@ -25,8 +25,8 @@ const LoginContainer = () => {
 
     const handleLogin = async (identifier: string, password: string) => {
         setIsLoading(true);
-        setGlobalLoading(true, 'Memproses login...');
-        setLoadingMessage('Memproses login...');
+        setGlobalLoading(true, 'Menyiapkan Sesi...');
+        setLoadingMessage('Menyiapkan Sesi...');
 
         try {
 

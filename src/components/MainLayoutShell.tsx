@@ -571,7 +571,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         // 1. We don't know the activation status yet (isLoading is true)
         // 2. AND we haven't confirmed it's activated (isCurrentMonthActivated is false)
         if (isMutabaahLoading && !isCurrentMonthActivated) {
-            setGlobalLoading(true, "Mengecek status aktifasi...");
+            setGlobalLoading(true, "Menyiapkan Sesi...");
             return;
         }
 
@@ -579,7 +579,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
         // - Ready to show the app
         // - Or performing a background update (which should NOT show a blocking overlay)
 
-        const ourMessages = ["Menyiapkan Sesi...", "Mengecek status aktifasi...", "Memproses login..."];
+        const ourMessages = ["Menyiapkan Sesi...", "Sedang keluar..."];
         if (globalLoading.show && ourMessages.includes(globalLoading.message)) {
             // Tiny buffer for visual stability
             const timer = setTimeout(() => {

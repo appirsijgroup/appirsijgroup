@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useUIStore } from '@/store/store';
-import MinimalistLoader from './MinimalistLoader';
+import BrandedLoader from './BrandedLoader';
 
 /**
  * GlobalLoadingOverlay - Melayani loading state yang bersifat global
@@ -19,7 +19,7 @@ export const GlobalLoadingOverlay: React.FC = () => {
         if (globalLoading.show) {
             setShouldRender(true);
         } else {
-            const timer = setTimeout(() => setShouldRender(false), 100);
+            const timer = setTimeout(() => setShouldRender(false), 200);
             return () => clearTimeout(timer);
         }
     }, [globalLoading.show]);
@@ -31,10 +31,7 @@ export const GlobalLoadingOverlay: React.FC = () => {
             fixed inset-0 z-9999 transition-opacity duration-300
             ${globalLoading.show ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}>
-
-
-            <MinimalistLoader
-
+            <BrandedLoader
                 fullScreen={true}
                 message={globalLoading.message}
             />

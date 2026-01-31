@@ -473,50 +473,80 @@ const MutabaahPerformanceReport: React.FC<{
                     {hospitalFilter === 'all' && hospitalComparison.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[
-                                { key: 'SIDIQ', label: 'SIDIQ (Integritas)', color: '#f59e0b' },
-                                { key: 'TABLIGH', label: 'TABLIGH (Teamwork)', color: '#10b981' },
-                                { key: 'AMANAH', label: 'AMANAH (Disiplin)', color: '#3b82f6' },
-                                { key: 'FATONAH', label: 'FATONAH (Belajar)', color: '#8b5cf6' }
+                                { key: 'SIDIQ', label: 'SIDIQ (Integritas)', color: '#f59e0b', icon: '⚖️' },
+                                { key: 'TABLIGH', label: 'TABLIGH (Teamwork)', color: '#10b981', icon: '🤝' },
+                                { key: 'AMANAH', label: 'AMANAH (Disiplin)', color: '#3b82f6', icon: '⏰' },
+                                { key: 'FATONAH', label: 'FATONAH (Belajar)', color: '#a855f7', icon: '📚' }
                             ].map((cat, idx) => {
                                 // Transform data for RadialBarChart
+                                // We use a themed color palette for each category
                                 const radialData = hospitalComparison.map((h, i) => ({
                                     name: h.brand,
                                     value: h[cat.key],
-                                    fill: COLORS[i % COLORS.length]
+                                    // Use varying opacities/shades of the category color
+                                    fill: cat.color,
+                                    opacity: 1 - (i * 0.15)
                                 })).sort((a, b) => b.value - a.value);
 
+                                const avgValue = Math.round(radialData.reduce((acc, curr) => acc + curr.value, 0) / (radialData.length || 1));
+
                                 return (
-                                    <ChartCard key={cat.key} title={`${cat.label} (Donut RS)`}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <RadialBarChart
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius="30%"
-                                                outerRadius="90%"
-                                                barSize={10}
-                                                data={radialData}
-                                                startAngle={180}
-                                                endAngle={-180}
-                                            >
-                                                <RadialBar
-                                                    label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
-                                                    background
-                                                    dataKey="value"
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{ backgroundColor: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '12px' }}
-                                                    itemStyle={{ color: '#fff' }}
-                                                    formatter={(value: any) => [`${value}%`]}
-                                                />
-                                                <Legend
-                                                    iconSize={10}
-                                                    layout="vertical"
-                                                    verticalAlign="bottom"
-                                                    wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
-                                                />
-                                            </RadialBarChart>
-                                        </ResponsiveContainer>
-                                    </ChartCard>
+                                    <div key={cat.key} className="bg-black/20 p-4 rounded-3xl border border-white/10 hover:border-white/20 transition-all group relative overflow-hidden">
+                                        {/* Background Glow */}
+                                        <div className="absolute -right-4 -top-4 w-24 h-24 blur-3xl rounded-full opacity-10 transition-opacity group-hover:opacity-20" style={{ backgroundColor: cat.color }}></div>
+
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <span className="text-xl">{cat.icon}</span>
+                                            <h4 className="font-bold text-white text-sm tracking-tight">{cat.label}</h4>
+                                        </div>
+
+                                        <div className="relative h-64 w-full flex items-center justify-center">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <RadialBarChart
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius="25%"
+                                                    outerRadius="100%"
+                                                    barSize={12}
+                                                    data={radialData}
+                                                    startAngle={90}
+                                                    endAngle={-270}
+                                                >
+                                                    <RadialBar
+                                                        background={{ fill: '#ffffff05' }}
+                                                        dataKey="value"
+                                                        cornerRadius={10}
+                                                        label={{ position: 'insideStart', fill: '#fff', fontSize: 10, fontWeight: 'bold' }}
+                                                    >
+                                                        {radialData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={cat.color} fillOpacity={entry.opacity} />
+                                                        ))}
+                                                    </RadialBar>
+                                                    <Tooltip
+                                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
+                                                        itemStyle={{ color: cat.color }}
+                                                        formatter={(value: any) => [`${value}%`, 'Capaian']}
+                                                    />
+                                                </RadialBarChart>
+                                            </ResponsiveContainer>
+
+                                            {/* Center indicator */}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-8">
+                                                <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Grup</span>
+                                                <span className="text-2xl font-black text-white" style={{ color: cat.color }}>{avgValue}%</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                            {radialData.slice(0, 4).map((d, i) => (
+                                                <div key={d.name} className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color, opacity: d.opacity }}></div>
+                                                    <span className="text-[10px] text-gray-300 font-medium truncate">{d.name}</span>
+                                                    <span className="text-[10px] text-white font-bold ml-auto">{d.value}%</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>

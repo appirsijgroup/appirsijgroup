@@ -1,8 +1,9 @@
+import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useAppDataStore, useHospitalStore } from '@/store/store';
-import { PdfIcon, ChartBarIcon, SettingsIcon, UsersIcon, ShieldCheckIcon, ActivityIcon } from './Icons';
+import { PdfIcon, ChartBarIcon, PengaturanIcon as SettingsAltIcon, UsersIcon, ShieldCheckIcon } from './Icons';
 import { generateOfficialPdf, type ReportSection, type TableConfig } from './ReportGenerator';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 
@@ -50,10 +51,66 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
     );
 };
 
-// ... existing ActivationReport ...
+// Sub-components are defined below in the START: SUB-COMPONENTS section.
 
-// ... existing MutabaahPerformanceReport ...
 
+/**
+ * NEW: HOSPITAL PERFORMANCE CHART (GLOBAL ONLY)
+ * Visualizes the performance gap between hospitals.
+ */
+const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) => {
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard title="Aktivasi Lembar per Unit RS (%)">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#4a3b1a" vertical={false} />
+                        <XAxis dataKey="brand" stroke="#d97706" fontSize={11} fontWeight="bold" />
+                        <YAxis stroke="#d97706" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d97706', borderRadius: '8px' }}
+                            itemStyle={{ color: '#fbbf24' }}
+                        />
+                        <Bar dataKey={(d) => d.total > 0 ? Math.round((d.activated / d.total) * 100) : 0} name="Aktivasi" radius={[4, 4, 0, 0]}>
+                            {breakdown.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={index === 0 ? '#fbbf24' : '#d97706'} fillOpacity={0.8} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Tingkat Kepatuhan Mutaba'ah (%)">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                        <defs>
+                            <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                        <XAxis dataKey="brand" stroke="#94a3b8" />
+                        <YAxis stroke="#94a3b8" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #10b981', borderRadius: '8px' }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey={(d) => d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0}
+                            name="Kepatuhan"
+                            stroke="#10b981"
+                            fillOpacity={1}
+                            fill="url(#colorComp)"
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </ChartCard>
+        </div>
+    );
+};
+
+// --- START: SUB-COMPONENTS (Defined before main Analytics component) ---
 
 const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string; hospitalName?: string }> = ({ allUsers, hospitalFilter, hospitalName }) => {
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
@@ -228,7 +285,7 @@ const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string;
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {stats.hospitalBreakdown.map(h => {
+                                {stats.hospitalBreakdown.map((h: any) => {
                                     const actPercent = h.total > 0 ? Math.round((h.activated / h.total) * 100) : 0;
                                     const compPercent = h.total > 0 ? Math.round((h.compliance / h.total) * 100) : 0;
                                     return (
@@ -279,61 +336,218 @@ const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string;
     );
 };
 
-/**
- * NEW: HOSPITAL PERFORMANCE CHART (GLOBAL ONLY)
- * Visualizes the performance gap between hospitals.
- */
-const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) => {
-    return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Aktivasi Lembar per Unit RS (%)">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#4a3b1a" vertical={false} />
-                        <XAxis dataKey="brand" stroke="#d97706" fontSize={11} fontWeight="bold" />
-                        <YAxis stroke="#d97706" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d97706', borderRadius: '8px' }}
-                            itemStyle={{ color: '#fbbf24' }}
-                        />
-                        <Bar dataKey={(d) => d.total > 0 ? Math.round((d.activated / d.total) * 100) : 0} name="Aktivasi" radius={[4, 4, 0, 0]}>
-                            {breakdown.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={index === 0 ? '#fbbf24' : '#d97706'} fillOpacity={0.8} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartCard>
+const MutabaahPerformanceReport: React.FC<{
+    allUsers: Employee[];
+    dailyActivitiesConfig: DailyActivity[];
+    hospitalFilter: string;
+}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter }) => {
+    const [isClient, setIsClient] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [performanceData, setPerformanceData] = useState<{
+        performanceByCategory: any[];
+        groupedPerformanceByActivity: Record<string, any[]>;
+        employeeCount: number;
+    }>({
+        performanceByCategory: [],
+        groupedPerformanceByActivity: {},
+        employeeCount: 0
+    });
 
-            <ChartCard title="Tingkat Kepatuhan Mutaba'ah (%)">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                        <defs>
-                            <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                        <XAxis dataKey="brand" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #10b981', borderRadius: '8px' }}
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey={(d) => d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0}
-                            name="Kepatuhan"
-                            stroke="#10b981"
-                            fillOpacity={1}
-                            fill="url(#colorComp)"
-                        />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </ChartCard>
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // Date filter
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    // User filters
+    const [selectedUserIdFilter, setSelectedUserIdFilter] = useState<string | undefined>(undefined);
+    const [unitFilter, setUnitFilter] = useState('all');
+    const [bagianFilter, setBagianFilter] = useState('all');
+    const [kategoriFilter, setKategoriFilter] = useState<'all' | 'MEDIS' | 'NON MEDIS'>('all');
+    const [profesiFilter, setProfesiFilter] = useState('all');
+
+    // ⚡ Fetch accurate aggregated performance from server
+    useEffect(() => {
+        const fetchPerformance = async () => {
+            setIsLoading(true);
+            try {
+                const month = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
+                const year = currentMonth.getFullYear().toString();
+
+                const params = new URLSearchParams({
+                    month,
+                    year,
+                    unit: unitFilter,
+                    bagian: bagianFilter,
+                    professionCategory: kategoriFilter,
+                    profession: profesiFilter,
+                    hospitalId: hospitalFilter,
+                    employeeId: selectedUserIdFilter || 'all'
+                });
+
+                const response = await fetch(`/api/analytics/performance?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setPerformanceData(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch performance analytics:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPerformance();
+    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, hospitalFilter]);
+
+    // Filter options memoization (only from real employees, excluding admins)
+    const filterOptions = useMemo(() => {
+        const units = new Set<string>();
+        const bagians = new Set<string>();
+        const profesi = new Set<string>();
+        // Only include real employees (non-admin) in filter options
+        const realEmployees = allUsers.filter(u => {
+            const isReal = u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u);
+            if (!isReal) return false;
+            if (hospitalFilter && hospitalFilter !== 'all') {
+                return u.hospitalId === hospitalFilter;
+            }
+            return true;
+        });
+        realEmployees.forEach(user => {
+            if (user.unit) units.add(user.unit);
+            if (user.bagian) bagians.add(user.bagian);
+            if (user.profession) profesi.add(user.profession);
+        });
+        return {
+            units: Array.from(units).sort(),
+            bagians: Array.from(bagians).sort(),
+            profesi: Array.from(profesi).sort(),
+        };
+    }, [allUsers, hospitalFilter]);
+
+    const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
+
+    const navigateMonth = (direction: 'prev' | 'next') => {
+        setCurrentMonth(prev => {
+            const newDate = new Date(prev);
+            newDate.setDate(1);
+            newDate.setMonth(newDate.getMonth() + (direction === 'prev' ? -1 : 1));
+            return newDate;
+        });
+    };
+
+    const isNextMonthFuture = () => {
+        const nextMonth = new Date(currentMonth);
+        nextMonth.setDate(1);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        return nextMonth > new Date();
+    };
+
+    const selectClass = "w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none";
+
+    return (
+        <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="text-xl font-bold text-white">Analisis Kinerja Mutaba&apos;ah</h3>
+                <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full md:w-auto">
+                    <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
+                    <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
+                    <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
+                </div>
+            </div>
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-4">
+                    <EmployeeSearchableInput
+                        allUsers={allUsers}
+                        value={selectedUserIdFilter}
+                        onChange={setSelectedUserIdFilter}
+                        placeholder="Cari & Filter Nama Karyawan..."
+                    />
+                </div>
+                <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={selectClass}>
+                    <option value="all" className="text-black bg-white">Semua Unit</option>
+                    {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                </select>
+                <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className={selectClass}>
+                    <option value="all" className="text-black bg-white">Semua Bagian</option>
+                    {filterOptions.bagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                </select>
+                <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className={selectClass}>
+                    <option value="all" className="text-black bg-white">Semua Kategori Profesi</option>
+                    <option value="MEDIS" className="text-black bg-white">MEDIS</option>
+                    <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
+                </select>
+                <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className={selectClass}>
+                    <option value="all" className="text-black bg-white">Semua Profesi</option>
+                    {filterOptions.profesi.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                </select>
+            </div>
+
+            <p className="text-sm text-center text-blue-200">{employeeCount} karyawan</p>
+
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl border border-white/5">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
+                    <p className="text-teal-200/60 font-medium animate-pulse">Menganalisis kinerja mutaba&apos;ah seluruh karyawan...</p>
+                </div>
+            ) : employeeCount > 0 ? (
+                <div className="space-y-6">
+                    <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
+                        {isClient ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={performanceByCategory} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                    <XAxis dataKey="name" stroke="#cbd5e1" fontSize={12} />
+                                    <YAxis stroke="#cbd5e1" allowDecimals={false} domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                    <Bar dataKey="Persentase" isAnimationActive={false}>
+                                        <LabelList dataKey="Persentase" position="top" fill="#e2e8f0" fontSize={12} formatter={(value: unknown) => typeof value === 'number' ? `${value}%` : ''} />
+                                        {performanceByCategory.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                            </div>
+                        )}
+                    </ChartCard>
+
+                    {Object.entries(groupedPerformanceByActivity).map(([category, activities], index) => (
+                        <ChartCard key={category} title={`Detail Kategori: ${category}`} minWidth="700px">
+                            {isClient ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                        <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
+                                        <YAxis dataKey="name" type="category" stroke="#94a3b8" width={180} tick={{ fontSize: 11, fill: '#e2e8f0' }} interval={0} />
+                                        <Bar dataKey="percentage" name="Capaian" barSize={20} fill={COLORS[index % COLORS.length]} isAnimationActive={false}>
+                                            <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => typeof value === 'number' && value > 0 ? `${value}%` : ''} />
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
+                                </div>
+                            )}
+                        </ChartCard>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-10 text-blue-200">
+                    Tidak ada data karyawan yang cocok dengan filter yang dipilih.
+                </div>
+            )}
         </div>
     );
 };
+
+// --- END: SUB-COMPONENTS ---
 
 const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConfig, onLoadAllData }) => {
     const { loggedInEmployee } = useAppDataStore();
@@ -510,7 +724,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-xl">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="w-1.5 h-8 bg-teal-400 rounded-full"></div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight uppercase tracking-widest">Detail Performa Unit RS</h2>
+                            <h2 className="text-2xl font-black text-white italic tracking-tight uppercase">Detail Performa Unit RS</h2>
                         </div>
                         <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} hospitalFilter={hospitalFilter} />
                     </div>

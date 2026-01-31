@@ -810,26 +810,25 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                 </div>
             )}
 
-            {/* Month Navigator - Standalone Section */}
-            <div className="flex justify-center -mt-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-700">
-                <div className="flex items-center bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-1.5 shadow-2xl">
+            {/* Month Navigator - Standalone Section (Compact) */}
+            <div className="flex justify-center -mt-6 mb-6 animate-in fade-in slide-in-from-top-1 duration-500">
+                <div className="flex items-center bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-0.5 shadow-xl">
                     <button
                         onClick={() => navigateMonth('prev')}
-                        className="px-6 py-2.5 rounded-xl hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95"
+                        className="px-3 py-1.5 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-sm"
                         title="Bulan Sebelumnya"
                     >
                         &larr;
                     </button>
-                    <div className="min-w-[200px] text-center px-6 border-x border-white/5">
-                        <span className="text-[10px] uppercase tracking-0.2em font-black text-white/30 block mb-0.5">Analisis Periode</span>
-                        <span className="font-bold text-lg text-teal-400 tracking-wider uppercase">
+                    <div className="min-w-[140px] text-center px-4 border-x border-white/5">
+                        <span className="font-bold text-xs text-teal-400 tracking-wide uppercase">
                             {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                         </span>
                     </div>
                     <button
                         onClick={() => navigateMonth('next')}
                         disabled={isNextMonthFuture()}
-                        className="px-6 py-2.5 rounded-xl hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95"
+                        className="px-3 py-1.5 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-sm"
                         title="Bulan Berikutnya"
                     >
                         &rarr;

@@ -75,7 +75,7 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
                         <XAxis dataKey="brand" stroke="#d97706" fontSize={11} fontWeight="bold" />
                         <YAxis stroke="#d97706" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
                         <Bar dataKey="aktivasiRate" name="Aktivasi" radius={[4, 4, 0, 0]}>
-                            <LabelList dataKey="aktivasiRate" position="top" fill="#fbbf24" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}%`} />
+                            <LabelList dataKey="aktivasiRate" position="top" fill="#fbbf24" fontSize={12} fontWeight="bold" formatter={(val: any) => `${val}%`} />
                             {displayData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={index === 0 ? '#fbbf24' : '#d97706'} fillOpacity={0.8} />
                             ))}
@@ -95,7 +95,7 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
                             name="Kepatuhan"
                             radius={[4, 4, 0, 0]}
                         >
-                            <LabelList dataKey="kepatuhanRate" position="top" fill="#34d399" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}%`} />
+                            <LabelList dataKey="kepatuhanRate" position="top" fill="#34d399" fontSize={12} fontWeight="bold" formatter={(val: any) => `${val}%`} />
                             {displayData.map((_entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#10b981" fillOpacity={0.8} />
                             ))}

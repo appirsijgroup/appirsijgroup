@@ -524,7 +524,11 @@ const MutabaahPerformanceReport: React.FC<{
 
 const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConfig, onLoadAllData }) => {
     const { loggedInEmployee } = useAppDataStore();
-    const { hospitals } = useHospitalStore();
+    const { hospitals, loadHospitals } = useHospitalStore();
+
+    useEffect(() => {
+        loadHospitals();
+    }, [loadHospitals]);
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 

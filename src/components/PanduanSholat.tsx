@@ -55,18 +55,47 @@ const GuideDetailView: React.FC<{ guide: PrayerGuide; onBack: () => void }> = ({
                             className={`grid transition-all duration-500 ease-in-out ${openStepId === step.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                         >
                             <div className="overflow-hidden">
-                                <div className="p-5 sm:p-6 border-t border-white/10 space-y-6 bg-black/20 relative">
-                                    <button
-                                        onClick={() => handleCopy(step)}
-                                        className="absolute top-4 left-4 p-2 text-gray-500 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all"
-                                        title="Salin bacaan"
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                    </button>
-                                    {step.description && <p className="text-blue-200 mb-4 italic">&quot;{step.description}&quot;</p>}
-                                    <p dir="rtl" className="text-3xl sm:text-4xl text-right text-white font-serif leading-loose">{step.arabic}</p>
-                                    <p className="text-blue-200 italic">{step.latin}</p>
-                                    <p className="text-white"><strong>Artinya:</strong> &quot;{step.translation}&quot;</p>
+                                <div className="p-5 sm:p-6 border-t border-white/10 bg-black/20">
+                                    {/* Header: Description & Actions */}
+                                    <div className="flex justify-between items-start mb-6 gap-4">
+                                        <div className="grow">
+                                            {step.description && (
+                                                <p className="text-blue-200 italic text-sm border-l-2 border-teal-500/50 pl-3">
+                                                    &quot;{step.description}&quot;
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => handleCopy(step)}
+                                            className="shrink-0 p-2 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all flex items-center gap-2 group"
+                                            title="Salin bacaan"
+                                        >
+                                            <span className="text-xs font-medium hidden group-hover:block text-teal-300">Salin</span>
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    {/* Content Block */}
+                                    <div className="space-y-6">
+                                        {/* Arabic */}
+                                        <div className="py-2">
+                                            <p dir="rtl" className="text-3xl sm:text-4xl text-right text-white font-serif leading-loose tracking-wide">
+                                                {step.arabic}
+                                            </p>
+                                        </div>
+
+                                        {/* Latin & Translation */}
+                                        <div className="bg-black/20 rounded-xl p-4 border border-white/5 space-y-3">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-1">Bacaan Latin</p>
+                                                <p className="text-teal-100 font-medium leading-relaxed">{step.latin}</p>
+                                            </div>
+                                            <div className="pt-3 border-t border-white/5">
+                                                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-1">Artinya</p>
+                                                <p className="text-gray-300 italic">&quot;{step.translation}&quot;</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -59,20 +59,24 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
  * Visualizes the performance gap between hospitals.
  */
 const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) => {
+    // Transform data to include pre-calculated percentages for labels
+    const displayData = breakdown.map(d => ({
+        ...d,
+        aktivasiRate: d.total > 0 ? Math.round((d.activated / d.total) * 100) : 0,
+        kepatuhanRate: d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0
+    }));
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ChartCard title="Aktivasi Mutaba'ah per Unit RS (%)">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <BarChart data={displayData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#4a3b1a" vertical={false} />
                         <XAxis dataKey="brand" stroke="#d97706" fontSize={11} fontWeight="bold" />
                         <YAxis stroke="#d97706" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #d97706', borderRadius: '8px' }}
-                            itemStyle={{ color: '#fbbf24' }}
-                        />
-                        <Bar dataKey={(d) => d.total > 0 ? Math.round((d.activated / d.total) * 100) : 0} name="Aktivasi" radius={[4, 4, 0, 0]}>
-                            {breakdown.map((entry, index) => (
+                        <Bar dataKey="aktivasiRate" name="Aktivasi" radius={[4, 4, 0, 0]}>
+                            <LabelList dataKey="aktivasiRate" position="top" fill="#fbbf24" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}%`} />
+                            {displayData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={index === 0 ? '#fbbf24' : '#d97706'} fillOpacity={0.8} />
                             ))}
                         </Bar>
@@ -82,21 +86,17 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
 
             <ChartCard title="Tingkat Kepatuhan Mutaba'ah (%)">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <BarChart data={displayData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#114232" vertical={false} />
                         <XAxis dataKey="brand" stroke="#10b981" fontSize={11} fontWeight="bold" />
                         <YAxis stroke="#10b981" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
-                        <Tooltip
-                            cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
-                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #10b981', borderRadius: '8px' }}
-                            itemStyle={{ color: '#34d399' }}
-                        />
                         <Bar
-                            dataKey={(d: any) => d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0}
+                            dataKey="kepatuhanRate"
                             name="Kepatuhan"
                             radius={[4, 4, 0, 0]}
                         >
-                            {breakdown.map((_entry, index) => (
+                            <LabelList dataKey="kepatuhanRate" position="top" fill="#34d399" fontSize={12} fontWeight="bold" formatter={(val: number) => `${val}%`} />
+                            {displayData.map((_entry, index) => (
                                 <Cell key={`cell-${index}`} fill="#10b981" fillOpacity={0.8} />
                             ))}
                         </Bar>

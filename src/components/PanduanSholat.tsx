@@ -4,6 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { PRAYER_GUIDES } from '../data/guides';
 import type { PrayerGuide } from '../types';
 import { MosqueIcon, SparklesIcon, ChevronDownIcon, ArrowLeftIcon } from './Icons';
+import { useUIStore } from '@/store/store';
+import { Copy } from 'lucide-react';
 
 interface PanduanSholatProps {
     searchQuery: string;
@@ -12,6 +14,13 @@ interface PanduanSholatProps {
 // Tampilan detail untuk panduan yang dipilih
 const GuideDetailView: React.FC<{ guide: PrayerGuide; onBack: () => void }> = ({ guide, onBack }) => {
     const [openStepId, setOpenStepId] = useState<number | null>(1);
+    const { addToast } = useUIStore();
+
+    const handleCopy = (step: any) => {
+        const textToCopy = `${step.title}\n\n${step.arabic}\n\n${step.latin}\n\n"Artinya: ${step.translation}"`;
+        navigator.clipboard.writeText(textToCopy);
+        addToast('Bacaan sholat berhasil disalin!', 'success');
+    };
 
     const toggleStep = (id: number) => {
         setOpenStepId(openStepId === id ? null : id);
@@ -46,7 +55,14 @@ const GuideDetailView: React.FC<{ guide: PrayerGuide; onBack: () => void }> = ({
                             className={`grid transition-all duration-500 ease-in-out ${openStepId === step.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                         >
                             <div className="overflow-hidden">
-                                <div className="p-5 sm:p-6 border-t border-white/10 space-y-6 bg-black/20">
+                                <div className="p-5 sm:p-6 border-t border-white/10 space-y-6 bg-black/20 relative">
+                                    <button
+                                        onClick={() => handleCopy(step)}
+                                        className="absolute top-4 left-4 p-2 text-gray-500 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all"
+                                        title="Salin bacaan"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
                                     {step.description && <p className="text-blue-200 mb-4 italic">&quot;{step.description}&quot;</p>}
                                     <p dir="rtl" className="text-3xl sm:text-4xl text-right text-white font-serif leading-loose">{step.arabic}</p>
                                     <p className="text-blue-200 italic">{step.latin}</p>

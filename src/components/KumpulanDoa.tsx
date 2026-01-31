@@ -4,13 +4,20 @@ import React, { useMemo } from 'react';
 import { KUMPULAN_DOA } from '../data/guides';
 import { useUIStore } from '../store/store';
 import { ShareIcon } from './Icons';
+import { Copy } from 'lucide-react';
 
 interface KumpulanDoaProps {
     searchQuery: string;
 }
 
 const KumpulanDoa: React.FC<KumpulanDoaProps> = ({ searchQuery }) => {
-    const { openShareModal } = useUIStore();
+    const { openShareModal, addToast } = useUIStore();
+
+    const handleCopy = (doa: { title: string; arabic: string; latin: string; translation: string }) => {
+        const textToCopy = `${doa.title}\n\n${doa.arabic}\n\n${doa.latin}\n\n"${doa.translation}"`;
+        navigator.clipboard.writeText(textToCopy);
+        addToast('Teks doa berhasil disalin ke clipboard!', 'success');
+    };
 
     const filteredDoa = useMemo(() => {
         if (!searchQuery) {
@@ -46,6 +53,13 @@ const KumpulanDoa: React.FC<KumpulanDoaProps> = ({ searchQuery }) => {
                                 title="Bagikan doa ini"
                             >
                                 <ShareIcon className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => handleCopy(doa)}
+                                className="absolute top-4 right-14 p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                                title="Salin teks doa"
+                            >
+                                <Copy className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="grow space-y-6">

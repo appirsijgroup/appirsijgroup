@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         const bagian = searchParams.get('bagian');
         const professionCategory = searchParams.get('professionCategory');
         const profession = searchParams.get('profession');
-        const hospitalId = searchParams.get('hospitalId');
+        const hospitalId = searchParams.get('hospitalId')?.toLowerCase();
         const employeeId = searchParams.get('employeeId'); // Specific user override
 
         if (!month || !year) return NextResponse.json({ error: 'Month and Year are required' }, { status: 400 });

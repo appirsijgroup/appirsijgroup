@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
         // 3. Query Params
         const { searchParams } = new URL(request.url);
-        const hospitalId = searchParams.get('hospitalId');
+        const hospitalId = searchParams.get('hospitalId')?.toLowerCase();
 
         // 4. Determine Current Month Key (YYYY-MM)
         const now = new Date();

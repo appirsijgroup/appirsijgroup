@@ -17,11 +17,15 @@ export async function GET(request: NextRequest) {
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-        // 3. Determine Current Month Key (YYYY-MM)
+        // 3. Query Params
+        const { searchParams } = new URL(request.url);
+        const hospitalId = searchParams.get('hospitalId');
+
+        // 4. Determine Current Month Key (YYYY-MM)
         const now = new Date();
         const currentMonthKey = now.toISOString().slice(0, 7); // "2026-01"
 
-        // 4. Execute Queries in Parallel
+        // 5. Execute Queries in Parallel
         const [
             totalEmployeesRes,
             activatedRes,
@@ -29,36 +33,48 @@ export async function GET(request: NextRequest) {
             complianceRes
         ] = await Promise.all([
             // Total Active Employees (Numeric IDs only, Exclude Admin/Super-Admin)
-            supabase.from('employees')
-                .select('id', { count: 'exact', head: false })
-                .eq('is_active', true)
-                .filter('id', 'match', '^[0-9]+$')
-                .not('role', 'in', '(admin,super-admin)'),
+            (() => {
+                let q = supabase.from('employees')
+                    .select('id', { count: 'exact', head: false })
+                    .eq('is_active', true)
+                    .filter('id', 'match', '^[0-9]+$')
+                    .not('role', 'in', '(admin,super-admin)');
+                if (hospitalId && hospitalId !== 'all') q = q.eq('hospital_id', hospitalId);
+                return q;
+            })(),
 
             // Activated This Month (Join with employees to ensure we only count real employees)
-            supabase
-                .from('mutabaah_activations')
-                .select('employee_id, employees!inner(id, role, is_active)', { count: 'exact', head: true })
-                .eq('month_key', currentMonthKey)
-                .eq('employees.is_active', true)
-                .filter('employees.id', 'match', '^[0-9]+$')
-                .not('employees.role', 'in', '(admin,super-admin)'),
+            (() => {
+                let q = supabase
+                    .from('mutabaah_activations')
+                    .select('employee_id, employees!inner(id, role, is_active, hospital_id)', { count: 'exact', head: true })
+                    .eq('month_key', currentMonthKey)
+                    .eq('employees.is_active', true)
+                    .filter('employees.id', 'match', '^[0-9]+$')
+                    .not('employees.role', 'in', '(admin,super-admin)');
+                if (hospitalId && hospitalId !== 'all') q = q.eq('employees.hospital_id', hospitalId);
+                return q;
+            })(),
 
             // Mentors (Numeric IDs only)
-            supabase.from('employees')
-                .select('id', { count: 'exact', head: false })
-                .eq('is_active', true)
-                .filter('id', 'match', '^[0-9]+$')
-                .or('role.in.(admin,super-admin),can_be_mentor.eq.true'),
+            (() => {
+                let q = supabase.from('employees')
+                    .select('id', { count: 'exact', head: false })
+                    .eq('is_active', true)
+                    .filter('id', 'match', '^[0-9]+$')
+                    .or('role.in.(admin,super-admin),can_be_mentor.eq.true');
+                if (hospitalId && hospitalId !== 'all') q = q.eq('hospital_id', hospitalId);
+                return q;
+            })(),
 
             // Compliance (Has entry in employee_monthly_reports for this month)
-            // Note: This assumes 'reports' column is JSONB and has month keys
-            // Since filtering JSONB keys via RPC/Postgrest is tricky, we might need a workaround or count non-null
-            // For now, we'll try checking if the record exists for the employee. 
-            // Actually, employee_monthly_reports usually has one row per employee with 'reports' jsonb.
-            // We want to count rows where reports->'2026-01' is not null.
-            // Supabase filter for jsonb keys existence: .not('reports->' + currentMonthKey, 'is', null)
-            supabase.from('employee_monthly_reports').select('*', { count: 'exact', head: true }).not(`reports->${currentMonthKey}`, 'is', null)
+            (() => {
+                let q = supabase.from('employee_monthly_reports')
+                    .select('*, employees!inner(id, hospital_id)', { count: 'exact', head: true })
+                    .not(`reports->${currentMonthKey}`, 'is', null);
+                if (hospitalId && hospitalId !== 'all') q = q.eq('employees.hospital_id', hospitalId);
+                return q;
+            })()
         ]);
 
         const stats = {

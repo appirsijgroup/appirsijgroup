@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
-import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
+import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
+import { useAppDataStore, useHospitalStore } from '@/store/store';
 import { PdfIcon, ChartBarIcon } from './Icons';
 import { generateOfficialPdf, type ReportSection, type TableConfig } from './ReportGenerator';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
@@ -53,13 +54,18 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 // ... existing MutabaahPerformanceReport ...
 
 
-const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
+const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string }> = ({ allUsers, hospitalFilter }) => {
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
     // Filter out admin/super-admin - only count real employees (users)
-    const realEmployees = useMemo(() =>
-        allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u)),
-        [allUsers]
+    const realEmployees = useMemo(() => {
+        let filtered = allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u));
+        if (hospitalFilter && hospitalFilter !== 'all') {
+            filtered = filtered.filter(u => u.hospitalId === hospitalFilter);
+        }
+        return filtered;
+    },
+        [allUsers, hospitalFilter]
     );
 
     // State for stats (initially from props, then updated from API)
@@ -76,7 +82,11 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
     useEffect(() => {
         const fetchAccurateStats = async () => {
             try {
-                const response = await fetch('/api/analytics/stats');
+                const params = new URLSearchParams();
+                if (hospitalFilter && hospitalFilter !== 'all') {
+                    params.append('hospitalId', hospitalFilter);
+                }
+                const response = await fetch(`/api/analytics/stats?${params.toString()}`);
                 if (response.ok) {
                     const data = await response.json();
                     setStats(prev => ({
@@ -95,7 +105,7 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
         };
 
         fetchAccurateStats();
-    }, []);
+    }, [hospitalFilter]);
 
     // Fallback update if props change and API hasn't loaded (optional, prioritizing API)
     useEffect(() => {
@@ -193,7 +203,8 @@ const ActivationReport: React.FC<{ allUsers: Employee[] }> = ({ allUsers }) => {
 const MutabaahPerformanceReport: React.FC<{
     allUsers: Employee[];
     dailyActivitiesConfig: DailyActivity[];
-}> = ({ allUsers, dailyActivitiesConfig }) => {
+    hospitalFilter: string;
+}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter }) => {
     const [isClient, setIsClient] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [performanceData, setPerformanceData] = useState<{
@@ -236,6 +247,7 @@ const MutabaahPerformanceReport: React.FC<{
                     bagian: bagianFilter,
                     professionCategory: kategoriFilter,
                     profession: profesiFilter,
+                    hospitalId: hospitalFilter,
                     employeeId: selectedUserIdFilter || 'all'
                 });
 
@@ -252,7 +264,7 @@ const MutabaahPerformanceReport: React.FC<{
         };
 
         fetchPerformance();
-    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter]);
+    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, hospitalFilter]);
 
     // Filter options memoization (only from real employees, excluding admins)
     const filterOptions = useMemo(() => {
@@ -260,7 +272,14 @@ const MutabaahPerformanceReport: React.FC<{
         const bagians = new Set<string>();
         const profesi = new Set<string>();
         // Only include real employees (non-admin) in filter options
-        const realEmployees = allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u));
+        const realEmployees = allUsers.filter(u => {
+            const isReal = u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u);
+            if (!isReal) return false;
+            if (hospitalFilter && hospitalFilter !== 'all') {
+                return u.hospitalId === hospitalFilter;
+            }
+            return true;
+        });
         realEmployees.forEach(user => {
             if (user.unit) units.add(user.unit);
             if (user.bagian) bagians.add(user.bagian);
@@ -394,15 +413,36 @@ const MutabaahPerformanceReport: React.FC<{
 };
 
 const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConfig, onLoadAllData }) => {
+    const { loggedInEmployee } = useAppDataStore();
+    const { hospitals } = useHospitalStore();
+    const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false); // State local untuk loading more
+
+    // Check if user is BPH or Super Admin (Cross-RS Authority)
+    const canSelectHospital = useMemo(() => {
+        if (!loggedInEmployee) return false;
+        const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
+        return isBPH || isSuperAdmin(loggedInEmployee);
+    }, [loggedInEmployee]);
+
+    // Reset hospital filter to user's hospital if they cannot select multiple
+    useEffect(() => {
+        if (!canSelectHospital && loggedInEmployee?.hospitalId) {
+            setHospitalFilter(loggedInEmployee.hospitalId);
+        }
+    }, [canSelectHospital, loggedInEmployee]);
 
     const allUsers = useMemo(() => {
         const employees = Object.values(allUsersData).map((d: { employee: Employee }) => d.employee);
-        // Only include those who are explicitly active (isActive !== false)
-        // AND exclude administrative accounts (e.g. ID like 'rsijsp')
-        // AND exclude those with admin/super-admin roles as they are not subject to the activation rules
-        return employees.filter(e => e && e.id && e.isActive !== false && !isAdministrativeAccount(e.id) && e.role !== 'admin' && e.role !== 'super-admin');
-    }, [allUsersData]);
+        return employees.filter(e => {
+            const isBasicActive = e && e.id && e.isActive !== false && !isAdministrativeAccount(e.id) && e.role !== 'admin' && e.role !== 'super-admin';
+            if (!isBasicActive) return false;
+            if (hospitalFilter && hospitalFilter !== 'all') {
+                return e.hospitalId === hospitalFilter;
+            }
+            return true;
+        });
+    }, [allUsersData, hospitalFilter]);
 
     // Check if we likely have partial data (e.g., exactly 50 records)
     // This is a heuristic; ideally we'd pass total count from backend
@@ -430,37 +470,70 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
     return (
         <div className="space-y-8">
-            {isPartialData && onLoadAllData && (
-                <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-300">
-                            <ChartBarIcon className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan di dropdown</p>
-                            <p className="text-blue-200 text-xs">Analisis grafik sudah 100% akurat berdasarkan data seluruh organisasi di database.</p>
+            {/* Hospital Selector for BPH/Super Admin */}
+            {
+                canSelectHospital && (
+                    <div className="bg-teal-900/40 border border-teal-500/30 rounded-xl p-5 mb-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                            <div className="p-3 bg-teal-500/20 rounded-full text-teal-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            </div>
+                            <div className="grow">
+                                <h3 className="text-white font-bold text-lg leading-tight mb-1">Filter Wilayah Kerja (Global Dashboard)</h3>
+                                <p className="text-teal-200/60 text-sm">Pilih Rumah Sakit untuk melihat data spesifik atau pilih "Semua Unit RS" untuk ringkasan grup.</p>
+                            </div>
+                            <div className="w-full md:w-80">
+                                <select
+                                    value={hospitalFilter}
+                                    onChange={(e) => setHospitalFilter(e.target.value)}
+                                    className="w-full bg-black/40 border border-teal-500/40 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none appearance-none cursor-pointer font-semibold"
+                                >
+                                    <option value="all" className="bg-teal-900 text-white">🏢 Tampilkan Semua Unit RS (Grup)</option>
+                                    {hospitals.map(h => (
+                                        <option key={h.id} value={h.id} className="bg-teal-900 text-white">
+                                            🏥 {h.brand} - {h.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <button
-                        onClick={handleLoadAll}
-                        disabled={isLoadingMore}
-                        className="whitespace-nowrap px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {isLoadingMore ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Memuat...
-                            </>
-                        ) : (
-                            'Muat Semua Data'
-                        )}
-                    </button>
-                </div>
-            )}
+                )
+            }
 
-            <ActivationReport allUsers={allUsers} />
-            <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} />
-        </div>
+            {
+                isPartialData && onLoadAllData && (
+                    <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-300">
+                                <ChartBarIcon className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan di dropdown</p>
+                                <p className="text-blue-200 text-xs">Analisis grafik sudah 100% akurat berdasarkan data seluruh organisasi di database.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleLoadAll}
+                            disabled={isLoadingMore}
+                            className="whitespace-nowrap px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isLoadingMore ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Memuat...
+                                </>
+                            ) : (
+                                'Muat Semua Data'
+                            )}
+                        </button>
+                    </div>
+                )
+            }
+
+            <ActivationReport allUsers={allUsers} hospitalFilter={hospitalFilter} />
+            <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} hospitalFilter={hospitalFilter} />
+        </div >
     );
 };
 

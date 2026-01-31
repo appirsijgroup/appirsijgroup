@@ -375,7 +375,7 @@ const MutabaahPerformanceReport: React.FC<{
             const isReal = u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u);
             if (!isReal) return false;
             if (localHospitalFilter && localHospitalFilter !== 'all') {
-                return u.hospitalId === localHospitalFilter;
+                return u.hospitalId?.toLowerCase() === localHospitalFilter.toLowerCase();
             }
             return true;
         });
@@ -689,7 +689,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
             const isBasicActive = e && e.id && e.isActive !== false && !isAdministrativeAccount(e.id) && e.role !== 'admin' && e.role !== 'super-admin';
             if (!isBasicActive) return false;
             if (hospitalFilter && hospitalFilter !== 'all') {
-                return e.hospitalId === hospitalFilter;
+                return e.hospitalId?.toLowerCase() === hospitalFilter.toLowerCase();
             }
             return true;
         });

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
                     .eq('is_active', true)
                     .filter('id', 'match', '^[0-9]+$')
                     .not('role', 'in', '(admin,super-admin)');
-                if (hospitalId && hospitalId !== 'all') q = q.eq('hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
                 return q;
             })(),
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
                     .eq('employees.is_active', true)
                     .filter('employees.id', 'match', '^[0-9]+$')
                     .not('employees.role', 'in', '(admin,super-admin)');
-                if (hospitalId && hospitalId !== 'all') q = q.eq('employees.hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
                 return q;
             })(),
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
                     .eq('is_active', true)
                     .filter('id', 'match', '^[0-9]+$')
                     .or('role.in.(admin,super-admin),can_be_mentor.eq.true');
-                if (hospitalId && hospitalId !== 'all') q = q.eq('hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
                 return q;
             })(),
 
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
                 let q = supabase.from('employee_monthly_reports')
                     .select('*, employees!inner(id, hospital_id)', { count: 'exact', head: false })
                     .not(`reports->${currentMonthKey}`, 'is', null);
-                if (hospitalId && hospitalId !== 'all') q = q.eq('employees.hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
                 return q;
             })(),
 

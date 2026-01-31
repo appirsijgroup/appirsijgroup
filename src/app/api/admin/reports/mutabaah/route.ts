@@ -38,9 +38,12 @@ export async function GET(request: NextRequest) {
 
         if (hospitalId && hospitalId !== 'all') {
             // Find hospital brand/id to match
-            const { data: hosp } = await supabase.from('hospitals').select('id, brand').eq('id', hospitalId).single();
+            const { data: hosp } = await supabase.from('hospitals')
+                .select('id, brand')
+                .ilike('id', hospitalId)
+                .single();
             if (hosp) {
-                empQuery = empQuery.or(`hospital_id.eq.${hosp.id},hospital_id.eq.${hosp.brand}`);
+                empQuery = empQuery.or(`hospital_id.ilike.${hosp.id},hospital_id.ilike.${hosp.brand}`);
             }
         }
 

@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
             if (bagian && bagian !== 'all') employeeQuery = employeeQuery.eq('bagian', bagian);
             if (professionCategory && professionCategory !== 'all') employeeQuery = employeeQuery.eq('profession_category', professionCategory);
             if (profession && profession !== 'all') employeeQuery = employeeQuery.eq('profession', profession);
-            if (hospitalId && hospitalId !== 'all') employeeQuery = employeeQuery.eq('hospital_id', hospitalId);
+            if (hospitalId && hospitalId !== 'all') employeeQuery = employeeQuery.ilike('hospital_id', hospitalId);
         }
 
         const { data: targetEmployees, error: empError } = await employeeQuery;

@@ -14,8 +14,7 @@ export {
 export {
   useMonthlyActivities,
   useReadingHistory,
-  useQuranReadingHistory,
-  useTodoList
+  useQuranReadingHistory
 } from './useMonthlyActivities';
 
 // Type exports

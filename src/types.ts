@@ -192,7 +192,6 @@ export interface Employee extends RawEmployee {
   avatarUrl?: string | null;
   authUserId?: string | null;
   _monthlyReportsDataCache?: Record<string, Record<string, Record<string, boolean>>>;
-  todoList?: Array<{ id: string; text: string; completed: boolean; createdAt: number }>;
 }
 
 export interface AttendanceStatus {
@@ -471,7 +470,6 @@ export interface MyDashboardViewProps {
   onOpenAssignmentLetter?: (notification: any) => void;
   onLoadEmployees?: (limit?: number) => Promise<void>;
   isLoadingEmployees?: boolean;
-  onUpdateTodoList?: (userId: string, todoList: Employee['todoList']) => void;
 }
 
 export interface TadarusSession {

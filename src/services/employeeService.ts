@@ -43,7 +43,6 @@ export const convertToCamelCase = (emp: any): Employee => {
         locationName: emp.location_name,
         readingHistory: emp.reading_history || [],
         quranReadingHistory: emp.quran_reading_history || [],
-        todoList: emp.todo_list || [],
         signature: emp.signature,
 
         managedHospitalIds: emp.managed_hospital_ids || [],
@@ -264,8 +263,7 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
         // JANGAN tulis ke employees.monthly_activities, gunakan monthlyActivityService
         // JANGAN tulis ke employees.reading_history, gunakan readingHistoryService
         // JANGAN tulis ke employees.quran_reading_history, gunakan readingHistoryService
-        // JANGAN tulis ke employees.todo_list, gunakan todoService
-        // ❌ REMOVED: monthly_activities, reading_history, quran_reading_history, todo_list
+        // ❌ REMOVED: monthly_activities, reading_history, quran_reading_history
 
         //activated_months: employee.activatedMonths, // ❌ REMOVED: Managed in mutabaah_activations table
         ka_unit_id: employee.kaUnitId,
@@ -411,12 +409,6 @@ export const updateEmployee = async (
         }
     }
 
-    if (sanitizedUpdates.todo_list !== undefined) {
-        // Validate it's a proper array
-        if (!Array.isArray(sanitizedUpdates.todo_list)) {
-            throw new Error('todo_list must be an array');
-        }
-    }
 
     if (sanitizedUpdates.quran_reading_history !== undefined) {
         // Validate it's a proper array

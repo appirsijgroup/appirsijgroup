@@ -787,25 +787,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             </button>
                         </div>
 
-                        {/* Month Navigator Integrator */}
-                        <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 shadow-inner h-[58px]">
-                            <button
-                                onClick={() => navigateMonth('prev')}
-                                className="h-full px-4 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold"
-                            >
-                                &larr;
-                            </button>
-                            <span className="min-w-[140px] text-center font-bold text-sm text-teal-300 tracking-wide px-2 uppercase">
-                                {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                            </span>
-                            <button
-                                onClick={() => navigateMonth('next')}
-                                disabled={isNextMonthFuture()}
-                                className="h-full px-4 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold"
-                            >
-                                &rarr;
-                            </button>
-                        </div>
+
 
                         <div className="w-full md:w-80 flex items-center pr-2">
                             <label className="sr-only">Pilih Unit</label>
@@ -823,6 +805,33 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                     ))}
                                 </optgroup>
                             </select>
+                        </div>
+                    </div>
+
+                    {/* Month Navigator - Separated Row */}
+                    <div className="flex justify-center mt-2 pb-2">
+                        <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 shadow-inner">
+                            <button
+                                onClick={() => navigateMonth('prev')}
+                                className="px-5 py-2 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-lg"
+                                title="Bulan Sebelumnya"
+                            >
+                                &larr;
+                            </button>
+                            <div className="min-w-[180px] text-center px-4">
+                                <span className="text-xs uppercase tracking-widest font-black text-white/40 block">Periode Laporan</span>
+                                <span className="font-bold text-base text-teal-400 tracking-wide uppercase">
+                                    {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => navigateMonth('next')}
+                                disabled={isNextMonthFuture()}
+                                className="px-5 py-2 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-lg"
+                                title="Bulan Berikutnya"
+                            >
+                                &rarr;
+                            </button>
                         </div>
                     </div>
                 </div>

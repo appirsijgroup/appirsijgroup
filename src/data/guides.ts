@@ -2,77 +2,77 @@
 import { type PrayerGuide, type DailyPrayer, type Achievement } from '../types';
 
 const DOA_IFTITAH_CONTENT = {
-  title: "Doa Iftitah (versi HPT Muhammadiyah)",
-  arabic: "اللَّهُمَّ بَاعِدْ بَيْنِي وَبَيْنَ خَطَايَايَ كَمَا بَاعَدْتَ بَيْنَ الْمَشْرِقِ وَالْمَغْرِبِ، اللَّهُمَّ نَقِّنِي مِنْ خَطَايَايَ كَمَا يُنَقَّى الثَّوْبُ الْأَبْيَضُ مِنَ الدَّنَسِ، اللَّهُمَّ اغْسِلْنِي مِنْ خَطَايَايَ بِالثَّلْجِ وَالْمَاءِ وَالْبَرَدِ",
-  latin: "Allahumma baa'id bainii wa baina khathaayaaya kamaa baa'adta bainal masyriqi wal maghrib. Allahumma naqqinii min khathaayaaya kamaa yunaqqats tsaubul abyadhu minad danas. Allahummaghsilnii min khathaayaaya bits tsalji wal maa-i wal barad.",
-  translation: "Ya Allah, jauhkanlah antara aku dan kesalahanku sebagaimana Engkau menjauhkan antara timur dan barat. Ya Allah, bersihkanlah aku dari kesalahanku sebagaimana pakaian putih dibersihkan dari kotoran. Ya Allah, cucilah kesalahanku dengan salju, air, dan air es."
+    title: "Doa Iftitah (versi HPT Muhammadiyah)",
+    arabic: "اللَّهُمَّ بَاعِدْ بَيْنِي وَبَيْنَ خَطَايَايَ كَمَا بَاعَدْتَ بَيْنَ الْمَشْرِقِ وَالْمَغْرِبِ، اللَّهُمَّ نَقِّنِي مِنْ خَطَايَايَ كَمَا يُنَقَّى الثَّوْبُ الْأَبْيَضُ مِنَ الدَّنَسِ، اللَّهُمَّ اغْسِلْنِي مِنْ خَطَايَايَ بِالثَّلْجِ وَالْمَاءِ وَالْبَرَدِ",
+    latin: "Allahumma baa'id bainii wa baina khathaayaaya kamaa baa'adta bainal masyriqi wal maghrib. Allahumma naqqinii min khathaayaaya kamaa yunaqqats tsaubul abyadhu minad danas. Allahummaghsilnii min khathaayaaya bits tsalji wal maa-i wal barad.",
+    translation: "Ya Allah, jauhkanlah antara aku dan kesalahanku sebagaimana Engkau menjauhkan antara timur dan barat. Ya Allah, bersihkanlah aku dari kesalahanku sebagaimana pakaian putih dibersihkan dari kotoran. Ya Allah, cucilah kesalahanku dengan salju, air, dan air es."
 };
 
 const DOA_IFTITAH = { id: 2, ...DOA_IFTITAH_CONTENT };
 
 const AL_FATIHAH_CONTENT = {
-  title: "Membaca Al-Fatihah",
-  arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ. اَلْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِيْنَۙ. الرَّحْمٰنِ الرَّحِيْمِۙ. مٰلِكِ يَوْمِ الدِّيْنِۗ. اِيَّاكَ نَعْبُدُ وَاِيَّاكَ نَسْتَعِيْنُۗ. اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيْمَۙ. صِرَاطَ الَّذِيْنَ اَنْعَمْتَ عَلَيْهِمْ ەۙ غَيْرِ الْمَغْضُوْبِ عَلَيْهِمْ وَلَا الضَّاۤلِّيْنَࣖ.",
-  latin: "Bismillaahir-rahmaanir-rahiim. Al-hamdu lillaahi rabbil-'aalamiin. Ar-rahmaanir-rahiim. Maaliki yaumid-diin. Iyyaaka na'budu wa iyyaaka nasta'iin. Ihdinash-shiraathal-mustaqiim. Shiraathal-ladziina an'amta 'alaihim ghairil-maghdhuubi 'alaihim wa ladh-dhaalliin.",
-  translation: "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang. Segala puji bagi Allah, Tuhan seluruh alam. Yang Maha Pengasih, Maha Penyayang. Pemilik hari pembalasan. Hanya kepada Engkaulah kami menyembah dan hanya kepada Engkaulah kami memohon pertolongan. Tunjukilah kami jalan yang lurus. (yaitu) jalan orang-orang yang telah Engkau beri nikmat kepadanya; bukan (jalan) mereka yang dimurkai, dan bukan (pula jalan) mereka yang sesat.",
-  description: "Setelah membaca Al-Fatihah, dilanjutkan membaca surat atau ayat Al-Quran."
+    title: "Membaca Al-Fatihah",
+    arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ. اَلْحَمْدُ لِلّٰهِ رَبِّ الْعٰلَمِيْنَۙ. الرَّحْمٰنِ الرَّحِيْمِۙ. مٰلِكِ يَوْمِ الدِّيْنِۗ. اِيَّاكَ نَعْبُدُ وَاِيَّاكَ نَسْتَعِيْنُۗ. اِهْدِنَا الصِّرَاطَ الْمُسْتَقِيْمَۙ. صِرَاطَ الَّذِيْنَ اَنْعَمْتَ عَلَيْهِمْ ەۙ غَيْرِ الْمَغْضُوْبِ عَلَيْهِمْ وَلَا الضَّاۤلِّيْنَࣖ.",
+    latin: "Bismillaahir-rahmaanir-rahiim. Al-hamdu lillaahi rabbil-'aalamiin. Ar-rahmaanir-rahiim. Maaliki yaumid-diin. Iyyaaka na'budu wa iyyaaka nasta'iin. Ihdinash-shiraathal-mustaqiim. Shiraathal-ladziina an'amta 'alaihim ghairil-maghdhuubi 'alaihim wa ladh-dhaalliin.",
+    translation: "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang. Segala puji bagi Allah, Tuhan seluruh alam. Yang Maha Pengasih, Maha Penyayang. Pemilik hari pembalasan. Hanya kepada Engkaulah kami menyembah dan hanya kepada Engkaulah kami memohon pertolongan. Tunjukilah kami jalan yang lurus. (yaitu) jalan orang-orang yang telah Engkau beri nikmat kepadanya; bukan (jalan) mereka yang dimurkai, dan bukan (pula jalan) mereka yang sesat.",
+    description: "Setelah membaca Al-Fatihah, dilanjutkan membaca surat atau ayat Al-Quran."
 };
 
 const AL_FATIHAH = { id: 3, ...AL_FATIHAH_CONTENT };
 
 const RUKU = {
-  id: 4,
-  title: "Ruku'",
-  arabic: "سُبْحَانَكَ اللَّهُمَّ رَبَّنَا وَبِحَمْدِكَ اللَّهُمَّ اغْفِرْ لِي",
-  latin: "Subhaanakallahumma rabbanaa wa bihamdika, allahummaghfir-lii.",
-  translation: "Maha Suci Engkau ya Allah, Tuhan kami, dan dengan memuji-Mu, ya Allah, ampunilah aku."
+    id: 4,
+    title: "Ruku'",
+    arabic: "سُبْحَانَكَ اللَّهُمَّ رَبَّنَا وَبِحَمْدِكَ اللَّهُمَّ اغْفِرْ لِي",
+    latin: "Subhaanakallahumma rabbanaa wa bihamdika, allahummaghfir-lii.",
+    translation: "Maha Suci Engkau ya Allah, Tuhan kami, dan dengan memuji-Mu, ya Allah, ampunilah aku."
 };
 
 const ITIDAL = {
-  id: 5,
-  title: "I'tidal",
-  arabic: "سَمِعَ اللهُ لِمَنْ حَمِدَهُ، رَبَّنَا وَلَكَ الْحَمْدُ",
-  latin: "Sami'allaahu liman hamidah. Rabbanaa wa lakal-hamd.",
-  translation: "Allah mendengar orang yang memuji-Nya. Ya Tuhan kami, bagi-Mu segala puji."
+    id: 5,
+    title: "I'tidal",
+    arabic: "سَمِعَ اللهُ لِمَنْ حَمِدَهُ، رَبَّنَا وَلَكَ الْحَمْدُ",
+    latin: "Sami'allaahu liman hamidah. Rabbanaa wa lakal-hamd.",
+    translation: "Allah mendengar orang yang memuji-Nya. Ya Tuhan kami, bagi-Mu segala puji."
 };
 
 const SUJUD = {
-  id: 6,
-  title: "Sujud",
-  arabic: "سُبْحَانَكَ اللَّهُمَّ رَبَّنَا وَبِحَمْدِكَ اللَّهُمَّ اغْفِرْ لِي",
-  latin: "Subhaanakallahumma rabbanaa wa bihamdika, allahummaghfir-lii.",
-  translation: "Maha Suci Engkau ya Allah, Tuhan kami, dan dengan memuji-Mu, ya Allah, ampunilah aku."
+    id: 6,
+    title: "Sujud",
+    arabic: "سُبْحَانَكَ اللَّهُمَّ رَبَّنَا وَبِحَمْدِكَ اللَّهُمَّ اغْفِرْ لِي",
+    latin: "Subhaanakallahumma rabbanaa wa bihamdika, allahummaghfir-lii.",
+    translation: "Maha Suci Engkau ya Allah, Tuhan kami, dan dengan memuji-Mu, ya Allah, ampunilah aku."
 };
 
 const DUDUK_ANTARA_DUA_SUJUD = {
-  id: 7,
-  title: "Duduk di Antara Dua Sujud",
-  arabic: "اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَاجْبُرْنِي وَاهْدِنِي وَARْزُقْنِي",
-  latin: "Allaahummaghfir-lii warham-nii wajbur-nii wahdi-nii warzuq-nii.",
-  translation: "Ya Allah, ampunilah aku, sayangilah aku, cukupilah aku, berilah aku petunjuk, dan berilah aku rezeki."
+    id: 7,
+    title: "Duduk di Antara Dua Sujud",
+    arabic: "اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَاجْبُرْنِي وَاهْدِنِي وَARْزُقْنِي",
+    latin: "Allaahummaghfir-lii warham-nii wajbur-nii wahdi-nii warzuq-nii.",
+    translation: "Ya Allah, ampunilah aku, sayangilah aku, cukupilah aku, berilah aku petunjuk, dan berilah aku rezeki."
 };
 
 const SHALAWAT_NABI = {
-  title: "Shalawat Nabi",
-  arabic: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، وَبَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، فِي الْعَالَمِينَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
-  latin: "Allaahumma shalli 'alaa muhammadin wa 'alaa aali muhammad, kamaa shallaita 'alaa ibraahiima wa 'alaa aali ibraahiim. Wa baarik 'alaa muhammadin wa 'alaa aali muhammad, kamaa baarakta 'alaa ibraahiima wa 'alaa aali ibraahiim. Fil 'aalamiina innaka hamiidum majiid.",
-  translation: "Ya Allah, limpahkanlah rahmat kepada Muhammad dan keluarga Muhammad, sebagaimana Engkau telah melimpahkan rahmat kepada Ibrahim dan keluarga Ibrahim. Dan limpahkanlah berkah kepada Muhammad dan keluarga Muhammad, sebagaimana Engkau telah melimpahkan berkah kepada Ibrahim dan keluarga Ibrahim. Di seluruh alam, sesungguhnya Engkau Maha Terpuji lagi Maha Mulia."
+    title: "Shalawat Nabi",
+    arabic: "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، وَبَارِكْ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ، فِي الْعَالَمِينَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
+    latin: "Allaahumma shalli 'alaa muhammadin wa 'alaa aali muhammad, kamaa shallaita 'alaa ibraahiima wa 'alaa aali ibraahiim. Wa baarik 'alaa muhammadin wa 'alaa aali muhammad, kamaa baarakta 'alaa ibraahiima wa 'alaa aali ibraahiim. Fil 'aalamiina innaka hamiidum majiid.",
+    translation: "Ya Allah, limpahkanlah rahmat kepada Muhammad dan keluarga Muhammad, sebagaimana Engkau telah melimpahkan rahmat kepada Ibrahim dan keluarga Ibrahim. Dan limpahkanlah berkah kepada Muhammad dan keluarga Muhammad, sebagaimana Engkau telah melimpahkan berkah kepada Ibrahim dan keluarga Ibrahim. Di seluruh alam, sesungguhnya Engkau Maha Terpuji lagi Maha Mulia."
 }
 
 const TASYAHUD_AKHIR_CONTENT = {
-  arabic: "التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْhَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ. " + SHALAWAT_NABI.arabic,
-  latin: "At-tahiyyaatu lillaahi wash-shalawaatu wath-thayyibaat. As-salaamu 'alaika ayyuhan-nabiyyu wa rahmatullaahi wa barakaatuh. As-salaamu 'alainaa wa 'alaa 'ibaadillaahish-shaalihiin. Asyhadu al-laa ilaaha illallaah, wa asyhadu anna muhammadan 'abduhu wa rasuuluh. " + SHALAWAT_NABI.latin,
-  translation: "Segala kehormatan, shalat, dan kebaikan adalah milik Allah. Semoga keselamatan, rahmat Allah, dan berkah-Nya tercurah kepadamu, wahai Nabi. Semoga keselamatan tercurah kepada kami dan kepada hamba-hamba Allah yang saleh. Aku bersaksi bahwa tiada Tuhan selain Allah dan aku bersaksi bahwa Muhammad adalah hamba dan utusan-Nya. " + SHALAWAT_NABI.translation,
-  description: "Setelah tasyahud, dianjurkan membaca doa perlindungan dari empat hal sebelum salam."
+    arabic: "التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْhَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ. " + SHALAWAT_NABI.arabic,
+    latin: "At-tahiyyaatu lillaahi wash-shalawaatu wath-thayyibaat. As-salaamu 'alaika ayyuhan-nabiyyu wa rahmatullaahi wa barakaatuh. As-salaamu 'alainaa wa 'alaa 'ibaadillaahish-shaalihiin. Asyhadu al-laa ilaaha illallaah, wa asyhadu anna muhammadan 'abduhu wa rasuuluh. " + SHALAWAT_NABI.latin,
+    translation: "Segala kehormatan, shalat, dan kebaikan adalah milik Allah. Semoga keselamatan, rahmat Allah, dan berkah-Nya tercurah kepadamu, wahai Nabi. Semoga keselamatan tercurah kepada kami dan kepada hamba-hamba Allah yang saleh. Aku bersaksi bahwa tiada Tuhan selain Allah dan aku bersaksi bahwa Muhammad adalah hamba dan utusan-Nya. " + SHALAWAT_NABI.translation,
+    description: "Setelah tasyahud, dianjurkan membaca doa perlindungan dari empat hal sebelum salam."
 };
 
 const TASYAHUD_AKHIR = { id: 9, title: "Tasyahud Akhir", ...TASYAHUD_AKHIR_CONTENT };
 
 const SALAM_CONTENT = {
-  arabic: "السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ",
-  latin: "Assalaamu 'alaikum wa rahmatullaah.",
-  translation: "Keselamatan dan rahmat Allah semoga tercurah kepadamu.",
-  description: "Menoleh ke kanan, kemudian menoleh ke kiri (menurut sebagian pandangan)."
+    arabic: "السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ",
+    latin: "Assalaamu 'alaikum wa rahmatullaah.",
+    translation: "Keselamatan dan rahmat Allah semoga tercurah kepadamu.",
+    description: "Menoleh ke kanan, kemudian menoleh ke kiri (menurut sebagian pandangan)."
 };
 
 const SALAM = { id: 10, title: "Salam", ...SALAM_CONTENT };
@@ -99,7 +99,7 @@ export const PRAYER_GUIDES: PrayerGuide[] = [
         source: "Himpunan Putusan Tarjih Muhammadiyah",
         steps: [
             { id: 1, title: "Niat Sholat Dzuhur", arabic: " ", latin: " ", translation: " ", description: "Niat dilakukan di dalam hati bersamaan dengan Takbiratul Ihram." },
-             ...RAKAAT_STANDAR_STEPS, // Rakaat 1
+            ...RAKAAT_STANDAR_STEPS, // Rakaat 1
             { id: 8, title: "Tasyahud Awal", ...TASYAHUD_AKHIR_CONTENT, arabic: "التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللَّهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ.", latin: "At-tahiyyaatu lillaahi wash-shalawaatu wath-thayyibaat. As-salaamu 'alaika ayyuhan-nabiyyu wa rahmatullaahi wa barakaatuh. As-salaamu 'alainaa wa 'alaa 'ibaadillaahish-shaalihiin. Asyhadu al-laa ilaaha illallaah, wa asyhadu anna muhammadan 'abduhu wa rasuuluh.", translation: "Segala kehormatan, shalat, dan kebaikan adalah milik Allah. Semoga keselamatan, rahmat Allah, dan berkah-Nya tercurah kepadamu, wahai Nabi. Semoga keselamatan tercurah kepada kami dan kepada hamba-hamba Allah yang saleh. Aku bersaksi bahwa tiada Tuhan selain Allah dan aku bersaksi bahwa Muhammad adalah hamba dan utusan-Nya.", description: "Pada rakaat kedua, lakukan Tasyahud Awal. Kemudian berdiri untuk rakaat ketiga." },
             {
                 id: 9,
@@ -168,14 +168,14 @@ export const PRAYER_GUIDES: PrayerGuide[] = [
             SALAM
         ]
     },
-     {
+    {
         id: 'jenazah-laki',
         title: "Sholat Jenazah (Laki-laki)",
         description: "Panduan sholat untuk jenazah laki-laki (4 takbir tanpa rukuk dan sujud).",
         source: "Himpunan Putusan Tarjih Muhammadiyah",
         steps: [
             { id: 1, title: "Niat & Takbir Pertama", arabic: " ", latin: " ", translation: " ", description: "Niat di dalam hati bersamaan dengan takbir pertama. Setelah takbir, membaca surat Al-Fatihah." },
-            { id: 2, ...AL_FATIHAH_CONTENT, description: ""},
+            { id: 2, ...AL_FATIHAH_CONTENT, description: "" },
             { id: 3, title: "Takbir Kedua & Shalawat", arabic: SHALAWAT_NABI.arabic, latin: SHALAWAT_NABI.latin, translation: SHALAWAT_NABI.translation, description: "Setelah takbir kedua, membaca shalawat kepada Nabi Muhammad SAW seperti dalam tasyahud akhir." },
             { id: 4, title: "Takbir Ketiga & Doa", arabic: "اَللَّهُمَّ اغْفِرْ لَهُ وَارْحَمْهُ وَعَافِهِ وَاعْفُ عَنْهُ وَأَكْرِمْ نُزُلَهُ وَوَسِّعْ مُدْخَلَهُ", latin: "Allahummaghfir lahu warhamhu wa 'aafihi wa'fu 'anhu wa akrim nuzulahu wa wassi' mudkholahu.", translation: "Ya Allah, ampunilah dia, rahmatilah dia, sejahterakanlah dia, maafkanlah dia, muliakanlah tempatnya, dan luaskanlah tempat masuknya." },
             { id: 6, title: "Salam", ...SALAM_CONTENT }
@@ -188,7 +188,7 @@ export const PRAYER_GUIDES: PrayerGuide[] = [
         source: "Himpunan Putusan Tarjih Muhammadiyah",
         steps: [
             { id: 1, title: "Niat & Takbir Pertama", arabic: " ", latin: " ", translation: " ", description: "Niat di dalam hati bersamaan dengan takbir pertama. Setelah takbir, membaca surat Al-Fatihah." },
-            { id: 2, ...AL_FATIHAH_CONTENT, description: ""},
+            { id: 2, ...AL_FATIHAH_CONTENT, description: "" },
             { id: 3, title: "Takbir Kedua & Shalawat", arabic: SHALAWAT_NABI.arabic, latin: SHALAWAT_NABI.latin, translation: SHALAWAT_NABI.translation, description: "Setelah takbir kedua, membaca shalawat kepada Nabi Muhammad SAW seperti dalam tasyahud akhir." },
             { id: 4, title: "Takbir Ketiga & Doa", arabic: "اَللَّهُمَّ اغْفِرْ لَهَا وَارْحَمْهَا وَعَافِهَا وَاعْفُ عَنْهَا وَأَكْرِمْ نُزُلَهَا وَوَسِّعْ مُدْخَلَهَا", latin: "Allahummaghfir laha warhamha wa 'aafiha wa'fu 'anha wa akrim nuzulaha wa wassi' mudkholaha.", translation: "Ya Allah, ampunilah dia, rahmatilah dia, sejahterakanlah dia, maafkanlah dia, muliakanlah tempatnya, dan luaskanlah tempat masuknya." },
             { id: 5, title: "Takbir Keempat & Doa Penutup", arabic: "اللَّهُمَّ لَا تَحْرِمْنَا أَجْرَهَا وَلَا تَفْتِنَّا bَعْدَهَا وَاغْفِرْ لَنَا وَلَهَا", latin: "Allahumma laa tahrimnaa ajroha wa laa taftinnaa ba'daha waghfirlanaa walaha.", translation: "Ya Allah, janganlah Engkau haramkan kami dari pahalanya, dan janganlah Engkau beri fitnah kepada kami setelah kematiannya, dan ampunilah kami dan dia." },
@@ -201,7 +201,7 @@ export const PRAYER_GUIDES: PrayerGuide[] = [
         description: "Panduan sholat sunnah Dhuha (minimal 2 rakaat).",
         source: "Himpunan Putusan Tarjih Muhammadiyah",
         steps: [
-             { id: 1, title: "Niat Sholat Dhuha", arabic: " ", latin: " ", translation: " ", description: "Niat dilakukan di dalam hati bersamaan dengan Takbiratul Ihram." },
+            { id: 1, title: "Niat Sholat Dhuha", arabic: " ", latin: " ", translation: " ", description: "Niat dilakukan di dalam hati bersamaan dengan Takbiratul Ihram." },
             ...RAKAAT_STANDAR_STEPS,
             { id: 8, title: "Tasyahud Akhir", ...TASYAHUD_AKHIR_CONTENT, description: "Pada rakaat kedua (terakhir), lakukan Tasyahud Akhir." },
             SALAM
@@ -298,12 +298,21 @@ export const KUMPULAN_DOA: DailyPrayer[] = [
     { id: 13, title: "Doa Untuk Kedua Orang Tua", arabic: "رَبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا", latin: "Rabbighfirlii wa liwaalidayya warhamhumaa kamaa robbayaanii shoghiiroo.", translation: "Ya Tuhanku, ampunilah dosaku dan dosa kedua orang tuaku, dan sayangilah mereka sebagaimana mereka menyayangiku di waktu kecil." },
     { id: 14, title: "Doa Memohon Ilmu Bermanfaat", arabic: "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا", latin: "Allahumma inni as'aluka 'ilman naafi'an, wa rizqon thoyyiban, wa 'amalan mutaqobbalan.", translation: "Ya Allah, sesungguhnya aku memohon kepada-Mu ilmu yang bermanfaat, rezeki yang baik, dan amal yang diterima." },
     {
-      id: 15,
-      title: "Do'a Memulai Bekerja",
-      arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ\n\nأَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُوْلُ اللهِ\n\nرَضِيْتُ بِاللهِ رَبًّا وَبِالْإِسْلَامِ دِيْنًا وَبِمُحَمَّدٍ نَبِيًّا وَرَسُوْلًا\n\nرَبِّ اشْرَحْ لِيْ صَدْرِيْ وَيَسِّرْ لِيْ أَمْرِيْ وَاحْلُلْ عُقْدَةً مِّنْ لِّسَانِيْ يَفْقَهُوْا قَوْلِيْ\n\nاَللّٰهُمَّ إِنِّىْ أَسْأَلُكَ مِنْ خَيْرِ هٰذَا الْعَمَلِ وَخَيْرِ مَا فِيْهِ وَخَيْرِ مَا أُرْسِلْتُ بِهِ، وَأَعُوْذُبِكَ مِنْ شَرِّهِ وَشَرِّ مَا فِيْهِ وَشَرِّ مَا أُرْسِلْتُ بِهِ، إِنَّكَ عَلٰى كُلِّ شَيْءٍ قَدِيْرٌ\n\nاَللّٰهُمَّ أَحْسِنْ عَاقِبَتَنَا فِي الْأُمُوْرِ كُلِّهَا وَأَجِرْنَا مِنْ خِزْيِ الدُّنْيَا وَعَذَابِ الْآخِرَةِ",
-      latin: "Bismillaahirrohmaanirrohiim.\n\nAsyhadu Allaa ilaaha illallooh wa asyhadu anna Muhammadar rasuululloh.\n\nRodhiitu billaahi robbaa wabil islaami diinaa wabi Muhammadin nabiyyaa wa rasuulaa.\n\nRobbisy-rahlii shodrii wa yassirlii amrii wahlul ‘uqdatammillisaanii yafqohuu qoulii.\n\nAlloohumma innii as-aluka min khoiri hadzal ‘amali wa khoiri maa fihi, wa a‘uudzu bika min syarri hadzal ‘amali wa syarri maa fihi innaka ‘ala kulli syai-in qodiir.\n\nAlloohumma ahsin ‘aaqibatanaa fil-umuur kullihaa wa ajirnaa min khiz-yid dunyaa wa ‘adzaabil aakhirah.",
-      translation: "Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang.\n\nAku bersaksi bahwa tiada Tuhan selain Allah, dan aku bersaksi bahwa Muhammad adalah rasul (utusan) Allah.\n\nAku rela Allah sebagai Tuhanku, Islam sebagai agamaku dan Muhammad sebagai Nabi dan utusan Allah.\n\nYa Tuhanku, lapangkanlah dadaku dan mudahkanlah untukku urusanku, dan lepaskanlah kekakuanku dari lidahku, agar mereka mengerti perkataanku.\n\nYa Allah, aku memohon kepada-Mu kebaikan pekerjaan ini dan segala kebaikan yang ada di dalamnya, dan aku berlindung kepada-Mu daripada keburukan pekerjaan ini dan segala keburukan yang ada di dalamnya, sesungguhnya Engkau-lah yang Maha Berkuasa menentukannya.\n\nYa Allah, perbaikilah hasil setiap urusan kami semuanya, dan hindarkanlah kami dari kehinaan dunia dan siksaan akhirat."
+        id: 15,
+        title: "Do'a Memulai Bekerja",
+        arabic: "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ\n\nأَشْهَدُ أَنْ لَا إِلٰهَ إِلَّا اللهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا رَسُوْلُ اللهِ\n\nرَضِيْتُ بِاللهِ رَبًّا وَبِالْإِسْلَامِ دِيْنًا وَبِمُحَمَّدٍ نَبِيًّا وَرَسُوْلًا\n\nرَبِّ اشْرَحْ لِيْ صَدْرِيْ وَيَسِّرْ لِيْ أَمْرِيْ وَاحْلُلْ عُقْدَةً مِّنْ لِّسَانِيْ يَفْقَهُوْا قَوْلِيْ\n\nاَللّٰهُمَّ إِنِّىْ أَسْأَلُكَ مِنْ خَيْرِ هٰذَا الْعَمَلِ وَخَيْرِ مَا فِيْهِ وَخَيْرِ مَا أُرْسِلْتُ بِهِ، وَأَعُوْذُبِكَ مِنْ شَرِّهِ وَشَرِّ مَا فِيْهِ وَشَرِّ مَا أُرْسِلْتُ بِهِ، إِنَّكَ عَلٰى كُلِّ شَيْءٍ قَدِيْرٌ\n\nاَللّٰهُمَّ أَحْسِنْ عَاقِبَتَنَا فِي الْأُمُوْرِ كُلِّهَا وَأَجِرْنَا مِنْ خِزْيِ الدُّنْيَا وَعَذَابِ الْآخِرَةِ",
+        latin: "Bismillaahirrohmaanirrohiim.\n\nAsyhadu Allaa ilaaha illallooh wa asyhadu anna Muhammadar rasuululloh.\n\nRodhiitu billaahi robbaa wabil islaami diinaa wabi Muhammadin nabiyyaa wa rasuulaa.\n\nRobbisy-rahlii shodrii wa yassirlii amrii wahlul ‘uqdatammillisaanii yafqohuu qoulii.\n\nAlloohumma innii as-aluka min khoiri hadzal ‘amali wa khoiri maa fihi, wa a‘uudzu bika min syarri hadzal ‘amali wa syarri maa fihi innaka ‘ala kulli syai-in qodiir.\n\nAlloohumma ahsin ‘aaqibatanaa fil-umuur kullihaa wa ajirnaa min khiz-yid dunyaa wa ‘adzaabil aakhirah.",
+        translation: "Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang.\n\nAku bersaksi bahwa tiada Tuhan selain Allah, dan aku bersaksi bahwa Muhammad adalah rasul (utusan) Allah.\n\nAku rela Allah sebagai Tuhanku, Islam sebagai agamaku dan Muhammad sebagai Nabi dan utusan Allah.\n\nYa Tuhanku, lapangkanlah dadaku dan mudahkanlah untukku urusanku, dan lepaskanlah kekakuanku dari lidahku, agar mereka mengerti perkataanku.\n\nYa Allah, aku memohon kepada-Mu kebaikan pekerjaan ini dan segala kebaikan yang ada di dalamnya, dan aku berlindung kepada-Mu daripada keburukan pekerjaan ini dan segala keburukan yang ada di dalamnya, sesungguhnya Engkau-lah yang Maha Berkuasa menentukannya.\n\nYa Allah, perbaikilah hasil setiap urusan kami semuanya, dan hindarkanlah kami dari kehinaan dunia dan siksaan akhirat."
     },
+    { id: 16, title: "Doa Naik Kendaraan", arabic: "سُبْحَانَ الَّذِىْ سَخَّرَلَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِيْنَ وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُوْنَ", latin: "Subhanalladzi sakhara lana hadza wa ma kunna lahu muqrinin, wa inna ila rabbina lamunqalibun.", translation: "Maha Suci Allah yang telah menundukkan semua ini bagi kami padahal kami sebelumnya tidak mampu menguasainya, dan sesungguhnya kami akan kembali kepada Tuhan kami." },
+    { id: 17, title: "Doa Masuk Masjid", arabic: "اَللّٰهُمَّ افْتَحْ لِيْ أَبْوَابَ رَحْمَتِكَ", latin: "Allahummaftah li abwaba rahmatik.", translation: "Ya Allah, bukalah untukku pintu-pintu rahmat-Mu." },
+    { id: 18, title: "Doa Keluar Masjid", arabic: "اَللّٰهُمَّ إِنِّيْ أَسْأَلُكَ مِنْ فَضْلِكَ", latin: "Allahumma inni as-aluka min fadhlika.", translation: "Ya Allah, sesungguhnya aku memohon kepada-Mu akan karunia-Mu." },
+    { id: 19, title: "Doa Bercermin", arabic: "اَللّٰهُمَّ كَمَا حَسَّنْتَ خَلْقِيْ فَحَسِّنْ خُلُقِيْ", latin: "Allahumma kama hassanta khalqi fahassin khuluqi.", translation: "Ya Allah, sebagaimana Engkau telah membaguskan penciptaanku, maka baguskanlah pula akhlakku." },
+    { id: 20, title: "Doa Berpakaian", arabic: "اَلْحَمْدُ لِلّٰهِ الَّذِيْ كَسَانِيْ هَذَا الثَّوْبَ وَرَزَقَنِيْهِ مِنْ غَيْرِ حَوْلٍ مِنِّيْ وَلَا قُوَّةٍ", latin: "Alhamdulillahilladzi kasani hadzats tsauba wa razaqanihi min ghairi haulin minni wa la quwwatin.", translation: "Segala puji bagi Allah yang telah memakaikan pakaian ini kepadaku dan mengaruniakannya kepadaku tanpa daya dan kekuatan dariku." },
+    { id: 21, title: "Doa Sapu Jagat (Kebaikan Dunia Akhirat)", arabic: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ", latin: "Rabbana atina fid dunya hasanah wa fil akhirati hasanah wa qina 'adzaban nar.", translation: "Ya Tuhan kami, berilah kami kebaikan di dunia dan kebaikan di akhirat dan peliharalah kami dari siksa neraka." },
+    { id: 22, title: "Doa Ketika Turun Hujan", arabic: "اَللّٰهُمَّ صَيِّبًا نَافِعًا", latin: "Allahumma shayyiban nafi'an.", translation: "Ya Allah, turunkanlah pada kami hujan yang bermanfaat." },
+    { id: 23, title: "Doa Menjenguk Orang Sakit", arabic: "لَا بَأْسَ طَهُوْرٌ إِنْ شَاءَ اللهُ", latin: "La ba'sa thahurun insya Allah.", translation: "Tidak mengapa, semoga sakitmu ini membuat dosamu bersih, Insya Allah." },
+    { id: 24, title: "Sayyidul Istighfar", arabic: "اَللَّهُمَّ أَنْتَ رَبِّي لاَ إِلَهَ إِلاَّ أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لاَ يَغْفِرُ الذُّنُوبَ إِلاَّ أَنْتَ", latin: "Allahumma anta rabbii laa ilaaha illa anta khalaqtanii wa anaa 'abduka wa anaa 'alaa 'ahdika wa wa'dika mastatha'tu. A'uudzu bika min syarri maa shana'tu. Abuu-u laka bini'matika 'alayya wa abuu-u bidzanbii faghfirlii fa-innahu laa yaghfirudz dzunuuba illa anta.", translation: "Ya Allah, Engkau adalah Tuhanku, tidak ada Tuhan selain Engkau. Engkau telah menciptakanku dan aku adalah hamba-Mu. Aku yakin dengan janji-janji-Mu semampuku. Aku berlindung kepada-Mu dari kejelekan yang aku perbuat. Aku mengakui nikmat-Mu kepadaku dan aku mengakui dosaku kepada-Mu. Maka ampunilah aku, sesungguhnya tidak ada yang dapat mengampuni dosa kecuali Engkau." },
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -362,7 +371,7 @@ export const ACHIEVEMENTS: Achievement[] = [
             count: 7
         }
     },
-     {
+    {
         id: 'puasa-senin-kamis-4',
         name: 'Istiqomah Sunnah',
         description: 'Melaksanakan Puasa Senin & Kamis selama 4 pekan berturut-turut (total 8 puasa).',
@@ -370,7 +379,7 @@ export const ACHIEVEMENTS: Achievement[] = [
         criteria: {
             type: 'streak', // This is a bit of a hack, the logic will need to be custom
             entityId: 'puasa-senin-kamis', // Placeholder ID
-            count: 8 
+            count: 8
         }
     },
 ];

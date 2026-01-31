@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { type Employee, type MonthlyActivityProgress, type DailyActivity, type Hospital } from '../types';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import * as XLSX from 'xlsx';
-import { PdfIcon, ExcelIcon, SearchIcon } from './Icons';
+import { ExcelIcon, SearchIcon } from './Icons';
 import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
 
 interface MutabaahReportProps {
@@ -303,9 +303,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                     </div>
                 </div>
                 <div className="lg:col-span-2 flex items-center justify-end gap-2" style={{ position: 'relative', zIndex: 40 }}>
-                    <button onClick={() => { }} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF (Segera)">
-                        <PdfIcon className="w-6 h-6 text-red-500 disabled:text-gray-400" />
-                    </button>
+
                     <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel">
                         <ExcelIcon className="w-5 h-5" />
                     </button>

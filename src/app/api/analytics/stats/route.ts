@@ -82,31 +82,40 @@ export async function GET(request: NextRequest) {
         ]);
 
         const hospitalDataMap: Record<string, any> = {};
+        const lowerCaseToId: Record<string, string> = {};
 
         // 6. Aggregate by Hospital for Comparison View if in 'all' mode
         if (!hospitalId || hospitalId === 'all') {
             (hospitalsRes.data || []).forEach(h => {
-                hospitalDataMap[h.id] = { id: h.id, brand: h.brand, name: h.name, total: 0, activated: 0, compliance: 0 };
+                const id = h.id;
+                hospitalDataMap[id] = { id, brand: h.brand, name: h.name, total: 0, activated: 0, compliance: 0 };
+                lowerCaseToId[id.toLowerCase()] = id;
             });
 
             // Count Totals
             (totalEmployeesRes.data || []).forEach(emp => {
-                const hid = emp.hospital_id;
-                if (hid && hospitalDataMap[hid]) hospitalDataMap[hid].total++;
+                const rawHid = emp.hospital_id;
+                if (!rawHid) return;
+                const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
+                if (hospitalDataMap[hid]) hospitalDataMap[hid].total++;
             });
 
             // Count Activated
             (activatedRes.data || []).forEach((row: any) => {
                 const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
-                const hid = emp?.hospital_id;
-                if (hid && hospitalDataMap[hid]) hospitalDataMap[hid].activated++;
+                const rawHid = emp?.hospital_id;
+                if (!rawHid) return;
+                const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
+                if (hospitalDataMap[hid]) hospitalDataMap[hid].activated++;
             });
 
             // Count Compliance
             (complianceRes.data || []).forEach((row: any) => {
                 const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
-                const hid = emp?.hospital_id;
-                if (hid && hospitalDataMap[hid]) hospitalDataMap[hid].compliance++;
+                const rawHid = emp?.hospital_id;
+                if (!rawHid) return;
+                const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
+                if (hospitalDataMap[hid]) hospitalDataMap[hid].compliance++;
             });
         }
 
@@ -118,7 +127,7 @@ export async function GET(request: NextRequest) {
             notActivatedCount: (totalEmployeesRes.count || 0) - (activatedRes.count || 0),
             activationRate: totalEmployeesRes.count ? Math.round(((activatedRes.count || 0) / totalEmployeesRes.count) * 100) : 0,
             complianceRate: totalEmployeesRes.count ? Math.round(((complianceRes.count || 0) / totalEmployeesRes.count) * 100) : 0,
-            hospitalBreakdown: Object.values(hospitalDataMap).filter(h => h.total > 0)
+            hospitalBreakdown: Object.values(hospitalDataMap)
         };
 
         return NextResponse.json(stats);

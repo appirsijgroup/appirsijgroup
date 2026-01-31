@@ -19,8 +19,7 @@ import {
     Calendar,
     Bell,
     ChevronLeft,
-    ChevronRight,
-    Briefcase
+    ChevronRight
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
@@ -30,9 +29,7 @@ import { useUIStore } from '@/store/store';
 import UniversalPersetujuan from './Persetujuan';
 import { isAnyAdmin } from '@/lib/rolePermissions';
 
-import SupervisionTeamManagement from './SupervisionTeamManagement';
-
-export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions' | 'team-management';
+export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
 interface MentorDashboardProps {
     employee: Employee;
@@ -1481,23 +1478,7 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
     const [filterYear, setFilterYear] = useState<string>('all');
     const [filterMonth, setFilterMonth] = useState<string>('all');
 
-    // Determine supervision role and supervised employees
-    const supervisionRole = useMemo<'manager' | 'kaunit' | 'supervisor' | null>(() => {
-        if (employee.canBeManager) return 'manager';
-        if (employee.canBeKaUnit) return 'kaunit';
-        if (employee.canBeSupervisor) return 'supervisor';
-        return null;
-    }, [employee]);
 
-    const supervisedEmployees = useMemo(() => {
-        if (!supervisionRole) return [];
-        return Object.values(allUsersData).map(d => d.employee).filter(u => {
-            if (supervisionRole === 'manager') return u.managerId === employee.id;
-            if (supervisionRole === 'kaunit') return u.kaUnitId === employee.id;
-            if (supervisionRole === 'supervisor') return u.supervisorId === employee.id;
-            return false;
-        });
-    }, [allUsersData, employee.id, supervisionRole]);
 
     const mentees = useMemo(() => {
         return menteesOfMentor.map(m => allUsersData[m.id]?.employee || m);
@@ -1675,29 +1656,12 @@ export const MentorDashboard: React.FC<MentorDashboardProps> = ({
                         </>
                     )}
 
-                    {/* Tab Kelola Tim untuk Manajer/Supervisor/KaUnit */}
-                    {supervisionRole && (
-                        <SubTabButton
-                            label="Kelola Tim"
-                            icon={Briefcase}
-                            active={mentorSubView === 'team-management'}
-                            onClick={() => setMentorSubView('team-management')}
-                        />
-                    )}
+
                 </div>
             </div>
 
             <div className="animate-view-change">
-                {mentorSubView === 'team-management' && supervisionRole && (
-                    <SupervisionTeamManagement
-                        supervisedEmployees={supervisedEmployees}
-                        allUsers={Object.values(allUsersData).map(d => d.employee)}
-                        supervisorId={employee.id}
-                        supervisorRole={supervisionRole}
-                        addToast={addToast}
-                        onRefresh={() => window.location.reload()} // Simple refresh
-                    />
-                )}
+
 
                 {mentorSubView === 'persetujuan' && (
                     <UniversalPersetujuan

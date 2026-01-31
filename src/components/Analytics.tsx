@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar, Legend } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useAppDataStore, useHospitalStore } from '@/store/store';
@@ -471,23 +471,55 @@ const MutabaahPerformanceReport: React.FC<{
             ) : employeeCount > 0 ? (
                 <div className="space-y-6">
                     {hospitalFilter === 'all' && hospitalComparison.length > 0 && (
-                        <ChartCard title="Komparasi STAFF (Integritas, Teamwork, Disiplin, Belajar) Antar Unit RS" minWidth="800px">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={hospitalComparison} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                                    <XAxis dataKey="brand" stroke="#cbd5e1" fontSize={11} fontWeight="bold" />
-                                    <YAxis stroke="#cbd5e1" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} fontSize={10} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #374151', borderRadius: '8px' }}
-                                        itemStyle={{ fontSize: '12px' }}
-                                    />
-                                    <Bar dataKey="SIDIQ" fill="#f59e0b" name="SIDIQ (Integritas)" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="TABLIGH" fill="#10b981" name="TABLIGH (Teamwork)" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="AMANAH" fill="#3b82f6" name="AMANAH (Disiplin)" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="FATONAH" fill="#8b5cf6" name="FATONAH (Belajar)" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartCard>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                                { key: 'SIDIQ', label: 'SIDIQ (Integritas)', color: '#f59e0b' },
+                                { key: 'TABLIGH', label: 'TABLIGH (Teamwork)', color: '#10b981' },
+                                { key: 'AMANAH', label: 'AMANAH (Disiplin)', color: '#3b82f6' },
+                                { key: 'FATONAH', label: 'FATONAH (Belajar)', color: '#8b5cf6' }
+                            ].map((cat, idx) => {
+                                // Transform data for RadialBarChart
+                                const radialData = hospitalComparison.map((h, i) => ({
+                                    name: h.brand,
+                                    value: h[cat.key],
+                                    fill: COLORS[i % COLORS.length]
+                                })).sort((a, b) => b.value - a.value);
+
+                                return (
+                                    <ChartCard key={cat.key} title={`${cat.label} (Donut RS)`}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <RadialBarChart
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius="30%"
+                                                outerRadius="90%"
+                                                barSize={10}
+                                                data={radialData}
+                                                startAngle={180}
+                                                endAngle={-180}
+                                            >
+                                                <RadialBar
+                                                    label={{ position: 'insideStart', fill: '#fff', fontSize: 9 }}
+                                                    background
+                                                    dataKey="value"
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '12px' }}
+                                                    itemStyle={{ color: '#fff' }}
+                                                    formatter={(value: any) => [`${value}%`]}
+                                                />
+                                                <Legend
+                                                    iconSize={10}
+                                                    layout="vertical"
+                                                    verticalAlign="bottom"
+                                                    wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
+                                                />
+                                            </RadialBarChart>
+                                        </ResponsiveContainer>
+                                    </ChartCard>
+                                );
+                            })}
+                        </div>
                     )}
 
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">

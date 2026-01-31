@@ -82,28 +82,25 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
 
             <ChartCard title="Tingkat Kepatuhan Mutaba'ah (%)">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                        <defs>
-                            <linearGradient id="colorComp" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-                        <XAxis dataKey="brand" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
+                    <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#114232" vertical={false} />
+                        <XAxis dataKey="brand" stroke="#10b981" fontSize={11} fontWeight="bold" />
+                        <YAxis stroke="#10b981" domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
                         <Tooltip
+                            cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                             contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #10b981', borderRadius: '8px' }}
+                            itemStyle={{ color: '#34d399' }}
                         />
-                        <Area
-                            type="monotone"
-                            dataKey={(d) => d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0}
+                        <Bar
+                            dataKey={(d: any) => d.total > 0 ? Math.round((d.compliance / d.total) * 100) : 0}
                             name="Kepatuhan"
-                            stroke="#10b981"
-                            fillOpacity={1}
-                            fill="url(#colorComp)"
-                        />
-                    </AreaChart>
+                            radius={[4, 4, 0, 0]}
+                        >
+                            {breakdown.map((_entry, index) => (
+                                <Cell key={`cell-${index}`} fill="#10b981" fillOpacity={0.8} />
+                            ))}
+                        </Bar>
+                    </BarChart>
                 </ResponsiveContainer>
             </ChartCard>
         </div>

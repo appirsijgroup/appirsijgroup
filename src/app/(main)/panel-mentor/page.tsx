@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MentorDashboard, type MentorDashboardView } from '@/components/MentorDashboard';
+import type { MentorDashboardView } from '@/components/MentorDashboard';
+import dynamic from 'next/dynamic';
+
+const MentorDashboard = dynamic(() => import('@/components/MentorDashboard').then(mod => mod.MentorDashboard), {
+    loading: () => (
+        <div className="flex justify-center items-center min-h-[50vh]">
+            <div className="text-teal-400 animate-pulse">Memuat Panel Mentor...</div>
+        </div>
+    ),
+    ssr: false
+});
 import { useAppDataStore, useUIStore } from '@/store/store';
 import { useGuidanceStore } from '@/store/guidanceStore';
 import { useDailyActivitiesStore } from '@/store/dailyActivitiesStore';

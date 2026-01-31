@@ -29,8 +29,8 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
         <div className="bg-black/20 p-4 rounded-lg border border-white/10">
             <h4 className="font-semibold text-white mb-2">{title}</h4>
             {minWidth ? (
-                <div className="overflow-x-auto pb-4 -mx-2 px-2 md:overflow-x-visible md:mx-0 md:px-0">
-                    <div className="min-w-[700px] md:min-w-0 h-72">
+                <div className="overflow-x-auto pb-4 -mx-2 px-2">
+                    <div className="min-w-[700px] h-72">
                         {isClient ? children : (
                             <div className="w-full h-full flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
@@ -68,7 +68,7 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Aktivasi Mutaba'ah per Unit RS (%)">
+            <ChartCard title="Aktivasi Mutaba'ah">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={displayData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#4a3b1a" vertical={false} />
@@ -84,7 +84,7 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
                 </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Tingkat Kepatuhan Mutaba'ah (%)">
+            <ChartCard title="Tingkat Kepatuhan Mutaba'ah">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={displayData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#114232" vertical={false} />
@@ -207,7 +207,7 @@ const HospitalPerformanceComparison: React.FC<{
                 </div>
             ) : comparisonData.length > 0 ? (
                 <>
-                    <ChartCard title={`${currentConfig.icon} ${currentConfig.label} per Unit RS (%)`}>
+                    <ChartCard title={`${currentConfig.icon} ${currentConfig.label}`}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={currentConfig.gridColor} vertical={false} />
@@ -350,9 +350,9 @@ const ActivationReport: React.FC<{
                                     return (
                                         <tr key={h.id} className="hover:bg-white/5 transition-colors group">
                                             <td className="p-4">
-                                                <div className="flex flex-col">
-                                                    <span className="text-white font-bold group-hover:text-teal-400 transition-colors">{h.brand}</span>
-                                                    <span className="text-gray-400 text-xs italic">{h.name}</span>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-white font-bold group-hover:text-teal-400 transition-colors truncate">{h.brand}</span>
+                                                    <span className="text-gray-400 text-xs italic truncate" title={h.name}>{h.name}</span>
                                                 </div>
                                             </td>
                                             <td className="p-4 text-center text-white">{h.total}</td>

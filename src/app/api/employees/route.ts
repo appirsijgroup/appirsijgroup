@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
           month_key
         )
       `)
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
+      .limit(10000); // 🔥 Increase limit to ensure all employees are fetched for reports/analytics
 
     if (limit) {
       query = query.limit(limit);

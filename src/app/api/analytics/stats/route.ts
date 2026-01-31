@@ -35,11 +35,14 @@ export async function GET(request: NextRequest) {
                 .filter('id', 'match', '^[0-9]+$')
                 .not('role', 'in', '(admin,super-admin)'),
 
-            // Activated This Month (Join with mutabaah_activations table)
+            // Activated This Month (Join with employees to ensure we only count real employees)
             supabase
                 .from('mutabaah_activations')
-                .select('employee_id', { count: 'exact', head: true })
-                .eq('month_key', currentMonthKey),
+                .select('employee_id, employees!inner(id, role, is_active)', { count: 'exact', head: true })
+                .eq('month_key', currentMonthKey)
+                .eq('employees.is_active', true)
+                .filter('employees.id', 'match', '^[0-9]+$')
+                .not('employees.role', 'in', '(admin,super-admin)'),
 
             // Mentors (Numeric IDs only)
             supabase.from('employees')

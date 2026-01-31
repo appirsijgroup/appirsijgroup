@@ -91,7 +91,8 @@ export async function GET(request: NextRequest) {
                     month_key
                 )
             `)
-            .order('name');
+            .order('name')
+            .limit(10000); // 🔥 Increase limit to ensure all employees are included in full sync report
 
         const [sholatRes, teamRes, activityRes, employeeRes] = await Promise.all([
             sholatQuery.limit(10000),

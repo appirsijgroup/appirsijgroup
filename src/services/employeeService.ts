@@ -11,6 +11,13 @@ import { Database } from './database.types'; // Corrected import
 
 // Helper function to convert snake_case to camelCase for employee objects
 export const convertToCamelCase = (emp: any): Employee => {
+    // 🔥 ACTIVATION MAPPING: Handle nested mutabaah_activations relation if present
+    // This allows us to use the same logic for all API responses (paginated, full-sync, etc.)
+    let activatedMonths = emp.activated_months || [];
+    if (emp.mutabaah_activations && Array.isArray(emp.mutabaah_activations)) {
+        activatedMonths = emp.mutabaah_activations.map((a: any) => a.month_key);
+    }
+
     return {
         ...emp,
         lastVisitDate: emp.last_visit_date,
@@ -19,7 +26,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         profilePicture: emp.profile_picture,
         // monthlyActivities: emp.monthly_activities || {}, 
         monthlyActivities: {}, // Force empty, loaded separately
-        activatedMonths: emp.activated_months,
+        activatedMonths: activatedMonths,
         kaUnitId: emp.ka_unit_id,
         supervisorId: emp.supervisor_id,
         mentorId: emp.mentor_id,
@@ -27,7 +34,6 @@ export const convertToCamelCase = (emp: any): Employee => {
         canBeMentor: emp.can_be_mentor,
         canBeSupervisor: emp.can_be_supervisor,
         canBeKaUnit: emp.can_be_ka_unit,
-        canBeDirut: emp.can_be_dirut,
         canBeDirut: emp.can_be_dirut,
         canBeManager: emp.can_be_manager,
         functionalRoles: emp.functional_roles,
@@ -46,7 +52,7 @@ export const convertToCamelCase = (emp: any): Employee => {
         professionCategory: emp.profession_category,
         isProfileComplete: emp.is_profile_complete,
         emailVerified: emp.email_verified,
-        avatarUrl: emp.profile_picture, // Map profile_picture to avatarUrl too for consistency
+        avatarUrl: emp.profile_picture || emp.avatar_url, // Map profile_picture to avatarUrl too for consistency
         authUserId: emp.auth_user_id,
         lastAnnouncementReadTimestamp: emp.last_announcement_read_timestamp ? (typeof emp.last_announcement_read_timestamp === 'string' ? new Date(emp.last_announcement_read_timestamp).getTime() : Number(emp.last_announcement_read_timestamp)) : undefined,
     };
@@ -180,18 +186,8 @@ export const getEmployeeById = async (id: string): Promise<Employee | null> => {
         return null;
     }
 
-    const employeeData = data as any;
-
-    // Map nested mutabaah_activations to activated_months array for compatibility
-    if (employeeData.mutabaah_activations && Array.isArray(employeeData.mutabaah_activations)) {
-        employeeData.activated_months = employeeData.mutabaah_activations.map((a: any) => a.month_key);
-    } else {
-        // Fallback if relation not found (or empty)
-        employeeData.activated_months = [];
-    }
-
     // Convert snake_case to camelCase
-    return convertToCamelCase(employeeData);
+    return convertToCamelCase(data);
 };
 
 // Get employee by email
@@ -246,17 +242,8 @@ export const getEmployeeByEmail = async (email: string): Promise<Employee | null
 
     if (!data) return null;
 
-    const employeeData = data as any;
-
-    // Map nested mutabaah_activations to activated_months array for compatibility
-    if (employeeData.mutabaah_activations && Array.isArray(employeeData.mutabaah_activations)) {
-        employeeData.activated_months = employeeData.mutabaah_activations.map((a: any) => a.month_key);
-    } else {
-        employeeData.activated_months = [];
-    }
-
     // Convert snake_case to camelCase
-    return convertToCamelCase(employeeData);
+    return convertToCamelCase(data);
 };
 
 // Create new employee

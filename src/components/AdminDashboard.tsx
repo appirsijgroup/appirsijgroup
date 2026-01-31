@@ -1826,7 +1826,8 @@ const ActivationReport: React.FC<{
         // Role hierarchy (from highest to lowest):
         // - super-admin: highest authority
         // - admin: partial administrative access
-        const realEmployees = users.filter(user => user && user.id && !isAdministrativeAccount(user.id) && !isAnyAdmin(user));
+        // 🔥 FIX: Include isActive check to match Analytics stats and real employee count
+        const realEmployees = users.filter(user => user && user.id && user.isActive && !isAdministrativeAccount(user.id) && !isAnyAdmin(user));
 
         return realEmployees.map(user => ({
             id: user.id,

@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
             monthlyReportsRes,
             attendanceRecordsRes,
             teamAttendanceRes,
-            activityAttendanceRes
+            activityAttendanceRes,
+            submissionsRes
         ] = await Promise.all([
             // employee_monthly_reports
             supabase.from('employee_monthly_reports').select('employee_id, reports').in('employee_id', employeeIds),
@@ -94,7 +95,9 @@ export async function GET(request: NextRequest) {
             // team_attendance_records (Doa Bersama, KIE)
             supabase.from('team_attendance_records').select('user_id, session_date, session_type').in('user_id', employeeIds).gte('session_date', startDate).lte('session_date', year + '-12-31'),
             // activity_attendance (Kajian Selasa, etc)
-            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startDate).lte('activities.date', year + '-12-31')
+            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startDate).lte('activities.date', year + '-12-31'),
+            // weekly_report_submissions (Approval Status) - CRITICAL for Mutabaah Report validity
+            supabase.from('weekly_report_submissions').select('mentee_id, month_key, status').in('mentee_id', employeeIds).eq('status', 'approved')
         ]);
 
         // 6. Process and Merge Stats
@@ -178,7 +181,17 @@ export async function GET(request: NextRequest) {
                 });
             });
         });
+        // ✅ Map Approval Status: empId -> monthKey -> true (if approved)
+        // CRITICAL: Laporan Mutaba'ah hanya menghitung data yang sudah di-approve oleh mentor
+        // Ini memastikan data yang dilaporkan adalah data yang valid untuk penilaian akhir tahun
+        const approvalMap: Record<string, Record<string, boolean>> = {};
+        submissionsRes.data?.forEach((s: any) => {
+            if (!approvalMap[s.mentee_id]) approvalMap[s.mentee_id] = {};
+            approvalMap[s.mentee_id][s.month_key] = true;
+        });
 
+        // 🔍 Debug: Log approval data for troubleshooting
+        console.log(`[Mutabaah Report] Year: ${year}, Total employees: ${employees.length}, Total approvals: ${submissionsRes.data?.length || 0}`);
 
 
         // 7. Assemble final records
@@ -191,6 +204,7 @@ export async function GET(request: NextRequest) {
             let amanahCount = 0;
             let fatonahCount = 0;
             let monthsCount = 0;
+
 
             // Iterate through months of the requested year
             for (let m = 1; m <= 12; m++) {
@@ -220,9 +234,11 @@ export async function GET(request: NextRequest) {
                     };
 
                     const countForCategory = (activities: any[]) => {
-                        // ✅ Count all recorded activities regardless of approval status
-                        // This is an annual aggregate report showing actual performance data
-                        // Approval status is tracked separately and more relevant for individual monthly reports
+                        // ✅ APPROVAL CHECK: Hanya hitung jika bulan ini sudah di-APPROVE oleh mentor
+                        // Laporan Mutaba'ah adalah penilaian akhir tahun yang harus valid
+                        // Data yang belum di-approve tidak dihitung karena belum terverifikasi
+                        const isApproved = approvalMap[emp.id]?.[monthKey];
+                        if (!isApproved) return 0;
 
                         return activities.reduce((sum, act) => sum + getCountForActivity(act.id), 0);
                     };

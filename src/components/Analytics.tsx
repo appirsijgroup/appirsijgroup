@@ -318,6 +318,12 @@ const MutabaahPerformanceReport: React.FC<{
     // Sync with prop if prop changes (e.g. from top selector)
     useEffect(() => {
         setLocalHospitalFilter(hospitalFilter);
+        // CRITICAL BUG FIX: Reset all sub-filters when hospital changes to prevent invalid filter combinations
+        setUnitFilter('all');
+        setBagianFilter('all');
+        setKategoriFilter('all');
+        setProfesiFilter('all');
+        setSelectedUserIdFilter(undefined);
     }, [hospitalFilter]);
 
     const [unitFilter, setUnitFilter] = useState('all');
@@ -613,8 +619,17 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     useEffect(() => {
         loadHospitals();
     }, [loadHospitals]);
+
+    // Check if user is BPH or Super Admin (Cross-RS Authority)
+    const canSelectHospital = useMemo(() => {
+        if (!loggedInEmployee) return false;
+        const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
+        return isBPH || isSuperAdmin(loggedInEmployee);
+    }, [loggedInEmployee]);
+
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
 
     // --- ACCURATE STATS STATE (Uplifted from ActivationReport) ---
     const [stats, setStats] = useState({
@@ -628,7 +643,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     });
 
     useEffect(() => {
+        if (canSelectHospital && onLoadAllData) {
+            onLoadAllData();
+        }
+    }, [canSelectHospital, onLoadAllData]);
+
+    useEffect(() => {
         const fetchAccurateStats = async () => {
+            setIsLoadingStats(true); // Track stats loading separately
             try {
                 const params = new URLSearchParams();
                 if (hospitalFilter && hospitalFilter !== 'all') {
@@ -641,6 +663,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                 }
             } catch (error) {
                 console.error('Failed to load accurate analytics stats:', error);
+            } finally {
+                setIsLoadingStats(false);
             }
         };
 
@@ -648,12 +672,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     }, [hospitalFilter]);
     // -------------------------------------------------------------
 
-    // Check if user is BPH or Super Admin (Cross-RS Authority)
-    const canSelectHospital = useMemo(() => {
-        if (!loggedInEmployee) return false;
-        const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
-        return isBPH || isSuperAdmin(loggedInEmployee);
-    }, [loggedInEmployee]);
+
 
     // Reset hospital filter to user's hospital if they cannot select multiple
     useEffect(() => {
@@ -759,8 +778,18 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                 </div>
             )}
 
-            {/* 👑 THE GLOBAL DASHBOARD (UNIQUE FOR BPH) */}
-            {isGlobal ? (
+            {/* 🏥 DASHBOARD CONTENT WITH LOADING OVERLAY */}
+            {isLoadingStats ? (
+                <div className="flex flex-col items-center justify-center py-32 bg-black/20 rounded-3xl border border-white/10 animate-pulse">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-teal-500/20 border-t-teal-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-8 h-8 border-4 border-amber-500/20 border-b-amber-500 rounded-full animate-spin-reverse"></div>
+                        </div>
+                    </div>
+                    <p className="mt-6 text-white font-bold tracking-widest text-sm uppercase opacity-60">Mensinkronisasi Data {selectedHospitalName}...</p>
+                </div>
+            ) : isGlobal ? (
                 <div className="space-y-8 animate-in fade-in duration-700">
                     {/* Hero Stats */}
                     <ActivationReport
@@ -777,10 +806,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
                     {/* Group Wide Performance Chart Box */}
                     <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-2xl">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight">ANALISIS KINERJA MUTABA'AH (GRUP TOTAL)</h2>
-                        </div>
                         <MutabaahPerformanceReport
                             allUsers={allUsers}
                             dailyActivitiesConfig={dailyActivitiesConfig}
@@ -799,10 +824,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         stats={stats}
                     />
                     <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-xl">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-1.5 h-8 bg-teal-400 rounded-full"></div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight uppercase">Detail Performa Unit RS</h2>
-                        </div>
                         <MutabaahPerformanceReport
                             allUsers={allUsers}
                             dailyActivitiesConfig={dailyActivitiesConfig}

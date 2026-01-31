@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Building2, ChevronDown, LayoutDashboard, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Building2, ChevronDown, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Filter, UserCheck, BookOpen, CheckSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar, Legend } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
@@ -18,7 +18,13 @@ interface AnalyticsProps {
     onLoadAllData?: () => Promise<void>;
 }
 
-const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?: string }> = ({ title, children, minWidth }) => {
+interface ChartCardProps {
+    title: React.ReactNode;
+    children: React.ReactNode;
+    minWidth?: string;
+}
+
+const ChartCard: React.FC<ChartCardProps> = ({ title, children, minWidth }) => {
     // ... existing implementation
     const [isClient, setIsClient] = useState(false);
 
@@ -28,7 +34,7 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 
     return (
         <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-            <h4 className="font-semibold text-white mb-2">{title}</h4>
+            <div className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">{title}</div>
             {minWidth ? (
                 <div className="overflow-x-auto pb-4 -mx-2 px-2">
                     <div className="min-w-[700px] h-72">
@@ -157,11 +163,11 @@ const HospitalPerformanceComparison: React.FC<{
 
     if (hospitalFilter !== 'all' || !isClient) return null;
 
-    const categoryConfig: Record<string, { label: string; icon: string; color: string; gridColor: string }> = {
-        'SIDIQ': { label: 'SIDIQ (Integritas)', icon: '⚖️', color: '#f59e0b', gridColor: '#4a3b1a' },
-        'TABLIGH': { label: 'TABLIGH (Teamwork)', icon: '🤝', color: '#10b981', gridColor: '#114232' },
-        'AMANAH': { label: 'AMANAH (Disiplin)', icon: '⏰', color: '#3b82f6', gridColor: '#1e3a5f' },
-        'FATONAH': { label: 'FATONAH (Belajar)', icon: '📚', color: '#a855f7', gridColor: '#3d2b5f' }
+    const categoryConfig: Record<string, { label: string; icon: React.ReactNode; color: string; gridColor: string }> = {
+        'SIDIQ': { label: 'SIDIQ (Integritas)', icon: <ShieldCheckIcon className="w-5 h-5" />, color: '#f59e0b', gridColor: '#4a3b1a' },
+        'TABLIGH': { label: 'TABLIGH (Teamwork)', icon: <UsersIcon className="w-5 h-5" />, color: '#10b981', gridColor: '#114232' },
+        'AMANAH': { label: 'AMANAH (Disiplin)', icon: <CheckSquare className="w-5 h-5" />, color: '#3b82f6', gridColor: '#1e3a5f' },
+        'FATONAH': { label: 'FATONAH (Belajar)', icon: <BookOpen className="w-5 h-5" />, color: '#a855f7', gridColor: '#3d2b5f' }
     };
 
     const currentConfig = categoryConfig[selectedCategory];
@@ -187,17 +193,23 @@ const HospitalPerformanceComparison: React.FC<{
                     </div>
                 </div>
 
-                <div className="w-full md:w-72">
+                <div className="w-full md:w-72 relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none transition-transform group-focus-within:scale-110">
+                        <Filter size={18} />
+                    </div>
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value as any)}
-                        className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-2.5 text-white font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none appearance-none cursor-pointer shadow-inner"
+                        className="w-full bg-black/40 border border-white/20 rounded-xl pl-11 pr-10 py-3 text-white font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none appearance-none cursor-pointer shadow-inner hover:bg-black/60 transition-all"
                     >
-                        <option value="SIDIQ" className="text-white bg-neutral-900">⚖️ SIDIQ (Integritas)</option>
-                        <option value="TABLIGH" className="text-white bg-neutral-900">🤝 TABLIGH (Teamwork)</option>
-                        <option value="AMANAH" className="text-white bg-neutral-900">⏰ AMANAH (Disiplin)</option>
-                        <option value="FATONAH" className="text-white bg-neutral-900">📚 FATONAH (Belajar)</option>
+                        <option value="SIDIQ" className="text-white bg-neutral-900">SIDIQ - Integritas</option>
+                        <option value="TABLIGH" className="text-white bg-neutral-900">TABLIGH - Teamwork</option>
+                        <option value="AMANAH" className="text-white bg-neutral-900">AMANAH - Disiplin</option>
+                        <option value="FATONAH" className="text-white bg-neutral-900">FATONAH - Belajar</option>
                     </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none group-focus-within:text-amber-500 transition-colors">
+                        <ChevronDown size={18} />
+                    </div>
                 </div>
             </div>
 
@@ -208,7 +220,12 @@ const HospitalPerformanceComparison: React.FC<{
                 </div>
             ) : comparisonData.length > 0 ? (
                 <>
-                    <ChartCard title={`${currentConfig.icon} ${currentConfig.label}`}>
+                    <ChartCard title={
+                        <div className="flex items-center gap-2">
+                            {currentConfig.icon}
+                            <span>{currentConfig.label}</span>
+                        </div>
+                    }>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke={currentConfig.gridColor} vertical={false} />
@@ -504,7 +521,21 @@ const MutabaahPerformanceReport: React.FC<{
 
     const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
 
-    const selectClass = "w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none";
+    const SelectWrapper: React.FC<{ children: React.ReactNode; icon?: React.ReactNode }> = ({ children, icon }) => (
+        <div className="relative group">
+            {icon && (
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500/50 group-focus-within:text-teal-400 pointer-events-none transition-colors">
+                    {icon}
+                </div>
+            )}
+            {children}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-teal-400 pointer-events-none transition-colors">
+                <ChevronDown size={16} />
+            </div>
+        </div>
+    );
+
+    const selectClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none appearance-none cursor-pointer transition-all hover:bg-white/10";
 
     return (
         <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
@@ -521,23 +552,31 @@ const MutabaahPerformanceReport: React.FC<{
                         placeholder="Cari & Filter Nama Karyawan..."
                     />
                 </div>
-                <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={selectClass}>
-                    <option value="all" className="text-black bg-white">Semua Unit</option>
-                    {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
-                <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className={selectClass}>
-                    <option value="all" className="text-black bg-white">Semua Bagian</option>
-                    {filterOptions.bagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
-                <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className={selectClass}>
-                    <option value="all" className="text-black bg-white">Semua Kategori Profesi</option>
-                    <option value="MEDIS" className="text-black bg-white">MEDIS</option>
-                    <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
-                </select>
-                <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className={selectClass}>
-                    <option value="all" className="text-black bg-white">Semua Profesi</option>
-                    {filterOptions.profesi.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
-                </select>
+                <SelectWrapper icon={<Filter size={16} />}>
+                    <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                        <option value="all" className="text-black bg-white">Semua Unit</option>
+                        {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                    </select>
+                </SelectWrapper>
+                <SelectWrapper icon={<Filter size={16} />}>
+                    <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                        <option value="all" className="text-black bg-white">Semua Bagian</option>
+                        {filterOptions.bagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                    </select>
+                </SelectWrapper>
+                <SelectWrapper icon={<UsersIcon className="w-4 h-4" />}>
+                    <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className={`${selectClass} pl-10`}>
+                        <option value="all" className="text-black bg-white">Semua Kategori Profesi</option>
+                        <option value="MEDIS" className="text-black bg-white">MEDIS</option>
+                        <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
+                    </select>
+                </SelectWrapper>
+                <SelectWrapper icon={<Filter size={16} />}>
+                    <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                        <option value="all" className="text-black bg-white">Semua Profesi</option>
+                        {filterOptions.profesi.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
+                    </select>
+                </SelectWrapper>
             </div>
 
 
@@ -818,26 +857,27 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
             {/* Month Navigator - Standalone Section (Compact) */}
             <div className="flex justify-center -mt-6 mb-6 animate-in fade-in slide-in-from-top-1 duration-500">
-                <div className="flex items-center bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-0.5 shadow-xl">
+                <div className="flex items-center bg-black/60 backdrop-blur-md border border-white/10 rounded-2xl p-1 shadow-2xl">
                     <button
                         onClick={() => navigateMonth('prev')}
-                        className="px-3 py-1.5 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-sm"
+                        className="p-2 rounded-xl hover:bg-white/10 text-white transition-all flex items-center justify-center group"
                         title="Bulan Sebelumnya"
                     >
-                        &larr;
+                        <ChevronDown className="w-5 h-5 rotate-90 group-hover:-translate-x-1 transition-transform" />
                     </button>
-                    <div className="min-w-[140px] text-center px-4 border-x border-white/5">
-                        <span className="font-bold text-xs text-teal-400 tracking-wide uppercase">
+                    <div className="min-w-[160px] text-center px-6 border-x border-white/5">
+                        <span className="font-black text-[10px] text-teal-400 tracking-[0.2em] uppercase block mb-0.5">Periode Laporan</span>
+                        <span className="font-bold text-sm text-white">
                             {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
                         </span>
                     </div>
                     <button
                         onClick={() => navigateMonth('next')}
                         disabled={isNextMonthFuture()}
-                        className="px-3 py-1.5 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-sm"
+                        className="p-2 rounded-xl hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center group"
                         title="Bulan Berikutnya"
                     >
-                        &rarr;
+                        <ChevronDown className="w-5 h-5 -rotate-90 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>
             </div>

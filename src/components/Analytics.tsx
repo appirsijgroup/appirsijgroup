@@ -661,31 +661,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     />
 
                     {/* Comparative Highlights */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-1 bg-linear-to-br from-amber-600/20 to-transparent border border-amber-500/10 rounded-2xl p-6 flex flex-col justify-between">
-                            <div>
-                                <h3 className="text-amber-400 font-black text-2xl mb-2">Insight Grup</h3>
-                                <p className="text-amber-100/60 text-sm leading-relaxed">
-                                    Analisis performa mutaba'ah menunjukkan tingkat kepatuhan rata-rata grup RSI saat ini stabil dengan tren positif di unit-unit utama.
-                                </p>
-                            </div>
-                            <div className="mt-6 pt-6 border-t border-amber-500/10">
-                                <div className="flex items-center justify-between text-xs font-bold text-amber-400/80 mb-2">
-                                    <span>TARGET GLOBAL</span>
-                                    <span>85%</span>
-                                </div>
-                                <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden">
-                                    <div className="bg-amber-500 h-full rounded-full" style={{ width: '70%' }}></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
-                            {/* Note: In real app, we'd pass the actual calculated breakdown here. 
-                                For now, sub-components handle their own data fetching from API.
-                            */}
-                        </div>
+                    <div className="w-full">
+                        <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
                     </div>
 
                     {/* Group Wide Performance Chart Box */}

@@ -112,62 +112,13 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
 
 // --- START: SUB-COMPONENTS (Defined before main Analytics component) ---
 
-const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string; hospitalName?: string }> = ({ allUsers, hospitalFilter, hospitalName }) => {
-    const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
-
-    // Filter out admin/super-admin - only count real employees (users)
-    const realEmployees = useMemo(() => {
-        let filtered = allUsers.filter(u => u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u));
-        if (hospitalFilter && hospitalFilter !== 'all') {
-            filtered = filtered.filter(u => u.hospitalId === hospitalFilter);
-        }
-        return filtered;
-    },
-        [allUsers, hospitalFilter]
-    );
-
-    // State for stats (initially from props, then updated from API)
-    const [stats, setStats] = useState({
-        totalEmployees: realEmployees.length,
-        activatedCount: realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
-        notActivatedCount: realEmployees.length - realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
-        mentorCount: allUsers.filter(u => u.canBeMentor || u.role === 'admin' || u.role === 'super-admin').length,
-        complianceRate: 0,
-        activationRate: 0,
-        hospitalBreakdown: [] as any[]
-    });
-
+const ActivationReport: React.FC<{
+    allUsers: Employee[];
+    hospitalFilter: string;
+    hospitalName?: string;
+    stats: any;
+}> = ({ hospitalFilter, hospitalName, stats }) => {
     const isGlobal = hospitalFilter === 'all';
-
-    // ⚡ Fetch accurate stats from server to handle pagination gaps
-    useEffect(() => {
-        const fetchAccurateStats = async () => {
-            try {
-                const params = new URLSearchParams();
-                if (hospitalFilter && hospitalFilter !== 'all') {
-                    params.append('hospitalId', hospitalFilter);
-                }
-                const response = await fetch(`/api/analytics/stats?${params.toString()}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setStats(prev => ({
-                        ...prev,
-                        totalEmployees: data.totalEmployees,
-                        activatedCount: data.activatedCount,
-                        notActivatedCount: data.notActivatedCount,
-                        mentorCount: data.mentorCount,
-                        complianceRate: data.complianceRate,
-                        activationRate: data.activationRate,
-                        hospitalBreakdown: data.hospitalBreakdown || []
-                    }));
-                }
-            } catch (error) {
-                console.error('Failed to load accurate analytics stats:', error);
-            }
-        };
-
-        fetchAccurateStats();
-    }, [hospitalFilter]);
 
     return (
         <div className="space-y-6">
@@ -555,6 +506,38 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+    // --- ACCURATE STATS STATE (Uplifted from ActivationReport) ---
+    const [stats, setStats] = useState({
+        totalEmployees: 0,
+        activatedCount: 0,
+        notActivatedCount: 0,
+        mentorCount: 0,
+        complianceRate: 0,
+        activationRate: 0,
+        hospitalBreakdown: [] as any[]
+    });
+
+    useEffect(() => {
+        const fetchAccurateStats = async () => {
+            try {
+                const params = new URLSearchParams();
+                if (hospitalFilter && hospitalFilter !== 'all') {
+                    params.append('hospitalId', hospitalFilter);
+                }
+                const response = await fetch(`/api/analytics/stats?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error('Failed to load accurate analytics stats:', error);
+            }
+        };
+
+        fetchAccurateStats();
+    }, [hospitalFilter]);
+    // -------------------------------------------------------------
+
     // Check if user is BPH or Super Admin (Cross-RS Authority)
     const canSelectHospital = useMemo(() => {
         if (!loggedInEmployee) return false;
@@ -674,6 +657,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         allUsers={allUsers}
                         hospitalFilter={hospitalFilter}
                         hospitalName={selectedHospitalName}
+                        stats={stats}
                     />
 
                     {/* Comparative Highlights */}
@@ -697,7 +681,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         </div>
 
                         <div className="md:col-span-2">
-                            <GlobalComparisonCharts breakdown={allUsersData as any} />
+                            <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
                             {/* Note: In real app, we'd pass the actual calculated breakdown here. 
                                 For now, sub-components handle their own data fetching from API.
                             */}
@@ -720,6 +704,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         allUsers={allUsers}
                         hospitalFilter={hospitalFilter}
                         hospitalName={selectedHospitalName}
+                        stats={stats}
                     />
                     <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-xl">
                         <div className="flex items-center gap-4 mb-8">

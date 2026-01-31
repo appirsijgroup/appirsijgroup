@@ -807,37 +807,35 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             </select>
                         </div>
                     </div>
-
-                    {/* Month Navigator - Separated Row */}
-                    <div className="flex justify-center mt-2 pb-2">
-                        <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 shadow-inner">
-                            <button
-                                onClick={() => navigateMonth('prev')}
-                                className="px-5 py-2 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-lg"
-                                title="Bulan Sebelumnya"
-                            >
-                                &larr;
-                            </button>
-                            <div className="min-w-[180px] text-center px-4">
-                                <span className="text-xs uppercase tracking-widest font-black text-white/40 block">Periode Laporan</span>
-                                <span className="font-bold text-base text-teal-400 tracking-wide uppercase">
-                                    {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => navigateMonth('next')}
-                                disabled={isNextMonthFuture()}
-                                className="px-5 py-2 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-lg"
-                                title="Bulan Berikutnya"
-                            >
-                                &rarr;
-                            </button>
-                        </div>
-                    </div>
                 </div>
             )}
 
-
+            {/* Month Navigator - Standalone Section */}
+            <div className="flex justify-center -mt-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-700">
+                <div className="flex items-center bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-1.5 shadow-2xl">
+                    <button
+                        onClick={() => navigateMonth('prev')}
+                        className="px-6 py-2.5 rounded-xl hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95"
+                        title="Bulan Sebelumnya"
+                    >
+                        &larr;
+                    </button>
+                    <div className="min-w-[200px] text-center px-6 border-x border-white/5">
+                        <span className="text-[10px] uppercase tracking-0.2em font-black text-white/30 block mb-0.5">Analisis Periode</span>
+                        <span className="font-bold text-lg text-teal-400 tracking-wider uppercase">
+                            {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => navigateMonth('next')}
+                        disabled={isNextMonthFuture()}
+                        className="px-6 py-2.5 rounded-xl hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold text-xl hover:scale-110 active:scale-95"
+                        title="Bulan Berikutnya"
+                    >
+                        &rarr;
+                    </button>
+                </div>
+            </div>
 
             {/* 🏥 DASHBOARD CONTENT WITH LOADING OVERLAY */}
             {isLoadingStats ? (
@@ -870,18 +868,13 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             />
                         </div>
                     )}
-
-
                 </div>
             ) : (
                 /* 🔍 DETAILED ANALYTICS - Performance Deep Dive */
                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    {/* Compact Context when in Detailed View */}
-
-
                     <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
                         <MutabaahPerformanceReport
-                            key={`${hospitalFilter}-${viewMode}`} // Force remount for clean state
+                            key={`${hospitalFilter}-${viewMode}`}
                             allUsers={allUsers}
                             dailyActivitiesConfig={dailyActivitiesConfig}
                             hospitalFilter={hospitalFilter}
@@ -893,7 +886,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     </div>
                 </div>
             )}
-        </div >
+        </div>
     );
 };
 

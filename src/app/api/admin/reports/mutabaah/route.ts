@@ -85,8 +85,7 @@ export async function GET(request: NextRequest) {
             monthlyReportsRes,
             attendanceRecordsRes,
             teamAttendanceRes,
-            activityAttendanceRes,
-            submissionsRes
+            activityAttendanceRes
         ] = await Promise.all([
             // employee_monthly_reports
             supabase.from('employee_monthly_reports').select('employee_id, reports').in('employee_id', employeeIds),
@@ -95,9 +94,7 @@ export async function GET(request: NextRequest) {
             // team_attendance_records (Doa Bersama, KIE)
             supabase.from('team_attendance_records').select('user_id, session_date, session_type').in('user_id', employeeIds).gte('session_date', startDate).lte('session_date', year + '-12-31'),
             // activity_attendance (Kajian Selasa, etc)
-            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startDate).lte('activities.date', year + '-12-31'),
-            // weekly_report_submissions (Approval Status)
-            supabase.from('weekly_report_submissions').select('mentee_id, month_key, status').in('mentee_id', employeeIds).eq('status', 'approved')
+            supabase.from('activity_attendance').select('employee_id, activities!inner(date, activity_type)').in('employee_id', employeeIds).eq('status', 'hadir').gte('activities.date', startDate).lte('activities.date', year + '-12-31')
         ]);
 
         // 6. Process and Merge Stats
@@ -182,13 +179,7 @@ export async function GET(request: NextRequest) {
             });
         });
 
-        // Map Approval Status: empId -> monthKey -> true (if approved)
-        // Since we filtered .eq('status', 'approved') in query, presence means approved.
-        const approvalMap: Record<string, Record<string, boolean>> = {};
-        submissionsRes.data?.forEach((s: any) => {
-            if (!approvalMap[s.mentee_id]) approvalMap[s.mentee_id] = {};
-            approvalMap[s.mentee_id][s.month_key] = true;
-        });
+
 
         // 7. Assemble final records
         const records = employees.map(emp => {
@@ -229,11 +220,9 @@ export async function GET(request: NextRequest) {
                     };
 
                     const countForCategory = (activities: any[]) => {
-                        // 🔥 APPROVAL CHECK: Hanya hitung jika bulan ini APPROVED
-                        // Jika tidak approved, count = 0 (tapi target tetap dihitung di atas/bawah sesuai logika - disini targets dihitung via monthsCount++)
-                        // Note: Logic di RapotView adalah: Jika not approved, achieved=0.
-                        const isApproved = approvalMap[emp.id]?.[monthKey];
-                        if (!isApproved) return 0;
+                        // ✅ Count all recorded activities regardless of approval status
+                        // This is an annual aggregate report showing actual performance data
+                        // Approval status is tracked separately and more relevant for individual monthly reports
 
                         return activities.reduce((sum, act) => sum + getCountForActivity(act.id), 0);
                     };

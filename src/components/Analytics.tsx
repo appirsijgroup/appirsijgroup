@@ -61,7 +61,7 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) => {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Aktivasi Lembar per Unit RS (%)">
+            <ChartCard title="Aktivasi Mutaba'ah per Unit RS (%)">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={breakdown} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#4a3b1a" vertical={false} />
@@ -227,7 +227,7 @@ const ActivationReport: React.FC<{
                                 <tr className="bg-black/40 text-gray-400 border-b border-white/10">
                                     <th className="p-4 font-semibold">Unit Rumah Sakit</th>
                                     <th className="p-4 font-semibold text-center">Total SDM</th>
-                                    <th className="p-4 font-semibold text-center">Aktivasi Lembar</th>
+                                    <th className="p-4 font-semibold text-center">Aktivasi Mutaba'ah</th>
                                     <th className="p-4 font-semibold text-center">Kepatuhan Laporan</th>
                                     <th className="p-4 font-semibold text-center">Status</th>
                                 </tr>
@@ -288,7 +288,8 @@ const MutabaahPerformanceReport: React.FC<{
     allUsers: Employee[];
     dailyActivitiesConfig: DailyActivity[];
     hospitalFilter: string;
-}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter }) => {
+    hospitals?: any[];
+}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter, hospitals = [] }) => {
     const [isClient, setIsClient] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [performanceData, setPerformanceData] = useState<{
@@ -310,6 +311,13 @@ const MutabaahPerformanceReport: React.FC<{
 
     // User filters
     const [selectedUserIdFilter, setSelectedUserIdFilter] = useState<string | undefined>(undefined);
+    const [localHospitalFilter, setLocalHospitalFilter] = useState(hospitalFilter);
+
+    // Sync with prop if prop changes (e.g. from top selector)
+    useEffect(() => {
+        setLocalHospitalFilter(hospitalFilter);
+    }, [hospitalFilter]);
+
     const [unitFilter, setUnitFilter] = useState('all');
     const [bagianFilter, setBagianFilter] = useState('all');
     const [kategoriFilter, setKategoriFilter] = useState<'all' | 'MEDIS' | 'NON MEDIS'>('all');
@@ -330,7 +338,7 @@ const MutabaahPerformanceReport: React.FC<{
                     bagian: bagianFilter,
                     professionCategory: kategoriFilter,
                     profession: profesiFilter,
-                    hospitalId: hospitalFilter,
+                    hospitalId: localHospitalFilter,
                     employeeId: selectedUserIdFilter || 'all'
                 });
 
@@ -347,7 +355,7 @@ const MutabaahPerformanceReport: React.FC<{
         };
 
         fetchPerformance();
-    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, hospitalFilter]);
+    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, localHospitalFilter]);
 
     // Filter options memoization (only from real employees, excluding admins)
     const filterOptions = useMemo(() => {
@@ -358,8 +366,8 @@ const MutabaahPerformanceReport: React.FC<{
         const realEmployees = allUsers.filter(u => {
             const isReal = u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u);
             if (!isReal) return false;
-            if (hospitalFilter && hospitalFilter !== 'all') {
-                return u.hospitalId === hospitalFilter;
+            if (localHospitalFilter && localHospitalFilter !== 'all') {
+                return u.hospitalId === localHospitalFilter;
             }
             return true;
         });
@@ -373,7 +381,7 @@ const MutabaahPerformanceReport: React.FC<{
             bagians: Array.from(bagians).sort(),
             profesi: Array.from(profesi).sort(),
         };
-    }, [allUsers, hospitalFilter]);
+    }, [allUsers, localHospitalFilter]);
 
     const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
 
@@ -406,8 +414,8 @@ const MutabaahPerformanceReport: React.FC<{
                 </div>
             </div>
             {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-3">
                     <EmployeeSearchableInput
                         allUsers={allUsers}
                         value={selectedUserIdFilter}
@@ -415,6 +423,23 @@ const MutabaahPerformanceReport: React.FC<{
                         placeholder="Cari & Filter Nama Karyawan..."
                     />
                 </div>
+                {hospitalFilter === 'all' && (
+                    <select
+                        value={localHospitalFilter}
+                        onChange={e => {
+                            setLocalHospitalFilter(e.target.value);
+                            setUnitFilter('all');
+                            setBagianFilter('all');
+                            setProfesiFilter('all');
+                        }}
+                        className={`${selectClass} border-amber-500/30 text-amber-100 font-bold`}
+                    >
+                        <option value="all" className="text-black bg-white">🏢 SELURUH GRUP</option>
+                        {hospitals.map(h => (
+                            <option key={h.id} value={h.id} className="text-black bg-white">🏥 {h.brand} - {h.name}</option>
+                        ))}
+                    </select>
+                )}
                 <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={selectClass}>
                     <option value="all" className="text-black bg-white">Semua Unit</option>
                     {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
@@ -668,7 +693,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             <div className="w-1.5 h-8 bg-amber-500 rounded-full"></div>
                             <h2 className="text-2xl font-black text-white italic tracking-tight">ANALISIS KINERJA MUTABA'AH (GRUP TOTAL)</h2>
                         </div>
-                        <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} hospitalFilter={hospitalFilter} />
+                        <MutabaahPerformanceReport
+                            allUsers={allUsers}
+                            dailyActivitiesConfig={dailyActivitiesConfig}
+                            hospitalFilter={hospitalFilter}
+                            hospitals={hospitals}
+                        />
                     </div>
                 </div>
             ) : (
@@ -685,7 +715,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             <div className="w-1.5 h-8 bg-teal-400 rounded-full"></div>
                             <h2 className="text-2xl font-black text-white italic tracking-tight uppercase">Detail Performa Unit RS</h2>
                         </div>
-                        <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} hospitalFilter={hospitalFilter} />
+                        <MutabaahPerformanceReport
+                            allUsers={allUsers}
+                            dailyActivitiesConfig={dailyActivitiesConfig}
+                            hospitalFilter={hospitalFilter}
+                            hospitals={hospitals}
+                        />
                     </div>
                 </div>
             )}

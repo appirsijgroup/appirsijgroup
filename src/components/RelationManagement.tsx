@@ -280,7 +280,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                 <span>← Geser untuk melihat kolom →</span>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
+            <div className="overflow-x-auto rounded-xl border border-white/20 -mx-2 sm:mx-0">
                 <table className="min-w-[1300px] w-full text-sm text-left text-white">
                     <thead className="bg-white/10 text-xs uppercase text-blue-200 align-middle">
                         <tr>

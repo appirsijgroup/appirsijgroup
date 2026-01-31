@@ -227,7 +227,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
     return (
         <div className="mt-8">
             {/* Filters */}
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 shadow-2xl">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-4 md:p-6 mb-8 shadow-2xl">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
                     {/* Period & RS Group */}
                     <div className="lg:col-span-12 xl:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4">

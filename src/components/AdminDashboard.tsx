@@ -3802,7 +3802,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                 </div>
             </div>
 
-            <div className="bg-black/20 p-4 rounded-lg border border-white/10">
+            <div className="bg-black/10 md:bg-black/20 p-3 md:p-6 rounded-xl border border-white/10 shadow-inner">
                 {activeView === 'manajemen-pengguna' && isAnyAdmin(loggedInEmployee) && (
                     <div className="space-y-4">
                         <div className="overflow-x-auto overflow-y-hidden touch-pan-x pb-2">

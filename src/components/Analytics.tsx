@@ -33,11 +33,11 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, children, minWidth }) => {
     }, []);
 
     return (
-        <div className="bg-black/20 p-4 rounded-lg border border-white/10">
-            <div className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">{title}</div>
+        <div className="bg-black/20 p-3 md:p-4 rounded-xl border border-white/10 transition-all">
+            <div className="font-bold text-white mb-4 text-[10px] md:text-sm uppercase tracking-wider opacity-80">{title}</div>
             {minWidth ? (
                 <div className="overflow-x-auto pb-4 -mx-2 px-2">
-                    <div className="min-w-[700px] h-72">
+                    <div className="min-w-[600px] md:min-w-[700px] h-72">
                         {isClient ? children : (
                             <div className="w-full h-full flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
@@ -177,7 +177,7 @@ const HospitalPerformanceComparison: React.FC<{
     }));
 
     return (
-        <div className="bg-black/20 p-6 rounded-2xl border border-white/10 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="bg-black/20 p-4 md:p-6 rounded-xl md:rounded-2xl border border-white/10 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-linear-to-br from-amber-500/20 to-purple-500/20 text-amber-400">
@@ -188,8 +188,8 @@ const HospitalPerformanceComparison: React.FC<{
                         </svg>
                     </div>
                     <div>
-                        <h4 className="font-bold text-white text-lg">Perbandingan Kinerja Antar Rumah Sakit</h4>
-                        <p className="text-gray-400 text-xs">Pilih kategori untuk melihat perbandingan seluruh aliansi</p>
+                        <h4 className="font-bold text-white text-base md:text-lg">Performa Unit RS</h4>
+                        <p className="text-gray-400 text-[10px] md:text-xs">Pilih kategori analisis</p>
                     </div>
                 </div>
 
@@ -348,7 +348,7 @@ const ActivationReport: React.FC<{
                 <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
                     <div className="p-4 border-b border-white/10 bg-white/5 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M19 21V11"></path><path d="M5 21V11"></path><path d="M9 21v-4a2 2 0 0 1 4 0v4"></path></svg>
-                        <h3 className="text-white font-bold text-sm">Komparasi Kinerja Antar Unit RS</h3>
+                        <h3 className="text-white font-bold text-sm">Komparasi Kinerja Unit</h3>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left border-collapse">
@@ -538,9 +538,9 @@ const MutabaahPerformanceReport: React.FC<{
     const selectClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none appearance-none cursor-pointer transition-all hover:bg-white/10";
 
     return (
-        <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
+        <div className="bg-neutral-900/40 md:bg-black/20 p-3 md:p-6 rounded-xl md:rounded-2xl border border-white/10 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Detail Performa Karyawan</h3>
+                <h3 className="text-lg md:text-xl font-bold text-white uppercase tracking-tight">Performa Karyawan</h3>
             </div>
             {/* Filters */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -802,8 +802,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 <LayoutDashboard size={20} />
                             </div>
                             <div className="flex flex-col">
-                                <span className={`text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'}`}>
-                                    {isGlobal ? 'RSIJ GROUP (SELURUH UNIT)' : selectedHospitalName}
+                                <span className={`text-sm md:text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'} truncate`}>
+                                    {isGlobal ? 'RSIJ GROUP' : selectedHospitalName}
                                 </span>
                             </div>
                         </div>
@@ -891,7 +891,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                             <div className="w-8 h-8 border-4 border-amber-500/20 border-b-amber-500 rounded-full animate-spin-reverse"></div>
                         </div>
                     </div>
-                    <p className="mt-6 text-white font-bold tracking-widest text-sm uppercase opacity-60">Mensinkronisasi Data {selectedHospitalName}...</p>
+                    <p className="mt-6 text-white font-bold tracking-widest text-xs md:text-sm uppercase opacity-60 text-center px-4 max-w-md truncate">Mensinkronisasi Data {selectedHospitalName}...</p>
                 </div>
             ) : viewMode === 'overview' ? (
                 /* 💎 EXECUTIVE OVERVIEW - Fast & Visual */
@@ -917,7 +917,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
             ) : (
                 /* 🔍 DETAILED ANALYTICS - Performance Deep Dive */
                 <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                    <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="p-0 md:p-6 bg-transparent md:bg-black/40 rounded-3xl md:border md:border-white/10 md:shadow-2xl relative overflow-hidden">
                         <MutabaahPerformanceReport
                             key={`${hospitalFilter}-${viewMode}`}
                             allUsers={allUsers}

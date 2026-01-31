@@ -54,7 +54,7 @@ const ChartCard: React.FC<{ title: string; children: React.ReactNode; minWidth?:
 // ... existing MutabaahPerformanceReport ...
 
 
-const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string }> = ({ allUsers, hospitalFilter }) => {
+const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string; hospitalName?: string }> = ({ allUsers, hospitalFilter, hospitalName }) => {
     const currentMonthKey = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
     // Filter out admin/super-admin - only count real employees (users)
@@ -75,8 +75,11 @@ const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string 
         notActivatedCount: realEmployees.length - realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length,
         mentorCount: allUsers.filter(u => u.canBeMentor || u.role === 'admin' || u.role === 'super-admin').length,
         complianceRate: 0,
-        activationRate: 0
+        activationRate: 0,
+        hospitalBreakdown: [] as any[]
     });
+
+    const isGlobal = hospitalFilter === 'all';
 
     // ⚡ Fetch accurate stats from server to handle pagination gaps
     useEffect(() => {
@@ -96,7 +99,8 @@ const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string 
                         notActivatedCount: data.notActivatedCount,
                         mentorCount: data.mentorCount,
                         complianceRate: data.complianceRate,
-                        activationRate: data.activationRate
+                        activationRate: data.activationRate,
+                        hospitalBreakdown: data.hospitalBreakdown || []
                     }));
                 }
             } catch (error) {
@@ -107,95 +111,169 @@ const ActivationReport: React.FC<{ allUsers: Employee[]; hospitalFilter: string 
         fetchAccurateStats();
     }, [hospitalFilter]);
 
-    // Fallback update if props change and API hasn't loaded (optional, prioritizing API)
-    useEffect(() => {
-        if (realEmployees.length > stats.totalEmployees) {
-            // If client has MORE data than initial state, update basics
-            // This is a simple heuristic to show something while API loads
-            const total = realEmployees.length;
-            const activated = realEmployees.filter(u => u.activatedMonths?.includes(currentMonthKey)).length;
-            setStats(prev => ({
-                ...prev,
-                totalEmployees: total,
-                activatedCount: activated,
-                notActivatedCount: total - activated,
-                activationRate: total > 0 ? Math.round((activated / total) * 100) : 0
-            }));
-        }
-    }, [realEmployees, currentMonthKey]); // Careful not to overwrite API data if API is slower but more accurate? 
-    // Actually, let's trust the API more. This effect is just for immediate feedback if props are populated first.
-
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Total Karyawan Card */}
-            <div className="bg-linear-to-br from-blue-900/40 to-blue-800/20 p-5 rounded-xl border border-blue-500/20 shadow-lg relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-300"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${isGlobal ? 'bg-amber-500/20 text-amber-400' : 'bg-teal-500/20 text-teal-400'}`}>
+                        {isGlobal ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M19 21V11"></path><path d="M5 21V11"></path><path d="M9 21v-4a2 2 0 0 1 4 0v4"></path></svg>
+                        )}
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white leading-tight">
+                            {isGlobal ? 'Ringkasan Eksekutif Grup RSI' : `Laporan Unit: ${hospitalName || 'Rumah Sakit'}`}
+                        </h2>
+                        <p className="text-gray-400 text-xs mt-0.5">
+                            {isGlobal ? 'Data agregat dari seluruh unit RS yang tergabung dalam aliansi.' : 'Data performa spesifik untuk unit kerja terpilih.'}
+                        </p>
+                    </div>
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-blue-300 text-sm font-medium uppercase tracking-wider mb-1">Total Karyawan</span>
-                    <span className="text-4xl font-bold text-white mb-2">{stats.totalEmployees}</span>
-                    <div className="flex items-center gap-2 text-xs text-blue-200/60">
-                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 font-medium">Terdaftar</span>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${isGlobal ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-teal-500/10 border-teal-500/30 text-teal-400'}`}>
+                    {isGlobal ? 'Dashboard Global' : 'Unit RS'}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Total Karyawan Card */}
+                <div className="bg-linear-to-br from-blue-900/40 to-blue-800/20 p-5 rounded-xl border border-blue-500/20 shadow-lg relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-300"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-blue-300 text-sm font-medium uppercase tracking-wider mb-1">Total Karyawan</span>
+                        <span className="text-4xl font-bold text-white mb-2">{stats.totalEmployees}</span>
+                        <div className="flex items-center gap-2 text-xs text-blue-200/60">
+                            <span className="bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 font-medium">Terdaftar</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Aktivasi Card */}
+                <div className="bg-linear-to-br from-teal-900/40 to-teal-800/20 p-5 rounded-xl border border-teal-500/20 shadow-lg relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-300"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-teal-300 text-sm font-medium uppercase tracking-wider mb-1">Status Aktivasi</span>
+                        <div className="flex items-baseline gap-2 mb-2">
+                            <span className="text-4xl font-bold text-white">{stats.activatedCount}</span>
+                            <span className="text-sm text-teal-200/60">/ {stats.notActivatedCount} Belum</span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
+                            <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.activationRate}%` }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-teal-200/60">
+                            <span>Rate: {stats.activationRate}%</span>
+                            <span>Bulan Ini</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mentor Card */}
+                <div className="bg-linear-to-br from-purple-900/40 to-purple-800/20 p-5 rounded-xl border border-purple-500/20 shadow-lg relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-purple-300 text-sm font-medium uppercase tracking-wider mb-1">Jumlah Mentor</span>
+                        <span className="text-4xl font-bold text-white mb-2">{stats.mentorCount}</span>
+                        <div className="flex items-center gap-2 text-xs text-purple-200/60">
+                            <span className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300 font-medium">Aktif</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Compliance Rate Card */}
+                <div className="bg-linear-to-br from-orange-900/40 to-orange-800/20 p-5 rounded-xl border border-orange-500/20 shadow-lg relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-300"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-orange-300 text-sm font-medium uppercase tracking-wider mb-1">Pengisian Mutaba'ah</span>
+                        <span className="text-4xl font-bold text-white mb-2">{stats.complianceRate}%</span>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
+                            <div className="bg-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.complianceRate}%` }}></div>
+                        </div>
+                        <div className="flex justify-end text-xs text-orange-200/60">
+                            <span>Bulan Ini</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Status Aktivasi Card */}
-            <div className="bg-linear-to-br from-teal-900/40 to-teal-800/20 p-5 rounded-xl border border-teal-500/20 shadow-lg relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-300"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-teal-300 text-sm font-medium uppercase tracking-wider mb-1">Status Aktivasi</span>
-                    <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-4xl font-bold text-white">{stats.activatedCount}</span>
-                        <span className="text-sm text-teal-200/60">/ {stats.notActivatedCount} Belum</span>
+            {/* Hospital Comparison Table for Global View */}
+            {isGlobal && stats.hospitalBreakdown.length > 0 && (
+                <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                    <div className="p-4 border-b border-white/10 bg-white/5 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M19 21V11"></path><path d="M5 21V11"></path><path d="M9 21v-4a2 2 0 0 1 4 0v4"></path></svg>
+                        <h3 className="text-white font-bold text-sm">Komparasi Kinerja Antar Unit RS</h3>
                     </div>
-
-                    {/* Progress Bar */}
-                    <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
-                        <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.activationRate}%` }}></div>
-                    </div>
-                    <div className="flex justify-between text-xs text-teal-200/60">
-                        <span>Rate: {stats.activationRate}%</span>
-                        <span>Bulan Ini</span>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left border-collapse">
+                            <thead>
+                                <tr className="bg-black/40 text-gray-400 border-b border-white/10">
+                                    <th className="p-4 font-semibold">Unit Rumah Sakit</th>
+                                    <th className="p-4 font-semibold text-center">Total SDM</th>
+                                    <th className="p-4 font-semibold text-center">Aktivasi Lembar</th>
+                                    <th className="p-4 font-semibold text-center">Kepatuhan Laporan</th>
+                                    <th className="p-4 font-semibold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {stats.hospitalBreakdown.map(h => {
+                                    const actPercent = h.total > 0 ? Math.round((h.activated / h.total) * 100) : 0;
+                                    const compPercent = h.total > 0 ? Math.round((h.compliance / h.total) * 100) : 0;
+                                    return (
+                                        <tr key={h.id} className="hover:bg-white/5 transition-colors group">
+                                            <td className="p-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-white font-bold group-hover:text-teal-400 transition-colors">{h.brand}</span>
+                                                    <span className="text-gray-400 text-xs italic">{h.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center text-white">{h.total}</td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-white font-semibold">{actPercent}%</span>
+                                                        <span className="text-gray-500 text-[10px]">({h.activated}/{h.total})</span>
+                                                    </div>
+                                                    <div className="w-24 bg-black/40 rounded-full h-1.5 overflow-hidden">
+                                                        <div className="bg-teal-500 h-full rounded-full" style={{ width: `${actPercent}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-white font-semibold">{compPercent}%</span>
+                                                        <span className="text-gray-500 text-[10px]">({h.compliance}/{h.total})</span>
+                                                    </div>
+                                                    <div className="w-24 bg-black/40 rounded-full h-1.5 overflow-hidden">
+                                                        <div className="bg-amber-500 h-full rounded-full" style={{ width: `${compPercent}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${compPercent > 80 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : compPercent > 50 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
+                                                    {compPercent > 80 ? 'TERBAIK' : compPercent > 50 ? 'STABIL' : 'RENDAH'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-
-            {/* Mentor Card */}
-            <div className="bg-linear-to-br from-purple-900/40 to-purple-800/20 p-5 rounded-xl border border-purple-500/20 shadow-lg relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-300"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-purple-300 text-sm font-medium uppercase tracking-wider mb-1">Jumlah Mentor</span>
-                    <span className="text-4xl font-bold text-white mb-2">{stats.mentorCount}</span>
-                    <div className="flex items-center gap-2 text-xs text-purple-200/60">
-                        <span className="bg-purple-500/20 px-2 py-0.5 rounded text-purple-300 font-medium">Aktif</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Compliance Rate Card */}
-            <div className="bg-linear-to-br from-orange-900/40 to-orange-800/20 p-5 rounded-xl border border-orange-500/20 shadow-lg relative overflow-hidden group">
-                <div className="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-300"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                </div>
-                <div className="flex flex-col">
-                    <span className="text-orange-300 text-sm font-medium uppercase tracking-wider mb-1">Pengisian Mutaba'ah</span>
-                    <span className="text-4xl font-bold text-white mb-2">{stats.complianceRate}%</span>
-
-                    {/* Progress Bar */}
-                    <div className="w-full bg-black/30 rounded-full h-2 mb-2 overflow-hidden">
-                        <div className="bg-orange-500 h-full rounded-full transition-all duration-1000" style={{ width: `${stats.complianceRate}%` }}></div>
-                    </div>
-                    <div className="flex justify-end text-xs text-orange-200/60">
-                        <span>Bulan Ini</span>
-                    </div>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
@@ -448,6 +526,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     // This is a heuristic; ideally we'd pass total count from backend
     const isPartialData = allUsers.length > 0 && allUsers.length <= 50;
 
+    const selectedHospitalName = useMemo(() => {
+        if (hospitalFilter === 'all') return 'Grup RSI (Aliansi)';
+        return hospitals.find(h => h.id === hospitalFilter)?.name || 'Rumah Sakit';
+    }, [hospitalFilter, hospitals]);
+
     const handleLoadAll = async () => {
         if (onLoadAllData) {
             setIsLoadingMore(true);
@@ -531,7 +614,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                 )
             }
 
-            <ActivationReport allUsers={allUsers} hospitalFilter={hospitalFilter} />
+            <ActivationReport
+                allUsers={allUsers}
+                hospitalFilter={hospitalFilter}
+                hospitalName={selectedHospitalName}
+            />
             <MutabaahPerformanceReport allUsers={allUsers} dailyActivitiesConfig={dailyActivitiesConfig} hospitalFilter={hospitalFilter} />
         </div >
     );

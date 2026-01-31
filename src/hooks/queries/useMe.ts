@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Employee } from '@/types';
 
-interface MeResponse {
+export interface MeResponse {
   employee: Employee;
   allUsersData?: Record<string, {
     employee: Employee;

@@ -18,4 +18,4 @@ export {
 } from './useMonthlyActivities';
 
 // Type exports
-export type { MeResponse, EmployeesResponse } from './useMe';
+export type { MeResponse } from './useMe';

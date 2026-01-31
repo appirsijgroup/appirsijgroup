@@ -319,7 +319,8 @@ const generateChecklistPdf = async (
     dailyActivitiesConfig: DailyActivity[],
     selectedMonth: Date,
     allUsersData: Record<string, { employee: Employee; attendance: Record<string, any>; history: Record<string, any>; }>,
-    hospital: Hospital | null
+    hospital: Hospital | null,
+    isMentorApproved: boolean
 ) => {
     const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     const marginLeft = 10;
@@ -553,7 +554,7 @@ const generateChecklistPdf = async (
     const signatures = [
         { title: 'Kepala Unit', name: kaUnitName, nip: employee.kaUnitId || '-', signature: employee.kaUnitId ? allUsersData[employee.kaUnitId]?.employee?.signature : null },
         { title: 'Supervisor', name: supervisorName, nip: employee.supervisorId || '-', signature: employee.supervisorId ? allUsersData[employee.supervisorId]?.employee?.signature : null },
-        { title: 'Mentor', name: mentorName, nip: employee.mentorId || '-', signature: employee.mentorId ? allUsersData[employee.mentorId]?.employee?.signature : null },
+        { title: 'Mentor', name: mentorName, nip: employee.mentorId || '-', signature: isMentorApproved && employee.mentorId ? allUsersData[employee.mentorId]?.employee?.signature : null },
         { title: 'Karyawan', name: employee.name, nip: employee.id, signature: employee.signature }
     ];
 
@@ -620,9 +621,10 @@ interface CeklisMutabaahViewProps {
     allUsersData: Record<string, { employee: Employee;[key: string]: Record<string, any>; }>;
     onBack?: () => void;
     hospital: Hospital | null;
+    isMentorApproved: boolean;
 }
 
-const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack, hospital }) => {
+const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, dailyActivitiesConfig, selectedMonth, allUsersData, onBack, hospital, isMentorApproved }) => {
     const monthKey = useMemo(() => `${selectedMonth.getFullYear()}-${(selectedMonth.getMonth() + 1).toString().padStart(2, '0')}`, [selectedMonth]);
 
     const daysInMonth = useMemo(() => {
@@ -833,7 +835,7 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                         <div className="flex flex-col items-center text-center">
                             <p className="text-xs font-bold uppercase mb-4 h-4">Mentor</p>
                             <div className="h-20 w-full flex items-end justify-center mb-1">
-                                {employee.mentorId && allUsersData[employee.mentorId]?.employee?.signature ? (
+                                {isMentorApproved && employee.mentorId && allUsersData[employee.mentorId]?.employee?.signature ? (
                                     <img src={allUsersData[employee.mentorId].employee.signature!} alt="TTD" className="h-16 w-auto object-contain" />
                                 ) : (
                                     <div className="h-16 w-full flex items-center justify-center"></div>
@@ -1523,7 +1525,12 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
     }, []);
 
     if (viewingChecklistFor) {
-        return <CeklisMutabaahView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} selectedMonth={viewingChecklistFor} allUsersData={allUsersData} onBack={() => setViewingChecklistFor(null)} hospital={hospital} />;
+        const mKey = `${viewingChecklistFor.getFullYear()}-${String(viewingChecklistFor.getMonth() + 1).padStart(2, '0')}`;
+        const sub = submissions.find(s => s.monthKey === mKey);
+        // Mentor Approved if status is NOT pending_mentor (assuming it has moved forward) AND not rejected by mentor
+        const isMentorApproved = !!sub && sub.status !== 'pending_mentor' && !sub.status.startsWith('rejected_mentor');
+
+        return <CeklisMutabaahView employee={employee} dailyActivitiesConfig={dailyActivitiesConfig} selectedMonth={viewingChecklistFor} allUsersData={allUsersData} onBack={() => setViewingChecklistFor(null)} hospital={hospital} isMentorApproved={isMentorApproved} />;
     }
 
     if (viewingTranscriptFor) {
@@ -1625,7 +1632,9 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                                                             onClick={async () => {
                                                                 try {
                                                                     setIsDownloading(`checklist-${monthKey}`);
-                                                                    await generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital);
+                                                                    const sub = submissions.find(s => s.monthKey === monthKey);
+                                                                    const isMentorApproved = !!sub && sub.status !== 'pending_mentor' && !sub.status.startsWith('rejected_mentor');
+                                                                    await generateChecklistPdf(employee, dailyActivitiesConfig, monthDate, allUsersData, hospital, isMentorApproved);
                                                                 } finally {
                                                                     setIsDownloading(null);
                                                                 }

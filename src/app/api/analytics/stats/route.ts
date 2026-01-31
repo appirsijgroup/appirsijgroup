@@ -20,10 +20,14 @@ export async function GET(request: NextRequest) {
         // 3. Query Params
         const { searchParams } = new URL(request.url);
         const hospitalId = searchParams.get('hospitalId')?.toLowerCase();
+        const month = searchParams.get('month'); // "01"
+        const year = searchParams.get('year');   // "2026"
 
         // 4. Determine Current Month Key (YYYY-MM)
         const now = new Date();
-        const currentMonthKey = now.toISOString().slice(0, 7); // "2026-01"
+        const currentMonthKey = (month && year)
+            ? `${year}-${month.padStart(2, '0')}`
+            : now.toISOString().slice(0, 7); // Default: "2026-01"
 
         // 5. Execute Queries in Parallel
         const [
@@ -33,12 +37,11 @@ export async function GET(request: NextRequest) {
             complianceRes,
             hospitalsRes
         ] = await Promise.all([
-            // Total Active Employees (Numeric IDs only, Exclude Admin/Super-Admin)
+            // Total Active Employees (Exclude Admin/Super-Admin)
             (() => {
                 let q = supabase.from('employees')
                     .select('id, hospital_id', { count: 'exact', head: false })
                     .eq('is_active', true)
-                    .filter('id', 'match', '^[0-9]+$')
                     .not('role', 'in', '(admin,super-admin)');
                 if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
                 return q;
@@ -51,18 +54,16 @@ export async function GET(request: NextRequest) {
                     .select('employee_id, employees!inner(id, role, is_active, hospital_id)', { count: 'exact', head: false })
                     .eq('month_key', currentMonthKey)
                     .eq('employees.is_active', true)
-                    .filter('employees.id', 'match', '^[0-9]+$')
                     .not('employees.role', 'in', '(admin,super-admin)');
                 if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
                 return q;
             })(),
 
-            // Mentors (Numeric IDs only)
+            // Mentors
             (() => {
                 let q = supabase.from('employees')
                     .select('id, hospital_id', { count: 'exact', head: false })
                     .eq('is_active', true)
-                    .filter('id', 'match', '^[0-9]+$')
                     .or('role.in.(admin,super-admin),can_be_mentor.eq.true');
                 if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
                 return q;

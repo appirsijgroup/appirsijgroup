@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         let employeeQuery = supabase.from('employees')
             .select('id, hospital_id')
             .eq('is_active', true)
-            .filter('id', 'match', '^[0-9]+$')
             .not('role', 'in', '(admin,super-admin)');
 
         if (employeeId && employeeId !== 'undefined' && employeeId !== 'all') {
@@ -106,12 +105,13 @@ export async function GET(request: NextRequest) {
         // Track unique days per activity per employee to calculate achievement correctly
         // Structure: activityId -> userId -> Set of dates
         const userActivityDays: Record<string, Record<string, Set<string>>> = {};
-        // Also track direct counts for manual reports
-        const activityCounts: Record<string, number> = {};
+        // Track direct counts for manual reports per user
+        // Structure: activityId -> userId -> count
+        const userActivityCounts: Record<string, Record<string, number>> = {};
 
         DAILY_ACTIVITIES.forEach(act => {
             userActivityDays[act.id] = {};
-            activityCounts[act.id] = 0;
+            userActivityCounts[act.id] = {};
         });
 
         const trackDay = (userId: string, actId: string, dateStr: string) => {
@@ -122,13 +122,19 @@ export async function GET(request: NextRequest) {
             userActivityDays[actId][userId].add(dayKey);
         };
 
-        // 6a. Process Manual Reports (direct counts)
+        const trackCount = (userId: string, actId: string, count: number) => {
+            if (!userActivityCounts[actId]) return;
+            if (!userActivityCounts[actId][userId]) userActivityCounts[actId][userId] = 0;
+            userActivityCounts[actId][userId] += count;
+        };
+
+        // 6a. Process Manual Reports (direct counts per user)
         monthlyReportsRes.data?.forEach(row => {
             const reports = row.reports || {};
             const monthData = reports[monthKey] || {};
             Object.entries(monthData).forEach(([actId, data]: [string, any]) => {
-                if (activityCounts.hasOwnProperty(actId)) {
-                    activityCounts[actId] += (data.count || 0);
+                if (userActivityCounts.hasOwnProperty(actId)) {
+                    trackCount(row.employee_id, actId, data.count || 0);
                 }
             });
         });
@@ -182,9 +188,16 @@ export async function GET(request: NextRequest) {
 
         // 7. Calculate Aggregated Percentages
         const performanceByActivity = DAILY_ACTIVITIES.map(act => {
-            let totalAchieved = activityCounts[act.id] || 0;
+            let totalAchieved = 0;
 
-            // Add counts from tracked days
+            // 1. Add counts from userActivityCounts (manual reports)
+            if (userActivityCounts[act.id]) {
+                Object.values(userActivityCounts[act.id]).forEach(count => {
+                    totalAchieved += count;
+                });
+            }
+
+            // 2. Add counts from tracked days (automated/session activities)
             if (userActivityDays[act.id]) {
                 Object.values(userActivityDays[act.id]).forEach(daysSet => {
                     // For each user, they can only achieve up to the monthlyTarget for day-based activities
@@ -234,63 +247,84 @@ export async function GET(request: NextRequest) {
             const hospitalMap: Record<string, any> = {};
 
             (hospitals || []).forEach(h => {
-                hospitalMap[h.id] = {
+                const lowerId = h.id.toLowerCase();
+                hospitalMap[lowerId] = {
                     id: h.id,
                     brand: h.brand,
                     categories: {
-                        'SIDIQ (Integritas)': { total: 0, count: 0 },
-                        'TABLIGH (Teamwork)': { total: 0, count: 0 },
-                        'AMANAH (Disiplin)': { total: 0, count: 0 },
-                        'FATONAH (Belajar)': { total: 0, count: 0 }
+                        'SIDIQ': { total: 0, count: 0 },
+                        'TABLIGH': { total: 0, count: 0 },
+                        'AMANAH': { total: 0, count: 0 },
+                        'FATONAH': { total: 0, count: 0 }
                     }
                 };
             });
 
-            // Group employees by hospital
-            const empByHospital: Record<string, string[]> = {};
+            // Group employees for hospital calculation
+            const employeesByHospital: Record<string, string[]> = {};
             targetEmployees.forEach(emp => {
-                const hid = emp.hospital_id;
-                if (!hid) return;
-                if (!empByHospital[hid]) empByHospital[hid] = [];
-                empByHospital[hid].push(emp.id);
+                const hid = emp.hospital_id?.toLowerCase().trim();
+                if (hid && hospitalMap[hid]) {
+                    if (!employeesByHospital[hid]) employeesByHospital[hid] = [];
+                    employeesByHospital[hid].push(emp.id);
+                }
             });
 
-            // For each hospital, calculate category averages
-            Object.entries(empByHospital).forEach(([hid, ids]) => {
-                if (!hospitalMap[hid]) return;
+            console.log('🏥 [DEBUG] Employees mapping by Hospital:', Object.fromEntries(
+                Object.entries(employeesByHospital).map(([hid, ids]) => [hid, ids.length])
+            ));
 
+            // Calculate each hospital performance using EXACT same logic as global stats
+            Object.entries(employeesByHospital).forEach(([hid, empIds]) => {
                 DAILY_ACTIVITIES.forEach(act => {
-                    let achieved = 0;
-                    if (userActivityDays[act.id]) {
-                        ids.forEach(uid => {
-                            if (userActivityDays[act.id][uid]) {
-                                achieved += Math.min(act.monthlyTarget, userActivityDays[act.id][uid].size);
+                    let achievedForHospital = 0;
+
+                    // 1. Manual counts for this hospital
+                    if (userActivityCounts[act.id]) {
+                        empIds.forEach(eid => {
+                            if (userActivityCounts[act.id][eid]) {
+                                achievedForHospital += userActivityCounts[act.id][eid];
                             }
                         });
                     }
-                    // Add manual counts if any
-                    // Note: manual counts are aggregated in activityCounts globally, 
-                    // we need to re-aggregate them per hospital for accuracy if we want perfect data.
-                    // For speed, let's use the tracked days which covers most automated tasks.
 
-                    const totalTarget = ids.length * act.monthlyTarget;
-                    const percentage = totalTarget > 0 ? (achieved / totalTarget) : 0;
+                    // 2. Day tracking for this hospital
+                    if (userActivityDays[act.id]) {
+                        empIds.forEach(eid => {
+                            if (userActivityDays[act.id][eid]) {
+                                achievedForHospital += Math.min(act.monthlyTarget, userActivityDays[act.id][eid].size);
+                            }
+                        });
+                    }
 
-                    if (hospitalMap[hid].categories[act.category]) {
-                        hospitalMap[hid].categories[act.category].total += percentage;
-                        hospitalMap[hid].categories[act.category].count++;
+                    const totalTarget = empIds.length * act.monthlyTarget;
+                    // Use Math.round to match global logic
+                    const activityPercentage = totalTarget > 0 ? Math.min(100, Math.round((achievedForHospital / totalTarget) * 100)) : 0;
+
+                    // Find the short category name (SIDIQ, TABLIGH, etc)
+                    const shortCat = Object.keys(hospitalMap[hid].categories).find(c => act.category.startsWith(c));
+                    if (shortCat) {
+                        hospitalMap[hid].categories[shortCat].total += activityPercentage;
+                        hospitalMap[hid].categories[shortCat].count++;
                     }
                 });
             });
 
-            hospitalComparison = Object.values(hospitalMap).map((h: any) => {
+            // Final formatting - all 8 hospitals from DB
+            hospitalComparison = (hospitals || []).map(h => {
+                const lowerId = h.id.toLowerCase();
+                const hData = hospitalMap[lowerId];
                 const result: any = { id: h.id, brand: h.brand };
-                Object.entries(h.categories).forEach(([catName, stats]: [string, any]) => {
-                    const cleanName = catName.split(' ')[0]; // SIDIQ, etc.
-                    result[cleanName] = stats.count > 0 ? Math.round((stats.total / stats.count) * 100) : 0;
+
+                ['SIDIQ', 'TABLIGH', 'AMANAH', 'FATONAH'].forEach(cat => {
+                    const stats = hData.categories[cat];
+                    result[cat] = stats && stats.count > 0 ? Math.round(stats.total / stats.count) : 0;
                 });
+
                 return result;
-            }).filter((h: any) => h.SIDIQ > 0 || h.TABLIGH > 0 || h.AMANAH > 0 || h.FATONAH > 0);
+            }).sort((a, b) => a.brand.localeCompare(b.brand));
+
+            console.log('📊 [DEBUG] Computed Hospital Comparison:', hospitalComparison.map(h => ({ brand: h.brand, SIDIQ: h.SIDIQ })));
         }
 
         return NextResponse.json({

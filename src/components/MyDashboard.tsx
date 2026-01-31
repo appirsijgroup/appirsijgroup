@@ -434,7 +434,11 @@ const MyDashboard: React.FC<MyDashboardViewProps> = (props) => {
                 if (!canAccessAnalytics) {
                     return <div className="text-center text-white p-8">Anda tidak memiliki akses ke Analytics</div>;
                 }
-                return <Analytics allUsersData={props.allUsersData} dailyActivitiesConfig={dailyActivitiesConfig} />;
+                return <Analytics
+                    allUsersData={props.allUsersData}
+                    dailyActivitiesConfig={dailyActivitiesConfig}
+                    onLoadAllData={props.onLoadEmployees}
+                />;
             default:
                 return null;
         }

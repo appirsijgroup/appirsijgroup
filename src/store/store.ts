@@ -205,10 +205,19 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
         // Skip if already loading or recently loaded (and no limit specified)
-        if (get().isLoadingEmployees) return;
-        if (!limit && now - get().lastAllEmployeesLoad < CACHE_DURATION && Object.keys(get().allUsersData).length > 10) {
-            console.log('📦 [AppDataStore] All employees recently loaded, using cache.');
+        // 🔥 CRITICAL FIX: Only skip if it was a FULL load previously (no limit)
+        // and we aren't currently loading or if this is a critical full load
+        if (get().isLoadingEmployees && limit) return; // Allow full load to interrupt or wait
+
+        const isFullLoad = !limit;
+        if (isFullLoad && now - get().lastAllEmployeesLoad < CACHE_DURATION && Object.keys(get().allUsersData).length > 50) {
+            console.log('📦 [AppDataStore] All employees recently loaded (FULL), using cache.');
             return;
+        }
+
+        // If it's a partial load, also check cache
+        if (!isFullLoad && Object.keys(get().allUsersData).length > 200) {
+            // If we already have a lot of data, partial loads are less urgent but let's allow them if needed
         }
 
         try {
@@ -231,7 +240,7 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             set(state => ({
                 allUsersData: { ...state.allUsersData, ...initialData },
                 isLoadingEmployees: false,
-                lastAllEmployeesLoad: now
+                lastAllEmployeesLoad: !limit ? now : state.lastAllEmployeesLoad
             }));
 
         } catch (error) {

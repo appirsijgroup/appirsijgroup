@@ -110,6 +110,137 @@ const GlobalComparisonCharts: React.FC<{ breakdown: any[] }> = ({ breakdown }) =
 
 // --- START: SUB-COMPONENTS (Defined before main Analytics component) ---
 
+const HospitalPerformanceComparison: React.FC<{
+    hospitalFilter: string;
+    hospitals?: any[];
+    currentMonth: Date;
+}> = ({ hospitalFilter, hospitals = [], currentMonth }) => {
+    const [selectedCategory, setSelectedCategory] = useState<'SIDIQ' | 'TABLIGH' | 'AMANAH' | 'FATONAH'>('SIDIQ');
+    const [comparisonData, setComparisonData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (hospitalFilter !== 'all') return;
+
+        const fetchComparison = async () => {
+            setIsLoading(true);
+            try {
+                const month = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
+                const year = currentMonth.getFullYear().toString();
+
+                const params = new URLSearchParams({
+                    month,
+                    year,
+                    hospitalId: 'all'
+                });
+
+                const response = await fetch(`/api/analytics/performance?${params.toString()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setComparisonData(data.hospitalComparison || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch hospital comparison:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchComparison();
+    }, [hospitalFilter, currentMonth]);
+
+    if (hospitalFilter !== 'all' || !isClient) return null;
+
+    const categoryConfig: Record<string, { label: string; icon: string; color: string; gridColor: string }> = {
+        'SIDIQ': { label: 'SIDIQ (Integritas)', icon: '⚖️', color: '#f59e0b', gridColor: '#4a3b1a' },
+        'TABLIGH': { label: 'TABLIGH (Teamwork)', icon: '🤝', color: '#10b981', gridColor: '#114232' },
+        'AMANAH': { label: 'AMANAH (Disiplin)', icon: '⏰', color: '#3b82f6', gridColor: '#1e3a5f' },
+        'FATONAH': { label: 'FATONAH (Belajar)', icon: '📚', color: '#a855f7', gridColor: '#3d2b5f' }
+    };
+
+    const currentConfig = categoryConfig[selectedCategory];
+    const chartData = comparisonData.map(h => ({
+        brand: h.brand,
+        value: h[selectedCategory]
+    }));
+
+    return (
+        <div className="bg-black/20 p-6 rounded-2xl border border-white/10 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-linear-to-br from-amber-500/20 to-purple-500/20 text-amber-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-white text-lg">Perbandingan Kinerja Antar Rumah Sakit</h4>
+                        <p className="text-gray-400 text-xs">Pilih kategori untuk melihat perbandingan seluruh aliansi</p>
+                    </div>
+                </div>
+
+                <div className="w-full md:w-72">
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value as any)}
+                        className="w-full bg-black/40 border border-white/20 rounded-xl px-4 py-2.5 text-white font-semibold focus:ring-2 focus:ring-amber-500 focus:outline-none appearance-none cursor-pointer shadow-inner"
+                    >
+                        <option value="SIDIQ" className="text-white bg-neutral-900">⚖️ SIDIQ (Integritas)</option>
+                        <option value="TABLIGH" className="text-white bg-neutral-900">🤝 TABLIGH (Teamwork)</option>
+                        <option value="AMANAH" className="text-white bg-neutral-900">⏰ AMANAH (Disiplin)</option>
+                        <option value="FATONAH" className="text-white bg-neutral-900">📚 FATONAH (Belajar)</option>
+                    </select>
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="h-72 flex flex-col items-center justify-center bg-black/10 rounded-xl border border-white/5">
+                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-amber-400 mb-4"></div>
+                    <p className="text-amber-200/40 text-sm font-medium animate-pulse">Memuat data perbandingan...</p>
+                </div>
+            ) : comparisonData.length > 0 ? (
+                <>
+                    <ChartCard title={`${currentConfig.icon} ${currentConfig.label} per Unit RS (%)`}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 25, right: 30, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={currentConfig.gridColor} vertical={false} />
+                                <XAxis dataKey="brand" stroke={currentConfig.color} fontSize={11} fontWeight="bold" />
+                                <YAxis stroke={currentConfig.color} domain={[0, 100]} tickFormatter={(t) => `${t}%`} />
+                                <Bar dataKey="value" name="Capaian" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                                    <LabelList
+                                        dataKey="value"
+                                        position="top"
+                                        fill={currentConfig.color}
+                                        fontSize={12}
+                                        fontWeight="bold"
+                                        formatter={(val: any) => `${val}%`}
+                                    />
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={currentConfig.color} fillOpacity={0.8} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartCard>
+
+                </>
+            ) : (
+                <div className="h-72 flex items-center justify-center bg-black/10 rounded-xl border border-white/5">
+                    <p className="text-gray-500 text-sm">Data perbandingan tidak tersedia untuk periode ini.</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
 const ActivationReport: React.FC<{
     allUsers: Employee[];
     hospitalFilter: string;
@@ -120,28 +251,7 @@ const ActivationReport: React.FC<{
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${isGlobal ? 'bg-amber-500/20 text-amber-400' : 'bg-teal-500/20 text-teal-400'}`}>
-                        {isGlobal ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M19 21V11"></path><path d="M5 21V11"></path><path d="M9 21v-4a2 2 0 0 1 4 0v4"></path></svg>
-                        )}
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-white leading-tight">
-                            {isGlobal ? 'Ringkasan Eksekutif Grup RSI' : `Laporan Unit: ${hospitalName || 'Rumah Sakit'}`}
-                        </h2>
-                        <p className="text-gray-400 text-xs mt-0.5">
-                            {isGlobal ? 'Data agregat dari seluruh unit RS yang tergabung dalam aliansi.' : 'Data performa spesifik untuk unit kerja terpilih.'}
-                        </p>
-                    </div>
-                </div>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${isGlobal ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-teal-500/10 border-teal-500/30 text-teal-400'}`}>
-                    {isGlobal ? 'Dashboard Global' : 'Unit RS'}
-                </div>
-            </div>
+
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Total Karyawan Card */}
@@ -290,7 +400,10 @@ const MutabaahPerformanceReport: React.FC<{
     dailyActivitiesConfig: DailyActivity[];
     hospitalFilter: string;
     hospitals?: any[];
-}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter, hospitals = [] }) => {
+    currentMonth: Date;
+    navigateMonth: (direction: 'prev' | 'next') => void;
+    isNextMonthFuture: () => boolean;
+}> = ({ allUsers, dailyActivitiesConfig, hospitalFilter, hospitals = [], currentMonth, navigateMonth, isNextMonthFuture }) => {
     const [isClient, setIsClient] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [performanceData, setPerformanceData] = useState<{
@@ -309,17 +422,13 @@ const MutabaahPerformanceReport: React.FC<{
         setIsClient(true);
     }, []);
 
-    // Date filter
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-
     // User filters
     const [selectedUserIdFilter, setSelectedUserIdFilter] = useState<string | undefined>(undefined);
-    const [localHospitalFilter, setLocalHospitalFilter] = useState(hospitalFilter);
 
     // Sync with prop if prop changes (e.g. from top selector)
+    // NOTE: With the 'key' pattern in the parent, this component will remount on hospital change, 
+    // but we keep this as a safety measure for direct prop updates.
     useEffect(() => {
-        setLocalHospitalFilter(hospitalFilter);
-        // CRITICAL BUG FIX: Reset all sub-filters when hospital changes to prevent invalid filter combinations
         setUnitFilter('all');
         setBagianFilter('all');
         setKategoriFilter('all');
@@ -347,7 +456,7 @@ const MutabaahPerformanceReport: React.FC<{
                     bagian: bagianFilter,
                     professionCategory: kategoriFilter,
                     profession: profesiFilter,
-                    hospitalId: localHospitalFilter,
+                    hospitalId: hospitalFilter, // Using prop directly for perfect sync
                     employeeId: selectedUserIdFilter || 'all'
                 });
 
@@ -364,7 +473,7 @@ const MutabaahPerformanceReport: React.FC<{
         };
 
         fetchPerformance();
-    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, localHospitalFilter]);
+    }, [currentMonth, unitFilter, bagianFilter, kategoriFilter, profesiFilter, selectedUserIdFilter, hospitalFilter]);
 
     // Filter options memoization (only from real employees, excluding admins)
     const filterOptions = useMemo(() => {
@@ -375,8 +484,8 @@ const MutabaahPerformanceReport: React.FC<{
         const realEmployees = allUsers.filter(u => {
             const isReal = u && u.id && !isAdministrativeAccount(u.id) && !isAnyAdmin(u);
             if (!isReal) return false;
-            if (localHospitalFilter && localHospitalFilter !== 'all') {
-                return u.hospitalId?.toLowerCase() === localHospitalFilter.toLowerCase();
+            if (hospitalFilter && hospitalFilter !== 'all') {
+                return u.hospitalId?.toLowerCase() === hospitalFilter.toLowerCase();
             }
             return true;
         });
@@ -390,37 +499,16 @@ const MutabaahPerformanceReport: React.FC<{
             bagians: Array.from(bagians).sort(),
             profesi: Array.from(profesi).sort(),
         };
-    }, [allUsers, localHospitalFilter]);
+    }, [allUsers, hospitalFilter]);
 
-    const { performanceByCategory, groupedPerformanceByActivity, employeeCount, hospitalComparison } = performanceData;
-
-    const navigateMonth = (direction: 'prev' | 'next') => {
-        setCurrentMonth(prev => {
-            const newDate = new Date(prev);
-            newDate.setDate(1);
-            newDate.setMonth(newDate.getMonth() + (direction === 'prev' ? -1 : 1));
-            return newDate;
-        });
-    };
-
-    const isNextMonthFuture = () => {
-        const nextMonth = new Date(currentMonth);
-        nextMonth.setDate(1);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        return nextMonth > new Date();
-    };
+    const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
 
     const selectClass = "w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none";
 
     return (
         <div className="bg-black/20 p-4 rounded-lg border border-white/10 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 className="text-xl font-bold text-white">Analisis Kinerja Mutaba&apos;ah</h3>
-                <div className="shrink-0 flex items-center justify-between bg-black/20 p-1 rounded-full w-full md:w-auto">
-                    <button onClick={() => navigateMonth('prev')} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors">&larr;</button>
-                    <span className="font-semibold text-base text-teal-300 px-2 grow text-center">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</span>
-                    <button onClick={() => navigateMonth('next')} disabled={isNextMonthFuture()} className="px-4 py-1.5 rounded-full hover:bg-white/10 transition-colors disabled:opacity-50">&rarr;</button>
-                </div>
+                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Detail Performa Karyawan</h3>
             </div>
             {/* Filters */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -432,23 +520,6 @@ const MutabaahPerformanceReport: React.FC<{
                         placeholder="Cari & Filter Nama Karyawan..."
                     />
                 </div>
-                {hospitalFilter === 'all' && (
-                    <select
-                        value={localHospitalFilter}
-                        onChange={e => {
-                            setLocalHospitalFilter(e.target.value);
-                            setUnitFilter('all');
-                            setBagianFilter('all');
-                            setProfesiFilter('all');
-                        }}
-                        className={`${selectClass} border-amber-500/30 text-amber-100 font-bold`}
-                    >
-                        <option value="all" className="text-black bg-white">🏢 SELURUH GRUP</option>
-                        {hospitals.map(h => (
-                            <option key={h.id} value={h.id} className="text-black bg-white">🏥 {h.brand} - {h.name}</option>
-                        ))}
-                    </select>
-                )}
                 <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={selectClass}>
                     <option value="all" className="text-black bg-white">Semua Unit</option>
                     {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
@@ -468,7 +539,7 @@ const MutabaahPerformanceReport: React.FC<{
                 </select>
             </div>
 
-            <p className="text-sm text-center text-blue-200">{employeeCount} karyawan</p>
+
 
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl border border-white/5">
@@ -477,87 +548,7 @@ const MutabaahPerformanceReport: React.FC<{
                 </div>
             ) : employeeCount > 0 ? (
                 <div className="space-y-6">
-                    {hospitalFilter === 'all' && hospitalComparison.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {[
-                                { key: 'SIDIQ', label: 'SIDIQ (Integritas)', color: '#f59e0b', icon: '⚖️' },
-                                { key: 'TABLIGH', label: 'TABLIGH (Teamwork)', color: '#10b981', icon: '🤝' },
-                                { key: 'AMANAH', label: 'AMANAH (Disiplin)', color: '#3b82f6', icon: '⏰' },
-                                { key: 'FATONAH', label: 'FATONAH (Belajar)', color: '#a855f7', icon: '📚' }
-                            ].map((cat, idx) => {
-                                // Transform data for RadialBarChart
-                                // We use a themed color palette for each category
-                                const radialData = hospitalComparison.map((h, i) => ({
-                                    name: h.brand,
-                                    value: h[cat.key],
-                                    // Use varying opacities/shades of the category color
-                                    fill: cat.color,
-                                    opacity: 1 - (i * 0.15)
-                                })).sort((a, b) => b.value - a.value);
 
-                                const avgValue = Math.round(radialData.reduce((acc, curr) => acc + curr.value, 0) / (radialData.length || 1));
-
-                                return (
-                                    <div key={cat.key} className="bg-black/20 p-4 rounded-3xl border border-white/10 hover:border-white/20 transition-all group relative overflow-hidden">
-                                        {/* Background Glow */}
-                                        <div className="absolute -right-4 -top-4 w-24 h-24 blur-3xl rounded-full opacity-10 transition-opacity group-hover:opacity-20" style={{ backgroundColor: cat.color }}></div>
-
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <span className="text-xl">{cat.icon}</span>
-                                            <h4 className="font-bold text-white text-sm tracking-tight">{cat.label}</h4>
-                                        </div>
-
-                                        <div className="relative h-64 w-full flex items-center justify-center">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <RadialBarChart
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius="25%"
-                                                    outerRadius="100%"
-                                                    barSize={12}
-                                                    data={radialData}
-                                                    startAngle={90}
-                                                    endAngle={-270}
-                                                >
-                                                    <RadialBar
-                                                        background={{ fill: '#ffffff05' }}
-                                                        dataKey="value"
-                                                        cornerRadius={10}
-                                                        label={{ position: 'insideStart', fill: '#fff', fontSize: 10, fontWeight: 'bold' }}
-                                                    >
-                                                        {radialData.map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={cat.color} fillOpacity={entry.opacity} />
-                                                        ))}
-                                                    </RadialBar>
-                                                    <Tooltip
-                                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
-                                                        itemStyle={{ color: cat.color }}
-                                                        formatter={(value: any) => [`${value}%`, 'Capaian']}
-                                                    />
-                                                </RadialBarChart>
-                                            </ResponsiveContainer>
-
-                                            {/* Center indicator */}
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-8">
-                                                <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Grup</span>
-                                                <span className="text-2xl font-black text-white" style={{ color: cat.color }}>{avgValue}%</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 grid grid-cols-2 gap-2">
-                                            {radialData.slice(0, 4).map((d, i) => (
-                                                <div key={d.name} className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
-                                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color, opacity: d.opacity }}></div>
-                                                    <span className="text-[10px] text-gray-300 font-medium truncate">{d.name}</span>
-                                                    <span className="text-[10px] text-white font-bold ml-auto">{d.value}%</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
 
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
                         {isClient ? (
@@ -631,8 +622,26 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
 
-    // --- ACCURATE STATS STATE (Uplifted from ActivationReport) ---
+    const navigateMonth = (direction: 'prev' | 'next') => {
+        setCurrentMonth(prev => {
+            const newDate = new Date(prev);
+            newDate.setDate(1);
+            newDate.setMonth(newDate.getMonth() + (direction === 'prev' ? -1 : 1));
+            return newDate;
+        });
+    };
+
+    const isNextMonthFuture = () => {
+        const nextMonth = new Date(currentMonth);
+        nextMonth.setDate(1);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        return nextMonth > new Date();
+    };
+
+    // --- ACCURATE STATS STATE ---
     const [stats, setStats] = useState({
         totalEmployees: 0,
         activatedCount: 0,
@@ -651,9 +660,16 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
 
     useEffect(() => {
         const fetchAccurateStats = async () => {
-            setIsLoadingStats(true); // Track stats loading separately
+            setIsLoadingStats(true);
             try {
-                const params = new URLSearchParams();
+                const month = (currentMonth.getMonth() + 1).toString().padStart(2, '0');
+                const year = currentMonth.getFullYear().toString();
+
+                const params = new URLSearchParams({
+                    month,
+                    year
+                });
+
                 if (hospitalFilter && hospitalFilter !== 'all') {
                     params.append('hospitalId', hospitalFilter);
                 }
@@ -670,17 +686,18 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         };
 
         fetchAccurateStats();
-    }, [hospitalFilter]);
+    }, [hospitalFilter, currentMonth]);
     // -------------------------------------------------------------
 
 
 
-    // Reset hospital filter to user's hospital if they cannot select multiple
     useEffect(() => {
         if (!canSelectHospital && loggedInEmployee?.hospitalId) {
             setHospitalFilter(loggedInEmployee.hospitalId);
         }
     }, [canSelectHospital, loggedInEmployee]);
+
+
 
     const isGlobal = hospitalFilter === 'all';
 
@@ -696,8 +713,16 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         });
     }, [allUsersData, hospitalFilter]);
 
-    // Check if we likely have partial data (e.g., exactly 50 records)
-    const isPartialData = allUsers.length > 0 && allUsers.length <= 50;
+    // Check if we likely have partial data by comparing current count with expected stats
+    const isPartialData = useMemo(() => {
+        // Expected total from server stats
+        const expectedTotal = isGlobal
+            ? stats.totalEmployees
+            : (stats.hospitalBreakdown.find(h => h.id?.toLowerCase() === hospitalFilter.toLowerCase())?.total || 0);
+
+        // If we have 0 users but stats say we should have more, or if we have exactly a round number like 50 (legacy pagination limit)
+        return (allUsers.length < expectedTotal) || (allUsers.length > 0 && allUsers.length <= 50);
+    }, [allUsers.length, hospitalFilter, stats, isGlobal]);
 
     const selectedHospitalName = useMemo(() => {
         if (hospitalFilter === 'all') return 'Grup RSI (Aliansi)';
@@ -710,6 +735,13 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
             try { await onLoadAllData(); } finally { setIsLoadingMore(false); }
         }
     };
+
+    // ⚡ Auto-load full employee list when switching to detailed view to ensure search works perfectly
+    useEffect(() => {
+        if (viewMode === 'detailed' && isPartialData && onLoadAllData && !isLoadingMore) {
+            handleLoadAll();
+        }
+    }, [viewMode, isPartialData, onLoadAllData, isLoadingMore]);
 
     if (Object.keys(allUsersData).length === 0) {
         return (
@@ -730,14 +762,52 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] uppercase tracking-widest font-bold opacity-60">Wilayah Kerja Saat Ini</span>
+
                                 <span className={`text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'}`}>
                                     {isGlobal ? 'SELURUH GRUP (GLOBAL)' : selectedHospitalName}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="w-full md:w-96 flex items-center pr-2">
+                        {/* View Mode Toggle - NEW */}
+                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 self-stretch">
+                            <button
+                                onClick={() => setViewMode('overview')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'overview' ? 'bg-teal-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                                RINGKASAN
+                            </button>
+                            <button
+                                onClick={() => setViewMode('detailed')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'detailed' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                                ANALISIS KERJA
+                            </button>
+                        </div>
+
+                        {/* Month Navigator Integrator */}
+                        <div className="flex items-center bg-black/40 border border-white/10 rounded-xl p-1 shadow-inner h-[58px]">
+                            <button
+                                onClick={() => navigateMonth('prev')}
+                                className="h-full px-4 rounded-lg hover:bg-white/10 text-white transition-all flex items-center justify-center font-bold"
+                            >
+                                &larr;
+                            </button>
+                            <span className="min-w-[140px] text-center font-bold text-sm text-teal-300 tracking-wide px-2 uppercase">
+                                {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                            </span>
+                            <button
+                                onClick={() => navigateMonth('next')}
+                                disabled={isNextMonthFuture()}
+                                className="h-full px-4 rounded-lg hover:bg-white/10 text-white transition-all disabled:opacity-20 flex items-center justify-center font-bold"
+                            >
+                                &rarr;
+                            </button>
+                        </div>
+
+                        <div className="w-full md:w-80 flex items-center pr-2">
                             <label className="sr-only">Pilih Unit</label>
                             <select
                                 value={hospitalFilter}
@@ -748,7 +818,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 <optgroup label="Unit Rumah Sakit" className="bg-neutral-900 text-gray-400">
                                     {hospitals.map(h => (
                                         <option key={h.id} value={h.id} className="bg-neutral-900 text-white">
-                                            🏥 {h.brand} - {h.name}
+                                            🏥 {h.brand}
                                         </option>
                                     ))}
                                 </optgroup>
@@ -758,26 +828,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                 </div>
             )}
 
-            {isPartialData && onLoadAllData && (
-                <div className="bg-blue-900/40 border border-blue-500/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/20 rounded-lg text-blue-300">
-                            <ChartBarIcon className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-white font-semibold text-sm">Menampilkan {allUsers.length} data karyawan di dropdown</p>
-                            <p className="text-blue-200 text-xs">Analisis grafik sudah 100% akurat berdasarkan data seluruh organisasi di database.</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleLoadAll}
-                        disabled={isLoadingMore}
-                        className="whitespace-nowrap px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {isLoadingMore ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Muat Semua Data'}
-                    </button>
-                </div>
-            )}
+
 
             {/* 🏥 DASHBOARD CONTENT WITH LOADING OVERLAY */}
             {isLoadingStats ? (
@@ -790,9 +841,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     </div>
                     <p className="mt-6 text-white font-bold tracking-widest text-sm uppercase opacity-60">Mensinkronisasi Data {selectedHospitalName}...</p>
                 </div>
-            ) : isGlobal ? (
+            ) : viewMode === 'overview' ? (
+                /* 💎 EXECUTIVE OVERVIEW - Fast & Visual */
                 <div className="space-y-8 animate-in fade-in duration-700">
-                    {/* Hero Stats */}
                     <ActivationReport
                         allUsers={allUsers}
                         hospitalFilter={hospitalFilter}
@@ -800,36 +851,35 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         stats={stats}
                     />
 
-                    {/* Comparative Highlights */}
-                    <div className="w-full">
-                        <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
-                    </div>
+                    {isGlobal && (
+                        <div className="w-full space-y-8">
+                            <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
+                            <HospitalPerformanceComparison
+                                hospitalFilter={hospitalFilter}
+                                hospitals={hospitals}
+                                currentMonth={currentMonth}
+                            />
+                        </div>
+                    )}
 
-                    {/* Group Wide Performance Chart Box */}
-                    <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-2xl">
-                        <MutabaahPerformanceReport
-                            allUsers={allUsers}
-                            dailyActivitiesConfig={dailyActivitiesConfig}
-                            hospitalFilter={hospitalFilter}
-                            hospitals={hospitals}
-                        />
-                    </div>
+
                 </div>
             ) : (
-                /* 🏥 THE UNIT DASHBOARD (SPECIFIC RS) */
-                <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                    <ActivationReport
-                        allUsers={allUsers}
-                        hospitalFilter={hospitalFilter}
-                        hospitalName={selectedHospitalName}
-                        stats={stats}
-                    />
-                    <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-xl">
+                /* 🔍 DETAILED ANALYTICS - Performance Deep Dive */
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                    {/* Compact Context when in Detailed View */}
+
+
+                    <div className="p-6 bg-black/40 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
                         <MutabaahPerformanceReport
+                            key={`${hospitalFilter}-${viewMode}`} // Force remount for clean state
                             allUsers={allUsers}
                             dailyActivitiesConfig={dailyActivitiesConfig}
                             hospitalFilter={hospitalFilter}
                             hospitals={hospitals}
+                            currentMonth={currentMonth}
+                            navigateMonth={navigateMonth}
+                            isNextMonthFuture={isNextMonthFuture}
                         />
                     </div>
                 </div>

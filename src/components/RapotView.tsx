@@ -1207,7 +1207,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                     categoriesRaw[act.category].details[act.id] = { title: act.title, yearlyTarget: 0, yearlyAchieved: 0 };
                 }
 
-                categoriesRaw[act.category].details[act.id].yearlyTarget += act.monthlyTarget;
+                // 🔥 FIX: Target Tahunan selalu dihitung untuk 12 bulan penuh (Jan-Des)
+                categoriesRaw[act.category].details[act.id].yearlyTarget = act.monthlyTarget * 12;
 
                 const submission = submissions.find(s => s.monthKey === mKey);
                 const isApproved = submission?.status === 'approved';
@@ -1371,8 +1372,8 @@ const RapotView: React.FC<RapotViewProps> = ({ employee, dailyActivitiesConfig, 
                     categoriesRaw[act.category].details[act.id] = { title: act.title, yearlyTarget: 0, yearlyAchieved: 0 };
                 }
 
-                // Tambahkan target bulanan ke akumulasi tahunan
-                categoriesRaw[act.category].details[act.id].yearlyTarget += act.monthlyTarget;
+                // 🔥 FIX: Target Tahunan selalu dihitung untuk 12 bulan penuh (Jan-Des)
+                categoriesRaw[act.category].details[act.id].yearlyTarget = act.monthlyTarget * 12;
 
                 // Hitung capaian di bulan ini (gabungan base progress + cached reports)
                 // 🔥 STRICT CHECK: Hanya hitung capaian jika status laporan bulan tersebut 'approved'

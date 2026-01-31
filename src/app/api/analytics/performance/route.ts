@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
         // 4. Fetch Targeted Employee IDs based on filters (Exclude non-numeric IDs)
         let employeeQuery = supabase.from('employees')
-            .select('id')
+            .select('id, hospital_id')
             .eq('is_active', true)
             .filter('id', 'match', '^[0-9]+$')
             .not('role', 'in', '(admin,super-admin)');
@@ -213,10 +213,12 @@ export async function GET(request: NextRequest) {
             categoryTotals[categoryName].count++;
         });
 
-        const performanceByCategory = Object.entries(categoryTotals).map(([name, stats]) => ({
-            name,
-            Persentase: stats.count > 0 ? Math.round(stats.totalPercentage / stats.count) : 0,
-        }));
+        const performanceByCategory = Object.entries(categoryTotals)
+            .map(([name, stats]) => ({
+                name,
+                Persentase: stats.count > 0 ? Math.round(stats.totalPercentage / stats.count) : 0,
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
 
         const groupedPerformanceByActivity = performanceByActivity.reduce((acc, item) => {
             const categoryName = item.category || 'Lainnya';
@@ -225,10 +227,77 @@ export async function GET(request: NextRequest) {
             return acc;
         }, {} as Record<string, any[]>);
 
+        // --- NEW: Hospital Wise Breakdown for Comparison ---
+        let hospitalComparison: any[] = [];
+        if (!hospitalId || hospitalId === 'all') {
+            const { data: hospitals } = await supabase.from('hospitals').select('id, brand, name');
+            const hospitalMap: Record<string, any> = {};
+
+            (hospitals || []).forEach(h => {
+                hospitalMap[h.id] = {
+                    id: h.id,
+                    brand: h.brand,
+                    categories: {
+                        'SIDIQ (Integritas)': { total: 0, count: 0 },
+                        'TABLIGH (Teamwork)': { total: 0, count: 0 },
+                        'AMANAH (Disiplin)': { total: 0, count: 0 },
+                        'FATONAH (Belajar)': { total: 0, count: 0 }
+                    }
+                };
+            });
+
+            // Group employees by hospital
+            const empByHospital: Record<string, string[]> = {};
+            targetEmployees.forEach(emp => {
+                const hid = emp.hospital_id;
+                if (!hid) return;
+                if (!empByHospital[hid]) empByHospital[hid] = [];
+                empByHospital[hid].push(emp.id);
+            });
+
+            // For each hospital, calculate category averages
+            Object.entries(empByHospital).forEach(([hid, ids]) => {
+                if (!hospitalMap[hid]) return;
+
+                DAILY_ACTIVITIES.forEach(act => {
+                    let achieved = 0;
+                    if (userActivityDays[act.id]) {
+                        ids.forEach(uid => {
+                            if (userActivityDays[act.id][uid]) {
+                                achieved += Math.min(act.monthlyTarget, userActivityDays[act.id][uid].size);
+                            }
+                        });
+                    }
+                    // Add manual counts if any
+                    // Note: manual counts are aggregated in activityCounts globally, 
+                    // we need to re-aggregate them per hospital for accuracy if we want perfect data.
+                    // For speed, let's use the tracked days which covers most automated tasks.
+
+                    const totalTarget = ids.length * act.monthlyTarget;
+                    const percentage = totalTarget > 0 ? (achieved / totalTarget) : 0;
+
+                    if (hospitalMap[hid].categories[act.category]) {
+                        hospitalMap[hid].categories[act.category].total += percentage;
+                        hospitalMap[hid].categories[act.category].count++;
+                    }
+                });
+            });
+
+            hospitalComparison = Object.values(hospitalMap).map((h: any) => {
+                const result: any = { id: h.id, brand: h.brand };
+                Object.entries(h.categories).forEach(([catName, stats]: [string, any]) => {
+                    const cleanName = catName.split(' ')[0]; // SIDIQ, etc.
+                    result[cleanName] = stats.count > 0 ? Math.round((stats.total / stats.count) * 100) : 0;
+                });
+                return result;
+            }).filter((h: any) => h.SIDIQ > 0 || h.TABLIGH > 0 || h.AMANAH > 0 || h.FATONAH > 0);
+        }
+
         return NextResponse.json({
             performanceByCategory,
             groupedPerformanceByActivity,
-            employeeCount: employeeIds.length
+            employeeCount: employeeIds.length,
+            hospitalComparison
         });
 
     } catch (error) {

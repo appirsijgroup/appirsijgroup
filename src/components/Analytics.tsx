@@ -296,10 +296,12 @@ const MutabaahPerformanceReport: React.FC<{
         performanceByCategory: any[];
         groupedPerformanceByActivity: Record<string, any[]>;
         employeeCount: number;
+        hospitalComparison: any[];
     }>({
         performanceByCategory: [],
         groupedPerformanceByActivity: {},
-        employeeCount: 0
+        employeeCount: 0,
+        hospitalComparison: []
     });
 
     useEffect(() => {
@@ -383,7 +385,7 @@ const MutabaahPerformanceReport: React.FC<{
         };
     }, [allUsers, localHospitalFilter]);
 
-    const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
+    const { performanceByCategory, groupedPerformanceByActivity, employeeCount, hospitalComparison } = performanceData;
 
     const navigateMonth = (direction: 'prev' | 'next') => {
         setCurrentMonth(prev => {
@@ -468,6 +470,26 @@ const MutabaahPerformanceReport: React.FC<{
                 </div>
             ) : employeeCount > 0 ? (
                 <div className="space-y-6">
+                    {hospitalFilter === 'all' && hospitalComparison.length > 0 && (
+                        <ChartCard title="Komparasi STAFF (Integritas, Teamwork, Disiplin, Belajar) Antar Unit RS" minWidth="800px">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={hospitalComparison} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                                    <XAxis dataKey="brand" stroke="#cbd5e1" fontSize={11} fontWeight="bold" />
+                                    <YAxis stroke="#cbd5e1" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} fontSize={10} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #374151', borderRadius: '8px' }}
+                                        itemStyle={{ fontSize: '12px' }}
+                                    />
+                                    <Bar dataKey="SIDIQ" fill="#f59e0b" name="SIDIQ (Integritas)" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="TABLIGH" fill="#10b981" name="TABLIGH (Teamwork)" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="AMANAH" fill="#3b82f6" name="AMANAH (Disiplin)" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="FATONAH" fill="#8b5cf6" name="FATONAH (Belajar)" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
+                    )}
+
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
                         {isClient ? (
                             <ResponsiveContainer width="100%" height="100%">

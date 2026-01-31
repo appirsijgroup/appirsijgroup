@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '15'), 100)
     const search = searchParams.get('search') || ''
+    const hospitalId = searchParams.get('hospitalId') || ''
     const role = searchParams.get('role') || ''
     const isActive = searchParams.get('isActive')
 
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       `, { count: 'exact' })
 
     if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
+    if (hospitalId) query = query.eq('hospital_id', hospitalId)
     if (role) query = query.eq('role', role)
     if (isActive !== null && isActive !== undefined && isActive !== '') query = query.eq('is_active', isActive === 'true')
 

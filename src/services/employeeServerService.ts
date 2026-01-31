@@ -19,6 +19,8 @@ const convertToCamelCase = (emp: any): any => {
         canBeSupervisor: emp.can_be_supervisor,
         canBeKaUnit: emp.can_be_ka_unit,
         canBeDirut: emp.can_be_dirut,
+        canBeManager: emp.can_be_manager,
+        managerId: emp.manager_id,
         functionalRoles: emp.functional_roles,
         managerScope: typeof emp.manager_scope === 'string' ? JSON.parse(emp.manager_scope) : emp.manager_scope,
         locationId: emp.location_id,

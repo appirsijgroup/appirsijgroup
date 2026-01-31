@@ -253,6 +253,7 @@ export interface AdminReportRecord {
   unit: string;
   professionCategory: 'MEDIS' | 'NON MEDIS';
   profession: string;
+  hospitalId?: string;
   date: string; // YYYY-MM-DD
   entityId: string;
   prayerName: string;

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { type Employee } from '../types';
+import { type Employee, type Hospital } from '../types';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 import { SearchIcon } from './Icons';
 import { useNotificationStore } from '../store/notificationStore';
@@ -7,7 +7,8 @@ import { useUIStore } from '@/store/store';
 
 interface RelationManagementProps {
     allUsers: Employee[];
-    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
+    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>, silent?: boolean) => Promise<boolean>;
+    hospitals?: Hospital[];
 }
 
 // A simple reusable toggle switch component
@@ -50,16 +51,23 @@ const ToggleSwitch: React.FC<{
     );
 };
 
-const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile }) => {
+const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile, hospitals = [] }) => {
     const { addToast } = useUIStore();
     const { createNotification } = useNotificationStore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [hospitalFilter, setHospitalFilter] = useState('all');
 
     // 🔥 FIX: Use ref to prevent infinite loop
     const lastDirutIdRef = useRef<string | undefined>(undefined);
 
     // Defensive check: ensure allUsers is an array
-    const safeAllUsers = Array.isArray(allUsers) ? allUsers : [];
+    const hospitalFilteredUsers = useMemo(() => {
+        const users = Array.isArray(allUsers) ? allUsers : [];
+        if (hospitalFilter === 'all') return users;
+        return users.filter(u => u.hospitalId === hospitalFilter);
+    }, [allUsers, hospitalFilter]);
+
+    const safeAllUsers = hospitalFilteredUsers;
 
     // Optimized map for ultra-fast name lookup by NIP
     const userMap = useMemo(() => {
@@ -94,7 +102,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
             lastDirutIdRef.current = dirutId;
 
             const updatePromises = usersToUpdate.map(user =>
-                onUpdateProfile(user.id, { dirutId: dirutId })
+                onUpdateProfile(user.id, { dirutId: dirutId }, true) // 🔥 SILENT update
             );
             Promise.all(updatePromises).catch(err => {
             });
@@ -240,15 +248,31 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
         <div>
             <h3 className="text-xl font-bold text-white mb-4">Kelola Relasi & Jabatan Fungsional</h3>
 
-            <div className="mb-4 relative max-w-md">
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Cari nama atau NIP karyawan..."
-                    className="w-full bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 max-w-2xl">
+                <div className="relative flex-1">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        placeholder="Cari nama atau NIP karyawan..."
+                        className="w-full bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                {hospitals.length > 0 && (
+                    <div className="w-full sm:w-64">
+                        <select
+                            value={hospitalFilter}
+                            onChange={e => setHospitalFilter(e.target.value)}
+                            className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-3 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        >
+                            <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>
+                            {hospitals.map((h: Hospital) => (
+                                <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             {/* Mobile scroll indicator */}
@@ -261,6 +285,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                     <thead className="bg-white/10 text-xs uppercase text-blue-200 align-middle">
                         <tr>
                             <th rowSpan={2} className="px-3 py-2 sm:px-4 align-middle border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[200px]">Nama Karyawan</th>
+                            <th rowSpan={2} className="px-3 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap min-w-[100px]">RS ID</th>
                             <th colSpan={5} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Kapabilitas Peran</th>
                             <th colSpan={5} className="px-2 py-2 text-center border-b-2 border-r border-gray-700 whitespace-nowrap">Penugasan Atasan</th>
                             <th rowSpan={2} className="px-3 py-2 text-center border-b-2 border-gray-700 whitespace-nowrap min-w-[100px]">Aksi</th>
@@ -284,6 +309,11 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                                 <td className="px-3 py-3 sm:px-4 whitespace-nowrap border-r border-gray-700 min-w-[180px]">
                                     <p className="font-semibold text-sm truncate" title={user.name}>{user.name}</p>
                                     <p className="text-xs text-gray-400 font-mono truncate">{user.id}</p>
+                                </td>
+                                <td className="px-2 py-3 text-center border-r border-gray-700 min-w-[100px]">
+                                    <span className="font-mono text-xs uppercase text-blue-300">
+                                        {user.hospitalId || '-'}
+                                    </span>
                                 </td>
                                 <td className="px-2 py-3 text-center min-w-[80px]">
                                     <div className="flex justify-center">
@@ -530,7 +560,7 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                         ))}
                         {sortedUsers.length === 0 && (
                             <tr>
-                                <td colSpan={9} className="text-center p-8 text-blue-200">
+                                <td colSpan={11} className="text-center p-8 text-blue-200">
                                     Tidak ada karyawan yang cocok dengan pencarian Anda.
                                 </td>
                             </tr>

@@ -54,7 +54,7 @@ interface AdminDashboardProps {
     onBulkUpdateUsers: (usersToProcess: (RawEmployee & { id: string; })[]) => Promise<{ added: number, updated: number, failed: { record: RawEmployee & { id: string }, reason: string; }[] }>;
     activities: Activity[];
     onAdminUpdateAttendance: (payload: { userId: string; date: string; entityId: string; status: "hadir" | "tidak-hadir" | null; reason: string | null; }) => void;
-    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>) => Promise<boolean>;
+    onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>, silent?: boolean) => Promise<boolean>;
     sunnahIbadahList: SunnahIbadah[];
     onAddSunnahIbadah: (ibadahData: Omit<SunnahIbadah, 'id' | 'createdBy' | 'createdByName'>) => void;
     onUpdateSunnahIbadah: (ibadahId: string, updates: Partial<SunnahIbadah>) => void;
@@ -94,10 +94,12 @@ interface AdminDashboardProps {
         onSearch: (term: string) => void;
         onRoleFilter: (role: string) => void;
         onIsActiveFilter: (isActive: boolean | undefined) => void;
+        onHospitalFilter: (hospitalId: string) => void;
         onRefresh: () => void;
         searchTerm: string;
         roleFilter: string;
         isActiveFilter: boolean | undefined;
+        hospitalFilter: string;
     };
 }
 
@@ -905,15 +907,38 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
     return (
         <div>
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-6">
-                <div className="relative w-full md:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                        type="text"
-                        value={pagination?.searchTerm || ''}
-                        onChange={e => pagination?.onSearch(e.target.value)}
-                        placeholder="Cari nama atau NIP..."
-                        className="w-full bg-white/5 border border-white/20 rounded-xl p-3 pl-10 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white transition-colors"
-                    />
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:max-w-xl">
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400/80" />
+                        <input
+                            type="text"
+                            value={pagination?.searchTerm || ''}
+                            onChange={e => pagination?.onSearch(e.target.value)}
+                            placeholder="Cari nama atau NIP karyawan..."
+                            className="w-full bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl py-2.5 pl-9 pr-4 focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 focus:outline-none text-white transition-all text-sm placeholder:text-gray-500 shadow-sm"
+                        />
+                    </div>
+
+                    {isSuperAdmin(loggedInEmployee) && (
+                        <div className="relative w-full sm:w-72 shrink-0">
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/80" />
+                            <select
+                                value={pagination?.hospitalFilter || ''}
+                                onChange={e => pagination?.onHospitalFilter(e.target.value)}
+                                className="w-full bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl py-2.5 pl-9 pr-10 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:outline-none text-white transition-all appearance-none text-sm font-medium cursor-pointer shadow-sm"
+                            >
+                                <option value="" className="bg-gray-900">Seluruh Unit RSIJ Group</option>
+                                {hospitals.map(h => (
+                                    <option key={h.id} value={h.id} className="bg-gray-900">
+                                        {h.brand}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <ChevronDown className="w-4 h-4" />
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <button onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg transition-all active:scale-95">
@@ -1260,6 +1285,7 @@ interface AttendanceReportProps {
     pagination?: AdminDashboardProps['pagination'];
     onRefresh?: () => void;
     isLoading?: boolean;
+    hospitals: Hospital[];
 }
 
 const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, options: (string | number)[], defaultLabel: string }> = ({ value, onChange, options, defaultLabel }) => (
@@ -1269,7 +1295,7 @@ const SelectFilter: React.FC<{ value: string, onChange: (e: React.ChangeEvent<HT
     </select>
 );
 
-const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance, pagination, onRefresh, isLoading }) => {
+const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activities, reportType, onShowPreview, loggedInEmployee, onEditAttendance, onDeleteAttendance, pagination, onRefresh, isLoading, hospitals }) => {
     const [dateFilterType, setDateFilterType] = useState<DateFilterType>('monthly');
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
     const [yearFilter, setYearFilter] = useState<string>('');
@@ -1281,6 +1307,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
     const [professionFilter, setProfessionFilter] = useState<string>('all');
     const [nameOrNipFilter, setNameOrNipFilter] = useState<string>('');
     const [activationStatusFilter, setActivationStatusFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
+    const [hospitalFilter, setHospitalFilter] = useState<string>('all');
 
     // Flag to prevent unnecessary re-renders while user is interacting with date inputs
     const isInteractingWithDateInput = useRef(false);
@@ -1348,6 +1375,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     if (att.submitted && att.status && att.timestamp) {
                         records.push({
                             employeeId: employee.id, employeeName: employee.name, unit: employee.unit, professionCategory: employee.professionCategory, profession: employee.profession,
+                            hospitalId: employee.hospitalId,
                             date, entityId, prayerName: entityName,
                             status: att.status === 'hadir' ? 'Hadir' : 'Tidak Hadir',
                             detail: att.isLateEntry ? 'Terlambat' : (att.reason || 'Tepat Waktu'),
@@ -1405,6 +1433,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             if (entityFilter !== 'all' && record.prayerName !== entityFilter) return false;
             if (unitFilter !== 'all' && record.unit !== unitFilter) return false;
             if (professionFilter !== 'all' && record.profession !== professionFilter) return false;
+            if (hospitalFilter !== 'all' && record.hospitalId !== hospitalFilter) return false;
             if (nameOrNipFilter) {
                 const searchTerm = nameOrNipFilter.toLowerCase();
                 const nameMatch = record.employeeName.toLowerCase().includes(searchTerm);
@@ -1414,7 +1443,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
             return true;
         });
-    }, [flattenedHistory, dateFilterType, monthFilter, yearFilter, startDate, endDate, entityFilter, unitFilter, professionFilter, nameOrNipFilter, activationStatusFilter, reportType, allUsersData]);
+    }, [flattenedHistory, dateFilterType, monthFilter, yearFilter, startDate, endDate, entityFilter, unitFilter, professionFilter, nameOrNipFilter, activationStatusFilter, hospitalFilter, reportType, allUsersData]);
 
     const handleDateFilterTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newType = e.target.value as DateFilterType;
@@ -1519,9 +1548,10 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
         } else { // Activity Report
             const title = `LAPORAN PRESENSI KEGIATAN`;
-            const tableColumn = ["Tanggal", "Nama", "Unit", "Kategori Profesi", "Profesi", 'Kegiatan', "Status", "Waktu"];
+            const tableColumn = ["Tanggal", "RS ID", "Nama", "Unit", "Kategori Profesi", "Profesi", 'Kegiatan', "Status", "Waktu"];
             const tableRows = filteredData.map(d => [
                 new Date(d.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+                d.hospitalId || '-',
                 d.employeeName, d.unit, d.professionCategory, d.profession, d.prayerName, d.status, d.timestamp
             ]);
 
@@ -1545,7 +1575,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         let data: (string | number)[][];
 
         if (reportType === 'prayer') {
-            header = ["No", "Tanggal", "NIP", "Nama Karyawan", "Unit", "Kategori Profesi", "Profesi", "Aktivasi Bulan Ini", "Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"];
+            header = ["No", "Tanggal", "RS ID", "NIP", "Nama Karyawan", "Unit", "Kategori Profesi", "Profesi", "Aktivasi Bulan Ini", "Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya"];
             const userMap = new Map(Object.values(allUsersData).map((d: { employee: Employee }) => [d.employee.id, d.employee]));
 
             const aggregatedData = new Map<string, any>();
@@ -1565,6 +1595,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
                     aggregatedData.set(key, {
                         employeeId: record.employeeId, employeeName: record.employeeName, unit: record.unit, professionCategory: record.professionCategory, profession: record.profession,
+                        hospitalId: record.hospitalId, // Added hospitalId
                         isMonthActivated,
                         prayers: { subuh: '-', dzuhur: '-', ashar: '-', maghrib: '-', isya: '-' }
                     });
@@ -1579,15 +1610,15 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
             data = Array.from(aggregatedData.values())
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || a.employeeName.localeCompare(b.employeeName))
                 .map((row, index) => [
-                    index + 1, new Date(row.date).toLocaleDateString('id-ID'), row.employeeId, row.employeeName, row.unit, row.professionCategory, row.profession,
+                    index + 1, new Date(row.date).toLocaleDateString('id-ID'), row.hospitalId || '-', row.employeeId, row.employeeName, row.unit, row.professionCategory, row.profession,
                     row.isMonthActivated ? 'Sudah' : 'Belum',
                     row.prayers.subuh, row.prayers.dzuhur, row.prayers.ashar, row.prayers.maghrib, row.prayers.isya
                 ]);
 
         } else {
-            header = ["Tanggal", "NIP", "Nama", "Unit", "Kategori Profesi", "Profesi", 'Nama Kegiatan', "Status", "Waktu Presensi"];
+            header = ["Tanggal", "RS ID", "NIP", "Nama", "Unit", "Kategori Profesi", "Profesi", 'Nama Kegiatan', "Status", "Waktu Presensi"];
             data = filteredData.map(d => [
-                new Date(d.date).toLocaleDateString('id-ID'), d.employeeId, d.employeeName, d.unit, d.professionCategory, d.profession,
+                new Date(d.date).toLocaleDateString('id-ID'), d.hospitalId || '-', d.employeeId, d.employeeName, d.unit, d.professionCategory, d.profession,
                 d.prayerName, d.status, d.timestamp
             ]);
         }
@@ -1617,113 +1648,132 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
     return (
         <div className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg" style={{ position: 'relative', zIndex: 10 }}>
-                {/* Row 1 */}
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Jenis Periode</label>
-                    <select value={dateFilterType} onChange={handleDateFilterTypeChange} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
-                        <option value="range" className="text-black bg-white">Rentang Tanggal</option>
-                        <option value="monthly" className="text-black bg-white">Bulanan</option>
-                        <option value="yearly" className="text-black bg-white">Tahunan</option>
-                        <option value="all" className="text-black bg-white">Semua</option>
-                    </select>
-                </div>
-                <div className="lg:col-span-3" style={{ position: 'relative', zIndex: 50 }}>
-                    {(() => {
-                        switch (dateFilterType) {
-                            case 'range':
-                                return (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-xs font-semibold text-blue-200 block mb-1">Dari Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={startDate}
-                                                onChange={e => setStartDate(e.target.value)}
-                                                className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                                                style={{ colorScheme: 'dark' }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-xs font-semibold text-blue-200 block mb-1">Sampai Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={endDate}
-                                                onChange={e => setEndDate(e.target.value)}
-                                                className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                                                style={{ colorScheme: 'dark' }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            case 'monthly':
-                                return (
-                                    <div>
-                                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Bulan</label>
-                                        <input
-                                            type="month"
-                                            value={monthFilter}
-                                            onChange={e => setMonthFilter(e.target.value)}
-                                            className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                                            style={{ colorScheme: 'dark' }}
-                                        />
-                                    </div>
-                                );
-                            case 'yearly':
-                                return (
-                                    <div>
-                                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Tahun</label>
-                                        <select
-                                            value={yearFilter}
-                                            onChange={e => setYearFilter(e.target.value)}
-                                            className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                                        >
-                                            {allYearsWithData.map(year => (
-                                                <option key={year} value={year} className="text-black bg-white">{year}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                );
-                            case 'all':
-                            default:
-                                return <div className="h-[54px] flex items-center justify-center text-sm text-gray-400 italic bg-black/20 rounded-md border border-white/10">Semua data</div>;
-                        }
-                    })()}
-                </div>
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">{reportType === 'prayer' ? 'Sholat' : 'Kegiatan'}</label>
-                    <SelectFilter value={entityFilter} onChange={e => setEntityFilter(e.target.value)} options={allReportableEntities} defaultLabel={reportType === 'prayer' ? 'Semua Sholat' : 'Semua Kegiatan'} />
-                </div>
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Unit Kerja</label>
-                    <SelectFilter value={unitFilter} onChange={e => setUnitFilter(e.target.value)} options={allUnits} defaultLabel="Semua Unit" />
-                </div>
-                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Profesi</label>
-                    <SelectFilter value={professionFilter} onChange={e => setProfessionFilter(e.target.value)} options={allProfessions} defaultLabel="Semua Profesi" />
-                </div>
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 shadow-2xl">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* --- Group 1: Periode & Waktu (Left Side) --- */}
+                    <div className="lg:col-span-12 xl:col-span-8 grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4 lg:col-span-3">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Jenis Periode</label>
+                            <select value={dateFilterType} onChange={handleDateFilterTypeChange} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500/50 focus:outline-none transition-all appearance-none cursor-pointer hover:bg-black/60">
+                                <option value="range" className="text-black bg-white">Rentang Tanggal</option>
+                                <option value="monthly" className="text-black bg-white">Bulanan</option>
+                                <option value="yearly" className="text-black bg-white">Tahunan</option>
+                                <option value="all" className="text-black bg-white">Semua Data</option>
+                            </select>
+                        </div>
 
-                {/* Row 2 */}
-                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 40 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Cari Nama atau NIP</label>
-                    <div className="relative">
-                        <input type="text" value={nameOrNipFilter} onChange={e => setNameOrNipFilter(e.target.value)} placeholder="Ketik nama atau NIP..." className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white" />
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <div className="md:col-span-8 lg:col-span-5">
+                            {(() => {
+                                switch (dateFilterType) {
+                                    case 'range':
+                                        return (
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Dari</label>
+                                                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60" style={{ colorScheme: 'dark' }} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Sampai</label>
+                                                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60" style={{ colorScheme: 'dark' }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    case 'monthly':
+                                        return (
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Pilih Bulan</label>
+                                                <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60" style={{ colorScheme: 'dark' }} />
+                                            </div>
+                                        );
+                                    case 'yearly':
+                                        return (
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Pilih Tahun</label>
+                                                <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                                    {allYearsWithData.map(year => (
+                                                        <option key={year} value={year} className="text-black bg-white">{year}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        );
+                                    default:
+                                        return (
+                                            <div>
+                                                <label className="text-[10px] uppercase tracking-wider font-bold text-gray-500 block mb-1.5 ml-1">Status</label>
+                                                <div className="h-[42px] flex items-center px-4 text-xs text-gray-400 italic bg-black/20 rounded-xl border border-white/5">Menampilkan semua periode</div>
+                                            </div>
+                                        );
+                                }
+                            })()}
+                        </div>
+
+                        <div className="md:col-span-12 lg:col-span-4">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">{reportType === 'prayer' ? 'Jenis Sholat' : 'Nama Kegiatan'}</label>
+                            <select value={entityFilter} onChange={e => setEntityFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                <option value="all" className="text-black bg-white">{reportType === 'prayer' ? 'Semua Sholat' : 'Semua Kegiatan'}</option>
+                                {allReportableEntities.map(opt => <option key={opt} value={String(opt)} className="text-black bg-white">{opt}</option>)}
+                            </select>
+                        </div>
                     </div>
-                </div>
-                {reportType === 'prayer' && dateFilterType === 'monthly' && (
-                    <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 40 }}>
-                        <label className="text-xs font-semibold text-blue-200 block mb-1">Status Aktivasi</label>
-                        <select value={activationStatusFilter} onChange={e => setActivationStatusFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none relative z-50" style={{ zIndex: 50 }}>
-                            <option value="all" className="text-black bg-white">Semua Status</option>
-                            <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
-                            <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
-                        </select>
+
+                    {/* --- Group 2: Organisasi (Right Side) --- */}
+                    <div className="lg:col-span-12 xl:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {isSuperAdmin(loggedInEmployee) && (
+                            <div className="md:col-span-1">
+                                <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
+                                <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                    <option value="all" className="text-black bg-white">Seluruh Unit RSIJ Group</option>
+                                    {hospitals.map(h => <option key={h.id} value={h.id} className="text-black bg-white">{h.brand}</option>)}
+                                </select>
+                            </div>
+                        )}
+                        <div className={isSuperAdmin(loggedInEmployee) ? "md:col-span-1" : "md:col-span-2"}>
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Unit Kerja</label>
+                            <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                <option value="all" className="text-black bg-white">Semua Unit</option>
+                                {allUnits.map(opt => <option key={opt} value={String(opt)} className="text-black bg-white">{opt}</option>)}
+                            </select>
+                        </div>
                     </div>
-                )}
-                <div className={`${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-1' : 'lg:col-span-2'} flex items-center justify-end gap-2`} style={{ position: 'relative', zIndex: 40 }}>
-                    <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><FileDown className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
-                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><FileSpreadsheet className="w-5 h-5" /></button>
+
+                    {/* --- Group 3: Pencarian & Profesi (Bottom Row) --- */}
+                    <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-2 border-t border-white/5">
+                        <div className="md:col-span-4 lg:col-span-3">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-purple-400 block mb-1.5 ml-1">Kategori Profesi</label>
+                            <select value={professionFilter} onChange={e => setProfessionFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-purple-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                <option value="all" className="text-black bg-white">Semua Profesi</option>
+                                {allProfessions.map(opt => <option key={opt} value={String(opt)} className="text-black bg-white">{opt}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="md:col-span-8 lg:col-span-5">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block mb-1.5 ml-1">Cari Nama atau NIP</label>
+                            <div className="relative group">
+                                <input type="text" value={nameOrNipFilter} onChange={e => setNameOrNipFilter(e.target.value)} placeholder="Ketik nama atau NIP..." className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm pl-10 text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60 group-hover:border-white/20" />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-hover:text-teal-400 transition-colors" />
+                            </div>
+                        </div>
+
+                        {reportType === 'prayer' && dateFilterType === 'monthly' && (
+                            <div className="md:col-span-6 lg:col-span-2">
+                                <label className="text-[10px] uppercase tracking-wider font-bold text-orange-400 block mb-1.5 ml-1">Status Aktivasi</label>
+                                <select value={activationStatusFilter} onChange={e => setActivationStatusFilter(e.target.value as 'all' | 'activated' | 'not-activated')} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-orange-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                    <option value="all" className="text-black bg-white">Semua Status</option>
+                                    <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
+                                    <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
+                                </select>
+                            </div>
+                        )}
+
+                        <div className={`md:col-span-6 ${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-2' : 'lg:col-span-4'} flex items-center justify-end gap-2`}>
+                            <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-red-500/20 shadow-sm" title="Unduh PDF">
+                                <FileDown className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+                            </button>
+                            <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="p-2.5 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-green-500/20 shadow-sm" title="Unduh Excel">
+                                <FileSpreadsheet className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1732,6 +1782,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                            <th scope="col" className="px-4 py-3 whitespace-nowrap">RS ID / BRAND</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Nama</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Unit</th>
                             <th scope="col" className="px-4 py-3 whitespace-nowrap">Profesi</th>
@@ -1744,6 +1795,9 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                         {paginatedData.map((record, index) => (
                             <tr key={`${record.employeeId}-${record.date}-${record.entityId}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
                                 <td className="px-4 py-3 whitespace-nowrap">{new Date(record.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                <td className="px-4 py-3 font-mono text-xs uppercase text-blue-300 whitespace-nowrap">
+                                    {record.hospitalId || '-'}
+                                </td>
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.employeeName}</td>
                                 <td className="px-4 py-3">{record.unit}</td>
                                 <td className="px-4 py-3">{record.profession}</td>
@@ -1836,11 +1890,13 @@ const ActivationReport: React.FC<{
     allUsersData: AdminDashboardProps['allUsersData'];
     onShowPreview: (dataUri: string, fileName: string) => void;
     loggedInEmployee: Employee;
-}> = ({ allUsersData, onShowPreview, loggedInEmployee }) => {
+    hospitals: Hospital[];
+}> = ({ allUsersData, onShowPreview, loggedInEmployee, hospitals }) => {
     const [monthFilter, setMonthFilter] = useState<string>(new Date().toISOString().slice(0, 7));
     const [statusFilter, setStatusFilter] = useState<'all' | 'activated' | 'not-activated'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [unitFilter, setUnitFilter] = useState<string>('all');
+    const [hospitalFilter, setHospitalFilter] = useState<string>('all');
 
     // Data Preparation
     const processedData = useMemo(() => {
@@ -1858,6 +1914,7 @@ const ActivationReport: React.FC<{
             name: user.name,
             unit: user.unit,
             profession: user.profession,
+            hospitalId: user.hospitalId,
             isActivated: user.activatedMonths?.includes(monthFilter) ?? false
         }));
     }, [allUsersData, monthFilter]);
@@ -1875,6 +1932,9 @@ const ActivationReport: React.FC<{
             // Unit Filter
             if (unitFilter !== 'all' && user.unit !== unitFilter) return false;
 
+            // Hospital Filter
+            if (hospitalFilter !== 'all' && user.hospitalId !== hospitalFilter) return false;
+
             // Search Term
             if (searchTerm) {
                 const lower = searchTerm.toLowerCase();
@@ -1883,7 +1943,7 @@ const ActivationReport: React.FC<{
 
             return true;
         }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [processedData, statusFilter, unitFilter, searchTerm]);
+    }, [processedData, statusFilter, unitFilter, hospitalFilter, searchTerm]);
 
     // Statistics
     const stats = useMemo(() => {
@@ -1914,11 +1974,9 @@ const ActivationReport: React.FC<{
 
     // Export Handlers
     const handleDownloadXlsx = () => {
-        const header = ["No", "NIP", "Nama", "Unit", "Profesi", "Status Aktivasi", "Bulan"];
+        const header = ["No", "RS ID", "NIP", "Nama", "Unit", "Profesi", "Status Aktivasi"];
         const data = filteredData.map((d, i) => [
-            i + 1, d.id, d.name, d.unit, d.profession,
-            d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi",
-            monthFilter
+            i + 1, d.hospitalId || '-', d.id, d.name, d.unit, d.profession, d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi"
         ]);
 
         const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
@@ -1931,9 +1989,9 @@ const ActivationReport: React.FC<{
         const title = `LAPORAN STATUS AKTIVASI KARYAWAN`;
         const subtitle = `Periode: ${new Date(monthFilter + '-02').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
 
-        const tableColumn = ["No", "NIP", "Nama", "Unit", "Status Aktivasi"];
+        const tableColumn = ["No", "RS ID", "NIP", "Nama", "Unit", "Status Aktivasi"];
         const tableRows = filteredData.map((d, i) => [
-            i + 1, d.id, d.name, d.unit, d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi"
+            i + 1, d.hospitalId || '-', d.id, d.name, d.unit, d.isActivated ? "Sudah Aktivasi" : "Belum Aktivasi"
         ]);
 
         const tableConfig: TableConfig = {
@@ -1985,41 +2043,68 @@ const ActivationReport: React.FC<{
             </div>
 
             {/* Filters */}
-            <div className="bg-black/20 p-4 rounded-lg border border-white/10 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Periode Bulan</label>
-                    <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
-                </div>
-                <div>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Status Aktivasi</label>
-                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                        <option value="all" className="text-black bg-white">Semua Status</option>
-                        <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
-                        <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Unit Kerja</label>
-                    <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                        <option value="all" className="text-black bg-white">Semua Unit</option>
-                        {allUnits.map(unit => (
-                            <option key={unit} value={unit} className="text-black bg-white">{unit}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">Cari Nama/NIP</label>
-                    <div className="relative">
-                        <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Cari..." className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-8 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" />
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 shadow-2xl">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                    {/* Period & Status Group */}
+                    <div className="lg:col-span-12 xl:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Periode Bulan</label>
+                            <input type="month" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60" style={{ colorScheme: 'dark' }} />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-orange-400 block mb-1.5 ml-1">Status Aktivasi</label>
+                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-orange-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                <option value="all" className="text-black bg-white">Semua Status</option>
+                                <option value="activated" className="text-black bg-white">Sudah Aktivasi</option>
+                                <option value="not-activated" className="text-black bg-white">Belum Aktivasi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Organization Group */}
+                    <div className="lg:col-span-12 xl:col-span-7 grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className={`${isSuperAdmin(loggedInEmployee) ? 'md:col-span-4' : 'md:col-span-12'} md:col-start-1`}>
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Unit Kerja</label>
+                            <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                <option value="all" className="text-black bg-white">Semua Unit</option>
+                                {allUnits.map(unit => (
+                                    <option key={unit} value={unit} className="text-black bg-white">{unit}</option>
+                                ))}
+                            </select>
+                        </div>
+                        {isSuperAdmin(loggedInEmployee) && (
+                            <div className="md:col-span-4">
+                                <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
+                                <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                    <option value="all" className="text-black bg-white">Semua RS</option>
+                                    {hospitals.map(h => (
+                                        <option key={h.id} value={h.id} className="text-black bg-white">{h.brand}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <div className={`${isSuperAdmin(loggedInEmployee) ? 'md:col-span-4' : 'md:col-span-12'} md:col-end-13`}>
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block mb-1.5 ml-1">Pencarian</label>
+                            <div className="relative group">
+                                <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Cari Nama/NIP..." className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm pl-10 text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60" />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-hover:text-teal-400 transition-colors" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Integrated */}
+                    <div className="lg:col-span-12 flex items-center justify-end gap-2 pt-4 border-t border-white/5">
+                        <div className="mr-auto">
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Total {filteredData.length} Karyawan (Tapis)</p>
+                        </div>
+                        <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-red-500/20 shadow-sm" title="Unduh PDF">
+                            <FileDown className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
+                        </button>
+                        <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="p-2.5 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-green-500/20 shadow-sm" title="Unduh Excel">
+                            <FileSpreadsheet className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-                <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2 hover:bg-white/10 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed" title="Download PDF"><FileDown className="w-6 h-6 text-red-500 disabled:text-gray-400" /></button>
-                <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel"><FileSpreadsheet className="w-5 h-5" /></button>
             </div>
 
             {/* Table */}
@@ -2028,6 +2113,7 @@ const ActivationReport: React.FC<{
                     <thead className="bg-white/10 text-xs uppercase text-blue-200">
                         <tr>
                             <th className="px-4 py-3 text-center w-16 whitespace-nowrap">No</th>
+                            <th className="px-4 py-3 whitespace-nowrap min-w-[100px]">RS ID / BRAND</th>
                             <th className="px-4 py-3 whitespace-nowrap min-w-[100px]">NIP</th>
                             <th className="px-4 py-3 whitespace-nowrap min-w-[180px]">Nama</th>
                             <th className="px-4 py-3 whitespace-nowrap min-w-[150px]">Unit</th>
@@ -2038,6 +2124,9 @@ const ActivationReport: React.FC<{
                         {paginatedData.map((user, idx) => (
                             <tr key={user.id} className="hover:bg-white/5">
                                 <td className="px-4 py-3 text-center whitespace-nowrap">{(currentPage - 1) * ITEMS_PER_BATCH + idx + 1}</td>
+                                <td className="px-4 py-3 font-mono text-xs uppercase text-blue-300 whitespace-nowrap">
+                                    {user.hospitalId || '-'}
+                                </td>
                                 <td className="px-4 py-3 font-mono text-gray-300 whitespace-nowrap">{user.id}</td>
                                 <td className="px-4 py-3 font-semibold whitespace-nowrap">{user.name}</td>
                                 <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{user.unit}</td>
@@ -2464,12 +2553,13 @@ const ToggleSwitch: React.FC<{
 interface JabatanManagementProps {
     allUsers: Employee[];
     onUpdateProfile: (userId: string, updates: Partial<Employee>) => void;
-
+    hospitals?: Hospital[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile }) => {
+const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile, hospitals = [] }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [hospitalFilter, setHospitalFilter] = useState('all');
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
         title: string;
@@ -2490,14 +2580,20 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
         'KEPALA RUANGAN': 'Ka. Ruangan',
     };
 
+    const hospitalFilteredUsers = useMemo(() => {
+        if (hospitalFilter === 'all') return allUsers;
+        return allUsers.filter(u => u.hospitalId === hospitalFilter);
+    }, [allUsers, hospitalFilter]);
+
     const filteredUsers = useMemo(() => {
-        if (!searchTerm) return allUsers;
+        const users = hospitalFilteredUsers;
+        if (!searchTerm) return users;
         const lowerSearchTerm = searchTerm.toLowerCase();
-        return allUsers.filter(user =>
+        return users.filter(user =>
             user.name.toLowerCase().includes(lowerSearchTerm) ||
             user.id.toLowerCase().includes(lowerSearchTerm)
         );
-    }, [allUsers, searchTerm]);
+    }, [hospitalFilteredUsers, searchTerm]);
 
     const sortedUsers = useMemo(() => {
         return [...filteredUsers].sort((a, b) => a.name.localeCompare(b.name));
@@ -2546,15 +2642,31 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     return (
         <div>
             <h3 className="text-xl font-bold text-white mb-4">Kelola Peran Fungsional</h3>
-            <div className="mb-4 relative max-w-md">
-                <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Cari nama atau NIP karyawan..."
-                    className="w-full bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="flex flex-col sm:flex-row gap-4 mb-4 max-w-2xl">
+                <div className="relative flex-1">
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        placeholder="Cari nama atau NIP karyawan..."
+                        className="w-full bg-white/10 border border-white/20 rounded-md py-2 pl-10 pr-4 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                {hospitals.length > 0 && (
+                    <div className="w-full sm:w-64">
+                        <select
+                            value={hospitalFilter}
+                            onChange={e => setHospitalFilter(e.target.value)}
+                            className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-3 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                        >
+                            <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>
+                            {hospitals.map(h => (
+                                <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
             <div className="overflow-x-auto rounded-lg border border-white/20">
                 <table className="min-w-full text-sm text-left text-white">
@@ -3723,11 +3835,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
                                 </div>
                             }>
-                                <RelationManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} />
+                                <RelationManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} />
                             </Suspense>
                         )}
                         {userManagementSubView === 'jabatan' && (
-                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} />
+                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} />
                         )}
                     </div>
                 )}
@@ -3790,6 +3902,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                             pagination={pagination}
                                             onRefresh={onLoadHeavyData}
                                             isLoading={isLoadingEmployees}
+                                            hospitals={hospitals}
                                         />
                                     )}
                                     {reportSubView === 'kegiatan' && (
@@ -3804,6 +3917,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                             pagination={pagination}
                                             onRefresh={onLoadHeavyData}
                                             isLoading={isLoadingEmployees}
+                                            hospitals={hospitals}
                                         />
                                     )}
                                     {reportSubView === 'mutabaah' && (
@@ -3814,6 +3928,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                             allUsersData={allUsersData}
                                             onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
                                             loggedInEmployee={loggedInEmployee}
+                                            hospitals={hospitals}
                                         />
                                     )}
                                 </>

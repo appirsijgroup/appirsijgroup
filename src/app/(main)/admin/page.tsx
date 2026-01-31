@@ -63,6 +63,7 @@ export default function AdminPage() {
     const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
+    const [hospitalFilter, setHospitalFilter] = useState('');
     const [isActiveFilter, setIsActiveFilter] = useState<boolean | undefined>(undefined);
     const [totalCount, setTotalCount] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -125,6 +126,11 @@ export default function AdminPage() {
         setPage(1); // Reset to page 1 when filtering
     };
 
+    const handleHospitalFilter = (hospitalId: string) => {
+        setHospitalFilter(hospitalId || '');
+        setPage(1); // Reset to page 1 when filtering
+    };
+
     const handleRefresh = () => {
         // Trigger refetch by keeping same page
         setPage(p => p);
@@ -172,7 +178,7 @@ export default function AdminPage() {
     useEffect(() => {
         if (loggedInEmployee && isHydrated) {
             // Signal appending if page > 1 -> Changed to false for strict pagination (replace data)
-            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false)
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false)
                 .catch(err => console.error('Failed to load paginated employees:', err));
 
             // Trigger background full load if needed
@@ -182,7 +188,7 @@ export default function AdminPage() {
                 loadAllEmployees().catch(err => console.error('Background sync failed:', err));
             }
         }
-    }, [page, searchTerm, roleFilter, isActiveFilter, loggedInEmployee, isHydrated]);
+    }, [page, searchTerm, roleFilter, isActiveFilter, hospitalFilter, loggedInEmployee, isHydrated]);
 
     // 🔥 Sync local pagination state with store pagination info
     useEffect(() => {
@@ -281,7 +287,7 @@ export default function AdminPage() {
             addToast('Gagal mengupdate role: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         } finally {
             // 🔥 Refresh paginated list to ensure UI is in sync
-            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false).catch(console.error);
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
         }
     };
 
@@ -311,7 +317,6 @@ export default function AdminPage() {
                 locationName: undefined,
                 readingHistory: [],
                 quranReadingHistory: [],
-                todoList: [],
                 signature: null,
                 lastAnnouncementReadTimestamp: undefined,
                 managedHospitalIds: [],
@@ -334,6 +339,9 @@ export default function AdminPage() {
                 ...prev,
                 [id]: newEntry
             }));
+
+            // 🔥 Refresh paginated list after successful add
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
 
             return { success: true };
         } catch (err: unknown) {
@@ -365,6 +373,9 @@ export default function AdminPage() {
                 return newData;
             });
 
+            // 🔥 Refresh paginated list after successful update
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
+
             return { success: true };
         } catch (err: unknown) {
             return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
@@ -380,6 +391,9 @@ export default function AdminPage() {
                 delete newData[userId];
                 return newData;
             });
+
+            // 🔥 Refresh paginated list after successful delete
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
         } catch (err: unknown) {
             addToast('Gagal menghapus user: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
         }
@@ -461,6 +475,9 @@ export default function AdminPage() {
                 });
             }
         }
+        // 🔥 Refresh paginated list after bulk update
+        loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
+
         return { added, updated, failed };
     };
 
@@ -573,7 +590,7 @@ export default function AdminPage() {
         }
     };
 
-    const handleUpdateProfile = async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>> | { functionalRoles: FunctionalRole[] }) => {
+    const handleUpdateProfile = async (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>> | { functionalRoles: FunctionalRole[] }, silent: boolean = false) => {
         try {
 
             // Get old user data before updating
@@ -599,7 +616,7 @@ export default function AdminPage() {
             });
 
             // Show generic success toast if no functional roles toast is shown later
-            if (!('functionalRoles' in updates)) {
+            if (!silent && !('functionalRoles' in updates)) {
                 addToast('✅ Pengaturan profil berhasil disimpan!', 'success');
             }
 
@@ -701,7 +718,7 @@ export default function AdminPage() {
             return false;
         } finally {
             // 🔥 Refresh paginated list to ensure UI is in sync, especially for Access Rights (managedHospitalIds)
-            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, false).catch(console.error);
+            loadPaginatedEmployees(page, 15, searchTerm, roleFilter, isActiveFilter, hospitalFilter, false).catch(console.error);
         }
     };
 
@@ -893,10 +910,12 @@ export default function AdminPage() {
                     onSearch: handleSearch,
                     onRoleFilter: handleRoleFilter,
                     onIsActiveFilter: handleIsActiveFilter,
+                    onHospitalFilter: handleHospitalFilter,
                     onRefresh: handleRefresh,
                     searchTerm: searchTerm,
                     roleFilter: roleFilter,
-                    isActiveFilter: isActiveFilter
+                    isActiveFilter: isActiveFilter,
+                    hospitalFilter: hospitalFilter
                 }}
             />
             <ConfirmationModal

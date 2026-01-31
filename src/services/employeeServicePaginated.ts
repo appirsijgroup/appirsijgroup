@@ -1,3 +1,6 @@
+import { type Employee } from '@/types';
+import { convertToCamelCase } from './employeeService';
+
 /**
  * Paginated Employee Service
  *
@@ -11,17 +14,11 @@ export interface PaginatedEmployeesParams {
   search?: string;
   role?: string;
   isActive?: boolean;
+  hospitalId?: string;
 }
 
 export interface PaginatedEmployeesResponse {
-  employees: Array<{
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    is_active: boolean;
-    created_at: string;
-  }>;
+  employees: Employee[];
   pagination: {
     page: number;
     limit: number;
@@ -60,6 +57,7 @@ export async function getPaginatedEmployees(
 
   if (search) queryParams.append('search', search);
   if (role) queryParams.append('role', role);
+  if (params.hospitalId) queryParams.append('hospitalId', params.hospitalId);
   if (isActive !== undefined) queryParams.append('isActive', isActive.toString());
 
   // Fetch from paginated API
@@ -72,7 +70,12 @@ export async function getPaginatedEmployees(
     throw new Error(error.error || 'Failed to fetch employees');
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return {
+    ...data,
+    employees: data.employees.map((emp: any) => convertToCamelCase(emp))
+  };
 }
 
 /**
@@ -87,5 +90,6 @@ export async function getEmployeeDetail(id: string) {
     throw new Error('Failed to fetch employee detail');
   }
 
-  return response.json();
+  const data = await response.json();
+  return convertToCamelCase(data);
 }

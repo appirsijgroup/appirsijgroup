@@ -226,87 +226,82 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
     return (
         <div className="mt-8">
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 mb-4 bg-black/20 rounded-lg" style={{ position: 'relative', zIndex: 10 }}>
-                {/* Row 1 */}
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">
-                        Pilih Tahun
-                    </label>
-                    <select
-                        value={yearFilter}
-                        onChange={(e) => setYearFilter(e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                        style={{ position: 'relative', zIndex: 50 }}
-                    >
-                        {allYearsWithData.map((year) => (
-                            <option key={year} value={year} className="text-black bg-white">
-                                {year}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">
-                        Rumah Sakit
-                    </label>
-                    <select
-                        value={hospitalFilter}
-                        onChange={(e) => setHospitalFilter(e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
-                        style={{ position: 'relative', zIndex: 50 }}
-                    >
-                        <option value="all" className="text-black bg-white">Semua RS</option>
-                        {hospitals.map((hospital) => (
-                            <option key={hospital.id} value={hospital.id} className="text-black bg-white">
-                                {hospital.brand}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">
-                        Unit Kerja
-                    </label>
-                    <SelectFilter
-                        value={unitFilter}
-                        onChange={(e) => setUnitFilter(e.target.value)}
-                        options={allUnits}
-                        defaultLabel="Semua Unit"
-                    />
-                </div>
-                <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">
-                        Profesi
-                    </label>
-                    <SelectFilter
-                        value={professionFilter}
-                        onChange={(e) => setProfessionFilter(e.target.value)}
-                        options={allProfessions}
-                        defaultLabel="Semua Profesi"
-                    />
-                </div>
-
-                {/* Row 2 */}
-                <div className="lg:col-span-2" style={{ position: 'relative', zIndex: 40 }}>
-                    <label className="text-xs font-semibold text-blue-200 block mb-1">
-                        Cari Nama atau NIP
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={nameOrNipFilter}
-                            onChange={(e) => setNameOrNipFilter(e.target.value)}
-                            placeholder="Ketik nama atau NIP..."
-                            className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm pl-9 focus:ring-2 focus:ring-teal-400 focus:outline-none text-white"
-                        />
-                        <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 shadow-2xl">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                    {/* Period & RS Group */}
+                    <div className="lg:col-span-12 xl:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-teal-400 block mb-1.5 ml-1">Pilih Tahun</label>
+                            <select
+                                value={yearFilter}
+                                onChange={(e) => setYearFilter(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60"
+                            >
+                                {allYearsWithData.map((year) => (
+                                    <option key={year} value={year} className="text-black bg-white">{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
+                            <select
+                                value={hospitalFilter}
+                                onChange={(e) => setHospitalFilter(e.target.value)}
+                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60"
+                            >
+                                <option value="all" className="text-black bg-white">Semua RS</option>
+                                {hospitals.map((hospital) => (
+                                    <option key={hospital.id} value={hospital.id} className="text-black bg-white">
+                                        {hospital.brand}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div className="lg:col-span-2 flex items-center justify-end gap-2" style={{ position: 'relative', zIndex: 40 }}>
 
-                    <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-white transition-all disabled:bg-gray-500 disabled:cursor-not-allowed" title="Download Excel">
-                        <ExcelIcon className="w-5 h-5" />
-                    </button>
+                    {/* Organization Group */}
+                    <div className="lg:col-span-12 xl:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Unit Kerja</label>
+                            <SelectFilter
+                                value={unitFilter}
+                                onChange={(e) => setUnitFilter(e.target.value)}
+                                options={allUnits}
+                                defaultLabel="Semua Unit"
+                            />
+                        </div>
+                        <div className="md:col-span-1">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-purple-400 block mb-1.5 ml-1">Profesi</label>
+                            <SelectFilter
+                                value={professionFilter}
+                                onChange={(e) => setProfessionFilter(e.target.value)}
+                                options={allProfessions}
+                                defaultLabel="Semua Profesi"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Search & Actions */}
+                    <div className="lg:col-span-12 xl:col-span-3 grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-8">
+                            <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block mb-1.5 ml-1">Pencarian</label>
+                            <div className="relative group">
+                                <input
+                                    type="text"
+                                    value={nameOrNipFilter}
+                                    onChange={(e) => setNameOrNipFilter(e.target.value)}
+                                    placeholder="Nama/NIP..."
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm pl-10 text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none transition-all hover:bg-black/60"
+                                />
+                                <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-hover:text-teal-400 transition-colors" />
+                            </div>
+                        </div>
+                        <div className="md:col-span-4 flex items-end justify-end">
+                            <button onClick={handleDownloadXlsx} disabled={filteredData.length === 0} className="p-2.5 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-green-500/20 shadow-sm" title="Unduh Excel">
+                                <ExcelIcon className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

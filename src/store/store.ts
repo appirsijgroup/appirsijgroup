@@ -34,7 +34,7 @@ export interface AppDataState {
     markAnnouncementAsRead: () => Promise<void>;
     loadLoggedInEmployee: () => Promise<void>;
     loadAllEmployees: (limit?: number) => Promise<void>;
-    loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean, isAppend?: boolean) => Promise<void>;
+    loadPaginatedEmployees: (page?: number, limit?: number, search?: string, role?: string, isActive?: boolean, hospitalId?: string, isAppend?: boolean) => Promise<void>;
     paginatedEmployees: Employee[];
     paginationInfo: {
         page: number;
@@ -378,13 +378,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
         }
     },
 
-    loadPaginatedEmployees: async (page = 1, limit = 15, search = '', role = '', isActive, isAppend = false) => {
+    loadPaginatedEmployees: async (page = 1, limit = 15, search = '', role = '', isActive, hospitalId = '', isAppend = false) => {
         if (get().isLoadingEmployees) return;
 
         try {
             set({ isLoadingEmployees: true });
-            const { getEmployeesPaginated } = await import('@/services/employeeService');
-            const { employees, pagination } = await getEmployeesPaginated(page, limit, search, role, isActive);
+            const { getPaginatedEmployees } = await import('@/services/employeeServicePaginated');
+            const { employees, pagination } = await getPaginatedEmployees({ page, limit, search, role, isActive, hospitalId });
 
             const newUsersToMerge: Record<string, UserData> = {};
             employees.forEach(emp => {

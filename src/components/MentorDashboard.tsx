@@ -996,11 +996,11 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                 </div>
 
                 <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-                    <button onClick={() => handleExport('pdf')} className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs transition-colors shadow-lg shadow-red-900/20">
-                        <FileDown className="w-4 h-4" /> PDF
+                    <button onClick={() => handleExport('pdf')} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all disabled:opacity-20 group border border-red-500/20 shadow-sm" title="Unduh PDF">
+                        <FileDown className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
                     </button>
-                    <button onClick={() => handleExport('xlsx')} className="px-3 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg flex items-center gap-2 text-xs transition-colors shadow-lg shadow-green-900/20">
-                        <FileSpreadsheet className="w-4 h-4" /> Excel
+                    <button onClick={() => handleExport('xlsx')} className="p-2.5 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all disabled:opacity-20 group border border-green-500/20 shadow-sm" title="Unduh Excel">
+                        <FileSpreadsheet className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
                     </button>
                 </div>
             </div>

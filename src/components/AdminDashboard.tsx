@@ -1598,42 +1598,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         XLSX.writeFile(wb, getFileName('xlsx'));
     };
 
-    const DateFilterInputs = () => {
-        switch (dateFilterType) {
-            case 'range':
-                return (
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="text-xs font-semibold text-blue-200 block mb-1">Dari Tanggal</label>
-                            <input type="date" value={startDate} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setStartDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold text-blue-200 block mb-1">Sampai Tanggal</label>
-                            <input type="date" value={endDate} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setEndDate(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
-                        </div>
-                    </div>
-                );
-            case 'monthly':
-                return (
-                    <div>
-                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Bulan</label>
-                        <input type="month" value={monthFilter} onFocus={() => { isInteractingWithDateInput.current = true; }} onBlur={() => { isInteractingWithDateInput.current = false; setTimeout(() => setCurrentPage(1), 0); }} onChange={e => setMonthFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none" style={{ colorScheme: 'dark' }} />
-                    </div>
-                );
-            case 'yearly':
-                return (
-                    <div>
-                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Tahun</label>
-                        <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none">
-                            {allYearsWithData.map(year => <option key={year} value={year} className="text-black bg-white">{year}</option>)}
-                        </select>
-                    </div>
-                );
-            case 'all':
-            default:
-                return <div className="h-[54px] flex items-center justify-center text-sm text-gray-400 italic bg-black/20 rounded-md border border-white/10">Semua data</div>;
-        }
-    };
+
 
     // Pagination state
     const ITEMS_PER_BATCH = 15;
@@ -1664,7 +1629,66 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                     </select>
                 </div>
                 <div className="lg:col-span-3" style={{ position: 'relative', zIndex: 50 }}>
-                    <DateFilterInputs />
+                    {(() => {
+                        switch (dateFilterType) {
+                            case 'range':
+                                return (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-xs font-semibold text-blue-200 block mb-1">Dari Tanggal</label>
+                                            <input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={e => setStartDate(e.target.value)}
+                                                className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                                                style={{ colorScheme: 'dark' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold text-blue-200 block mb-1">Sampai Tanggal</label>
+                                            <input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={e => setEndDate(e.target.value)}
+                                                className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                                                style={{ colorScheme: 'dark' }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            case 'monthly':
+                                return (
+                                    <div>
+                                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Bulan</label>
+                                        <input
+                                            type="month"
+                                            value={monthFilter}
+                                            onChange={e => setMonthFilter(e.target.value)}
+                                            className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                                            style={{ colorScheme: 'dark' }}
+                                        />
+                                    </div>
+                                );
+                            case 'yearly':
+                                return (
+                                    <div>
+                                        <label className="text-xs font-semibold text-blue-200 block mb-1">Pilih Tahun</label>
+                                        <select
+                                            value={yearFilter}
+                                            onChange={e => setYearFilter(e.target.value)}
+                                            className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-sm text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                                        >
+                                            {allYearsWithData.map(year => (
+                                                <option key={year} value={year} className="text-black bg-white">{year}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                );
+                            case 'all':
+                            default:
+                                return <div className="h-[54px] flex items-center justify-center text-sm text-gray-400 italic bg-black/20 rounded-md border border-white/10">Semua data</div>;
+                        }
+                    })()}
                 </div>
                 <div className="lg:col-span-1" style={{ position: 'relative', zIndex: 50 }}>
                     <label className="text-xs font-semibold text-blue-200 block mb-1">{reportType === 'prayer' ? 'Sholat' : 'Kegiatan'}</label>

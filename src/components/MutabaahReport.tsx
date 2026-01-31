@@ -177,11 +177,11 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
 
             // Multi-row header untuk Excel
             const headerRow1 = [
-                'No', 'Tahun', 'RS ID', 'NIP', 'Nama', 'Unit', 'Profesi',
+                'No', 'Tahun', 'RS ID', 'NIP', 'Nama', 'Unit', 'Profesi', 'Mentor',
                 'SIDIQ', '', '', 'TABLIGH', '', '', 'AMANAH', '', '', 'FATONAH', '', '', 'TOTAL', '', ''
             ];
             const headerRow2 = [
-                '', '', '', '', '', '', '',
+                '', '', '', '', '', '', '', '',
                 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%', 'Capaian', 'Target', '%'
             ];
 
@@ -193,6 +193,7 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                 record.employeeName,
                 record.unit,
                 record.profession,
+                record.mentorName || '-',
                 // SIDIQ
                 record.sidiqCount, record.sidiqTarget, `${record.sidiqPercentage}%`,
                 // TABLIGH
@@ -207,11 +208,11 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
 
             const ws = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
             if (!ws['!merges']) ws['!merges'] = [];
-            ws['!merges'].push({ s: { r: 0, c: 7 }, e: { r: 0, c: 9 } }); // SIDIQ
-            ws['!merges'].push({ s: { r: 0, c: 10 }, e: { r: 0, c: 12 } }); // TABLIGH
-            ws['!merges'].push({ s: { r: 0, c: 13 }, e: { r: 0, c: 15 } }); // AMANAH
-            ws['!merges'].push({ s: { r: 0, c: 16 }, e: { r: 0, c: 18 } }); // FATONAH
-            ws['!merges'].push({ s: { r: 0, c: 19 }, e: { r: 0, c: 21 } }); // TOTAL
+            ws['!merges'].push({ s: { r: 0, c: 8 }, e: { r: 0, c: 10 } }); // SIDIQ
+            ws['!merges'].push({ s: { r: 0, c: 11 }, e: { r: 0, c: 13 } }); // TABLIGH
+            ws['!merges'].push({ s: { r: 0, c: 14 }, e: { r: 0, c: 16 } }); // AMANAH
+            ws['!merges'].push({ s: { r: 0, c: 17 }, e: { r: 0, c: 19 } }); // FATONAH
+            ws['!merges'].push({ s: { r: 0, c: 20 }, e: { r: 0, c: 22 } }); // TOTAL
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Laporan Mutabaah');

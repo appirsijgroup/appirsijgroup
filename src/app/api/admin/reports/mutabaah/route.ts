@@ -70,6 +70,17 @@ export async function GET(request: NextRequest) {
         const startDate = `${year}-01-01`;
         const endDate = `${year}-12-31T23:59:59`;
 
+        // Fetch Mentor Names
+        const mentorIds = [...new Set(employees.map(e => e.mentor_id).filter(Boolean))];
+        let mentorMap: Record<string, string> = {};
+        if (mentorIds.length > 0) {
+            const { data: mentors } = await supabase
+                .from('employees')
+                .select('id, name')
+                .in('id', mentorIds);
+            mentors?.forEach(m => { mentorMap[m.id] = m.name; });
+        }
+
         const [
             monthlyReportsRes,
             attendanceRecordsRes,
@@ -248,6 +259,8 @@ export async function GET(request: NextRequest) {
                 profession: emp.profession,
                 professionCategory: emp.profession_category,
                 hospitalId: emp.hospital_id,
+                mentorId: emp.mentor_id,
+                mentorName: emp.mentor_id ? (mentorMap[emp.mentor_id] || emp.mentor_id) : '-',
                 monthKey: year,
                 sidiqCount, sidiqTarget, sidiqPercentage: sidiqTarget > 0 ? Math.min(100, Math.round((sidiqCount / sidiqTarget) * 100)) : 0,
                 tablighCount, tablighTarget, tablighPercentage: tablighTarget > 0 ? Math.min(100, Math.round((tablighCount / tablighTarget) * 100)) : 0,

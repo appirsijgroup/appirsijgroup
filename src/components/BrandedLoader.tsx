@@ -48,7 +48,7 @@ export const BrandedLoader: React.FC<BrandedLoaderProps> = ({ message = "Memuat.
 
             {fullScreen && (
                 <div className="absolute bottom-12 text-center">
-                    <p className="text-slate-500 text-[10px] uppercase tracking-[0.3em] font-bold opacity-50">
+                    <p className="text-teal-500/60 text-[10px] uppercase tracking-[0.3em] font-black">
                         Aplikasi Perilaku Pelayanan Islami
                     </p>
                 </div>

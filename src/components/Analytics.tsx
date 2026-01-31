@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { Building2, ChevronDown, LayoutDashboard, BarChart3, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar, Legend } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
@@ -759,12 +760,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     <div className="flex flex-col md:flex-row md:items-center p-2 gap-4">
                         <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${isGlobal ? 'bg-amber-500/10 text-amber-100' : 'bg-teal-500/10 text-teal-100'} grow`}>
                             <div className={`p-2 rounded-lg ${isGlobal ? 'bg-amber-500/20 text-amber-400' : 'bg-teal-500/20 text-teal-400'}`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                                <LayoutDashboard size={20} />
                             </div>
                             <div className="flex flex-col">
-
                                 <span className={`text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'}`}>
-                                    {isGlobal ? 'SELURUH GRUP (GLOBAL)' : selectedHospitalName}
+                                    {isGlobal ? 'RSIJ GROUP (SELURUH UNIT)' : selectedHospitalName}
                                 </span>
                             </div>
                         </div>
@@ -775,36 +775,42 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 onClick={() => setViewMode('overview')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'overview' ? 'bg-teal-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                                <BarChart3 size={16} />
                                 RINGKASAN
                             </button>
                             <button
                                 onClick={() => setViewMode('detailed')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'detailed' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                                <PieChart size={16} />
                                 ANALISIS KERJA
                             </button>
                         </div>
 
 
 
-                        <div className="w-full md:w-80 flex items-center pr-2">
-                            <label className="sr-only">Pilih Unit</label>
+                        <div className="w-full md:w-80 flex items-center pr-2 relative">
+                            <label className="sr-only">Pilih Unit Kerja</label>
+                            <div className="absolute left-4 z-10 text-gray-400">
+                                <Building2 size={18} />
+                            </div>
                             <select
                                 value={hospitalFilter}
                                 onChange={(e) => setHospitalFilter(e.target.value)}
-                                className={`w-full bg-black/60 border ${isGlobal ? 'border-amber-500/40 text-amber-200' : 'border-teal-500/40 text-teal-200'} rounded-xl px-4 py-3.5 focus:ring-2 ${isGlobal ? 'focus:ring-amber-500' : 'focus:ring-teal-500'} focus:outline-none appearance-none cursor-pointer font-bold shadow-inner`}
+                                className={`w-full bg-black/60 border ${isGlobal ? 'border-amber-500/40 text-amber-200' : 'border-teal-500/40 text-teal-200'} rounded-xl pl-11 pr-10 py-3.5 focus:ring-2 ${isGlobal ? 'focus:ring-amber-500' : 'focus:ring-teal-500'} focus:outline-none appearance-none cursor-pointer font-bold shadow-inner transition-all`}
                             >
-                                <option value="all" className="bg-neutral-900 text-amber-400">🏢 RINGKASAN GLOBAL (ALIANSI)</option>
+                                <option value="all" className="bg-neutral-900 text-amber-400">RSIJ GROUP</option>
                                 <optgroup label="Unit Rumah Sakit" className="bg-neutral-900 text-gray-400">
                                     {hospitals.map(h => (
                                         <option key={h.id} value={h.id} className="bg-neutral-900 text-white">
-                                            🏥 {h.brand}
+                                            {h.brand}
                                         </option>
                                     ))}
                                 </optgroup>
                             </select>
+                            <div className="absolute right-4 pointer-events-none text-gray-400">
+                                <ChevronDown size={18} />
+                            </div>
                         </div>
                     </div>
                 </div>

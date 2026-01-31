@@ -520,11 +520,8 @@ const generateChecklistPdf = async (
     // Signature Section - Modern 4-Column Layout
     const finalY = (doc as any).lastAutoTable.finalY + 8;
 
-    // Section Title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor('#1E293B'); // Slate-800
-    doc.text('Pihak yang Menyetujui', pageWidth / 2, finalY, { align: 'center' });
+    // Section Title Removed
+
 
     // Helper to get names
     const getName = (id?: string) => {
@@ -785,26 +782,11 @@ const CeklisMutabaahView: React.FC<CeklisMutabaahViewProps> = ({ employee, daily
                 </div>
 
                 {/* Legend */}
-                <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <span className="text-teal-600 font-black text-base">✓</span>
-                        <span>Terisi/Hadir</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-gray-300 font-bold">-</span>
-                        <span>Belum Terisi/Tidak Hadir</span>
-                    </div>
-                    {isCurrentMonthView && (
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-amber-400 rounded border border-amber-600"></div>
-                            <span className="font-semibold">Hari Ini</span>
-                        </div>
-                    )}
-                </div>
+
 
                 {/* Signature Section - Official Document Style */}
                 <div className="mt-8 pt-4">
-                    <h4 className="text-sm font-bold text-black mb-6 text-center uppercase">Pihak yang Menyetujui</h4>
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-black">
 
                         {/* Ka. Unit */}

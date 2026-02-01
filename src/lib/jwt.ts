@@ -41,6 +41,7 @@ export interface SessionPayload {
   name: string;
   nip: string;
   role: string;
+  managedHospitalIds?: string[];
   exp?: number;
 }
 

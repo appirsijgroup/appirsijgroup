@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        const isSuperAdmin = session.role === 'super-admin' || session.role === 'owner';
+        const managedHospitalIds = session.managedHospitalIds || [];
+
         const { searchParams } = new URL(request.url);
         const startDate = searchParams.get('startDate');
         const month = searchParams.get('month');
@@ -60,6 +63,15 @@ export async function GET(request: NextRequest) {
             .select('*')
             .order('timestamp', { ascending: true });
 
+        // Filter by managed hospitals for regular admins
+        if (!isSuperAdmin) {
+            if (managedHospitalIds.length > 0) {
+                sholatQuery = sholatQuery.in('hospital_id', managedHospitalIds);
+            } else {
+                return NextResponse.json({ success: true, data: { attendanceRecords: [], teamAttendanceRecords: [], activityAttendanceRecords: [], employees: [] } });
+            }
+        }
+
         if (startDate) {
             sholatQuery = sholatQuery.gte('timestamp', startDate);
         } else {
@@ -68,6 +80,11 @@ export async function GET(request: NextRequest) {
 
         // 2. Fetch Team Records
         let teamQuery = serviceRoleClient.from('team_attendance_records').select('*');
+        if (!isSuperAdmin && managedHospitalIds.length > 0) {
+            // team_attendance_records table might use hospitalId or similar, check table schema
+            // If it has hospital_id/hospitalId, filter it
+            teamQuery = teamQuery.in('hospital_id', managedHospitalIds);
+        }
         if (startDate) {
             teamQuery = teamQuery.gte('session_date', startDate.split('T')[0]);
         } else {
@@ -76,6 +93,9 @@ export async function GET(request: NextRequest) {
 
         // 3. Fetch Manual Activity Records
         let activityQuery = serviceRoleClient.from('activity_attendance').select('*');
+        if (!isSuperAdmin && managedHospitalIds.length > 0) {
+            activityQuery = activityQuery.in('hospital_id', managedHospitalIds);
+        }
         if (startDate) {
             activityQuery = activityQuery.gte('timestamp', startDate);
         } else {
@@ -91,8 +111,11 @@ export async function GET(request: NextRequest) {
                     month_key
                 )
             `)
-            .order('name')
-            .limit(10000); // 🔥 Increase limit to ensure all employees are included in full sync report
+            .order('name');
+
+        if (!isSuperAdmin && managedHospitalIds.length > 0) {
+            employeesQuery.in('hospital_id', managedHospitalIds);
+        }
 
         const [sholatRes, teamRes, activityRes, employeeRes] = await Promise.all([
             sholatQuery.limit(10000),

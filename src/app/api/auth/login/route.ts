@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       name: employee.name,
       nip: employee.id,
       role: employee.role,
+      managedHospitalIds: employee.managed_hospital_ids,
       // Include additional activation info for session verification if needed
       activatedMonths: employee.activated_months,
     };

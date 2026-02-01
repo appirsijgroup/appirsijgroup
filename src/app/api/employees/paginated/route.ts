@@ -20,6 +20,10 @@ export async function GET(request: NextRequest) {
 
     const supabaseService = createSupabaseClient(supabaseUrl, supabaseServiceKey)
 
+    // 🔥 ROLE-BASED ACCESS CONTROL
+    const isSuperAdmin = session.role === 'super-admin'
+    const managedHospitalIds = session.managedHospitalIds || []
+
     const searchParams = request.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '15'), 100)
@@ -41,7 +45,35 @@ export async function GET(request: NextRequest) {
       `, { count: 'exact' })
 
     if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`)
-    if (hospitalId) query = query.eq('hospital_id', hospitalId)
+
+    // 🔥 ENFORCE HOSPITAL SCOPING
+    if (!isSuperAdmin) {
+      // If regular admin, they can ONLY see their managed hospitals
+      if (hospitalId) {
+        // If they filtered by a specific hospital, check if they have access to it
+        if (!managedHospitalIds.includes(hospitalId)) {
+          // No access to this hospital, return empty result or force filter to managed ones
+          query = query.in('hospital_id', managedHospitalIds)
+        } else {
+          query = query.eq('hospital_id', hospitalId)
+        }
+      } else {
+        // No filter provided, show all hospitals THEY MANAGE
+        if (managedHospitalIds.length > 0) {
+          query = query.in('hospital_id', managedHospitalIds)
+        } else {
+          // Admin with no assigned hospitals? Return nothing for safety
+          return NextResponse.json({
+            employees: [],
+            pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false }
+          })
+        }
+      }
+    } else {
+      // Super Admin can see everything or filter by any hospital
+      if (hospitalId) query = query.eq('hospital_id', hospitalId)
+    }
+
     if (role) query = query.eq('role', role)
     if (isActive !== null && isActive !== undefined && isActive !== '') query = query.eq('is_active', isActive === 'true')
 

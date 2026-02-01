@@ -2657,9 +2657,18 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
     };
 
     const hospitalFilteredUsers = useMemo(() => {
-        if (hospitalFilter === 'all') return allUsers;
-        return allUsers.filter(u => u.hospitalId === hospitalFilter);
-    }, [allUsers, hospitalFilter]);
+        // Regular admin should only see users from their assigned hospitals
+        const isSuper = loggedInEmployee.role === 'super-admin';
+        const managedIds = loggedInEmployee.managedHospitalIds || [];
+
+        const scopedUsers = isSuper ? allUsers : allUsers.filter(u => u.hospitalId && managedIds.includes(u.hospitalId));
+
+        if (hospitalFilter === 'all') {
+            return scopedUsers;
+        }
+
+        return scopedUsers.filter(u => u.hospitalId === hospitalFilter);
+    }, [allUsers, hospitalFilter, loggedInEmployee]);
 
     const filteredUsers = useMemo(() => {
         const users = hospitalFilteredUsers;
@@ -2738,7 +2747,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                         >
                             {isSuperAdmin(loggedInEmployee) && <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>}
                             {hospitals
-                                .filter(h => isSuperAdmin(loggedInEmployee) || !loggedInEmployee.managedHospitalIds || loggedInEmployee.managedHospitalIds.includes(h.id))
+                                .filter(h => isSuperAdmin(loggedInEmployee) || (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.includes(h.id)))
                                 .map(h => (
                                     <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
                                 ))
@@ -3928,7 +3937,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400"></div>
                                 </div>
                             }>
-                                <RelationManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} />
+                                <RelationManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} loggedInEmployee={loggedInEmployee} />
                             </Suspense>
                         )}
                         {userManagementSubView === 'jabatan' && (

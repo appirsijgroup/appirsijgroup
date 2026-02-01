@@ -9,6 +9,7 @@ interface RelationManagementProps {
     allUsers: Employee[];
     onUpdateProfile: (userId: string, updates: Partial<Omit<Employee, 'id' | 'role' | 'password'>>, silent?: boolean) => Promise<boolean>;
     hospitals?: Hospital[];
+    loggedInEmployee: Employee;
 }
 
 // A simple reusable toggle switch component
@@ -51,7 +52,7 @@ const ToggleSwitch: React.FC<{
     );
 };
 
-const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile, hospitals = [] }) => {
+const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile, hospitals = [], loggedInEmployee }) => {
     const { addToast } = useUIStore();
     const { createNotification } = useNotificationStore();
     const [searchTerm, setSearchTerm] = useState('');
@@ -63,9 +64,19 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
     // Defensive check: ensure allUsers is an array
     const hospitalFilteredUsers = useMemo(() => {
         const users = Array.isArray(allUsers) ? allUsers : [];
-        if (hospitalFilter === 'all') return users;
-        return users.filter(u => u.hospitalId === hospitalFilter);
-    }, [allUsers, hospitalFilter]);
+
+        // Regular admin should only see users from their assigned hospitals
+        const isSuper = loggedInEmployee.role === 'super-admin';
+        const managedIds = loggedInEmployee.managedHospitalIds || [];
+
+        const scopedUsers = isSuper ? users : users.filter(u => u.hospitalId && managedIds.includes(u.hospitalId));
+
+        if (hospitalFilter === 'all') {
+            return scopedUsers;
+        }
+
+        return scopedUsers.filter(u => u.hospitalId === hospitalFilter);
+    }, [allUsers, hospitalFilter, loggedInEmployee]);
 
     const safeAllUsers = hospitalFilteredUsers;
 
@@ -266,10 +277,14 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                             onChange={e => setHospitalFilter(e.target.value)}
                             className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-3 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
                         >
-                            <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>
-                            {hospitals.map((h: Hospital) => (
-                                <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
-                            ))}
+                            {(loggedInEmployee.role === 'super-admin') && (
+                                <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>
+                            )}
+                            {hospitals
+                                .filter(h => loggedInEmployee.role === 'super-admin' || (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.includes(h.id)))
+                                .map((h: Hospital) => (
+                                    <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
+                                ))}
                         </select>
                     </div>
                 )}

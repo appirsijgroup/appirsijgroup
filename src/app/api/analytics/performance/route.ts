@@ -57,7 +57,25 @@ export async function GET(request: NextRequest) {
 
         const employeeIds = targetEmployees.map(e => e.id);
         if (employeeIds.length === 0) {
-            return NextResponse.json({ performanceByCategory: [], groupedPerformanceByActivity: {} });
+            // Standard categories with 0% when no data
+            const defaultPerformance = [
+                { name: 'AMANAH (Disiplin)', Persentase: 0 },
+                { name: 'FATONAH (Belajar)', Persentase: 0 },
+                { name: 'SIDIQ (Integritas)', Persentase: 0 },
+                { name: 'TABLIGH (Teamwork)', Persentase: 0 }
+            ];
+            const defaultGrouped = {
+                'AMANAH (Disiplin)': [],
+                'FATONAH (Belajar)': [],
+                'SIDIQ (Integritas)': [],
+                'TABLIGH (Teamwork)': []
+            };
+            return NextResponse.json({
+                performanceByCategory: defaultPerformance,
+                groupedPerformanceByActivity: defaultGrouped,
+                employeeCount: 0,
+                hospitalComparison: []
+            });
         }
 
         // 5. Aggregate Data from Multiple Sources

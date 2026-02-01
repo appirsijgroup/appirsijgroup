@@ -148,9 +148,13 @@ const HospitalPerformanceComparison: React.FC<{
                 if (response.ok) {
                     const data = await response.json();
                     setComparisonData(data.hospitalComparison || []);
+                } else {
+                    // Fallback to empty structure if API fails
+                    setComparisonData([]);
                 }
             } catch (error) {
                 console.error('Failed to fetch hospital/unit comparison:', error);
+                setComparisonData([]);
             } finally {
                 setIsLoading(false);
             }
@@ -158,6 +162,8 @@ const HospitalPerformanceComparison: React.FC<{
 
         fetchComparison();
     }, [hospitalFilter, currentMonth]);
+
+    const isGlobal = hospitalFilter === 'all';
 
     if (!isClient) return null;
 
@@ -250,9 +256,20 @@ const HospitalPerformanceComparison: React.FC<{
 
                 </>
             ) : (
-                <div className="h-72 flex items-center justify-center bg-black/10 rounded-xl border border-white/5">
-                    <p className="text-gray-500 text-sm">Data perbandingan tidak tersedia untuk periode ini.</p>
-                </div>
+                <ChartCard title={
+                    <div className="flex items-center gap-2">
+                        {currentConfig.icon}
+                        <span>{currentConfig.label}</span>
+                    </div>
+                }>
+                    <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10 opacity-30">
+                            <Filter className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-400 text-sm font-medium">Data {isGlobal ? 'Rumah Sakit' : 'Unit'} tidak tersedia</p>
+                        <p className="text-gray-500 text-[10px] mt-1 italic">Pastikan terdapat data karyawan dan laporan mutaba&apos;ah untuk periode ini.</p>
+                    </div>
+                </ChartCard>
             )}
         </div>
     );
@@ -588,44 +605,47 @@ const MutabaahPerformanceReport: React.FC<{
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
                     <p className="text-teal-200/60 font-medium animate-pulse">Menganalisis kinerja mutaba&apos;ah seluruh karyawan...</p>
                 </div>
-            ) : employeeCount > 0 ? (
+            ) : (
                 <div className="space-y-6">
                     {/* WORK ANALYSIS SUMMARY CARDS (RINGKASAN ANALISIS KERJA) */}
-                    {performanceByCategory.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                            {performanceByCategory.map((category: any, index: number) => {
-                                const colors = [
-                                    { bg: 'bg-amber-900/40', border: 'border-amber-500/20', text: 'text-amber-400' },
-                                    { bg: 'bg-teal-900/40', border: 'border-teal-500/20', text: 'text-teal-400' },
-                                    { bg: 'bg-blue-900/40', border: 'border-blue-500/20', text: 'text-blue-400' },
-                                    { bg: 'bg-purple-900/40', border: 'border-purple-500/20', text: 'text-purple-400' }
-                                ];
-                                const style = colors[index % colors.length];
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                        {(performanceByCategory.length > 0 ? performanceByCategory : [
+                            { name: 'AMANAH (Disiplin)', Persentase: 0 },
+                            { name: 'FATONAH (Belajar)', Persentase: 0 },
+                            { name: 'SIDIQ (Integritas)', Persentase: 0 },
+                            { name: 'TABLIGH (Teamwork)', Persentase: 0 }
+                        ]).map((category: any, index: number) => {
+                            const colors = [
+                                { bg: 'bg-amber-900/40', border: 'border-amber-500/20', text: 'text-amber-400' },
+                                { bg: 'bg-teal-900/40', border: 'border-teal-500/20', text: 'text-teal-400' },
+                                { bg: 'bg-blue-900/40', border: 'border-blue-500/20', text: 'text-blue-400' },
+                                { bg: 'bg-purple-900/40', border: 'border-purple-500/20', text: 'text-purple-400' }
+                            ];
+                            const style = colors[index % colors.length];
 
-                                return (
-                                    <div key={category.name} className={`${style.bg} p-4 rounded-xl border ${style.border} shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300`}>
-                                        <div className="flex flex-col">
-                                            <span className={`${style.text} text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 opacity-80 truncate`}>
-                                                {category.name}
+                            return (
+                                <div key={category.name} className={`${style.bg} p-4 rounded-xl border ${style.border} shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300`}>
+                                    <div className="flex flex-col">
+                                        <span className={`${style.text} text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 opacity-80 truncate`}>
+                                            {category.name}
+                                        </span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-2xl md:text-3xl font-black text-white">
+                                                {category.Persentase}%
                                             </span>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-2xl md:text-3xl font-black text-white">
-                                                    {category.Persentase}%
-                                                </span>
-                                                <span className="text-[10px] text-gray-400">Rata-rata</span>
-                                            </div>
-                                            <div className="w-full bg-black/30 rounded-full h-1.5 mt-2 overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full transition-all duration-1000 ${style.text.replace('text-', 'bg-')}`}
-                                                    style={{ width: `${category.Persentase}%` }}
-                                                ></div>
-                                            </div>
+                                            <span className="text-[10px] text-gray-400">Rata-rata</span>
+                                        </div>
+                                        <div className="w-full bg-black/30 rounded-full h-1.5 mt-2 overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all duration-1000 ${style.text.replace('text-', 'bg-')}`}
+                                                style={{ width: `${category.Persentase}%` }}
+                                            ></div>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
 
 
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">
@@ -670,10 +690,11 @@ const MutabaahPerformanceReport: React.FC<{
                             )}
                         </ChartCard>
                     ))}
-                </div>
-            ) : (
-                <div className="text-center py-10 text-blue-200">
-                    Tidak ada data karyawan yang cocok dengan filter yang dipilih.
+                    {employeeCount === 0 && (
+                        <div className="bg-black/20 p-20 rounded-xl border border-dashed border-white/10 text-center">
+                            <p className="text-gray-500 text-sm italic">Belum ada data aktivitas untuk filter ini.</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

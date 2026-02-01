@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Building2, ChevronDown, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Filter, UserCheck, BookOpen, CheckSquare } from 'lucide-react';
+import { Building2, ChevronDown, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Filter, UserCheck, BookOpen, CheckSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar, Legend } from 'recharts';
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
@@ -337,6 +337,19 @@ const ActivationReport: React.FC<{
     stats: any;
 }> = ({ hospitalFilter, hospitalName, stats }) => {
     const isGlobal = hospitalFilter === 'all';
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [hospitalFilter]);
+
+    const totalPages = Math.ceil(stats.hospitalBreakdown.length / itemsPerPage);
+    const paginatedData = stats.hospitalBreakdown.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <div className="space-y-6">
@@ -435,7 +448,7 @@ const ActivationReport: React.FC<{
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {stats.hospitalBreakdown.map((h: any) => {
+                                {paginatedData.map((h: any) => {
                                     const actPercent = h.total > 0 ? Math.round((h.activated / h.total) * 100) : 0;
                                     const compPercent = h.total > 0 ? Math.round((h.compliance / h.total) * 100) : 0;
                                     return (
@@ -480,6 +493,34 @@ const ActivationReport: React.FC<{
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="p-4 border-t border-white/5 bg-black/20 flex items-center justify-between">
+                            <span className="text-gray-400 text-xs font-medium">
+                                Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, stats.hospitalBreakdown.length)} dari {stats.hospitalBreakdown.length} data
+                            </span>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-20 hover:bg-white/10 transition-all"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <div className="text-white text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                                    Hal {currentPage} dari {totalPages}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-20 hover:bg-white/10 transition-all"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -1053,12 +1094,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     />
 
                     <div className="w-full space-y-8">
-                        {canSeeGlobal && <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />}
-                        <HospitalPerformanceComparison
-                            hospitalFilter={hospitalFilter}
-                            hospitals={hospitals}
-                            currentMonth={currentMonth}
-                        />
+                        {isGlobal && canSeeGlobal && <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />}
+                        {isGlobal && (
+                            <HospitalPerformanceComparison
+                                hospitalFilter={hospitalFilter}
+                                hospitals={hospitals}
+                                currentMonth={currentMonth}
+                            />
+                        )}
                     </div>
                 </div>
             ) : (

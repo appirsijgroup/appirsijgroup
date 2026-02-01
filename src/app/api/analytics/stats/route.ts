@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
         const sessionCookie = request.cookies.get('session')?.value;
         if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const session = await verifyToken(sessionCookie);
-        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!session || !session.userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // 2. Setup Supabase Service Client
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -23,7 +23,36 @@ export async function GET(request: NextRequest) {
         const month = searchParams.get('month'); // "01"
         const year = searchParams.get('year');   // "2026"
 
-        // 4. Determine Current Month Key (YYYY-MM)
+        // 4. User Role & Access Check (Server-side Enforcement)
+        const { data: user } = await supabase
+            .from('employees')
+            .select('role, hospital_id, functional_roles, managed_hospital_ids')
+            .eq('id', session.userId)
+            .single();
+
+        if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        // Normalize roles and functional roles
+        const isBPH = (user.functional_roles || []).includes('BPH');
+        const isSuper = user.role === 'super-admin';
+        const canSeeGlobal = isBPH || isSuper;
+
+        let enforcedHospitalId = hospitalId;
+
+        // Security Enforcement: If not SuperAdmin/BPH, restrict to authorized hospitals only
+        if (!canSeeGlobal) {
+            const allowedHospitals = [user.hospital_id, ...(user.managed_hospital_ids || [])].filter(Boolean).map(id => id.toLowerCase());
+
+            if (!enforcedHospitalId || enforcedHospitalId === 'all') {
+                // Default to their primary hospital if they try to access 'all'
+                enforcedHospitalId = user.hospital_id?.toLowerCase() || 'unknown';
+            } else if (!allowedHospitals.includes(enforcedHospitalId)) {
+                // Attempting to access a hospital they don't manage
+                return NextResponse.json({ error: 'Access Denied: You do not have permission to view this data' }, { status: 403 });
+            }
+        }
+
+        // 5. Determine Current Month Key (YYYY-MM)
         const now = new Date();
         const currentMonthKey = (month && year)
             ? `${year}-${month.padStart(2, '0')}`
@@ -43,7 +72,7 @@ export async function GET(request: NextRequest) {
                     .select('id, hospital_id, unit', { count: 'exact', head: false })
                     .eq('is_active', true)
                     .not('role', 'in', '(admin,super-admin)');
-                if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
+                if (enforcedHospitalId && enforcedHospitalId !== 'all') q = q.ilike('hospital_id', enforcedHospitalId);
                 return q;
             })(),
 
@@ -65,7 +94,7 @@ export async function GET(request: NextRequest) {
                     .select('id, hospital_id', { count: 'exact', head: false })
                     .eq('is_active', true)
                     .or('role.in.(admin,super-admin),can_be_mentor.eq.true');
-                if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
+                if (enforcedHospitalId && enforcedHospitalId !== 'all') q = q.ilike('hospital_id', enforcedHospitalId);
                 return q;
             })(),
 
@@ -83,7 +112,7 @@ export async function GET(request: NextRequest) {
         ]);
 
         const breakdownDataMap: Record<string, any> = {};
-        const isAllMode = !hospitalId || hospitalId === 'all';
+        const isAllMode = !enforcedHospitalId || enforcedHospitalId === 'all';
 
         // 6. Aggregate by Hospital (Global) or Unit (Single Hospital)
         if (isAllMode) {

@@ -721,6 +721,25 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     }, [hospitals, loggedInEmployee]);
 
     const [hospitalFilter, setHospitalFilter] = useState('all');
+    const [isFilterInitialized, setIsFilterInitialized] = useState(false);
+
+    // Initial Filter Scoping for Security
+    useEffect(() => {
+        if (loggedInEmployee && !isFilterInitialized) {
+            const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
+            const isSuper = isSuperAdmin(loggedInEmployee);
+            const globalAccess = isBPH || isSuper;
+
+            if (!globalAccess) {
+                // Regular admins are forced to their primary hospital
+                const primaryHospital = loggedInEmployee.hospitalId;
+                if (primaryHospital) {
+                    setHospitalFilter(primaryHospital);
+                }
+            }
+            setIsFilterInitialized(true);
+        }
+    }, [loggedInEmployee, isFilterInitialized]);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -760,6 +779,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     }, [canSelectHospital, onLoadAllData]);
 
     useEffect(() => {
+        if (!isFilterInitialized) return; // Wait for security scoping
+
         const fetchAccurateStats = async () => {
             setIsLoadingStats(true);
             try {
@@ -787,7 +808,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         };
 
         fetchAccurateStats();
-    }, [hospitalFilter, currentMonth]);
+    }, [hospitalFilter, currentMonth, isFilterInitialized]);
     // -------------------------------------------------------------
 
     // Check if user has access to Global view
@@ -798,14 +819,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         return isBPH || isSuper;
     }, [loggedInEmployee]);
 
-    useEffect(() => {
-        if (!canSeeGlobal) {
-            if (hospitalFilter === 'all') {
-                const firstHospital = accessibleHospitals[0]?.id || loggedInEmployee?.hospitalId;
-                if (firstHospital) setHospitalFilter(firstHospital);
-            }
-        }
-    }, [canSeeGlobal, accessibleHospitals, loggedInEmployee, hospitalFilter]);
+    // Removal of automatic redirection as it's now handled by isFilterInitialized logic
 
 
 
@@ -896,7 +910,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     </div>
 
                     {/* Hospital Filter - Only for Super Admin / BPH */}
-                    {canSelectHospital && (
+                    {canSeeGlobal && (
                         <div className="w-full md:w-80 flex items-center pr-2 relative shrink-0">
                             <label className="sr-only">Pilih Unit Kerja</label>
                             <div className="absolute left-4 z-10 text-gray-400">
@@ -973,7 +987,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                     />
 
                     <div className="w-full space-y-8">
-                        <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
+                        {canSeeGlobal && <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />}
                         <HospitalPerformanceComparison
                             hospitalFilter={hospitalFilter}
                             hospitals={hospitals}

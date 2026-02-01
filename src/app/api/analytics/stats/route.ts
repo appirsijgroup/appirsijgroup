@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
             // Total Active Employees (Exclude Admin/Super-Admin)
             (() => {
                 let q = supabase.from('employees')
-                    .select('id, hospital_id', { count: 'exact', head: false })
+                    .select('id, hospital_id, unit', { count: 'exact', head: false })
                     .eq('is_active', true)
                     .not('role', 'in', '(admin,super-admin)');
                 if (hospitalId && hospitalId !== 'all') q = q.ilike('hospital_id', hospitalId);
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
             (() => {
                 let q = supabase
                     .from('mutabaah_activations')
-                    .select('employee_id, employees!inner(id, role, is_active, hospital_id)', { count: 'exact', head: false })
+                    .select('employee_id, employees!inner(id, role, is_active, hospital_id, unit)', { count: 'exact', head: false })
                     .eq('month_key', currentMonthKey)
                     .eq('employees.is_active', true)
                     .not('employees.role', 'in', '(admin,super-admin)');
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
             // Compliance (Has entry in employee_monthly_reports for this month)
             (() => {
                 let q = supabase.from('employee_monthly_reports')
-                    .select('*, employees!inner(id, hospital_id)', { count: 'exact', head: false })
+                    .select('*, employees!inner(id, hospital_id, unit)', { count: 'exact', head: false })
                     .not(`reports->${currentMonthKey}`, 'is', null);
                 if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
                 return q;
@@ -82,41 +82,66 @@ export async function GET(request: NextRequest) {
             supabase.from('hospitals').select('id, name, brand')
         ]);
 
-        const hospitalDataMap: Record<string, any> = {};
-        const lowerCaseToId: Record<string, string> = {};
+        const breakdownDataMap: Record<string, any> = {};
+        const isAllMode = !hospitalId || hospitalId === 'all';
 
-        // 6. Aggregate by Hospital for Comparison View if in 'all' mode
-        if (!hospitalId || hospitalId === 'all') {
+        // 6. Aggregate by Hospital (Global) or Unit (Single Hospital)
+        if (isAllMode) {
+            const lowerCaseToId: Record<string, string> = {};
             (hospitalsRes.data || []).forEach(h => {
                 const id = h.id;
-                hospitalDataMap[id] = { id, brand: h.brand, name: h.name, total: 0, activated: 0, compliance: 0 };
+                breakdownDataMap[id] = { id, brand: h.brand, name: h.name, total: 0, activated: 0, compliance: 0 };
                 lowerCaseToId[id.toLowerCase()] = id;
             });
 
-            // Count Totals
             (totalEmployeesRes.data || []).forEach(emp => {
                 const rawHid = emp.hospital_id;
                 if (!rawHid) return;
                 const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
-                if (hospitalDataMap[hid]) hospitalDataMap[hid].total++;
+                if (breakdownDataMap[hid]) breakdownDataMap[hid].total++;
             });
 
-            // Count Activated
             (activatedRes.data || []).forEach((row: any) => {
                 const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
                 const rawHid = emp?.hospital_id;
                 if (!rawHid) return;
                 const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
-                if (hospitalDataMap[hid]) hospitalDataMap[hid].activated++;
+                if (breakdownDataMap[hid]) breakdownDataMap[hid].activated++;
             });
 
-            // Count Compliance
             (complianceRes.data || []).forEach((row: any) => {
                 const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
                 const rawHid = emp?.hospital_id;
                 if (!rawHid) return;
                 const hid = lowerCaseToId[rawHid.toLowerCase()] || rawHid;
-                if (hospitalDataMap[hid]) hospitalDataMap[hid].compliance++;
+                if (breakdownDataMap[hid]) breakdownDataMap[hid].compliance++;
+            });
+        } else {
+            // Aggregate by Unit when a specific hospital is selected
+            (totalEmployeesRes.data || []).forEach(emp => {
+                const unitName = emp.unit || 'Tanpa Unit';
+                if (!breakdownDataMap[unitName]) {
+                    breakdownDataMap[unitName] = { id: unitName, brand: unitName, name: unitName, total: 0, activated: 0, compliance: 0 };
+                }
+                breakdownDataMap[unitName].total++;
+            });
+
+            (activatedRes.data || []).forEach((row: any) => {
+                const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+                const unitName = emp?.unit || 'Tanpa Unit';
+                if (!breakdownDataMap[unitName]) {
+                    breakdownDataMap[unitName] = { id: unitName, brand: unitName, name: unitName, total: 0, activated: 0, compliance: 0 };
+                }
+                breakdownDataMap[unitName].activated++;
+            });
+
+            (complianceRes.data || []).forEach((row: any) => {
+                const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+                const unitName = emp?.unit || 'Tanpa Unit';
+                if (!breakdownDataMap[unitName]) {
+                    breakdownDataMap[unitName] = { id: unitName, brand: unitName, name: unitName, total: 0, activated: 0, compliance: 0 };
+                }
+                breakdownDataMap[unitName].compliance++;
             });
         }
 
@@ -128,7 +153,7 @@ export async function GET(request: NextRequest) {
             notActivatedCount: (totalEmployeesRes.count || 0) - (activatedRes.count || 0),
             activationRate: totalEmployeesRes.count ? Math.round(((activatedRes.count || 0) / totalEmployeesRes.count) * 100) : 0,
             complianceRate: totalEmployeesRes.count ? Math.round(((complianceRes.count || 0) / totalEmployeesRes.count) * 100) : 0,
-            hospitalBreakdown: Object.values(hospitalDataMap)
+            hospitalBreakdown: Object.values(breakdownDataMap)
         };
 
         return NextResponse.json(stats);

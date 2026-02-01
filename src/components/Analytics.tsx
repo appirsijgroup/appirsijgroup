@@ -132,8 +132,6 @@ const HospitalPerformanceComparison: React.FC<{
     }, []);
 
     useEffect(() => {
-        if (hospitalFilter !== 'all') return;
-
         const fetchComparison = async () => {
             setIsLoading(true);
             try {
@@ -143,7 +141,7 @@ const HospitalPerformanceComparison: React.FC<{
                 const params = new URLSearchParams({
                     month,
                     year,
-                    hospitalId: 'all'
+                    hospitalId: hospitalFilter // Use the actual filter, not hardcoded 'all'
                 });
 
                 const response = await fetch(`/api/analytics/performance?${params.toString()}`);
@@ -152,7 +150,7 @@ const HospitalPerformanceComparison: React.FC<{
                     setComparisonData(data.hospitalComparison || []);
                 }
             } catch (error) {
-                console.error('Failed to fetch hospital comparison:', error);
+                console.error('Failed to fetch hospital/unit comparison:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -161,7 +159,7 @@ const HospitalPerformanceComparison: React.FC<{
         fetchComparison();
     }, [hospitalFilter, currentMonth]);
 
-    if (hospitalFilter !== 'all' || !isClient) return null;
+    if (!isClient) return null;
 
     const categoryConfig: Record<string, { label: string; icon: React.ReactNode; color: string; gridColor: string }> = {
         'SIDIQ': { label: 'SIDIQ (Integritas)', icon: <ShieldCheckIcon className="w-5 h-5" />, color: '#f59e0b', gridColor: '#4a3b1a' },
@@ -188,7 +186,9 @@ const HospitalPerformanceComparison: React.FC<{
                         </svg>
                     </div>
                     <div>
-                        <h4 className="font-bold text-white text-base md:text-lg">Performa Unit RS</h4>
+                        <h4 className="font-bold text-white text-base md:text-lg">
+                            {hospitalFilter === 'all' ? 'Performa Unit RS' : 'Komparasi Kinerja Antar Unit'}
+                        </h4>
                         <p className="text-gray-400 text-[10px] md:text-xs">Pilih kategori analisis</p>
                     </div>
                 </div>
@@ -343,18 +343,20 @@ const ActivationReport: React.FC<{
                 </div>
             </div>
 
-            {/* Hospital Comparison Table for Global View */}
-            {isGlobal && stats.hospitalBreakdown.length > 0 && (
+            {/* Hospital/Unit Comparison Table */}
+            {stats.hospitalBreakdown.length > 0 && (
                 <div className="bg-black/20 rounded-xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-2">
                     <div className="p-4 border-b border-white/10 bg-white/5 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M3 21h18"></path><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3"></path><path d="M19 21V11"></path><path d="M5 21V11"></path><path d="M9 21v-4a2 2 0 0 1 4 0v4"></path></svg>
-                        <h3 className="text-white font-bold text-sm">Komparasi Kinerja Unit</h3>
+                        <h3 className="text-white font-bold text-sm">
+                            {isGlobal ? 'Komparasi Kinerja Unit' : 'Komparasi Kinerja Antar Unit/Bagian'}
+                        </h3>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left border-collapse">
                             <thead>
                                 <tr className="bg-black/40 text-gray-400 border-b border-white/10">
-                                    <th className="p-4 font-semibold">Unit Rumah Sakit</th>
+                                    <th className="p-4 font-semibold">{isGlobal ? 'Unit Rumah Sakit' : 'Unit / Bagian'}</th>
                                     <th className="p-4 font-semibold text-center">Total SDM</th>
                                     <th className="p-4 font-semibold text-center">Aktivasi Mutaba'ah</th>
                                     <th className="p-4 font-semibold text-center">Kepatuhan Laporan</th>
@@ -688,12 +690,35 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
         loadHospitals();
     }, [loadHospitals]);
 
-    // Check if user is BPH or Super Admin (Cross-RS Authority)
+    // Check if user is BPH or Super Admin (Cross-RS Authority) or an Admin with multiple RS roles
     const canSelectHospital = useMemo(() => {
         if (!loggedInEmployee) return false;
         const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
-        return isBPH || isSuperAdmin(loggedInEmployee);
+        const isSuper = isSuperAdmin(loggedInEmployee);
+        const hasManagedHospitals = (loggedInEmployee.managedHospitalIds?.length || 0) > 0;
+
+        return isBPH || isSuper || hasManagedHospitals;
     }, [loggedInEmployee]);
+
+    // Filter hospitals based on user access
+    const accessibleHospitals = useMemo(() => {
+        if (!loggedInEmployee) return [];
+        const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
+        const isSuper = isSuperAdmin(loggedInEmployee);
+
+        if (isBPH || isSuper) return hospitals;
+
+        if (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.length > 0) {
+            // Include both their own hospital and any specifically managed ones
+            const allowedIds = [loggedInEmployee.hospitalId, ...(loggedInEmployee.managedHospitalIds || [])]
+                .filter(Boolean)
+                .map(id => id?.toLowerCase());
+
+            return hospitals.filter(h => allowedIds.includes(h.id.toLowerCase()));
+        }
+
+        return hospitals.filter(h => h.id.toLowerCase() === loggedInEmployee.hospitalId?.toLowerCase());
+    }, [hospitals, loggedInEmployee]);
 
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -765,13 +790,22 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     }, [hospitalFilter, currentMonth]);
     // -------------------------------------------------------------
 
-
+    // Check if user has access to Global view
+    const canSeeGlobal = useMemo(() => {
+        if (!loggedInEmployee) return false;
+        const isBPH = loggedInEmployee.functionalRoles?.includes('BPH') || (loggedInEmployee as any).functional_roles?.includes('BPH');
+        const isSuper = isSuperAdmin(loggedInEmployee);
+        return isBPH || isSuper;
+    }, [loggedInEmployee]);
 
     useEffect(() => {
-        if (!canSelectHospital && loggedInEmployee?.hospitalId) {
-            setHospitalFilter(loggedInEmployee.hospitalId);
+        if (!canSeeGlobal) {
+            if (hospitalFilter === 'all') {
+                const firstHospital = accessibleHospitals[0]?.id || loggedInEmployee?.hospitalId;
+                if (firstHospital) setHospitalFilter(firstHospital);
+            }
         }
-    }, [canSelectHospital, loggedInEmployee]);
+    }, [canSeeGlobal, accessibleHospitals, loggedInEmployee, hospitalFilter]);
 
 
 
@@ -873,9 +907,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 onChange={(e) => setHospitalFilter(e.target.value)}
                                 className={`w-full bg-black/60 border ${isGlobal ? 'border-amber-500/40 text-amber-200' : 'border-teal-500/40 text-teal-200'} rounded-xl pl-11 pr-10 py-3.5 focus:ring-2 ${isGlobal ? 'focus:ring-amber-500' : 'focus:ring-teal-500'} focus:outline-none appearance-none cursor-pointer font-bold shadow-inner transition-all`}
                             >
-                                <option value="all" className="bg-neutral-900 text-amber-400">RSIJ GROUP</option>
-                                <optgroup label="Unit Rumah Sakit" className="bg-neutral-900 text-gray-400">
-                                    {hospitals.map(h => (
+                                {canSeeGlobal && <option value="all" className="bg-neutral-900 text-amber-400">RSIJ GROUP</option>}
+                                <optgroup label={canSeeGlobal ? "Unit Rumah Sakit" : "Akses Unit Kerja"} className="bg-neutral-900 text-gray-400">
+                                    {accessibleHospitals.map(h => (
                                         <option key={h.id} value={h.id} className="bg-neutral-900 text-white">
                                             {h.brand}
                                         </option>
@@ -938,16 +972,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                         stats={stats}
                     />
 
-                    {isGlobal && (
-                        <div className="w-full space-y-8">
-                            <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
-                            <HospitalPerformanceComparison
-                                hospitalFilter={hospitalFilter}
-                                hospitals={hospitals}
-                                currentMonth={currentMonth}
-                            />
-                        </div>
-                    )}
+                    <div className="w-full space-y-8">
+                        <GlobalComparisonCharts breakdown={stats.hospitalBreakdown} />
+                        <HospitalPerformanceComparison
+                            hospitalFilter={hospitalFilter}
+                            hospitals={hospitals}
+                            currentMonth={currentMonth}
+                        />
+                    </div>
                 </div>
             ) : (
                 /* 🔍 DETAILED ANALYTICS - Performance Deep Dive */

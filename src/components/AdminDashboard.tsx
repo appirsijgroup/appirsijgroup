@@ -461,9 +461,9 @@ const UserModal: React.FC<{
                                     disabled={loading}
                                     className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
                                 >
-                                    <option value="user" className="text-black bg-white">User</option>
-                                    <option value="admin" className="text-black bg-white">Admin</option>
-                                    <option value="super-admin" className="text-black bg-white">Super Admin</option>
+                                    {loggedInEmployee && getAssignableRoles(loggedInEmployee).map(r => (
+                                        <option key={r} value={r} className="text-black bg-white">{getRoleDisplay(r).label}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -475,9 +475,12 @@ const UserModal: React.FC<{
                                     className="w-full bg-white/10 border border-white/30 rounded-lg p-2 focus:ring-2 focus:ring-teal-400 focus:outline-none disabled:bg-gray-700/50 disabled:cursor-not-allowed text-white"
                                 >
                                     <option value="" className="text-black bg-white">-- Tidak Ada --</option>
-                                    {hospitals.map(h => (
-                                        <option key={h.id} value={h.id} className="text-black bg-white">{h.brand} - {h.name}</option>
-                                    ))}
+                                    {hospitals
+                                        .filter(h => isSuperAdmin(loggedInEmployee) || (loggedInEmployee?.managedHospitalIds && loggedInEmployee.managedHospitalIds.includes(h.id)))
+                                        .map(h => (
+                                            <option key={h.id} value={h.id} className="text-black bg-white">{h.brand} - {h.name}</option>
+                                        ))
+                                    }
                                 </select>
                             </div>
                             <div>
@@ -919,7 +922,8 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                         />
                     </div>
 
-                    {isSuperAdmin(loggedInEmployee) && (
+                    {/* Hospital filter restricted to Super Admin or only showing managed hospitals */}
+                    {isSuperAdmin(loggedInEmployee) ? (
                         <div className="relative w-full sm:w-72 shrink-0">
                             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/80" />
                             <select
@@ -938,7 +942,25 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                                 <ChevronDown className="w-4 h-4" />
                             </div>
                         </div>
-                    )}
+                    ) : (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.length > 1) ? (
+                        <div className="relative w-full sm:w-72 shrink-0">
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/80" />
+                            <select
+                                value={pagination?.hospitalFilter || ''}
+                                onChange={e => pagination?.onHospitalFilter(e.target.value)}
+                                className="w-full bg-white/10 hover:bg-white/15 border border-white/20 rounded-xl py-2.5 pl-9 pr-10 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:outline-none text-white transition-all appearance-none text-sm font-medium cursor-pointer shadow-sm"
+                            >
+                                {hospitals.filter(h => loggedInEmployee.managedHospitalIds?.includes(h.id)).map(h => (
+                                    <option key={h.id} value={h.id} className="bg-gray-900">
+                                        {h.brand}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <ChevronDown className="w-4 h-4" />
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <button onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg transition-all active:scale-95">
@@ -1734,7 +1756,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
                     {/* --- Group 2: Organisasi (Right Side) --- */}
                     <div className="lg:col-span-12 xl:col-span-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {isSuperAdmin(loggedInEmployee) && (
+                        {isSuperAdmin(loggedInEmployee) ? (
                             <div className="md:col-span-1">
                                 <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
                                 <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
@@ -1742,7 +1764,16 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                                     {hospitals.map(h => <option key={h.id} value={h.id} className="text-black bg-white">{h.brand}</option>)}
                                 </select>
                             </div>
-                        )}
+                        ) : (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.length > 1) ? (
+                            <div className="md:col-span-1">
+                                <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
+                                <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                    {hospitals.filter(h => loggedInEmployee.managedHospitalIds?.includes(h.id)).map(h => (
+                                        <option key={h.id} value={h.id} className="text-black bg-white">{h.brand}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
                         <div className={isSuperAdmin(loggedInEmployee) ? "md:col-span-1" : "md:col-span-2"}>
                             <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Unit Kerja</label>
                             <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
@@ -2107,7 +2138,7 @@ const ActivationReport: React.FC<{
                                 ))}
                             </select>
                         </div>
-                        {isSuperAdmin(loggedInEmployee) && (
+                        {isSuperAdmin(loggedInEmployee) ? (
                             <div className="md:col-span-4">
                                 <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
                                 <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
@@ -2117,7 +2148,16 @@ const ActivationReport: React.FC<{
                                     ))}
                                 </select>
                             </div>
-                        )}
+                        ) : (loggedInEmployee.managedHospitalIds && loggedInEmployee.managedHospitalIds.length > 1) ? (
+                            <div className="md:col-span-4">
+                                <label className="text-[10px] uppercase tracking-wider font-bold text-blue-400 block mb-1.5 ml-1">Rumah Sakit</label>
+                                <select value={hospitalFilter} onChange={e => setHospitalFilter(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-blue-500/50 focus:outline-none transition-all hover:bg-black/60">
+                                    {hospitals.filter(h => loggedInEmployee.managedHospitalIds?.includes(h.id)).map(h => (
+                                        <option key={h.id} value={h.id} className="text-black bg-white">{h.brand}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
                         <div className={`${isSuperAdmin(loggedInEmployee) ? 'md:col-span-4' : 'md:col-span-12'} md:col-end-13`}>
                             <label className="text-[10px] uppercase tracking-wider font-bold text-gray-400 block mb-1.5 ml-1">Pencarian</label>
                             <div className="relative group">
@@ -2577,10 +2617,10 @@ const ToggleSwitch: React.FC<{
             aria-checked={checked}
             onClick={() => !disabled && onChange(!checked)}
             disabled={disabled}
-            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500 ${disabled ? 'cursor-not-allowed opacity-30 grayscale' : 'cursor-pointer hover:scale-105 active:scale-95'}`}
         >
-            <span className={`${checked ? 'bg-teal-500' : 'bg-gray-600'} absolute w-full h-full rounded-full`} />
-            <span className={`${checked ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out`} />
+            <span className={`${checked ? 'bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.5)]' : 'bg-gray-600'} absolute w-full h-full rounded-full transition-colors duration-300`} />
+            <span className={`${checked ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ease-in-out shadow-md`} />
         </button>
     );
 };
@@ -2589,10 +2629,11 @@ interface JabatanManagementProps {
     allUsers: Employee[];
     onUpdateProfile: (userId: string, updates: Partial<Employee>) => void;
     hospitals?: Hospital[];
+    loggedInEmployee: Employee;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile, hospitals = [] }) => {
+const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdateProfile, hospitals = [], loggedInEmployee }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [hospitalFilter, setHospitalFilter] = useState('all');
     const [confirmation, setConfirmation] = useState<{
@@ -2695,10 +2736,13 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                             onChange={e => setHospitalFilter(e.target.value)}
                             className="w-full bg-white/10 border border-white/20 rounded-xl py-2 px-3 text-white focus:ring-2 focus:ring-teal-400 focus:outline-none"
                         >
-                            <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>
-                            {hospitals.map(h => (
-                                <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
-                            ))}
+                            {isSuperAdmin(loggedInEmployee) && <option value="all" className="bg-gray-800">Seluruh Unit RSIJ Group</option>}
+                            {hospitals
+                                .filter(h => isSuperAdmin(loggedInEmployee) || !loggedInEmployee.managedHospitalIds || loggedInEmployee.managedHospitalIds.includes(h.id))
+                                .map(h => (
+                                    <option key={h.id} value={h.id} className="bg-gray-800">{h.brand}</option>
+                                ))
+                            }
                         </select>
                     </div>
                 )}
@@ -2727,6 +2771,7 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                                             <ToggleSwitch
                                                 checked={user.functionalRoles?.includes(role) || false}
                                                 onChange={() => handleRoleToggle(user, role)}
+                                                disabled={!isSuperAdmin(loggedInEmployee) && role === 'BPH'} // Admins can't manage BPH role
                                             />
                                         </div>
                                     </td>
@@ -3223,9 +3268,10 @@ interface HospitalManagementProps {
     onUpdate: (id: string, data: Partial<Omit<Hospital, 'id'>>) => Promise<{ success: boolean, error?: string }>;
     onDelete: (hospital: Hospital) => void;
     onToggleStatus: (hospital: Hospital) => void;
+    loggedInEmployee: Employee;
 }
 
-const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAdd, onUpdate, onDelete, onToggleStatus }) => {
+const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAdd, onUpdate, onDelete, onToggleStatus, loggedInEmployee }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
 
@@ -3255,10 +3301,12 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h3 className="text-xl font-bold text-white">Manajemen Rumah Sakit</h3>
-                <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5" />
-                    Tambah RS Baru
-                </button>
+                {isSuperAdmin(loggedInEmployee) && (
+                    <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-white font-semibold rounded-lg flex items-center gap-2">
+                        <PlusCircle className="w-5 h-5" />
+                        Tambah RS Baru
+                    </button>
+                )}
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-white/20 -mx-2 sm:mx-0">
@@ -3270,7 +3318,7 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
                             <th className="px-4 py-3 whitespace-nowrap min-w-[200px]">Nama Lengkap</th>
                             <th className="px-4 py-3 min-w-[250px]">Alamat</th>
                             <th className="px-4 py-3 text-center whitespace-nowrap min-w-[100px]">Status</th>
-                            <th className="px-4 py-3 text-center whitespace-nowrap min-w-[150px]">Aksi</th>
+                            {isSuperAdmin(loggedInEmployee) && <th className="px-4 py-3 text-center whitespace-nowrap min-w-[150px]">Aksi</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -3298,34 +3346,36 @@ const HospitalManagement: React.FC<HospitalManagementProps> = ({ hospitals, onAd
                                         {hospital.isActive ? 'Aktif' : 'Nonaktif'}
                                     </span>
                                 </td>
-                                <td className="px-4 py-3 text-center whitespace-nowrap">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <button
-                                            onClick={() => handleOpenModal(hospital)}
-                                            className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/30 hover:border-blue-400 shadow-lg hover:shadow-blue-500/20 active:scale-95 group"
-                                            title="Edit"
-                                        >
-                                            <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                        </button>
-                                        <button
-                                            onClick={() => onToggleStatus(hospital)}
-                                            className={`p-2 rounded-xl transition-all border shadow-lg active:scale-95 group ${hospital.isActive
-                                                ? 'bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border-orange-500/30 hover:border-orange-400 shadow-orange-500/10'
-                                                : 'bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-white border-green-500/30 hover:border-green-400 shadow-green-500/10'
-                                                }`}
-                                            title={hospital.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                                        >
-                                            <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-                                        </button>
-                                        <button
-                                            onClick={() => onDelete(hospital)}
-                                            className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
-                                            title="Hapus"
-                                        >
-                                            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                        </button>
-                                    </div>
-                                </td>
+                                {isSuperAdmin(loggedInEmployee) && (
+                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <button
+                                                onClick={() => handleOpenModal(hospital)}
+                                                className="p-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-xl transition-all border border-blue-500/30 hover:border-blue-400 shadow-lg hover:shadow-blue-500/20 active:scale-95 group"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                            <button
+                                                onClick={() => onToggleStatus(hospital)}
+                                                className={`p-2 rounded-xl transition-all border shadow-lg active:scale-95 group ${hospital.isActive
+                                                    ? 'bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border-orange-500/30 hover:border-orange-400 shadow-orange-500/10'
+                                                    : 'bg-green-500/10 hover:bg-green-500 text-green-400 hover:text-white border-green-500/30 hover:border-green-400 shadow-green-500/10'
+                                                    }`}
+                                                title={hospital.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                                            >
+                                                <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                            </button>
+                                            <button
+                                                onClick={() => onDelete(hospital)}
+                                                className="p-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl transition-all border border-red-500/30 hover:border-red-400 shadow-lg hover:shadow-red-500/20 active:scale-95 group"
+                                                title="Hapus"
+                                            >
+                                                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                         {sortedHospitals.length === 0 && (
@@ -3603,12 +3653,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
     }, [activeView, onLoadHeavyData, allUsersData, isLoadingEmployees]);
 
     useEffect(() => {
+        // Redirection if activeView is restricted for the current user role
+        if (!isSuperAdmin(loggedInEmployee)) {
+            // Regular admins can't access audit-log or manajemen-admin
+            if (['audit-log', 'manajemen-admin'].includes(activeView)) {
+                setActiveView('reports');
+            }
+        }
+
         if (!isAnyAdmin(loggedInEmployee)) {
+            // General users (if accidentally in AdminDashboard) can only see manajemen-konten
             if (['manajemen-pengguna', 'manajemen-rs', 'audit-log', 'manajemen-admin'].includes(activeView)) {
                 setActiveView('manajemen-konten');
             }
         }
-    }, [loggedInEmployee.role, activeView]);
+    }, [loggedInEmployee.id, loggedInEmployee.role, activeView]);
 
     // States for modals
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -3873,7 +3932,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                             </Suspense>
                         )}
                         {userManagementSubView === 'jabatan' && (
-                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} />
+                            <JabatanManagement allUsers={allUsers} onUpdateProfile={onUpdateProfile} hospitals={hospitals} loggedInEmployee={loggedInEmployee} />
                         )}
                     </div>
                 )}
@@ -3962,7 +4021,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                     </div>
                 )}
 
-                {activeView === 'manajemen-rs' && isAnyAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} />}
+                {activeView === 'manajemen-rs' && isAnyAdmin(loggedInEmployee) && <HospitalManagement hospitals={hospitals} onAdd={onAddHospital} onUpdate={onUpdateHospital} onDelete={handleInitiateDeleteHospital} onToggleStatus={handleInitiateToggleHospitalStatus} loggedInEmployee={loggedInEmployee} />}
             </div>
 
             <UserModal

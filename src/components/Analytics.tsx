@@ -830,41 +830,40 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
     return (
         <div className="space-y-8 pb-10">
             {/* 🏥 Hospital Selector & Navigation Bar */}
-            {canSelectHospital && (
-                <div className={`p-1 rounded-2xl border ${isGlobal ? 'bg-amber-900/20 border-amber-500/30' : 'bg-teal-900/20 border-teal-500/30'} backdrop-blur-md transition-all duration-500 shadow-2xl`}>
-                    <div className="flex flex-col md:flex-row md:items-center p-2 gap-4">
-                        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${isGlobal ? 'bg-amber-500/10 text-amber-100' : 'bg-teal-500/10 text-teal-100'} grow`}>
-                            <div className={`p-2 rounded-lg ${isGlobal ? 'bg-amber-500/20 text-amber-400' : 'bg-teal-500/20 text-teal-400'}`}>
-                                <LayoutDashboard size={20} />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className={`text-sm md:text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'} truncate`}>
-                                    {isGlobal ? 'RSIJ GROUP' : selectedHospitalName}
-                                </span>
-                            </div>
+            <div className={`p-1 rounded-2xl border ${isGlobal ? 'bg-amber-900/20 border-amber-500/30' : 'bg-teal-900/20 border-teal-500/30'} backdrop-blur-md transition-all duration-500 shadow-2xl`}>
+                <div className="flex flex-col md:flex-row md:items-center p-2 gap-4">
+                    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${isGlobal ? 'bg-amber-500/10 text-amber-100' : 'bg-teal-500/10 text-teal-100'} grow`}>
+                        <div className={`p-2 rounded-lg ${isGlobal ? 'bg-amber-500/20 text-amber-400' : 'bg-teal-500/20 text-teal-400'}`}>
+                            <LayoutDashboard size={20} />
                         </div>
-
-                        {/* View Mode Toggle - NEW */}
-                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 self-stretch">
-                            <button
-                                onClick={() => setViewMode('overview')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'overview' ? 'bg-teal-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <BarChart3 size={16} />
-                                RINGKASAN
-                            </button>
-                            <button
-                                onClick={() => setViewMode('detailed')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'detailed' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <PieChartIcon size={16} />
-                                ANALISIS KERJA
-                            </button>
+                        <div className="flex flex-col">
+                            <span className={`text-sm md:text-lg font-black ${isGlobal ? 'text-amber-400' : 'text-teal-400'} truncate`}>
+                                {isGlobal ? 'RSIJ GROUP' : selectedHospitalName}
+                            </span>
                         </div>
+                    </div>
 
+                    {/* View Mode Toggle - Visible for ALL Admins */}
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 self-stretch shrink-0">
+                        <button
+                            onClick={() => setViewMode('overview')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'overview' ? 'bg-teal-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <BarChart3 size={16} />
+                            RINGKASAN
+                        </button>
+                        <button
+                            onClick={() => setViewMode('detailed')}
+                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${viewMode === 'detailed' ? 'bg-amber-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <PieChartIcon size={16} />
+                            ANALISIS KERJA
+                        </button>
+                    </div>
 
-
-                        <div className="w-full md:w-80 flex items-center pr-2 relative">
+                    {/* Hospital Filter - Only for Super Admin / BPH */}
+                    {canSelectHospital && (
+                        <div className="w-full md:w-80 flex items-center pr-2 relative shrink-0">
                             <label className="sr-only">Pilih Unit Kerja</label>
                             <div className="absolute left-4 z-10 text-gray-400">
                                 <Building2 size={18} />
@@ -887,9 +886,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ allUsersData, dailyActivitiesConf
                                 <ChevronDown size={18} />
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* Month Navigator - Standalone Section (Compact) */}
             <div className="flex justify-center -mt-6 mb-6 animate-in fade-in slide-in-from-top-1 duration-500">

@@ -48,7 +48,7 @@ export interface AppDataState {
     logoutEmployee: (router?: any) => void;
     refreshActivityStats: () => void;
     loadDetailedEmployeeData: (employeeId: string, monthOrForce?: number | boolean, year?: number, force?: boolean) => Promise<void>;
-    loadHeavyAdminData: () => Promise<void>;
+    loadHeavyAdminData: (customStartDate?: string) => Promise<void>;
     setIsLoggingOut: (isLoggingOut: boolean) => void;
 }
 
@@ -253,15 +253,25 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
      * 🔥 NEW: Decoupled Heavy Data Loader
      * Only call this when detailed global analytics or large reports are needed.
      */
-    loadHeavyAdminData: async () => {
+    loadHeavyAdminData: async (customStartDate?: string) => {
         if (get().isLoadingEmployees) return;
         try {
             set({ isLoadingEmployees: true });
 
             const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1;
-            const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+            let currentYear = now.getFullYear();
+            let currentMonth = now.getMonth() + 1;
+            let startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+
+            if (customStartDate) {
+                // If custom date provided, use it
+                startOfMonth = customStartDate;
+                const d = new Date(customStartDate);
+                if (!isNaN(d.getTime())) {
+                    currentYear = d.getFullYear();
+                    currentMonth = d.getMonth() + 1;
+                }
+            }
 
             // 🔥 FETCH ALL DATA VIA ADMIN FULL SYNC API (Bypasses RLS)
             const [reportRes, bulkActivitiesRes] = await Promise.all([
@@ -371,7 +381,13 @@ export const useAppDataStore = create<AppDataState>((set, get) => ({
             set({ allUsersData: nextAllUsersData, isLoadingEmployees: false, lastHeavyAdminLoad: Date.now() });
 
             const { useUIStore } = await import('@/store/store');
-            useUIStore.getState().addToast('⚡ Sinkronisasi riwayat berhasil!', 'success');
+
+            // 🔥 FORMAT DATE FOR FEEDBACK
+            const feedbackDate = customStartDate
+                ? new Date(customStartDate).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+                : 'Bulan Ini';
+
+            useUIStore.getState().addToast(`⚡ Sinkronisasi data (${feedbackDate}) berhasil!`, 'success');
         } catch (e) {
             console.error('⚠️ [loadHeavyAdminData] Failed:', e);
             set({ isLoadingEmployees: false });

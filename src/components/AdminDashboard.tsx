@@ -1283,7 +1283,7 @@ interface AttendanceReportProps {
     onEditAttendance: (record: AdminReportRecord) => void;
     onDeleteAttendance: (record: AdminReportRecord) => void;
     pagination?: AdminDashboardProps['pagination'];
-    onRefresh?: () => void;
+    onRefresh?: (startDate?: string) => void;
     isLoading?: boolean;
     hospitals: Hospital[];
 }
@@ -1647,6 +1647,21 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         }
     }, [dateFilterType, monthFilter, yearFilter, startDate, endDate, entityFilter, unitFilter, professionFilter, nameOrNipFilter, activationStatusFilter]);
 
+    const handleSync = () => {
+        if (!onRefresh) return;
+        let syncStartDate: string | undefined;
+
+        if (dateFilterType === 'monthly' && monthFilter) {
+            syncStartDate = `${monthFilter}-01`;
+        } else if (dateFilterType === 'yearly' && yearFilter) {
+            syncStartDate = `${yearFilter}-01-01`;
+        } else if (dateFilterType === 'range' && startDate) {
+            syncStartDate = startDate;
+        }
+
+        onRefresh(syncStartDate);
+    };
+
     return (
         <div className="mt-8">
             <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 mb-8 shadow-2xl">
@@ -1767,6 +1782,9 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                         )}
 
                         <div className={`md:col-span-6 ${reportType === 'prayer' && dateFilterType === 'monthly' ? 'lg:col-span-2' : 'lg:col-span-4'} flex items-center justify-end gap-2`}>
+                            <button onClick={handleSync} disabled={isLoading} className="p-2.5 bg-teal-500/10 hover:bg-teal-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-teal-500/20 shadow-sm mr-2" title="Sinkronisasi Data Sekarang">
+                                <RefreshCw className={`w-5 h-5 text-teal-500 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                            </button>
                             <button onClick={handlePreviewPdf} disabled={filteredData.length === 0} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed group border border-red-500/20 shadow-sm" title="Unduh PDF">
                                 <FileDown className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" />
                             </button>
@@ -1793,96 +1811,112 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedData.map((record, index) => (
-                            <tr key={`${record.employeeId}-${record.date}-${record.entityId}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
-                                <td className="px-4 py-3 whitespace-nowrap">{new Date(record.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                <td className="px-4 py-3 font-mono text-xs uppercase text-blue-300 whitespace-nowrap">
-                                    {record.hospitalId || '-'}
-                                </td>
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.employeeName}</td>
-                                <td className="px-4 py-3">{record.unit}</td>
-                                <td className="px-4 py-3">{record.profession}</td>
-                                <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.prayerName}</td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status === 'Hadir' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                                        {record.status}
-                                    </span>
-                                </td>
-                                {isSuperAdmin(loggedInEmployee) && (
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                onClick={() => onEditAttendance(record)}
-                                                title="Edit Presensi"
-                                                className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/30 text-blue-400 hover:text-blue-300 transition-all shadow-sm hover:shadow-md"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => onDeleteAttendance(record)}
-                                                title="Hapus Presensi"
-                                                className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 text-red-400 hover:text-red-300 transition-all shadow-sm hover:shadow-md"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                )}
-                            </tr>
-                        ))}
-                        {filteredData.length === 0 && (
+                        {isLoading ? (
                             <tr>
-                                <td colSpan={isSuperAdmin(loggedInEmployee) ? 7 : 6} className="text-center p-12">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <p className="text-blue-200 opacity-60">Tidak ada data presensi yang ditemukan untuk filter ini.</p>
-                                        <button
-                                            onClick={() => pagination?.onRefresh?.() || onRefresh?.()}
-                                            className="px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg border border-teal-500/30 transition-all flex items-center gap-2 text-sm font-semibold"
-                                        >
-                                            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                                            Sinkronisasi Data Sekarang
-                                        </button>
+                                <td colSpan={isSuperAdmin(loggedInEmployee) ? 8 : 7} className="text-center p-12">
+                                    <div className="flex flex-col items-center justify-center gap-3 animate-pulse">
+                                        <RefreshCw className="w-10 h-10 text-teal-400 animate-spin" />
+                                        <p className="text-lg font-medium text-teal-300">Sedang Menyinkronkan Data...</p>
+                                        <p className="text-xs text-blue-300/70">Mohon tunggu, proses ini mengambil data terbaru dari server.</p>
                                     </div>
                                 </td>
                             </tr>
+                        ) : (
+                            <>
+                                {paginatedData.map((record, index) => (
+                                    <tr key={`${record.employeeId}-${record.date}-${record.entityId}-${index}`} className="border-b border-gray-700 hover:bg-white/5">
+                                        <td className="px-4 py-3 whitespace-nowrap">{new Date(record.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                        <td className="px-4 py-3 font-mono text-xs uppercase text-blue-300 whitespace-nowrap">
+                                            {record.hospitalId || '-'}
+                                        </td>
+                                        <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.employeeName}</td>
+                                        <td className="px-4 py-3">{record.unit}</td>
+                                        <td className="px-4 py-3">{record.profession}</td>
+                                        <td className="px-4 py-3 font-semibold whitespace-nowrap">{record.prayerName}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${record.status === 'Hadir' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                                {record.status}
+                                            </span>
+                                        </td>
+                                        {isSuperAdmin(loggedInEmployee) && (
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        onClick={() => onEditAttendance(record)}
+                                                        title="Edit Presensi"
+                                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/30 text-blue-400 hover:text-blue-300 transition-all shadow-sm hover:shadow-md"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onDeleteAttendance(record)}
+                                                        title="Hapus Presensi"
+                                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:border-red-500/30 text-red-400 hover:text-red-300 transition-all shadow-sm hover:shadow-md"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                                {filteredData.length === 0 && (
+                                    <tr>
+                                        <td colSpan={isSuperAdmin(loggedInEmployee) ? 7 : 6} className="text-center p-12">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <p className="text-blue-200 opacity-60">Tidak ada data presensi yang ditemukan untuk filter ini.</p>
+                                                <button
+                                                    onClick={() => pagination?.onRefresh?.() || onRefresh?.()}
+                                                    className="px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 rounded-lg border border-teal-500/30 transition-all flex items-center gap-2 text-sm font-semibold"
+                                                >
+                                                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                                    Sinkronisasi Data Sekarang
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </>
                         )}
                     </tbody>
                 </table>
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
+            {
+                totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            ←
+                        </button>
 
-                    <div className="flex items-center gap-1">
-                        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
+                        <div className="flex items-center gap-1">
+                            <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
+                                Hal {currentPage} dari {totalPages}
+                            </span>
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            →
+                        </button>
                     </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+                )
+            }
 
             <div className="mt-4 text-center">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
                     Total {filteredData.length} data laporan {reportType === 'prayer' ? 'sholat' : 'kegiatan'}
                 </p>
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -3785,12 +3819,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         {isAnyAdmin(loggedInEmployee) && <TabButton active={activeView === 'manajemen-rs'} onClick={() => setActiveView('manajemen-rs')} label="Manajemen RS" icon={Building2} />}
                     </div>
 
-                    {/* 🔥 Global Refresh/Sync Button - Restored for Reports and User Management */}
-                    {(activeView === 'manajemen-pengguna' || activeView === 'reports') && (
+                    {/* 🔥 Global Refresh/Sync Button - Only for User Management (Reports have local sync) */}
+                    {(activeView === 'manajemen-pengguna') && (
                         <button
                             onClick={() => {
                                 if (activeView === 'manajemen-pengguna') onLoadEmployees?.();
-                                if (activeView === 'reports') onLoadHeavyData?.();
                             }}
                             disabled={isLoadingEmployees}
                             title="Sinkronisasi Data"
@@ -3884,57 +3917,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
                         </div>
 
                         <div className="mt-8">
-                            {isLoadingEmployees ? (
-                                <div className="flex flex-col items-center justify-center p-20 bg-black/10 rounded-xl">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400 mb-4"></div>
-                                    <p className="text-teal-200/60 font-medium animate-pulse">Memuat data laporan...</p>
-                                </div>
-                            ) : (
-                                <>
-                                    {reportSubView === 'sholat' && (
-                                        <AttendanceReport
-                                            allUsersData={allUsersData}
-                                            activities={activities}
-                                            reportType="prayer"
-                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
-                                            loggedInEmployee={loggedInEmployee}
-                                            onEditAttendance={setEditingAttendanceRecord}
-                                            onDeleteAttendance={handleInitiateDeleteAttendance}
-                                            pagination={pagination}
-                                            onRefresh={onLoadHeavyData}
-                                            isLoading={isLoadingEmployees}
-                                            hospitals={hospitals}
-                                        />
-                                    )}
-                                    {reportSubView === 'kegiatan' && (
-                                        <AttendanceReport
-                                            allUsersData={allUsersData}
-                                            activities={activities}
-                                            reportType="activity"
-                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
-                                            loggedInEmployee={loggedInEmployee}
-                                            onEditAttendance={setEditingAttendanceRecord}
-                                            onDeleteAttendance={handleInitiateDeleteAttendance}
-                                            pagination={pagination}
-                                            onRefresh={onLoadHeavyData}
-                                            isLoading={isLoadingEmployees}
-                                            hospitals={hospitals}
-                                        />
-                                    )}
-                                    {reportSubView === 'mutabaah' && (
-                                        <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} onLoadHeavyData={onLoadHeavyData} isLoading={isLoadingEmployees} />
-                                    )}
-                                    {reportSubView === 'aktivasi' && (
-                                        <ActivationReport
-                                            allUsersData={allUsersData}
-                                            onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
-                                            loggedInEmployee={loggedInEmployee}
-                                            hospitals={hospitals}
-                                        />
-                                    )}
-                                </>
+                            {reportSubView === 'sholat' && (
+                                <AttendanceReport
+                                    allUsersData={allUsersData}
+                                    activities={activities}
+                                    reportType="prayer"
+                                    onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                    loggedInEmployee={loggedInEmployee}
+                                    onEditAttendance={setEditingAttendanceRecord}
+                                    onDeleteAttendance={handleInitiateDeleteAttendance}
+                                    pagination={pagination}
+                                    onRefresh={onLoadHeavyData}
+                                    isLoading={isLoadingEmployees}
+                                    hospitals={hospitals}
+                                />
                             )}
-
+                            {reportSubView === 'kegiatan' && (
+                                <AttendanceReport
+                                    allUsersData={allUsersData}
+                                    activities={activities}
+                                    reportType="activity"
+                                    onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                    loggedInEmployee={loggedInEmployee}
+                                    onEditAttendance={setEditingAttendanceRecord}
+                                    onDeleteAttendance={handleInitiateDeleteAttendance}
+                                    pagination={pagination}
+                                    onRefresh={onLoadHeavyData}
+                                    isLoading={isLoadingEmployees}
+                                    hospitals={hospitals}
+                                />
+                            )}
+                            {reportSubView === 'mutabaah' && (
+                                <MutabaahReport allUsersData={allUsersData} hospitals={hospitals} onLoadHeavyData={onLoadHeavyData} isLoading={isLoadingEmployees} />
+                            )}
+                            {reportSubView === 'aktivasi' && (
+                                <ActivationReport
+                                    allUsersData={allUsersData}
+                                    onShowPreview={(uri, name) => { setPdfDataUri(uri); setPdfFileName(name); setIsPdfPreviewOpen(true); }}
+                                    loggedInEmployee={loggedInEmployee}
+                                    hospitals={hospitals}
+                                />
+                            )}
                         </div>
                     </div>
                 )}

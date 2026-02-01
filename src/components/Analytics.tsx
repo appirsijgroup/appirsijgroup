@@ -4,7 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { type Employee, type DailyActivity, type DailyActivityProgress } from '../types';
 import { isAdministrativeAccount, isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useAppDataStore, useHospitalStore } from '@/store/store';
-import { PdfIcon, ChartBarIcon, PengaturanIcon as SettingsAltIcon, UsersIcon, ShieldCheckIcon } from './Icons';
+import { SearchIcon, ExcelIcon, PdfIcon, ChartBarIcon, PengaturanIcon as SettingsAltIcon, UsersIcon, ShieldCheckIcon } from './Icons';
+import SimplePagination from './SimplePagination';
 import { generateOfficialPdf, type ReportSection, type TableConfig } from './ReportGenerator';
 import EmployeeSearchableInput from './EmployeeSearchableInput';
 
@@ -494,33 +495,13 @@ const ActivationReport: React.FC<{
                         </table>
                     </div>
 
-                    {/* Pagination Controls */}
-                    {totalPages > 1 && (
-                        <div className="p-4 border-t border-white/5 bg-black/20 flex items-center justify-between">
-                            <span className="text-gray-400 text-xs font-medium">
-                                Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, stats.hospitalBreakdown.length)} dari {stats.hospitalBreakdown.length} data
-                            </span>
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-20 hover:bg-white/10 transition-all"
-                                >
-                                    <ChevronLeft size={16} />
-                                </button>
-                                <div className="text-white text-xs font-bold bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
-                                    Hal {currentPage} dari {totalPages}
-                                </div>
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white disabled:opacity-20 hover:bg-white/10 transition-all"
-                                >
-                                    <ChevronRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <SimplePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalCount={stats.hospitalBreakdown.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             )}
         </div>

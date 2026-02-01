@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { type Announcement, type Employee, type Hospital } from '../types';
 import { Megaphone, PlusCircle, Trash2, Pencil, Users, Globe, ChevronDown, FileDown } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
+import SimplePagination from './SimplePagination';
 import { isAnyAdmin, isSuperAdmin } from '@/lib/rolePermissions';
 import { useUIStore } from '@/store/store';
 
@@ -598,30 +599,13 @@ const Announcements: React.FC<AnnouncementsProps> = ({ announcements, loggedInEm
                 </div>
             )}
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={filteredAnnouncements.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+            />
 
             {canCreate && (
                 <AnnouncementModal

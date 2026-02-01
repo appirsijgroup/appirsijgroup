@@ -28,6 +28,7 @@ import { generateOfficialPdf, ReportSection, TableConfig } from './ReportGenerat
 import { useUIStore } from '@/store/store';
 import UniversalPersetujuan from './Persetujuan';
 import { isAnyAdmin } from '@/lib/rolePermissions';
+import SimplePagination from './SimplePagination';
 
 export type MentorDashboardView = 'overview' | 'mentees' | 'progress' | 'missed-requests' | 'laporan-bacaan' | 'persetujuan' | 'target' | 'sessions';
 
@@ -764,32 +765,14 @@ const MenteeManagement: React.FC<{
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={mentees.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                label={`Total ${mentees.length} anggota bimbingan aktif`}
+            />
 
             <div className="mt-4 text-center">
                 <p className="text-xs text-gray-400 italic">
@@ -1045,32 +1028,14 @@ const ReadingReportView: React.FC<{ mentees: Employee[], mentorName: string }> =
                 )}
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={allReadings.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+                label={`Total ${allReadings.length} data laporan bacaan`}
+            />
 
             <div className="mt-4 text-center">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">

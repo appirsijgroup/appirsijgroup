@@ -19,6 +19,8 @@ import {
     FileText,
     Sparkles,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Shield,
     ShieldCheck,
     Building2,
@@ -38,6 +40,7 @@ import ConfirmationModal from './ConfirmationModal';
 import MutabaahReport from './MutabaahReport';
 import { getAssignableRoles, getRoleDisplay, validateRoleChange, isSuperAdmin, isAnyAdmin, isAdministrativeAccount } from '@/lib/rolePermissions';
 import { useUIStore, useAppDataStore } from '@/store/store';
+import SimplePagination from './SimplePagination';
 import { getEmployeesByIds } from '@/services/employeeService';
 
 // Lazy load heavy components that are only rendered conditionally
@@ -1102,38 +1105,17 @@ const DatabaseKaryawan: React.FC<DatabaseKaryawanProps> = ({
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => pagination?.onPrev()}
-                        disabled={currentPage === 1 || isLoading}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => pagination?.onNext()}
-                        disabled={currentPage === totalPages || isLoading}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
-
-            <div className="mt-2 text-center">
-                <p className="text-xs text-gray-500">
-                    Total {pagination?.totalCount || 0} karyawan
-                </p>
-            </div>
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={pagination?.totalCount}
+                onPageChange={(page) => {
+                    if (page > currentPage) pagination?.onNext();
+                    else pagination?.onPrev();
+                }}
+                isLoading={isLoading}
+                label={`Total ${pagination?.totalCount || 0} karyawan`}
+            />
 
         </div>
     );
@@ -1259,38 +1241,13 @@ const AkunManagement: React.FC<AkunManagementProps> = ({ allUsers, onInitiateTog
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
-
-            <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500">
-                    Total {filteredUsers.length} akun karyawan
-                </p>
-            </div>
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={filteredUsers.length}
+                onPageChange={setCurrentPage}
+                label={`Total ${filteredUsers.length} akun karyawan`}
+            />
         </div>
     );
 };
@@ -1351,6 +1308,14 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                 years.add(new Date().getFullYear());
             }
         });
+
+        // Ensure current year is always available as fallback if no data found
+        if (years.size === 0) {
+            const currentYear = new Date().getFullYear();
+            years.add(currentYear);
+            years.add(currentYear - 1);
+        }
+
         const sortedYears = Array.from(years).sort((a, b) => b - a);
 
         // 🔥 FIX: Add defensive check for activities
@@ -1376,7 +1341,7 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
         const records: AdminReportRecord[] = [];
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // 🔥 ORIGINAL: Gunakan allUsersData untuk prayer report atau fallback
+        // 🔥 ORIGINAL: Use allUsersData for prayer report or fallback
         // 🔥 FIX: Build maps inside useMemo to ensure fresh data
         const currentPrayerMap = new Map(PRAYERS.map(p => [p.id, p.name]));
         const currentActivityMap = new Map(activities.map(a => [a.id, a.name]));
@@ -1913,40 +1878,13 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {
-                totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            ←
-                        </button>
-
-                        <div className="flex items-center gap-1">
-                            <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
-                                Hal {currentPage} dari {totalPages}
-                            </span>
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            →
-                        </button>
-                    </div>
-                )
-            }
-
-            <div className="mt-4 text-center">
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">
-                    Total {filteredData.length} data laporan {reportType === 'prayer' ? 'sholat' : 'kegiatan'}
-                </p>
-            </div>
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={filteredData.length}
+                onPageChange={setCurrentPage}
+                label={`Total ${filteredData.length} data laporan ${reportType === 'prayer' ? 'sholat' : 'kegiatan'}`}
+            />
         </div >
     );
 };
@@ -2226,34 +2164,13 @@ const ActivationReport: React.FC<{
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                        Hal {currentPage} dari {totalPages}
-                    </span>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
-
-            <div className="text-center text-xs text-gray-500 mt-2">
-                Menampilkan {paginatedData.length} dari {filteredData.length} data karyawan
-            </div>
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={filteredData.length}
+                itemsPerPage={ITEMS_PER_BATCH}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 };
@@ -2799,32 +2716,13 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={sortedUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+            />
 
             <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
@@ -3049,69 +2947,13 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ allUsers, loggedInEmp
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
-                            }
-
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === pageNum
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <>
-                                <span className="text-gray-400 px-2">...</span>
-                                <button
-                                    onClick={() => setCurrentPage(totalPages)}
-                                    className={`w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${currentPage === totalPages
-                                        ? 'bg-teal-500 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                >
-                                    {totalPages}
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={filteredAndSortedUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+            />
         </div>
     );
 };

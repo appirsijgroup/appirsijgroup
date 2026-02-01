@@ -52,6 +52,8 @@ const ToggleSwitch: React.FC<{
     );
 };
 
+import SimplePagination from './SimplePagination';
+
 const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], onUpdateProfile, hospitals = [], loggedInEmployee }) => {
     const { addToast } = useUIStore();
     const { createNotification } = useNotificationStore();
@@ -584,38 +586,13 @@ const RelationManagement: React.FC<RelationManagementProps> = ({ allUsers = [], 
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-3 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
-
-            <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500">
-                    Total {sortedUsers.length} data karyawan
-                </p>
-            </div>
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={sortedUsers.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Modal edit penugasan */}
             {editAssignmentModal && (

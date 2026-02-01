@@ -4,6 +4,7 @@ import { DAILY_ACTIVITIES } from '../data/monthlyActivities';
 import * as XLSX from 'xlsx';
 import { ExcelIcon, SearchIcon } from './Icons';
 import { isAdministrativeAccount, isAnyAdmin } from '@/lib/rolePermissions';
+import SimplePagination from './SimplePagination';
 
 interface MutabaahReportProps {
     allUsersData: Record<string, { employee: Employee; attendance: any; history: any }>;
@@ -82,17 +83,31 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
 
         Object.values(allUsersData).forEach(({ employee }) => {
             if (!employee || !employee.id || isAdministrativeAccount(employee.id) || isAnyAdmin(employee)) return;
-            units.add(employee.unit);
-            professions.add(employee.profession);
+            if (employee.unit) units.add(employee.unit);
+            if (employee.profession) professions.add(employee.profession);
 
-            // Get years from monthly activities
-            if (employee.monthlyActivities) {
-                Object.keys(employee.monthlyActivities).forEach((monthKey) => {
-                    const year = parseInt(monthKey.split('-')[0]);
-                    years.add(year);
-                });
-            }
+            // Get years from all possible sources (snake_case and camelCase)
+            const activityKeys = [
+                ...Object.keys(employee.monthlyActivities || {}),
+                ...Object.keys(employee.monthly_activities || {}),
+                ...(employee.activatedMonths || []),
+                ...(employee.activated_months || [])
+            ];
+
+            activityKeys.forEach((key) => {
+                if (typeof key === 'string' && key.includes('-')) {
+                    const year = parseInt(key.split('-')[0]);
+                    if (!isNaN(year) && year > 2000) years.add(year);
+                }
+            });
         });
+
+        // Ensure current year is always available as fallback if no data found
+        if (years.size === 0) {
+            const currentYear = new Date().getFullYear();
+            years.add(currentYear);
+            years.add(currentYear - 1);
+        }
 
         const sortedYears = Array.from(years).sort((a, b) => b - a);
 
@@ -466,32 +481,14 @@ const MutabaahReport: React.FC<MutabaahReportProps> = ({ allUsersData, hospitals
                 </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
-                    <button
-                        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1 || isFetching}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        ←
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        <span className="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-800 text-white border border-gray-700 shadow-inner">
-                            Hal {currentPage} dari {totalPages}
-                        </span>
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage === totalPages || isFetching}
-                        className="px-3 py-2 rounded-lg font-semibold text-sm bg-gray-700 hover:bg-gray-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        →
-                    </button>
-                </div>
-            )}
+            <SimplePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={serverData.total}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                isLoading={isFetching}
+            />
 
             <div className="mt-4 text-center">
                 <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">

@@ -40,7 +40,7 @@ import {
     ShieldCheck,
     CheckCircle2
 } from 'lucide-react';
-import type { Notification } from '@/types';
+import type { Notification, Toast } from '@/types';
 
 const allNavItemsRaw = [
     { id: 'dashboard-saya', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -55,6 +55,67 @@ const allNavItemsRaw = [
     { id: 'admin', label: 'Admin Dashboard', icon: ShieldCheck, href: '/admin' },
     { id: 'profile', label: 'Profil', icon: UserCircle, href: '/profile' },
 ];
+
+const SwipeableToast = ({ toast, onRemove }: { toast: Toast, onRemove: (id: number) => void }) => {
+    const [translateX, setTranslateX] = useState(0);
+    const [opacity, setOpacity] = useState(1);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isRemoved, setIsRemoved] = useState(false);
+    const startX = React.useRef(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        startX.current = e.touches[0].clientX;
+        setIsDragging(true);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - startX.current;
+        setTranslateX(diff);
+        setOpacity(Math.max(0, 1 - Math.abs(diff) / 200));
+    };
+
+    const handleTouchEnd = () => {
+        setIsDragging(false);
+        if (Math.abs(translateX) > 100) {
+            const direction = translateX > 0 ? 1 : -1;
+            setTranslateX(direction * 500);
+            setOpacity(0);
+            setIsRemoved(true);
+            setTimeout(() => onRemove(toast.id), 300);
+        } else {
+            setTranslateX(0);
+            setOpacity(1);
+        }
+    };
+
+    if (isRemoved) return null;
+
+    return (
+        <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+                transform: `translateX(${translateX}px)`,
+                opacity: opacity,
+                transition: isDragging ? 'none' : 'all 0.3s ease-out'
+            }}
+            className="bg-slate-800/90 backdrop-blur-md rounded-lg shadow-xl overflow-hidden animate-toast-in flex border border-slate-700/50 touch-pan-y cursor-grab active:cursor-grabbing select-none"
+        >
+            <div className={`w-1.5 shrink-0 ${toast.type === 'success' ? 'bg-teal-400' : 'bg-red-500'}`}></div>
+            <div className="flex items-start gap-3 p-4 w-full">
+                <div className="grow">
+                    {toast.title && <p className={`font-bold mb-0.5 ${toast.type === 'success' ? 'text-teal-300' : 'text-red-400'}`}>
+                        {toast.title}
+                    </p>}
+                    <p className="text-sm text-slate-200 leading-snug">{toast.message}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default function MainLayoutShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -664,20 +725,7 @@ export default function MainLayoutShell({ children }: { children: React.ReactNod
             {/* Toasts - kept globally here if not using a Provider */}
             <div className="fixed top-20 right-4 z-100 space-y-3 w-full max-w-sm">
                 {toasts.map(toast => (
-                    <div
-                        key={toast.id}
-                        className="bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-xl overflow-hidden animate-toast-in flex border border-slate-700"
-                    >
-                        <div className={`w-1.5 shrink-0 ${toast.type === 'success' ? 'bg-teal-400' : 'bg-red-500'}`}></div>
-                        <div className="flex items-start gap-4 p-4">
-                            <div className="grow">
-                                <p className={`font-bold ${toast.type === 'success' ? 'text-teal-300' : 'text-red-400'}`}>
-                                    {toast.title}
-                                </p>
-                                <p className="text-sm text-slate-200">{toast.message}</p>
-                            </div>
-                        </div>
-                    </div>
+                    <SwipeableToast key={toast.id} toast={toast} onRemove={removeToast} />
                 ))}
             </div>
 

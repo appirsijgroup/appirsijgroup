@@ -1403,8 +1403,9 @@ const AttendanceReport: React.FC<AttendanceReportProps> = ({ allUsersData, activ
 
                 if (dateFilterType === 'monthly') {
                     if (!monthFilter) return false;
-                    const [year, month] = monthFilter.split('-').map(Number);
-                    if (recordDate.getFullYear() !== year || recordDate.getMonth() + 1 !== month) return false;
+                    // 🔥 FIX: Use string matching to avoid timezone issues with Date objects
+                    // record.date format is YYYY-MM-DD, monthFilter is YYYY-MM
+                    if (!record.date.startsWith(monthFilter)) return false;
                 } else if (dateFilterType === 'yearly') {
                     if (!yearFilter) return false;
                     const year = Number(yearFilter);
@@ -3770,7 +3771,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         <div>
             <div className="mb-6">
                 <div className="flex items-center justify-between border-b border-white/20 px-2">
-                    <div className="flex items-center gap-2 -mb-px overflow-x-auto min-w-0 pr-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <div className="flex items-center gap-2 -mb-px overflow-x-auto whitespace-nowrap pr-4 pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         <style jsx>{`
                             div::-webkit-scrollbar {
                                 display: none;

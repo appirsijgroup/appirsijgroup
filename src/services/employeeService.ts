@@ -259,10 +259,10 @@ export const createEmployee = async (employee: Employee): Promise<Employee> => {
 
         signature: employee.signature,
 
-        managed_hospital_ids: employee.managedHospitalIds?.map(hid => hid.toLowerCase()) || [],
+        managed_hospital_ids: employee.managedHospitalIds?.map(hid => hid.toUpperCase()) || [],
         achievements: employee.achievements,
         must_change_password: employee.mustChangePassword,
-        hospital_id: employee.hospitalId?.toLowerCase(),
+        hospital_id: employee.hospitalId?.toUpperCase(),
         unit: employee.unit,
         bagian: employee.bagian,
         profession_category: employee.professionCategory,
@@ -337,10 +337,10 @@ export const updateEmployee = async (
 
     if (updates.signature !== undefined) dbUpdates.signature = updates.signature;
 
-    if (updates.managedHospitalIds !== undefined) dbUpdates.managed_hospital_ids = updates.managedHospitalIds.map(hid => hid.toLowerCase());
+    if (updates.managedHospitalIds !== undefined) dbUpdates.managed_hospital_ids = updates.managedHospitalIds.map(hid => hid.toUpperCase());
     if (updates.achievements !== undefined) dbUpdates.achievements = updates.achievements;
     if (updates.mustChangePassword !== undefined) dbUpdates.must_change_password = updates.mustChangePassword;
-    if (updates.hospitalId !== undefined) dbUpdates.hospital_id = updates.hospitalId.toLowerCase();
+    if (updates.hospitalId !== undefined) dbUpdates.hospital_id = updates.hospitalId.toUpperCase();
     if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
     if (updates.bagian !== undefined) dbUpdates.bagian = updates.bagian;
     if (updates.professionCategory !== undefined) dbUpdates.profession_category = updates.professionCategory;

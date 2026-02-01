@@ -86,7 +86,7 @@ export const getHospitalById = async (id: string): Promise<Hospital | null> => {
 // Create new hospital
 export const createHospital = async (hospital: Omit<Hospital, 'id'>): Promise<Hospital> => {
     // Generate ID from brand if not provided
-    const id = (hospital.brand.toLowerCase().replace(/\s+/g, '-') || `HOSP${Date.now()}`).toLowerCase();
+    const id = (hospital.brand.toUpperCase().replace(/\s+/g, '-') || `HOSP${Date.now()}`).toUpperCase();
 
     const { data, error } = await (supabase
         .from('hospitals') as any)

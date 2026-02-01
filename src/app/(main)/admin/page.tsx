@@ -30,9 +30,11 @@ import { getAllEmployees, updateEmployee as updateEmployeeSupabase, deleteEmploy
 import { getPaginatedEmployees } from '@/services/employeeServicePaginated';
 import { getAllHospitals, createHospital as createHospitalSupabase, updateHospital as updateHospitalSupabase, deleteHospital as deleteHospitalSupabase, toggleHospitalStatus as toggleHospitalStatusSupabase } from '@/services/hospitalService';
 import { validateRoleChange } from '@/lib/rolePermissions';
+import bcrypt from 'bcryptjs';
 // import { supabase } from '@/lib/supabase'; // Unused import
 
 export default function AdminPage() {
+
     const {
         allUsersData,
         loggedInEmployee,
@@ -293,12 +295,16 @@ export default function AdminPage() {
 
     const handleAddUser = async (id: string, newEmployeeData: RawEmployee) => {
         try {
+            // Generate hashed password (default is ID)
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(id, salt);
+
             // Convert RawEmployee to Employee format
             const employee: Employee = {
                 ...newEmployeeData,
                 id,
                 email: `${id}@rsijsp.co.id`, // Generate email from ID
-                password: `hashed_${id}`, // Default password
+                password: hashedPassword, // Hashed password
                 role: newEmployeeData.role || 'user', // Use provided role or default to user
                 gender: newEmployeeData.gender || 'Laki-laki', // Use provided gender
                 isActive: true,
@@ -439,11 +445,13 @@ export default function AdminPage() {
                     // Create new
                     const email = user.email || `${user.id.toLowerCase()}@rsi.co.id`;
                     const password = generatePassword();
+                    const salt = await bcrypt.genSalt(10);
+                    const hashedPassword = await bcrypt.hash(password, salt);
 
                     const newEmployee: Employee = {
                         ...user,
                         email,
-                        password,
+                        password: hashedPassword,
                         role: user.role || 'user',
                         isActive: true,
                         notificationEnabled: true,
@@ -729,7 +737,7 @@ export default function AdminPage() {
             if (data.logoFile) {
                 const { uploadHospitalLogo } = await import('@/services/hospitalService');
                 // Generate temporary ID for upload (brand as ID)
-                const tempId = data.brand.toLowerCase().replace(/\s+/g, '-');
+                const tempId = data.brand.toUpperCase().replace(/\s+/g, '-');
                 logoUrl = await uploadHospitalLogo(data.logoFile, tempId);
             }
 

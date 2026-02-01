@@ -173,7 +173,7 @@ const ReadingActivityCard: React.FC<{
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                     <h4 className="text-base font-bold text-white mb-1">
-                        Membaca Al-Quran dan buku
+                        Membaca Buku
                     </h4>
                     <p className="text-xs text-blue-200">
                         Target: {target}x per bulan

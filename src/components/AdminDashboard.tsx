@@ -2797,14 +2797,14 @@ const JabatanManagement: React.FC<JabatanManagementProps> = ({ allUsers, onUpdat
 const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string; icon: any }> = ({ active, onClick, label, icon: Icon }) => (
     <button
         onClick={onClick}
-        className={`flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-3 px-3 sm:px-5 rounded-t-lg font-bold transition-all duration-300 ease-in-out text-[10px] sm:text-base border-b-2 sm:whitespace-nowrap shrink-0
+        className={`flex flex-row items-center gap-2 py-3 px-4 rounded-t-lg font-bold transition-all duration-300 ease-in-out text-sm sm:text-base border-b-2 whitespace-nowrap shrink-0
           ${active
                 ? 'border-teal-400 text-teal-300 bg-teal-400/5'
                 : 'border-transparent text-gray-400 hover:text-white hover:bg-white/5'
             }`}
     >
-        <Icon className="w-5 h-5" />
-        <span className="text-center sm:text-left leading-tight max-w-[80px] sm:max-w-none">{label}</span>
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+        <span className="leading-tight">{label}</span>
     </button>
 );
 

@@ -12,6 +12,23 @@ const COLORS = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4'
 const GLOBAL_GRADIENT = "from-amber-900/40 to-amber-800/20 border-amber-500/30";
 const UNIT_GRADIENT = "from-teal-900/40 to-teal-800/20 border-teal-500/30";
 
+// Reusable UI components for Analytics
+const SelectWrapper: React.FC<{ children: React.ReactNode; icon?: React.ReactNode }> = ({ children, icon }) => (
+    <div className="relative group">
+        {icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500/50 group-focus-within:text-teal-400 pointer-events-none transition-colors">
+                {icon}
+            </div>
+        )}
+        {children}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-teal-400 pointer-events-none transition-colors">
+            <ChevronDown size={16} />
+        </div>
+    </div>
+);
+
+const SELECT_CLASS = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none appearance-none cursor-pointer transition-all hover:bg-white/10";
+
 interface AnalyticsProps {
     allUsersData: Record<string, { employee: Employee; attendance: unknown; history: unknown; }>;
     dailyActivitiesConfig: DailyActivity[];
@@ -540,22 +557,6 @@ const MutabaahPerformanceReport: React.FC<{
 
     const { performanceByCategory, groupedPerformanceByActivity, employeeCount } = performanceData;
 
-    const SelectWrapper: React.FC<{ children: React.ReactNode; icon?: React.ReactNode }> = ({ children, icon }) => (
-        <div className="relative group">
-            {icon && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500/50 group-focus-within:text-teal-400 pointer-events-none transition-colors">
-                    {icon}
-                </div>
-            )}
-            {children}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-teal-400 pointer-events-none transition-colors">
-                <ChevronDown size={16} />
-            </div>
-        </div>
-    );
-
-    const selectClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none appearance-none cursor-pointer transition-all hover:bg-white/10";
-
     return (
         <div className="bg-neutral-900/40 md:bg-black/20 p-3 md:p-6 rounded-xl md:rounded-2xl border border-white/10 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -572,26 +573,26 @@ const MutabaahPerformanceReport: React.FC<{
                     />
                 </div>
                 <SelectWrapper icon={<Filter size={16} />}>
-                    <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                    <select value={unitFilter} onChange={e => setUnitFilter(e.target.value)} className={`${SELECT_CLASS} pl-10`}>
                         <option value="all" className="text-black bg-white">Semua Unit</option>
                         {filterOptions.units.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
                     </select>
                 </SelectWrapper>
                 <SelectWrapper icon={<Filter size={16} />}>
-                    <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                    <select value={bagianFilter} onChange={e => setBagianFilter(e.target.value)} className={`${SELECT_CLASS} pl-10`}>
                         <option value="all" className="text-black bg-white">Semua Bagian</option>
                         {filterOptions.bagians.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
                     </select>
                 </SelectWrapper>
                 <SelectWrapper icon={<UsersIcon className="w-4 h-4" />}>
-                    <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className={`${selectClass} pl-10`}>
+                    <select value={kategoriFilter} onChange={e => setKategoriFilter(e.target.value as 'all' | 'MEDIS' | 'NON MEDIS')} className={`${SELECT_CLASS} pl-10`}>
                         <option value="all" className="text-black bg-white">Semua Kategori Profesi</option>
                         <option value="MEDIS" className="text-black bg-white">MEDIS</option>
                         <option value="NON MEDIS" className="text-black bg-white">NON MEDIS</option>
                     </select>
                 </SelectWrapper>
                 <SelectWrapper icon={<Filter size={16} />}>
-                    <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className={`${selectClass} pl-10`}>
+                    <select value={profesiFilter} onChange={e => setProfesiFilter(e.target.value)} className={`${SELECT_CLASS} pl-10`}>
                         <option value="all" className="text-black bg-white">Semua Profesi</option>
                         {filterOptions.profesi.map(opt => <option key={opt} value={opt} className="text-black bg-white">{opt}</option>)}
                     </select>

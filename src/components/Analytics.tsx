@@ -588,6 +588,42 @@ const MutabaahPerformanceReport: React.FC<{
                 </div>
             ) : employeeCount > 0 ? (
                 <div className="space-y-6">
+                    {/* WORK ANALYSIS SUMMARY CARDS (RINGKASAN ANALISIS KERJA) */}
+                    {performanceByCategory.length > 0 && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                            {performanceByCategory.map((category: any, index: number) => {
+                                const colors = [
+                                    { bg: 'bg-amber-900/40', border: 'border-amber-500/20', text: 'text-amber-400' },
+                                    { bg: 'bg-teal-900/40', border: 'border-teal-500/20', text: 'text-teal-400' },
+                                    { bg: 'bg-blue-900/40', border: 'border-blue-500/20', text: 'text-blue-400' },
+                                    { bg: 'bg-purple-900/40', border: 'border-purple-500/20', text: 'text-purple-400' }
+                                ];
+                                const style = colors[index % colors.length];
+
+                                return (
+                                    <div key={category.name} className={`${style.bg} p-4 rounded-xl border ${style.border} shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300`}>
+                                        <div className="flex flex-col">
+                                            <span className={`${style.text} text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1 opacity-80 truncate`}>
+                                                {category.name}
+                                            </span>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-2xl md:text-3xl font-black text-white">
+                                                    {category.Persentase}%
+                                                </span>
+                                                <span className="text-[10px] text-gray-400">Rata-rata</span>
+                                            </div>
+                                            <div className="w-full bg-black/30 rounded-full h-1.5 mt-2 overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-1000 ${style.text.replace('text-', 'bg-')}`}
+                                                    style={{ width: `${category.Persentase}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
 
                     <ChartCard title="Rata-rata Capaian per Kategori" minWidth="700px">

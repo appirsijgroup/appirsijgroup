@@ -16,16 +16,53 @@ const UNIT_GRADIENT = "from-teal-900/40 to-teal-800/20 border-teal-500/30";
 const SelectWrapper: React.FC<{ children: React.ReactNode; icon?: React.ReactNode }> = ({ children, icon }) => (
     <div className="relative group">
         {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-500/50 group-focus-within:text-teal-400 pointer-events-none transition-colors">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-400 transition-colors z-10 pointer-events-none">
                 {icon}
             </div>
         )}
         {children}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-teal-400 pointer-events-none transition-colors">
-            <ChevronDown size={16} />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-teal-400 transition-colors">
+            <ChevronDown size={14} />
         </div>
     </div>
 );
+
+// Helper for wrapping long labels in YAxis
+const CustomYAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    const words = payload.value.split(' ');
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        if ((currentLine + ' ' + words[i]).length > 25) {
+            lines.push(currentLine);
+            currentLine = words[i];
+        } else {
+            currentLine += ' ' + words[i];
+        }
+    }
+    lines.push(currentLine);
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            {lines.map((line, index) => (
+                <text
+                    key={index}
+                    x={-10}
+                    y={index * 12 - (lines.length - 1) * 6}
+                    dy={4}
+                    textAnchor="end"
+                    fill="#e2e8f0"
+                    fontSize={10}
+                    className="font-medium"
+                >
+                    {line}
+                </text>
+            ))}
+        </g>
+    );
+};
 
 const SELECT_CLASS = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:ring-2 focus:ring-teal-500/50 focus:outline-none appearance-none cursor-pointer transition-all hover:bg-white/10";
 
@@ -675,10 +712,17 @@ const MutabaahPerformanceReport: React.FC<{
                         <ChartCard key={category} title={`Detail Kategori: ${category}`} minWidth="700px">
                             {isClient ? (
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 40, left: 20, bottom: 20 }}>
+                                    <BarChart data={activities} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 20 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                         <XAxis type="number" stroke="#94a3b8" domain={[0, 100]} tickFormatter={(tick) => `${tick}%`} />
-                                        <YAxis dataKey="name" type="category" stroke="#94a3b8" width={180} tick={{ fontSize: 11, fill: '#e2e8f0' }} interval={0} />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            stroke="#94a3b8"
+                                            width={220}
+                                            tick={<CustomYAxisTick />}
+                                            interval={0}
+                                        />
                                         <Bar dataKey="percentage" name="Capaian" barSize={20} fill={COLORS[index % COLORS.length]} isAnimationActive={false}>
                                             <LabelList dataKey="percentage" position="right" fill="#e2e8f0" fontSize={11} formatter={(value: unknown) => typeof value === 'number' && value > 0 ? `${value}%` : ''} />
                                         </Bar>

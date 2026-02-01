@@ -21,20 +21,39 @@ export async function GET(request: NextRequest) {
         const bagian = searchParams.get('bagian');
         const professionCategory = searchParams.get('professionCategory');
         const profession = searchParams.get('profession');
-        const hospitalId = searchParams.get('hospitalId')?.toLowerCase();
+        const hospitalId = searchParams.get('hospitalId')?.toLowerCase().trim();
         const employeeId = searchParams.get('employeeId'); // Specific user override
+
+        // 2a. Role-Based Security Check
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        const { data: user } = await supabase
+            .from('employees')
+            .select('role, hospital_id, functional_roles, managed_hospital_ids')
+            .eq('id', session.userId)
+            .single();
+
+        if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        const isBPH = (user.functional_roles || []).includes('BPH');
+        const isSuper = user.role === 'super-admin';
+        const canSeeGlobal = isBPH || isSuper;
+
+        let enforcedHospitalId = hospitalId;
+        if (!canSeeGlobal) {
+            const allowedHospitals = [user.hospital_id, ...(user.managed_hospital_ids || [])].filter(Boolean).map(id => id.toLowerCase());
+            if (!enforcedHospitalId || enforcedHospitalId === 'all') {
+                enforcedHospitalId = user.hospital_id?.toLowerCase() || 'unknown';
+            } else if (!allowedHospitals.includes(enforcedHospitalId)) {
+                return NextResponse.json({ error: 'Access Denied' }, { status: 403 });
+            }
+        }
 
         if (!month || !year) return NextResponse.json({ error: 'Month and Year are required' }, { status: 400 });
 
         const monthKey = `${year}-${month.padStart(2, '0')}`;
-        const startOfMonth = `${monthKey}-01`;
-        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-        const endOfMonth = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
-
-        // 3. Setup Supabase
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         // 4. Fetch Targeted Employee IDs based on filters (Exclude non-numeric IDs)
         let employeeQuery = supabase.from('employees')
@@ -49,34 +68,47 @@ export async function GET(request: NextRequest) {
             if (bagian && bagian !== 'all') employeeQuery = employeeQuery.eq('bagian', bagian);
             if (professionCategory && professionCategory !== 'all') employeeQuery = employeeQuery.eq('profession_category', professionCategory);
             if (profession && profession !== 'all') employeeQuery = employeeQuery.eq('profession', profession);
-            if (hospitalId && hospitalId !== 'all') employeeQuery = employeeQuery.ilike('hospital_id', hospitalId);
+            if (enforcedHospitalId && enforcedHospitalId !== 'all') {
+                // Use a more resilient match to handle trailing spaces or minor variations
+                employeeQuery = employeeQuery.or(`hospital_id.ilike.${enforcedHospitalId},hospital_id.ilike."${enforcedHospitalId} "`);
+            }
         }
 
         const { data: targetEmployees, error: empError } = await employeeQuery;
         if (empError) throw empError;
 
         const employeeIds = targetEmployees.map(e => e.id);
+
+        // Preparation of categories even for 0 results
+        const emptyGroupedPerformance: Record<string, any[]> = {};
+        DAILY_ACTIVITIES.forEach(act => {
+            if (!emptyGroupedPerformance[act.category]) emptyGroupedPerformance[act.category] = [];
+            emptyGroupedPerformance[act.category].push({
+                name: act.title,
+                category: act.category,
+                percentage: 0,
+                achieved: 0,
+                target: 0
+            });
+        });
+
         if (employeeIds.length === 0) {
-            // Standard categories with 0% when no data
-            const defaultPerformance = [
-                { name: 'AMANAH (Disiplin)', Persentase: 0 },
-                { name: 'FATONAH (Belajar)', Persentase: 0 },
-                { name: 'SIDIQ (Integritas)', Persentase: 0 },
-                { name: 'TABLIGH (Teamwork)', Persentase: 0 }
-            ];
-            const defaultGrouped = {
-                'AMANAH (Disiplin)': [],
-                'FATONAH (Belajar)': [],
-                'SIDIQ (Integritas)': [],
-                'TABLIGH (Teamwork)': []
-            };
+            const defaultPerformance = Object.entries(emptyGroupedPerformance).map(([name]) => ({
+                name,
+                Persentase: 0
+            })).sort((a, b) => a.name.localeCompare(b.name));
+
             return NextResponse.json({
                 performanceByCategory: defaultPerformance,
-                groupedPerformanceByActivity: defaultGrouped,
+                groupedPerformanceByActivity: emptyGroupedPerformance,
                 employeeCount: 0,
                 hospitalComparison: []
             });
         }
+
+        const startOfMonth = `${monthKey}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        const endOfMonth = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
 
         // 5. Aggregate Data from Multiple Sources
         // We need to fetch from multiple tables to get a complete picture
@@ -260,7 +292,7 @@ export async function GET(request: NextRequest) {
 
         // --- NEW: Hospital/Unit Breakdown for Comparison ---
         let hospitalComparison: any[] = [];
-        const isAllMode = !hospitalId || hospitalId === 'all';
+        const isAllMode = !enforcedHospitalId || enforcedHospitalId === 'all';
 
         if (isAllMode) {
             const { data: hospitals } = await supabase.from('hospitals').select('id, brand, name');

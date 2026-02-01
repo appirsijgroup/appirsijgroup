@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
                     .select('id, hospital_id, unit', { count: 'exact', head: false })
                     .eq('is_active', true)
                     .not('role', 'in', '(admin,super-admin)');
-                if (enforcedHospitalId && enforcedHospitalId !== 'all') q = q.ilike('hospital_id', enforcedHospitalId);
+                if (enforcedHospitalId && enforcedHospitalId !== 'all') {
+                    q = q.or(`hospital_id.ilike.${enforcedHospitalId},hospital_id.ilike."${enforcedHospitalId} "`);
+                }
                 return q;
             })(),
 
@@ -84,7 +86,9 @@ export async function GET(request: NextRequest) {
                     .eq('month_key', currentMonthKey)
                     .eq('employees.is_active', true)
                     .not('employees.role', 'in', '(admin,super-admin)');
-                if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') {
+                    q = q.or(`employees.hospital_id.ilike.${hospitalId},employees.hospital_id.ilike."${hospitalId} "`);
+                }
                 return q;
             })(),
 
@@ -94,7 +98,9 @@ export async function GET(request: NextRequest) {
                     .select('id, hospital_id', { count: 'exact', head: false })
                     .eq('is_active', true)
                     .or('role.in.(admin,super-admin),can_be_mentor.eq.true');
-                if (enforcedHospitalId && enforcedHospitalId !== 'all') q = q.ilike('hospital_id', enforcedHospitalId);
+                if (enforcedHospitalId && enforcedHospitalId !== 'all') {
+                    q = q.or(`hospital_id.ilike.${enforcedHospitalId},hospital_id.ilike."${enforcedHospitalId} "`);
+                }
                 return q;
             })(),
 
@@ -103,7 +109,9 @@ export async function GET(request: NextRequest) {
                 let q = supabase.from('employee_monthly_reports')
                     .select('*, employees!inner(id, hospital_id, unit)', { count: 'exact', head: false })
                     .not(`reports->${currentMonthKey}`, 'is', null);
-                if (hospitalId && hospitalId !== 'all') q = q.ilike('employees.hospital_id', hospitalId);
+                if (hospitalId && hospitalId !== 'all') {
+                    q = q.or(`employees.hospital_id.ilike.${hospitalId},employees.hospital_id.ilike."${hospitalId} "`);
+                }
                 return q;
             })(),
 

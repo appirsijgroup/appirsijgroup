@@ -1,4 +1,5 @@
 import { type Employee } from '@/types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { convertToCamelCase } from './employeeService';
 
 /**

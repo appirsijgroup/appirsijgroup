@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+:root {
+  /* 🔥 FIX: Use dark background to prevent white flash - matches app theme (slate-900) */
+  --background: #0f172a;
+  /* slate-900 */
+  --foreground: #f8fafc;
+  /* slate-50 */
+  /* Add common variables that might be expected */
+  --border: #1e293b;
+  /* slate-800 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    /* slate-900 - consistent dark theme */
+    --foreground: #f8fafc;
+    /* slate-50 */
+    --border: #1e293b;
+    /* slate-800 */
+  }
+}
+
+html {
+  background-color: #0f172a;
+  /* slate-900 - Prevents white flash before CSS loads */
+  color-scheme: dark;
+  scrollbar-width: none;
+  /* Hide global scrollbar Firefox */
+  -ms-overflow-style: none;
+  /* Hide global scrollbar IE/Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none;
+  /* Hide global scrollbar Chrome/Safari */
+}
+
+body {
+  /* 🔥 INDUSTRY STANDARD: Set global background here to prevent 'flicker' or color changes during transitions */
+  background: linear-gradient(135deg, #0f172a 0%, #3730a3 100%);
+  background-attachment: fixed;
+  /* Keeps background stable on scroll */
+
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+
+@keyframes soft-ping {
+
+  75%,
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-soft-ping {
+  animation: soft-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* 🔥 Optimize rendering performance */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve touch responsiveness */
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* --- Legacy Animations from index.html --- */
+@keyframes fadeInView {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-view-change {
+  animation: fadeInView 0.2s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.2s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.2s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-toast-out {
+  animation: toast-out 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+/* --- Branded Loader Animation --- */
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* --- Date Range Picker Styles --- */
+.date-cell {
+  transition: all 0.2s ease;
+}
+
+.date-cell.is-selected-start,
+.date-cell.is-selected-end.is-single-day {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+
+.date-cell.is-selected-end,
+.date-cell.is-selected-start.is-single-day {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+.date-cell.is-in-range:not(.is-selected-start):not(.is-selected-end) {
+  border-radius: 0;
+}
+
+.date-cell.is-hover-preview:not(.is-selected-start) {
+  background-color: #5eead4 !important;
+  /* teal-300 */
+  color: #134e4a !important;
+  /* teal-900 */
+  opacity: 0.6;
+}
+
+/* --- Horizontal Scrollable Navigation --- */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 🔥 DESIGN SISTEM: Custom Scrollbars (Professional & Visible) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.05);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  display: block;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Specific class to hide scrollbar for the main view while keeping functionality */
+.hide-main-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.hide-main-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hide scrollbars for specific navigation elements only */
+.no-scrollbar,
+nav.overflow-x-auto {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+nav.overflow-x-auto::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+@media (max-width: 640px) {
+  .overflow-x-auto {
+    /* Maintain functionality while respecting mobile-specific UX if needed */
+    scrollbar-width: none;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Ensure all table elements have normal positioning on mobile */
+  .overflow-x-auto th,
+  .overflow-x-auto td {
+    /* Remove any inline sticky positioning on mobile */
+    position: static !important;
+    left: auto !important;
+  }
+}
+
+/* --- Date Picker Icon Color (Dark Theme) --- */
+/* Make calendar picker icon white in dark theme */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+/* Invert calendar icon to bright vibrant teal/green */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  /* 🔥 Force black first with brightness(0), then apply vibrant teal filter */
+  filter: brightness(0) invert(70%) sepia(50%) saturate(5000%) hue-rotate(130deg) brightness(120%) contrast(100%);
+  cursor: pointer;
+  opacity: 1;
+  transition: all 0.2s;
+}
+
+/* Slightly brighter/glow on hover */
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) invert(70%) sepia(50%) saturate(6000%) hue-rotate(130deg) brightness(140%) contrast(110%);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Firefox calendar icon */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="datetime-local"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+  filter: invert(73%) sepia(57%) saturate(444%) hue-rotate(119deg) brightness(89%) contrast(88%);
+  cursor: pointer;
+}
+
+@keyframes swing {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  20% {
+    transform: rotate(15deg);
+  }
+
+  40% {
+    transform: rotate(-10deg);
+  }
+
+  60% {
+    transform: rotate(5deg);
+  }
+
+  80% {
+    transform: rotate(-5deg);
+  }
+}
+
+.animate-swing {
+  animation: swing 2s infinite ease-in-out;
+  transform-origin: top center;
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
